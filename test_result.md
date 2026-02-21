@@ -146,6 +146,9 @@ backend:
       - working: true
         agent: "main"
         comment: "Create/Get/Delete subscriptions working. Expiry calculation correct."
+      - working: true
+        agent: "testing"
+        comment: "Subscriptions API fully tested. POST /api/subscriptions creates lezioni_8 subscription correctly. GET /api/subscriptions/me, GET /api/subscriptions, GET /api/subscriptions/expired all working. Expiry logic tested."
 
   - task: "Bookings System"
     implemented: true
