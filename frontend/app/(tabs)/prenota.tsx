@@ -240,10 +240,7 @@ export default function PrenotaScreen() {
 
   // Cancel a booking - INSTANT
   const handleCancel = async (lessonId: string) => {
-    if (!selectedDate) return;
-    
-    const dateString = getDateString(selectedDate);
-    const bookingId = getBookingId(lessonId, dateString);
+    const bookingId = getBookingId(lessonId);
     
     if (!bookingId) return;
     
