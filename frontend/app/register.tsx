@@ -79,7 +79,11 @@ export default function RegisterScreen() {
           </TouchableOpacity>
 
           <View style={styles.header}>
-            <Text style={styles.logo}>DANOFITNESS</Text>
+            <Image 
+              source={require('../assets/images/logo.jpg')} 
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
 
           <View style={styles.form}>
