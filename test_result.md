@@ -176,6 +176,9 @@ backend:
       - working: true
         agent: "main"
         comment: "End of day processing deducts lessons from per-lesson subscriptions."
+      - working: true
+        agent: "testing"
+        comment: "Admin functions fully tested. GET /api/admin/users, GET /api/admin/daily-stats/{date}, and POST /api/admin/process-day/{date} all working correctly. Daily processing logic confirmed."
 
 frontend:
   - task: "Login/Register Screens"
