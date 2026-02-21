@@ -879,7 +879,7 @@ async def get_weekly_bookings(admin_user: dict = Depends(get_admin_user)):
             "lezioni": []
         }
         
-        # Get ALL bookings for this date (regardless of lesson day mismatch)
+        # Get ALL bookings for this date
         date_bookings = [b for b in all_bookings if b["data_lezione"] == date_str]
         
         for lesson in day_lessons:
@@ -910,42 +910,6 @@ async def get_weekly_bookings(admin_user: dict = Depends(get_admin_user)):
                 "partecipanti": participants,
                 "totale_iscritti": len(participants)
             })
-        
-        # Also add any bookings for this date that are for lessons of OTHER days (mismatched bookings)
-        shown_booking_ids = set()
-        for les in day_data["lezioni"]:
-            for p in les["partecipanti"]:
-                shown_booking_ids.add(p["booking_id"])
-        
-        mismatched_bookings = [b for b in date_bookings if str(b["_id"]) not in shown_booking_ids]
-        if mismatched_bookings:
-            # Add a special "other" category for mismatched bookings
-            mismatch_participants = []
-            for booking in mismatched_bookings:
-                try:
-                    user = await db.users.find_one({"_id": ObjectId(booking["user_id"])})
-                    lesson = await db.lessons.find_one({"_id": ObjectId(booking["lesson_id"])})
-                    if user:
-                        mismatch_participants.append({
-                            "booking_id": str(booking["_id"]),
-                            "user_id": booking["user_id"],
-                            "nome": user["nome"],
-                            "cognome": user["cognome"],
-                            "abbonamento_scaduto": booking.get("abbonamento_scaduto", False),
-                            "lezione_scalata": booking.get("lezione_scalata", False),
-                            "nota": f"Lezione: {lesson['giorno']} {lesson['orario']}" if lesson else "Lezione non trovata"
-                        })
-                except:
-                    pass
-            
-            if mismatch_participants:
-                day_data["lezioni"].append({
-                    "lesson_id": "mismatched",
-                    "orario": "Altre prenotazioni",
-                    "tipo_attivita": "varie",
-                    "partecipanti": mismatch_participants,
-                    "totale_iscritti": len(mismatch_participants)
-                })
         
         result.append(day_data)
     
