@@ -1082,6 +1082,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.on_event("startup")
+async def startup_event():
+    """Start the scheduler for automatic midnight processing"""
+    # Schedule the job to run at midnight (00:00) every day
+    scheduler.add_job(
+        process_day_automatically,
+        CronTrigger(hour=0, minute=0),  # Run at midnight
+        id="midnight_processing",
+        replace_existing=True
+    )
+    scheduler.start()
+    logger.info("[SCHEDULER] Started automatic midnight processing scheduler")
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    scheduler.shutdown()
     client.close()
