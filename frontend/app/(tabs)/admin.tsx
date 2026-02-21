@@ -326,6 +326,23 @@ export default function AdminScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Refresh Button */}
+      <TouchableOpacity 
+        style={styles.refreshButton}
+        onPress={onRefresh}
+        disabled={refreshing}
+      >
+        <Ionicons 
+          name="refresh" 
+          size={20} 
+          color={COLORS.text} 
+          style={refreshing ? styles.spinning : undefined}
+        />
+        <Text style={styles.refreshButtonText}>
+          {refreshing ? 'Aggiornamento...' : 'Aggiorna'}
+        </Text>
+      </TouchableOpacity>
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         refreshControl={
