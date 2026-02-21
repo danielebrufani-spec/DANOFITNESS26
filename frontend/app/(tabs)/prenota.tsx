@@ -387,10 +387,16 @@ export default function PrenotaScreen() {
         {selectedDate && dayLessons.length > 0 ? (
           dayLessons.map((lesson) => {
             const info = ATTIVITA_INFO[lesson.tipo_attivita] || {};
-            const dateString = getDateString(selectedDate);
-            const booked = isBooked(lesson.id, dateString);
+            
+            // Calculate correct date for this lesson
+            const lessonDay = lesson.giorno;
+            const dayIndex = GIORNI.indexOf(lessonDay);
+            const correctDate = weekDates.find(date => date.getDay() === dayIndex);
+            const dateString = correctDate ? getDateString(correctDate) : '';
+            
+            const booked = isBooked(lesson.id);
             const isLoadingThis = bookingLoading === lesson.id;
-            const isPassed = isDatePassed(dateString);
+            const isPassed = dateString ? isDatePassed(dateString) : false;
             const canBook = bookingStatus.open && !isPassed;
 
             return (
