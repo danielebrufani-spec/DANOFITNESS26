@@ -636,15 +636,16 @@ export default function AdminScreen() {
                     <Ionicons name="shield" size={14} color={COLORS.text} />
                   </View>
                 ) : (
-                  <Pressable 
-                    style={({ pressed }) => [
-                      styles.deleteUserButton,
-                      pressed && styles.deleteUserButtonPressed
-                    ]}
-                    onPress={() => handleDeleteUser(user.id, `${user.nome} ${user.cognome}`)}
+                  <TouchableOpacity 
+                    style={styles.deleteUserButton}
+                    onPress={() => {
+                      console.log('Delete user clicked:', user.id);
+                      handleDeleteUser(user.id, `${user.nome} ${user.cognome}`);
+                    }}
+                    activeOpacity={0.6}
                   >
                     <Ionicons name="trash-outline" size={22} color={COLORS.error} />
-                  </Pressable>
+                  </TouchableOpacity>
                 )}
               </View>
             ))}
