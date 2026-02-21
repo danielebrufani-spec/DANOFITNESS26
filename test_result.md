@@ -186,11 +186,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "APScheduler job configured to run at midnight. Scheduler starts on app startup and processes previous day's bookings automatically."
+      - working: true
+        agent: "testing"
+        comment: "Scheduler verification confirmed from backend logs. Message '[SCHEDULER] Started automatic midnight processing scheduler' found in logs. APScheduler successfully configured with CronTrigger for midnight execution."
 
   - task: "Weekly Bookings Endpoint"
     implemented: true
@@ -198,11 +201,26 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "GET /api/admin/weekly-bookings returns all bookings for Mon-Sat grouped by day and lesson. Tested via curl - returns correct data structure."
+      - working: true
+        agent: "testing"
+        comment: "Weekly bookings endpoint thoroughly tested. Admin authentication successful with credentials admin@danofitness.it / DanoFitness2025!. API returns correct structure with settimana_inizio, settimana_fine, and giorni array containing 6 days (Mon-Sat). Each day includes data, giorno, and lezioni with lesson_id, orario, tipo_attivita, partecipanti, totale_iscritti."
+
+  - task: "Health Check Endpoint"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "GET /api/health endpoint working correctly. Returns proper JSON response with status: 'healthy' and service: 'DanoFitness23 API' as required."
 
 frontend:
   - task: "Login/Register Screens"
