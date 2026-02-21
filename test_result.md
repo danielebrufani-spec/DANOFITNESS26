@@ -161,6 +161,9 @@ backend:
       - working: true
         agent: "main"
         comment: "Create/Cancel bookings working. Expired subscription flag working."
+      - working: true
+        agent: "testing"
+        comment: "Bookings API fully tested. POST /api/bookings creates booking successfully. GET /api/bookings/me retrieves user bookings. GET /api/bookings/day/{date} admin endpoint working. DELETE /api/bookings/{id} cancellation working."
 
   - task: "Admin Daily Processing"
     implemented: true
