@@ -180,6 +180,30 @@ backend:
         agent: "testing"
         comment: "Admin functions fully tested. GET /api/admin/users, GET /api/admin/daily-stats/{date}, and POST /api/admin/process-day/{date} all working correctly. Daily processing logic confirmed."
 
+  - task: "Automatic Midnight Processing"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "APScheduler job configured to run at midnight. Scheduler starts on app startup and processes previous day's bookings automatically."
+
+  - task: "Weekly Bookings Endpoint"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "GET /api/admin/weekly-bookings returns all bookings for Mon-Sat grouped by day and lesson. Tested via curl - returns correct data structure."
+
 frontend:
   - task: "Login/Register Screens"
     implemented: true
