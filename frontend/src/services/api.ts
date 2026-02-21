@@ -113,6 +113,7 @@ export const apiService = {
 
   // Admin
   getAllUsers: () => api.get<User[]>('/admin/users'),
+  deleteUser: (userId: string) => api.delete(`/admin/users/${userId}`),
   getDailyStats: (date: string) => api.get<DailyStats>(`/admin/daily-stats/${date}`),
   processEndOfDay: (date: string) => api.post(`/admin/process-day/${date}`),
   getWeeklyBookings: () => api.get('/admin/weekly-bookings'),
