@@ -1386,9 +1386,13 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   deleteUserButton: {
-    padding: 10,
+    padding: 12,
     backgroundColor: COLORS.cardLight,
-    borderRadius: 8,
+    borderRadius: 10,
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   noResults: {
     fontSize: 14,
