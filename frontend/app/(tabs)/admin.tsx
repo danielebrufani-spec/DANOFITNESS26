@@ -134,11 +134,12 @@ export default function AdminScreen() {
     }
   };
 
-  // Auto-refresh every 30 seconds
+  // Auto-refresh every 10 seconds for real-time updates
   useEffect(() => {
     const interval = setInterval(() => {
+      console.log('[Admin] Auto-refresh triggered');
       loadData();
-    }, 30000); // 30 seconds
+    }, 10000); // 10 seconds - più frequente per vedere le nuove prenotazioni
     
     return () => clearInterval(interval);
   }, []);
