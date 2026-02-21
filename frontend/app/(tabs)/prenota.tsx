@@ -30,6 +30,7 @@ export default function PrenotaScreen() {
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [bookingLoading, setBookingLoading] = useState<string | null>(null);
+  const [cancelLoading, setCancelLoading] = useState<string | null>(null);
 
   const loadData = async () => {
     try {
@@ -90,65 +91,71 @@ export default function PrenotaScreen() {
     return booking?.id;
   };
 
-  const handleBooking = async (lessonId: string) => {
+  // Book a lesson
+  const handleBook = async (lessonId: string) => {
     const dateString = getDateString(selectedDate);
-    const alreadyBooked = isBooked(lessonId, dateString);
-
-    if (alreadyBooked) {
-      Alert.alert(
-        'Cancella Prenotazione',
-        'Vuoi cancellare questa prenotazione?',
-        [
-          { text: 'No', style: 'cancel' },
-          {
-            text: 'Sì, cancella',
-            style: 'destructive',
-            onPress: async () => {
-              const bookingId = getBookingId(lessonId, dateString);
-              if (bookingId) {
-                setBookingLoading(lessonId);
-                try {
-                  await apiService.cancelBooking(bookingId);
-                  await loadData();
-                  Alert.alert('Successo', 'Prenotazione cancellata');
-                } catch (error: any) {
-                  Alert.alert('Errore', error.response?.data?.detail || 'Errore durante la cancellazione');
-                } finally {
-                  setBookingLoading(null);
-                }
-              }
-            },
-          },
-        ]
-      );
-    } else {
-      setBookingLoading(lessonId);
-      try {
-        const response = await apiService.createBooking({
-          lesson_id: lessonId,
-          data_lezione: dateString,
-        });
-        await loadData();
-        
-        if (response.data.abbonamento_scaduto) {
-          Alert.alert(
-            'Attenzione',
-            'Prenotazione effettuata, ma il tuo abbonamento è scaduto. Contatta Daniele per rinnovare.',
-            [{ text: 'OK' }]
-          );
-        } else {
-          Alert.alert('Successo', 'Prenotazione effettuata!');
-        }
-      } catch (error: any) {
-        Alert.alert('Errore', error.response?.data?.detail || 'Errore durante la prenotazione');
-      } finally {
-        setBookingLoading(null);
+    setBookingLoading(lessonId);
+    try {
+      const response = await apiService.createBooking({
+        lesson_id: lessonId,
+        data_lezione: dateString,
+      });
+      await loadData();
+      
+      if (response.data.abbonamento_scaduto) {
+        Alert.alert(
+          'Attenzione',
+          'Prenotazione effettuata, ma il tuo abbonamento è scaduto. Contatta Daniele per rinnovare.'
+        );
       }
+    } catch (error: any) {
+      Alert.alert('Errore', error.response?.data?.detail || 'Errore durante la prenotazione');
+    } finally {
+      setBookingLoading(null);
+    }
+  };
+
+  // Cancel a booking - INSTANT, no confirmation
+  const handleCancel = async (lessonId: string) => {
+    const dateString = getDateString(selectedDate);
+    const bookingId = getBookingId(lessonId, dateString);
+    
+    if (!bookingId) return;
+    
+    setBookingLoading(lessonId);
+    try {
+      await apiService.cancelBooking(bookingId);
+      await loadData();
+    } catch (error: any) {
+      Alert.alert('Errore', error.response?.data?.detail || 'Errore durante la cancellazione');
+    } finally {
+      setBookingLoading(null);
+    }
+  };
+
+  // Cancel from my bookings list - INSTANT
+  const handleCancelFromList = async (bookingId: string) => {
+    setCancelLoading(bookingId);
+    try {
+      await apiService.cancelBooking(bookingId);
+      await loadData();
+    } catch (error: any) {
+      Alert.alert('Errore', error.response?.data?.detail || 'Errore durante la cancellazione');
+    } finally {
+      setCancelLoading(null);
     }
   };
 
   const weekDates = getWeekDates();
   const dayLessons = getLessonsForDay(getDayName(selectedDate));
+
+  // Sort lessons by time
+  dayLessons.sort((a, b) => a.orario.localeCompare(b.orario));
+
+  // Get upcoming bookings
+  const upcomingBookings = myBookings
+    .filter((b) => b.data_lezione >= getTodayDateString())
+    .sort((a, b) => a.data_lezione.localeCompare(b.data_lezione));
 
   if (loading) {
     return (
@@ -258,7 +265,7 @@ export default function PrenotaScreen() {
                     styles.bookButton,
                     booked && styles.bookedButton,
                   ]}
-                  onPress={() => handleBooking(lesson.id)}
+                  onPress={() => booked ? handleCancel(lesson.id) : handleBook(lesson.id)}
                   disabled={isLoadingThis}
                 >
                   {isLoadingThis ? (
@@ -266,12 +273,12 @@ export default function PrenotaScreen() {
                   ) : (
                     <>
                       <Ionicons
-                        name={booked ? 'checkmark-circle' : 'add-circle-outline'}
-                        size={20}
+                        name={booked ? 'close-circle' : 'add-circle-outline'}
+                        size={24}
                         color={COLORS.text}
                       />
                       <Text style={styles.bookButtonText}>
-                        {booked ? 'Prenotato' : 'Prenota'}
+                        {booked ? 'Cancella' : 'Prenota'}
                       </Text>
                     </>
                   )}
@@ -288,61 +295,45 @@ export default function PrenotaScreen() {
 
         {/* My Bookings Section */}
         <View style={styles.myBookingsSection}>
-          <Text style={styles.sectionTitle}>Le Mie Prenotazioni</Text>
-          {myBookings.length > 0 ? (
-            myBookings
-              .filter((b) => b.data_lezione >= getTodayDateString())
-              .slice(0, 5)
-              .map((booking) => {
-                const info = ATTIVITA_INFO[booking.lesson_info?.tipo_attivita || ''] || {};
-                return (
-                  <View key={booking.id} style={styles.bookingItem}>
-                    <View
-                      style={[
-                        styles.bookingColorBar,
-                        { backgroundColor: info.colore || COLORS.primary },
-                      ]}
-                    />
-                    <View style={styles.bookingContent}>
-                      <Text style={styles.bookingDate}>{formatDate(booking.data_lezione)}</Text>
-                      <Text style={styles.bookingDetails}>
-                        {booking.lesson_info?.orario} - {info.nome || booking.lesson_info?.tipo_attivita}
-                      </Text>
-                    </View>
-                    {booking.abbonamento_scaduto && (
-                      <View style={styles.warningBadge}>
-                        <Ionicons name="warning" size={14} color={COLORS.secondary} />
-                      </View>
-                    )}
-                    <TouchableOpacity
-                      style={styles.cancelButton}
-                      onPress={() => {
-                        Alert.alert(
-                          'Cancella Prenotazione',
-                          'Vuoi cancellare questa prenotazione?',
-                          [
-                            { text: 'No', style: 'cancel' },
-                            {
-                              text: 'Sì',
-                              style: 'destructive',
-                              onPress: async () => {
-                                try {
-                                  await apiService.cancelBooking(booking.id);
-                                  await loadData();
-                                } catch (error) {
-                                  Alert.alert('Errore', 'Impossibile cancellare');
-                                }
-                              },
-                            },
-                          ]
-                        );
-                      }}
-                    >
-                      <Ionicons name="trash-outline" size={20} color={COLORS.error} />
-                    </TouchableOpacity>
+          <Text style={styles.sectionTitle}>Le Mie Prenotazioni ({upcomingBookings.length})</Text>
+          {upcomingBookings.length > 0 ? (
+            upcomingBookings.map((booking) => {
+              const info = ATTIVITA_INFO[booking.lesson_info?.tipo_attivita || ''] || {};
+              const isLoadingCancel = cancelLoading === booking.id;
+              
+              return (
+                <View key={booking.id} style={styles.bookingItem}>
+                  <View
+                    style={[
+                      styles.bookingColorBar,
+                      { backgroundColor: info.colore || COLORS.primary },
+                    ]}
+                  />
+                  <View style={styles.bookingContent}>
+                    <Text style={styles.bookingDate}>{formatDate(booking.data_lezione)}</Text>
+                    <Text style={styles.bookingDetails}>
+                      {booking.lesson_info?.orario} - {info.nome || booking.lesson_info?.tipo_attivita}
+                    </Text>
                   </View>
-                );
-              })
+                  {booking.abbonamento_scaduto && (
+                    <View style={styles.warningBadge}>
+                      <Ionicons name="warning" size={14} color={COLORS.secondary} />
+                    </View>
+                  )}
+                  <TouchableOpacity
+                    style={styles.cancelButton}
+                    onPress={() => handleCancelFromList(booking.id)}
+                    disabled={isLoadingCancel}
+                  >
+                    {isLoadingCancel ? (
+                      <ActivityIndicator size="small" color={COLORS.error} />
+                    ) : (
+                      <Ionicons name="trash-outline" size={22} color={COLORS.error} />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              );
+            })
           ) : (
             <Text style={styles.noBookingsText}>Nessuna prenotazione</Text>
           )}
@@ -478,7 +469,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   bookedButton: {
-    backgroundColor: COLORS.success,
+    backgroundColor: COLORS.error,
   },
   bookButtonText: {
     color: COLORS.text,
@@ -542,7 +533,9 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   cancelButton: {
-    padding: 12,
+    padding: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   noBookingsText: {
     fontSize: 14,
