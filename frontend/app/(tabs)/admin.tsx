@@ -553,18 +553,18 @@ export default function AdminScreen() {
                       <Text style={styles.expiredBadge}>SCADUTO</Text>
                     )}
                   </View>
-                  <View style={styles.cardActions}>
+                  <View style={styles.iconActions}>
                     <TouchableOpacity 
-                      style={styles.actionBtn}
+                      style={styles.iconBtn}
                       onPress={() => openEditModal(sub)}
                     >
-                      <Ionicons name="create-outline" size={22} color={COLORS.primary} />
+                      <Ionicons name="pencil" size={24} color={COLORS.primary} />
                     </TouchableOpacity>
                     <TouchableOpacity 
-                      style={styles.actionBtn}
+                      style={styles.iconBtn}
                       onPress={() => handleDeleteSubscription(sub.id)}
                     >
-                      <Ionicons name="trash-outline" size={22} color={COLORS.error} />
+                      <Ionicons name="trash" size={24} color={COLORS.error} />
                     </TouchableOpacity>
                   </View>
                 </View>
