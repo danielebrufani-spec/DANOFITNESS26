@@ -545,11 +545,7 @@ export default function AdminScreen() {
                   key={sub.id}
                   style={[styles.subscriptionCard, sub.scaduto && styles.expiredCard]}
                 >
-                  <TouchableOpacity 
-                    style={styles.subscriptionInfo}
-                    onPress={() => openEditModal(sub)}
-                    activeOpacity={0.7}
-                  >
+                  <View style={styles.subscriptionInfo}>
                     <Text style={styles.subscriptionUser}>
                       {sub.user_nome} {sub.user_cognome}
                     </Text>
@@ -562,30 +558,23 @@ export default function AdminScreen() {
                     <Text style={styles.subscriptionExpiry}>
                       Scadenza: {formatDate(sub.data_scadenza)}
                     </Text>
-                  </TouchableOpacity>
-                  <View style={styles.subscriptionActions}>
-                    <TouchableOpacity 
-                      style={styles.editButton}
-                      onPress={() => openEditModal(sub)}
-                      activeOpacity={0.6}
-                    >
-                      <Ionicons name="pencil" size={18} color={COLORS.primary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={styles.deleteSubButton}
-                      onPress={() => {
-                        console.log('Delete subscription clicked:', sub.id);
-                        handleDeleteSubscription(sub.id);
-                      }}
-                      activeOpacity={0.6}
-                    >
-                      <Ionicons name="trash-outline" size={20} color={COLORS.error} />
-                    </TouchableOpacity>
-                    {sub.scaduto ? (
-                      <Ionicons name="close-circle" size={24} color={COLORS.error} />
-                    ) : (
-                      <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />
+                    {sub.scaduto && (
+                      <Text style={styles.expiredBadge}>SCADUTO</Text>
                     )}
+                  </View>
+                  <View style={styles.cardButtons}>
+                    <TouchableOpacity 
+                      style={styles.editBtn}
+                      onPress={() => openEditModal(sub)}
+                    >
+                      <Text style={styles.editBtnText}>Modifica</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={styles.deleteBtn}
+                      onPress={() => handleDeleteSubscription(sub.id)}
+                    >
+                      <Text style={styles.deleteBtnText}>Elimina</Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
               );
