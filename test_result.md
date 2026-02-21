@@ -116,6 +116,9 @@ backend:
       - working: true
         agent: "main"
         comment: "JWT auth with bcrypt password hashing working. Tested via curl."
+      - working: true
+        agent: "testing"
+        comment: "Comprehensive API testing completed. Admin login, user registration, user login, and /auth/me endpoint all working correctly. JWT token authentication verified."
 
   - task: "Lessons CRUD"
     implemented: true
