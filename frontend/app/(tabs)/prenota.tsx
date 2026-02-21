@@ -150,13 +150,31 @@ export default function PrenotaScreen() {
     return lessons.filter((lesson) => lesson.giorno === dayName);
   };
 
-  const isBooked = (lessonId: string, dateString: string) => {
+  const isBooked = (lessonId: string) => {
+    const lesson = lessons.find(l => l.id === lessonId);
+    if (!lesson) return false;
+    
+    const lessonDay = lesson.giorno;
+    const dayIndex = GIORNI.indexOf(lessonDay);
+    const correctDate = weekDates.find(date => date.getDay() === dayIndex);
+    if (!correctDate) return false;
+    
+    const dateString = getDateString(correctDate);
     return myBookings.some(
       (b) => b.lesson_id === lessonId && b.data_lezione === dateString
     );
   };
 
-  const getBookingId = (lessonId: string, dateString: string) => {
+  const getBookingId = (lessonId: string) => {
+    const lesson = lessons.find(l => l.id === lessonId);
+    if (!lesson) return undefined;
+    
+    const lessonDay = lesson.giorno;
+    const dayIndex = GIORNI.indexOf(lessonDay);
+    const correctDate = weekDates.find(date => date.getDay() === dayIndex);
+    if (!correctDate) return undefined;
+    
+    const dateString = getDateString(correctDate);
     const booking = myBookings.find(
       (b) => b.lesson_id === lessonId && b.data_lezione === dateString
     );
