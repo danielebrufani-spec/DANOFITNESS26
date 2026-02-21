@@ -582,8 +582,27 @@ export default function AdminScreen() {
         {/* USERS TAB */}
         {activeTab === 'utenti' && (
           <>
-            <Text style={styles.sectionTitle}>Utenti Registrati ({users.length})</Text>
-            {users.map((user) => (
+            {/* Search Bar */}
+            <View style={styles.searchContainer}>
+              <Ionicons name="search" size={20} color={COLORS.textSecondary} style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Cerca utente per nome, email o telefono..."
+                placeholderTextColor={COLORS.textSecondary}
+                value={userSearchQuery}
+                onChangeText={setUserSearchQuery}
+              />
+              {userSearchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setUserSearchQuery('')}>
+                  <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <Text style={styles.sectionTitle}>
+              Utenti Registrati ({filteredUsers.length}{userSearchQuery ? ` di ${users.length}` : ''})
+            </Text>
+            {filteredUsers.map((user) => (
               <View key={user.id} style={styles.userCard}>
                 <View style={styles.userAvatar}>
                   <Text style={styles.userAvatarText}>
@@ -597,13 +616,23 @@ export default function AdminScreen() {
                     <Text style={styles.userPhone}>{user.telefono}</Text>
                   )}
                 </View>
-                {user.role === 'admin' && (
+                {user.role === 'admin' ? (
                   <View style={styles.adminBadge}>
                     <Ionicons name="shield" size={14} color={COLORS.text} />
                   </View>
+                ) : (
+                  <TouchableOpacity 
+                    style={styles.deleteUserButton}
+                    onPress={() => handleDeleteUser(user.id, `${user.nome} ${user.cognome}`)}
+                  >
+                    <Ionicons name="trash-outline" size={20} color={COLORS.error} />
+                  </TouchableOpacity>
                 )}
               </View>
             ))}
+            {filteredUsers.length === 0 && userSearchQuery && (
+              <Text style={styles.noResults}>Nessun utente trovato per "{userSearchQuery}"</Text>
+            )}
           </>
         )}
       </ScrollView>
