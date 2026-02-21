@@ -546,9 +546,10 @@ export default function AdminScreen() {
                   key={sub.id}
                   style={[styles.subscriptionCard, sub.scaduto && styles.expiredCard]}
                 >
-                  <Pressable 
+                  <TouchableOpacity 
                     style={styles.subscriptionInfo}
                     onPress={() => openEditModal(sub)}
+                    activeOpacity={0.7}
                   >
                     <Text style={styles.subscriptionUser}>
                       {sub.user_nome} {sub.user_cognome}
@@ -562,26 +563,25 @@ export default function AdminScreen() {
                     <Text style={styles.subscriptionExpiry}>
                       Scadenza: {formatDate(sub.data_scadenza)}
                     </Text>
-                  </Pressable>
+                  </TouchableOpacity>
                   <View style={styles.subscriptionActions}>
-                    <Pressable 
-                      style={({ pressed }) => [
-                        styles.editButton,
-                        pressed && styles.buttonPressed
-                      ]}
+                    <TouchableOpacity 
+                      style={styles.editButton}
                       onPress={() => openEditModal(sub)}
+                      activeOpacity={0.6}
                     >
                       <Ionicons name="pencil" size={18} color={COLORS.primary} />
-                    </Pressable>
-                    <Pressable 
-                      style={({ pressed }) => [
-                        styles.deleteSubButton,
-                        pressed && styles.buttonPressed
-                      ]}
-                      onPress={() => handleDeleteSubscription(sub.id)}
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={styles.deleteSubButton}
+                      onPress={() => {
+                        console.log('Delete subscription clicked:', sub.id);
+                        handleDeleteSubscription(sub.id);
+                      }}
+                      activeOpacity={0.6}
                     >
-                      <Ionicons name="trash-outline" size={18} color={COLORS.error} />
-                    </Pressable>
+                      <Ionicons name="trash-outline" size={20} color={COLORS.error} />
+                    </TouchableOpacity>
                     {sub.scaduto ? (
                       <Ionicons name="close-circle" size={24} color={COLORS.error} />
                     ) : (
