@@ -98,8 +98,10 @@ export const apiService = {
   getMySubscriptions: () => api.get<Subscription[]>('/subscriptions/me'),
   getAllSubscriptions: () => api.get<Subscription[]>('/subscriptions'),
   getExpiredSubscriptions: () => api.get<Subscription[]>('/subscriptions/expired'),
-  createSubscription: (data: { user_id: string; tipo: string; data_inizio?: string }) =>
+  createSubscription: (data: { user_id: string; tipo: string; data_inizio?: string; lezioni_rimanenti?: number }) =>
     api.post<Subscription>('/subscriptions', data),
+  updateSubscription: (id: string, data: { lezioni_rimanenti?: number; data_scadenza?: string; attivo?: boolean }) =>
+    api.put<Subscription>(`/subscriptions/${id}`, data),
   deleteSubscription: (id: string) => api.delete(`/subscriptions/${id}`),
 
   // Bookings
