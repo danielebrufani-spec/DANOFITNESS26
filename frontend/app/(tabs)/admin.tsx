@@ -542,12 +542,14 @@ export default function AdminScreen() {
             {subscriptions.map((sub) => {
               const info = ABBONAMENTO_INFO[sub.tipo] || { nome: sub.tipo };
               return (
-                <TouchableOpacity
+                <View
                   key={sub.id}
                   style={[styles.subscriptionCard, sub.scaduto && styles.expiredCard]}
-                  onPress={() => openEditModal(sub)}
                 >
-                  <View style={styles.subscriptionInfo}>
+                  <Pressable 
+                    style={styles.subscriptionInfo}
+                    onPress={() => openEditModal(sub)}
+                  >
                     <Text style={styles.subscriptionUser}>
                       {sub.user_nome} {sub.user_cognome}
                     </Text>
@@ -560,21 +562,33 @@ export default function AdminScreen() {
                     <Text style={styles.subscriptionExpiry}>
                       Scadenza: {formatDate(sub.data_scadenza)}
                     </Text>
-                  </View>
+                  </Pressable>
                   <View style={styles.subscriptionActions}>
-                    <TouchableOpacity 
-                      style={styles.editButton}
+                    <Pressable 
+                      style={({ pressed }) => [
+                        styles.editButton,
+                        pressed && styles.buttonPressed
+                      ]}
                       onPress={() => openEditModal(sub)}
                     >
                       <Ionicons name="pencil" size={18} color={COLORS.primary} />
-                    </TouchableOpacity>
+                    </Pressable>
+                    <Pressable 
+                      style={({ pressed }) => [
+                        styles.deleteSubButton,
+                        pressed && styles.buttonPressed
+                      ]}
+                      onPress={() => handleDeleteSubscription(sub.id)}
+                    >
+                      <Ionicons name="trash-outline" size={18} color={COLORS.error} />
+                    </Pressable>
                     {sub.scaduto ? (
                       <Ionicons name="close-circle" size={24} color={COLORS.error} />
                     ) : (
                       <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />
                     )}
                   </View>
-                </TouchableOpacity>
+                </View>
               );
             })}
           </>
