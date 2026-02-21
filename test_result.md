@@ -259,11 +259,26 @@ frontend:
     file: "/app/frontend/app/(tabs)/admin.tsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: true
         agent: "main"
         comment: "Daily bookings view, subscription management, end-of-day processing."
+      - working: true
+        agent: "main"
+        comment: "Updated to weekly view - now shows all bookings Mon-Sat at once. Removed manual end-of-day button (now automatic at midnight). Auto-expands today's date."
+
+  - task: "Logo Integration"
+    implemented: true
+    working: true
+    file: "/app/frontend/app/login.tsx, /app/frontend/app/register.tsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Added DanoFitness23 logo to login and register screens. Logo saved at /app/frontend/assets/images/logo.jpg"
 
   - task: "Profile Screen"
     implemented: true
