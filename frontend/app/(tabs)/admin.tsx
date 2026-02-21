@@ -1403,6 +1403,14 @@ const styles = StyleSheet.create({
     marginTop: 12,
     justifyContent: 'flex-end',
   },
+  iconActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  iconBtn: {
+    padding: 8,
+  },
   actionBtn: {
     width: 44,
     height: 44,
