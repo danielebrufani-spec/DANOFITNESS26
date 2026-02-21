@@ -25,6 +25,7 @@ import {
   ABBONAMENTO_INFO,
   GIORNI_DISPLAY,
   formatDate,
+  getTodayDateString,
 } from '../../src/utils/constants';
 
 interface WeeklyLesson {
