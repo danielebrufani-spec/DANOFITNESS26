@@ -1,15 +1,19 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field
-from typing import List
+from pydantic import BaseModel, Field, EmailStr
+from typing import List, Optional
 import uuid
-from datetime import datetime
-
+from datetime import datetime, timedelta
+from passlib.context import CryptContext
+import jwt
+from bson import ObjectId
+from enum import Enum
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -17,40 +21,816 @@ load_dotenv(ROOT_DIR / '.env')
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+db = client[os.environ.get('DB_NAME', 'danofitness')]
 
-# Create the main app without a prefix
-app = FastAPI()
+# JWT Config
+SECRET_KEY = os.environ.get('JWT_SECRET', 'danofitness_secret_key_2025')
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_DAYS = 30
+
+# Password hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+security = HTTPBearer()
+
+# Create the main app
+app = FastAPI(title="DanoFitness23 API")
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
-# Define Models
-class StatusCheck(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+# ======================== ENUMS ========================
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
+class SubscriptionType(str, Enum):
+    LEZIONI_8 = "lezioni_8"
+    LEZIONI_16 = "lezioni_16"
+    MENSILE = "mensile"
+    TRIMESTRALE = "trimestrale"
 
-# Add your routes to the router instead of directly to app
+class ActivityType(str, Enum):
+    CIRCUITO = "circuito"
+    FUNZIONALE = "funzionale"
+    PILATES = "pilates"
+    YOGA = "yoga"
+
+class UserRole(str, Enum):
+    ADMIN = "admin"
+    CLIENT = "client"
+
+# ======================== MODELS ========================
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
+    nome: str
+    cognome: str
+    telefono: Optional[str] = None
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class UserResponse(BaseModel):
+    id: str
+    email: str
+    nome: str
+    cognome: str
+    telefono: Optional[str] = None
+    role: str
+    created_at: datetime
+    push_token: Optional[str] = None
+
+class SubscriptionCreate(BaseModel):
+    user_id: str
+    tipo: SubscriptionType
+    data_inizio: Optional[datetime] = None
+
+class SubscriptionResponse(BaseModel):
+    id: str
+    user_id: str
+    user_nome: Optional[str] = None
+    user_cognome: Optional[str] = None
+    tipo: str
+    lezioni_rimanenti: Optional[int] = None
+    data_inizio: datetime
+    data_scadenza: datetime
+    attivo: bool
+    scaduto: bool
+    created_at: datetime
+
+class LessonResponse(BaseModel):
+    id: str
+    giorno: str
+    orario: str
+    tipo_attivita: str
+    descrizione: Optional[str] = None
+
+class BookingCreate(BaseModel):
+    lesson_id: str
+    data_lezione: str  # Format: YYYY-MM-DD
+
+class BookingResponse(BaseModel):
+    id: str
+    user_id: str
+    user_nome: Optional[str] = None
+    user_cognome: Optional[str] = None
+    lesson_id: str
+    lesson_info: Optional[dict] = None
+    data_lezione: str
+    abbonamento_scaduto: bool
+    confermata: bool
+    lezione_scalata: bool
+    created_at: datetime
+
+class NotificationResponse(BaseModel):
+    id: str
+    user_id: str
+    user_nome: Optional[str] = None
+    user_cognome: Optional[str] = None
+    tipo: str
+    messaggio: str
+    letta: bool
+    created_at: datetime
+
+class PushTokenUpdate(BaseModel):
+    push_token: str
+
+class DailyStats(BaseModel):
+    data: str
+    totale_prenotazioni: int
+    prenotazioni_per_lezione: dict
+    abbonamenti_scaduti: int
+
+# ======================== HELPER FUNCTIONS ========================
+
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+def create_access_token(data: dict) -> str:
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Token non valido")
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        if user is None:
+            raise HTTPException(status_code=401, detail="Utente non trovato")
+        return user
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token scaduto")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Token non valido")
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=str(e))
+
+async def get_admin_user(current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Accesso non autorizzato")
+    return current_user
+
+def calculate_expiry_date(tipo: SubscriptionType, start_date: datetime) -> datetime:
+    if tipo == SubscriptionType.LEZIONI_8 or tipo == SubscriptionType.LEZIONI_16:
+        # Validità annuale per abbonamenti a lezioni
+        return start_date + timedelta(days=365)
+    elif tipo == SubscriptionType.MENSILE:
+        return start_date + timedelta(days=30)
+    elif tipo == SubscriptionType.TRIMESTRALE:
+        return start_date + timedelta(days=90)
+    return start_date
+
+def get_initial_lessons(tipo: SubscriptionType) -> Optional[int]:
+    if tipo == SubscriptionType.LEZIONI_8:
+        return 8
+    elif tipo == SubscriptionType.LEZIONI_16:
+        return 16
+    return None
+
+# ======================== SCHEDULE DATA ========================
+
+SCHEDULE = [
+    {"giorno": "lunedi", "orario": "08:30", "tipo_attivita": ActivityType.CIRCUITO, "descrizione": "Allenamento a stazioni per resistenza, forza e velocità"},
+    {"giorno": "lunedi", "orario": "20:30", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata"},
+    {"giorno": "martedi", "orario": "13:15", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata"},
+    {"giorno": "martedi", "orario": "17:30", "tipo_attivita": ActivityType.CIRCUITO, "descrizione": "Allenamento a stazioni per resistenza, forza e velocità"},
+    {"giorno": "martedi", "orario": "20:15", "tipo_attivita": ActivityType.PILATES, "descrizione": "Per postura, flessibilità e concentrazione"},
+    {"giorno": "mercoledi", "orario": "08:30", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata"},
+    {"giorno": "mercoledi", "orario": "20:30", "tipo_attivita": ActivityType.CIRCUITO, "descrizione": "Allenamento a stazioni per resistenza, forza e velocità"},
+    {"giorno": "giovedi", "orario": "13:15", "tipo_attivita": ActivityType.CIRCUITO, "descrizione": "Allenamento a stazioni per resistenza, forza e velocità"},
+    {"giorno": "giovedi", "orario": "17:30", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata"},
+    {"giorno": "giovedi", "orario": "20:15", "tipo_attivita": ActivityType.PILATES, "descrizione": "Per postura, flessibilità e concentrazione"},
+    {"giorno": "venerdi", "orario": "08:30", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata"},
+    {"giorno": "venerdi", "orario": "20:30", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata"},
+    {"giorno": "sabato", "orario": "13:30", "tipo_attivita": ActivityType.YOGA, "descrizione": "Disciplina che unisce respiro, movimento e meditazione"},
+]
+
+# ======================== AUTH ROUTES ========================
+
+@api_router.post("/auth/register")
+async def register(user_data: UserCreate):
+    # Check if email exists
+    existing_user = await db.users.find_one({"email": user_data.email.lower()})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email già registrata")
+    
+    # Create user
+    user = {
+        "email": user_data.email.lower(),
+        "password": hash_password(user_data.password),
+        "nome": user_data.nome,
+        "cognome": user_data.cognome,
+        "telefono": user_data.telefono,
+        "role": UserRole.CLIENT,
+        "push_token": None,
+        "created_at": datetime.utcnow()
+    }
+    
+    result = await db.users.insert_one(user)
+    user_id = str(result.inserted_id)
+    
+    # Create token
+    token = create_access_token({"sub": user_id})
+    
+    return {
+        "token": token,
+        "user": UserResponse(
+            id=user_id,
+            email=user["email"],
+            nome=user["nome"],
+            cognome=user["cognome"],
+            telefono=user["telefono"],
+            role=user["role"],
+            created_at=user["created_at"],
+            push_token=user["push_token"]
+        )
+    }
+
+@api_router.post("/auth/login")
+async def login(login_data: UserLogin):
+    user = await db.users.find_one({"email": login_data.email.lower()})
+    if not user or not verify_password(login_data.password, user["password"]):
+        raise HTTPException(status_code=401, detail="Credenziali non valide")
+    
+    user_id = str(user["_id"])
+    token = create_access_token({"sub": user_id})
+    
+    return {
+        "token": token,
+        "user": UserResponse(
+            id=user_id,
+            email=user["email"],
+            nome=user["nome"],
+            cognome=user["cognome"],
+            telefono=user.get("telefono"),
+            role=user["role"],
+            created_at=user["created_at"],
+            push_token=user.get("push_token")
+        )
+    }
+
+@api_router.get("/auth/me", response_model=UserResponse)
+async def get_me(current_user: dict = Depends(get_current_user)):
+    return UserResponse(
+        id=str(current_user["_id"]),
+        email=current_user["email"],
+        nome=current_user["nome"],
+        cognome=current_user["cognome"],
+        telefono=current_user.get("telefono"),
+        role=current_user["role"],
+        created_at=current_user["created_at"],
+        push_token=current_user.get("push_token")
+    )
+
+@api_router.put("/auth/push-token")
+async def update_push_token(data: PushTokenUpdate, current_user: dict = Depends(get_current_user)):
+    await db.users.update_one(
+        {"_id": current_user["_id"]},
+        {"$set": {"push_token": data.push_token}}
+    )
+    return {"message": "Token push aggiornato"}
+
+# ======================== LESSONS ROUTES ========================
+
+@api_router.get("/lessons", response_model=List[LessonResponse])
+async def get_lessons(current_user: dict = Depends(get_current_user)):
+    # Initialize lessons if not exists
+    count = await db.lessons.count_documents({})
+    if count == 0:
+        lessons_to_insert = []
+        for lesson in SCHEDULE:
+            lessons_to_insert.append({
+                "giorno": lesson["giorno"],
+                "orario": lesson["orario"],
+                "tipo_attivita": lesson["tipo_attivita"].value if hasattr(lesson["tipo_attivita"], 'value') else lesson["tipo_attivita"],
+                "descrizione": lesson["descrizione"]
+            })
+        await db.lessons.insert_many(lessons_to_insert)
+    
+    lessons = await db.lessons.find().to_list(100)
+    return [
+        LessonResponse(
+            id=str(lesson["_id"]),
+            giorno=lesson["giorno"],
+            orario=lesson["orario"],
+            tipo_attivita=lesson["tipo_attivita"],
+            descrizione=lesson.get("descrizione")
+        ) for lesson in lessons
+    ]
+
+@api_router.get("/lessons/day/{giorno}", response_model=List[LessonResponse])
+async def get_lessons_by_day(giorno: str, current_user: dict = Depends(get_current_user)):
+    lessons = await db.lessons.find({"giorno": giorno.lower()}).to_list(100)
+    return [
+        LessonResponse(
+            id=str(lesson["_id"]),
+            giorno=lesson["giorno"],
+            orario=lesson["orario"],
+            tipo_attivita=lesson["tipo_attivita"],
+            descrizione=lesson.get("descrizione")
+        ) for lesson in lessons
+    ]
+
+# ======================== SUBSCRIPTIONS ROUTES ========================
+
+@api_router.post("/subscriptions", response_model=SubscriptionResponse)
+async def create_subscription(data: SubscriptionCreate, admin_user: dict = Depends(get_admin_user)):
+    # Verify user exists
+    try:
+        user = await db.users.find_one({"_id": ObjectId(data.user_id)})
+    except:
+        raise HTTPException(status_code=404, detail="Utente non trovato")
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="Utente non trovato")
+    
+    start_date = data.data_inizio or datetime.utcnow()
+    expiry_date = calculate_expiry_date(data.tipo, start_date)
+    initial_lessons = get_initial_lessons(data.tipo)
+    
+    subscription = {
+        "user_id": data.user_id,
+        "tipo": data.tipo.value,
+        "lezioni_rimanenti": initial_lessons,
+        "data_inizio": start_date,
+        "data_scadenza": expiry_date,
+        "attivo": True,
+        "created_at": datetime.utcnow()
+    }
+    
+    result = await db.subscriptions.insert_one(subscription)
+    
+    is_expired = expiry_date < datetime.utcnow()
+    
+    return SubscriptionResponse(
+        id=str(result.inserted_id),
+        user_id=data.user_id,
+        user_nome=user["nome"],
+        user_cognome=user["cognome"],
+        tipo=subscription["tipo"],
+        lezioni_rimanenti=subscription["lezioni_rimanenti"],
+        data_inizio=subscription["data_inizio"],
+        data_scadenza=subscription["data_scadenza"],
+        attivo=subscription["attivo"],
+        scaduto=is_expired,
+        created_at=subscription["created_at"]
+    )
+
+@api_router.get("/subscriptions/me", response_model=List[SubscriptionResponse])
+async def get_my_subscriptions(current_user: dict = Depends(get_current_user)):
+    user_id = str(current_user["_id"])
+    subscriptions = await db.subscriptions.find({"user_id": user_id}).to_list(100)
+    
+    result = []
+    for sub in subscriptions:
+        is_expired = sub["data_scadenza"] < datetime.utcnow()
+        # Also check if lezioni_rimanenti is 0 for lesson-based subscriptions
+        if sub["lezioni_rimanenti"] is not None and sub["lezioni_rimanenti"] <= 0:
+            is_expired = True
+        
+        result.append(SubscriptionResponse(
+            id=str(sub["_id"]),
+            user_id=sub["user_id"],
+            user_nome=current_user["nome"],
+            user_cognome=current_user["cognome"],
+            tipo=sub["tipo"],
+            lezioni_rimanenti=sub["lezioni_rimanenti"],
+            data_inizio=sub["data_inizio"],
+            data_scadenza=sub["data_scadenza"],
+            attivo=sub["attivo"],
+            scaduto=is_expired,
+            created_at=sub["created_at"]
+        ))
+    
+    return result
+
+@api_router.get("/subscriptions", response_model=List[SubscriptionResponse])
+async def get_all_subscriptions(admin_user: dict = Depends(get_admin_user)):
+    subscriptions = await db.subscriptions.find().to_list(1000)
+    
+    result = []
+    for sub in subscriptions:
+        try:
+            user = await db.users.find_one({"_id": ObjectId(sub["user_id"])})
+        except:
+            user = None
+        
+        is_expired = sub["data_scadenza"] < datetime.utcnow()
+        if sub["lezioni_rimanenti"] is not None and sub["lezioni_rimanenti"] <= 0:
+            is_expired = True
+        
+        result.append(SubscriptionResponse(
+            id=str(sub["_id"]),
+            user_id=sub["user_id"],
+            user_nome=user["nome"] if user else "Sconosciuto",
+            user_cognome=user["cognome"] if user else "",
+            tipo=sub["tipo"],
+            lezioni_rimanenti=sub["lezioni_rimanenti"],
+            data_inizio=sub["data_inizio"],
+            data_scadenza=sub["data_scadenza"],
+            attivo=sub["attivo"],
+            scaduto=is_expired,
+            created_at=sub["created_at"]
+        ))
+    
+    return result
+
+@api_router.get("/subscriptions/expired", response_model=List[SubscriptionResponse])
+async def get_expired_subscriptions(admin_user: dict = Depends(get_admin_user)):
+    now = datetime.utcnow()
+    
+    # Get all subscriptions and filter expired ones
+    all_subs = await db.subscriptions.find({"attivo": True}).to_list(1000)
+    
+    result = []
+    for sub in all_subs:
+        is_expired = sub["data_scadenza"] < now
+        if sub["lezioni_rimanenti"] is not None and sub["lezioni_rimanenti"] <= 0:
+            is_expired = True
+        
+        if is_expired:
+            try:
+                user = await db.users.find_one({"_id": ObjectId(sub["user_id"])})
+            except:
+                user = None
+            
+            result.append(SubscriptionResponse(
+                id=str(sub["_id"]),
+                user_id=sub["user_id"],
+                user_nome=user["nome"] if user else "Sconosciuto",
+                user_cognome=user["cognome"] if user else "",
+                tipo=sub["tipo"],
+                lezioni_rimanenti=sub["lezioni_rimanenti"],
+                data_inizio=sub["data_inizio"],
+                data_scadenza=sub["data_scadenza"],
+                attivo=sub["attivo"],
+                scaduto=True,
+                created_at=sub["created_at"]
+            ))
+    
+    return result
+
+@api_router.delete("/subscriptions/{subscription_id}")
+async def delete_subscription(subscription_id: str, admin_user: dict = Depends(get_admin_user)):
+    try:
+        result = await db.subscriptions.delete_one({"_id": ObjectId(subscription_id)})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Abbonamento non trovato")
+        return {"message": "Abbonamento eliminato"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+# ======================== BOOKINGS ROUTES ========================
+
+@api_router.post("/bookings", response_model=BookingResponse)
+async def create_booking(data: BookingCreate, current_user: dict = Depends(get_current_user)):
+    user_id = str(current_user["_id"])
+    
+    # Verify lesson exists
+    try:
+        lesson = await db.lessons.find_one({"_id": ObjectId(data.lesson_id)})
+    except:
+        raise HTTPException(status_code=404, detail="Lezione non trovata")
+    
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Lezione non trovata")
+    
+    # Check if already booked
+    existing_booking = await db.bookings.find_one({
+        "user_id": user_id,
+        "lesson_id": data.lesson_id,
+        "data_lezione": data.data_lezione
+    })
+    
+    if existing_booking:
+        raise HTTPException(status_code=400, detail="Hai già prenotato questa lezione")
+    
+    # Check subscription status
+    now = datetime.utcnow()
+    subscriptions = await db.subscriptions.find({
+        "user_id": user_id,
+        "attivo": True
+    }).to_list(100)
+    
+    abbonamento_scaduto = True
+    for sub in subscriptions:
+        is_expired = sub["data_scadenza"] < now
+        if sub["lezioni_rimanenti"] is not None and sub["lezioni_rimanenti"] <= 0:
+            is_expired = True
+        if not is_expired:
+            abbonamento_scaduto = False
+            break
+    
+    booking = {
+        "user_id": user_id,
+        "lesson_id": data.lesson_id,
+        "data_lezione": data.data_lezione,
+        "abbonamento_scaduto": abbonamento_scaduto,
+        "confermata": True,
+        "lezione_scalata": False,
+        "created_at": datetime.utcnow()
+    }
+    
+    result = await db.bookings.insert_one(booking)
+    
+    return BookingResponse(
+        id=str(result.inserted_id),
+        user_id=user_id,
+        user_nome=current_user["nome"],
+        user_cognome=current_user["cognome"],
+        lesson_id=data.lesson_id,
+        lesson_info={
+            "giorno": lesson["giorno"],
+            "orario": lesson["orario"],
+            "tipo_attivita": lesson["tipo_attivita"]
+        },
+        data_lezione=data.data_lezione,
+        abbonamento_scaduto=abbonamento_scaduto,
+        confermata=True,
+        lezione_scalata=False,
+        created_at=booking["created_at"]
+    )
+
+@api_router.get("/bookings/me", response_model=List[BookingResponse])
+async def get_my_bookings(current_user: dict = Depends(get_current_user)):
+    user_id = str(current_user["_id"])
+    bookings = await db.bookings.find({"user_id": user_id}).sort("data_lezione", -1).to_list(100)
+    
+    result = []
+    for booking in bookings:
+        try:
+            lesson = await db.lessons.find_one({"_id": ObjectId(booking["lesson_id"])})
+        except:
+            lesson = None
+        
+        result.append(BookingResponse(
+            id=str(booking["_id"]),
+            user_id=booking["user_id"],
+            user_nome=current_user["nome"],
+            user_cognome=current_user["cognome"],
+            lesson_id=booking["lesson_id"],
+            lesson_info={
+                "giorno": lesson["giorno"] if lesson else "",
+                "orario": lesson["orario"] if lesson else "",
+                "tipo_attivita": lesson["tipo_attivita"] if lesson else ""
+            } if lesson else None,
+            data_lezione=booking["data_lezione"],
+            abbonamento_scaduto=booking.get("abbonamento_scaduto", False),
+            confermata=booking.get("confermata", True),
+            lezione_scalata=booking.get("lezione_scalata", False),
+            created_at=booking["created_at"]
+        ))
+    
+    return result
+
+@api_router.delete("/bookings/{booking_id}")
+async def cancel_booking(booking_id: str, current_user: dict = Depends(get_current_user)):
+    user_id = str(current_user["_id"])
+    
+    try:
+        booking = await db.bookings.find_one({"_id": ObjectId(booking_id)})
+    except:
+        raise HTTPException(status_code=404, detail="Prenotazione non trovata")
+    
+    if not booking:
+        raise HTTPException(status_code=404, detail="Prenotazione non trovata")
+    
+    # Allow admin to delete any booking
+    if current_user.get("role") != UserRole.ADMIN and booking["user_id"] != user_id:
+        raise HTTPException(status_code=403, detail="Non autorizzato")
+    
+    await db.bookings.delete_one({"_id": ObjectId(booking_id)})
+    return {"message": "Prenotazione cancellata"}
+
+@api_router.get("/bookings/day/{date}", response_model=List[BookingResponse])
+async def get_bookings_by_date(date: str, admin_user: dict = Depends(get_admin_user)):
+    bookings = await db.bookings.find({"data_lezione": date}).to_list(1000)
+    
+    result = []
+    for booking in bookings:
+        try:
+            user = await db.users.find_one({"_id": ObjectId(booking["user_id"])})
+            lesson = await db.lessons.find_one({"_id": ObjectId(booking["lesson_id"])})
+        except:
+            user = None
+            lesson = None
+        
+        result.append(BookingResponse(
+            id=str(booking["_id"]),
+            user_id=booking["user_id"],
+            user_nome=user["nome"] if user else "Sconosciuto",
+            user_cognome=user["cognome"] if user else "",
+            lesson_id=booking["lesson_id"],
+            lesson_info={
+                "giorno": lesson["giorno"] if lesson else "",
+                "orario": lesson["orario"] if lesson else "",
+                "tipo_attivita": lesson["tipo_attivita"] if lesson else ""
+            } if lesson else None,
+            data_lezione=booking["data_lezione"],
+            abbonamento_scaduto=booking.get("abbonamento_scaduto", False),
+            confermata=booking.get("confermata", True),
+            lezione_scalata=booking.get("lezione_scalata", False),
+            created_at=booking["created_at"]
+        ))
+    
+    return result
+
+# ======================== ADMIN ROUTES ========================
+
+@api_router.get("/admin/users", response_model=List[UserResponse])
+async def get_all_users(admin_user: dict = Depends(get_admin_user)):
+    users = await db.users.find().to_list(1000)
+    return [
+        UserResponse(
+            id=str(user["_id"]),
+            email=user["email"],
+            nome=user["nome"],
+            cognome=user["cognome"],
+            telefono=user.get("telefono"),
+            role=user["role"],
+            created_at=user["created_at"],
+            push_token=user.get("push_token")
+        ) for user in users
+    ]
+
+@api_router.get("/admin/daily-stats/{date}", response_model=DailyStats)
+async def get_daily_stats(date: str, admin_user: dict = Depends(get_admin_user)):
+    bookings = await db.bookings.find({"data_lezione": date}).to_list(1000)
+    
+    prenotazioni_per_lezione = {}
+    for booking in bookings:
+        try:
+            lesson = await db.lessons.find_one({"_id": ObjectId(booking["lesson_id"])})
+            if lesson:
+                key = f"{lesson['orario']} - {lesson['tipo_attivita']}"
+                if key not in prenotazioni_per_lezione:
+                    prenotazioni_per_lezione[key] = 0
+                prenotazioni_per_lezione[key] += 1
+        except:
+            pass
+    
+    # Count expired subscriptions
+    now = datetime.utcnow()
+    all_subs = await db.subscriptions.find({"attivo": True}).to_list(1000)
+    abbonamenti_scaduti = 0
+    for sub in all_subs:
+        is_expired = sub["data_scadenza"] < now
+        if sub["lezioni_rimanenti"] is not None and sub["lezioni_rimanenti"] <= 0:
+            is_expired = True
+        if is_expired:
+            abbonamenti_scaduti += 1
+    
+    return DailyStats(
+        data=date,
+        totale_prenotazioni=len(bookings),
+        prenotazioni_per_lezione=prenotazioni_per_lezione,
+        abbonamenti_scaduti=abbonamenti_scaduti
+    )
+
+@api_router.post("/admin/process-day/{date}")
+async def process_end_of_day(date: str, admin_user: dict = Depends(get_admin_user)):
+    """Process end of day: deduct lessons from per-lesson subscriptions"""
+    bookings = await db.bookings.find({
+        "data_lezione": date,
+        "lezione_scalata": False,
+        "confermata": True
+    }).to_list(1000)
+    
+    processed = 0
+    for booking in bookings:
+        user_id = booking["user_id"]
+        
+        # Find active per-lesson subscription
+        sub = await db.subscriptions.find_one({
+            "user_id": user_id,
+            "attivo": True,
+            "tipo": {"$in": ["lezioni_8", "lezioni_16"]},
+            "lezioni_rimanenti": {"$gt": 0}
+        })
+        
+        if sub:
+            # Deduct lesson
+            await db.subscriptions.update_one(
+                {"_id": sub["_id"]},
+                {"$inc": {"lezioni_rimanenti": -1}}
+            )
+            
+            # Mark booking as processed
+            await db.bookings.update_one(
+                {"_id": booking["_id"]},
+                {"$set": {"lezione_scalata": True}}
+            )
+            
+            processed += 1
+            
+            # Check if subscription is now empty
+            updated_sub = await db.subscriptions.find_one({"_id": sub["_id"]})
+            if updated_sub["lezioni_rimanenti"] <= 0:
+                # Create notification for expired subscription
+                notification = {
+                    "user_id": user_id,
+                    "tipo": "abbonamento_esaurito",
+                    "messaggio": f"Il tuo abbonamento {sub['tipo']} è esaurito. Rinnova per continuare a prenotare.",
+                    "letta": False,
+                    "created_at": datetime.utcnow()
+                }
+                await db.notifications.insert_one(notification)
+    
+    return {"message": f"Elaborate {processed} prenotazioni", "processed": processed}
+
+@api_router.get("/admin/notifications", response_model=List[NotificationResponse])
+async def get_all_notifications(admin_user: dict = Depends(get_admin_user)):
+    notifications = await db.notifications.find().sort("created_at", -1).to_list(100)
+    
+    result = []
+    for notif in notifications:
+        try:
+            user = await db.users.find_one({"_id": ObjectId(notif["user_id"])})
+        except:
+            user = None
+        
+        result.append(NotificationResponse(
+            id=str(notif["_id"]),
+            user_id=notif["user_id"],
+            user_nome=user["nome"] if user else "Sconosciuto",
+            user_cognome=user["cognome"] if user else "",
+            tipo=notif["tipo"],
+            messaggio=notif["messaggio"],
+            letta=notif.get("letta", False),
+            created_at=notif["created_at"]
+        ))
+    
+    return result
+
+@api_router.get("/notifications/me", response_model=List[NotificationResponse])
+async def get_my_notifications(current_user: dict = Depends(get_current_user)):
+    user_id = str(current_user["_id"])
+    notifications = await db.notifications.find({"user_id": user_id}).sort("created_at", -1).to_list(100)
+    
+    return [
+        NotificationResponse(
+            id=str(notif["_id"]),
+            user_id=notif["user_id"],
+            user_nome=current_user["nome"],
+            user_cognome=current_user["cognome"],
+            tipo=notif["tipo"],
+            messaggio=notif["messaggio"],
+            letta=notif.get("letta", False),
+            created_at=notif["created_at"]
+        ) for notif in notifications
+    ]
+
+@api_router.put("/notifications/{notification_id}/read")
+async def mark_notification_read(notification_id: str, current_user: dict = Depends(get_current_user)):
+    try:
+        await db.notifications.update_one(
+            {"_id": ObjectId(notification_id)},
+            {"$set": {"letta": True}}
+        )
+        return {"message": "Notifica segnata come letta"}
+    except:
+        raise HTTPException(status_code=404, detail="Notifica non trovata")
+
+# ======================== INIT ADMIN ========================
+
+@api_router.post("/init/admin")
+async def init_admin():
+    """Initialize admin user if not exists"""
+    admin = await db.users.find_one({"email": "admin@danofitness.it"})
+    if admin:
+        return {"message": "Admin già esistente", "admin_id": str(admin["_id"])}
+    
+    admin_user = {
+        "email": "admin@danofitness.it",
+        "password": hash_password("DanoFitness2025!"),
+        "nome": "Daniele",
+        "cognome": "Admin",
+        "telefono": "339 50 20 625",
+        "role": UserRole.ADMIN,
+        "push_token": None,
+        "created_at": datetime.utcnow()
+    }
+    
+    result = await db.users.insert_one(admin_user)
+    return {"message": "Admin creato", "admin_id": str(result.inserted_id)}
+
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
-
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.dict()
-    status_obj = StatusCheck(**status_dict)
-    _ = await db.status_checks.insert_one(status_obj.dict())
-    return status_obj
-
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    status_checks = await db.status_checks.find().to_list(1000)
-    return [StatusCheck(**status_check) for status_check in status_checks]
+    return {"message": "DanoFitness23 API", "version": "1.0.0"}
 
 # Include the router in the main app
 app.include_router(api_router)
@@ -62,13 +842,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
