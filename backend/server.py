@@ -1071,6 +1071,10 @@ async def init_admin():
 async def root():
     return {"message": "DanoFitness23 API", "version": "1.0.0"}
 
+@api_router.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "DanoFitness23 API"}
+
 # Include the router in the main app
 app.include_router(api_router)
 
