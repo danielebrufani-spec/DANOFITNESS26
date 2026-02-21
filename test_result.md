@@ -313,12 +313,11 @@ frontend:
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 2
+  test_sequence: 3
   run_ui: false
 
 test_plan:
-  current_focus:
-    - "Backend API testing"
+  current_focus: []
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -330,3 +329,5 @@ agent_communication:
     message: "Comprehensive backend API testing completed. All 18 endpoints tested successfully including full auth flow, CRUD operations, admin functions, and subscription management. Backend is fully functional."
   - agent: "main"
     message: "Implemented weekly admin view and automatic midnight processing. Added DanoFitness23 logo to login/register screens. Backend scheduler is configured with APScheduler. Weekly bookings endpoint tested via curl - working correctly. Need to test frontend UI."
+  - agent: "testing"
+    message: "Review request testing completed successfully. All 3 specific requirements verified: 1) Weekly Bookings Endpoint - Admin login successful, returns correct structure with all required fields (settimana_inizio/fine, giorni array with 6 days Mon-Sat, proper lesson data). 2) Health Endpoint - Returns correct JSON with status: 'healthy' and service: 'DanoFitness23 API'. 3) Scheduler Verification - Backend logs confirm '[SCHEDULER] Started automatic midnight processing scheduler'. All backend APIs working correctly."
