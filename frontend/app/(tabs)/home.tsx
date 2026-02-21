@@ -100,9 +100,11 @@ export default function HomeScreen() {
             <Text style={styles.greeting}>Ciao,</Text>
             <Text style={styles.userName}>{user?.nome} {user?.cognome}</Text>
           </View>
-          <View style={styles.logoContainer}>
-            <Text style={styles.logo}>DF23</Text>
-          </View>
+          <Image 
+            source={require('../../assets/images/logo.jpg')} 
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
         </View>
 
         {/* Subscription Status */}
