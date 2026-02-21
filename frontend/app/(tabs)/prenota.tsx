@@ -163,16 +163,36 @@ export default function PrenotaScreen() {
     return booking?.id;
   };
 
-  // Book a lesson
+  // Book a lesson - Date is calculated automatically from lesson day
   const handleBook = async (lessonId: string) => {
-    if (!selectedDate) return;
-    
     if (!bookingStatus.open) {
       Alert.alert('Prenotazioni Chiuse', bookingStatus.message || 'Le prenotazioni non sono attive');
       return;
     }
     
-    const dateString = getDateString(selectedDate);
+    // Find the lesson to get its day
+    const lesson = lessons.find(l => l.id === lessonId);
+    if (!lesson) {
+      Alert.alert('Errore', 'Lezione non trovata');
+      return;
+    }
+    
+    // Calculate the correct date for this lesson based on its day
+    const lessonDay = lesson.giorno;
+    const dayIndex = GIORNI.indexOf(lessonDay);
+    
+    // Find the date in weekDates that matches this day
+    const correctDate = weekDates.find(date => {
+      const dateDay = date.getDay(); // JS: 0=Sun, 1=Mon, etc
+      return dateDay === dayIndex;
+    });
+    
+    if (!correctDate) {
+      Alert.alert('Errore', 'Data non disponibile per questa lezione');
+      return;
+    }
+    
+    const dateString = getDateString(correctDate);
     
     if (isDatePassed(dateString)) {
       Alert.alert('Errore', 'Non puoi prenotare per una data passata');
