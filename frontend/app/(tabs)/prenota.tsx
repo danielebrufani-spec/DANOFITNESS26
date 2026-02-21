@@ -24,25 +24,28 @@ import {
 } from '../../src/utils/constants';
 
 // Get current booking week (Monday to Saturday)
+// Bookings for next week open on Saturday at 7:00 AM
 const getBookingWeek = () => {
   const now = new Date();
   const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
   const currentHour = now.getHours();
   
-  // Find this week's Monday
   let monday = new Date(now);
   
-  if (currentDay === 0) {
-    // It's Sunday - no bookings available, show message
-    // Next week starts tomorrow (Monday)
+  if (currentDay === 6 && currentHour >= 7) {
+    // It's Saturday after 7:00 AM - show NEXT week
+    // Next Monday is in 2 days
+    monday.setDate(now.getDate() + 2);
+  } else if (currentDay === 0) {
+    // It's Sunday - show NEXT week (bookings opened yesterday at 7)
+    // Next Monday is tomorrow
     monday.setDate(now.getDate() + 1);
-  } else if (currentDay === 1 && currentHour < 7) {
-    // It's Monday before 7:00 AM - bookings not yet open
-    // Show previous week? Or just wait message
-    // For now, we'll still show current week but with a message
-    monday.setDate(now.getDate());
+  } else if (currentDay === 6 && currentHour < 7) {
+    // It's Saturday before 7:00 AM - still show CURRENT week
+    // This week's Monday was 5 days ago
+    monday.setDate(now.getDate() - 5);
   } else {
-    // Normal case: find this week's Monday
+    // Mon-Fri: show CURRENT week
     const daysFromMonday = currentDay - 1;
     monday.setDate(now.getDate() - daysFromMonday);
   }
@@ -66,16 +69,12 @@ const areBookingsOpen = () => {
   const currentDay = now.getDay();
   const currentHour = now.getHours();
   
-  // Sunday - bookings closed
-  if (currentDay === 0) {
-    return { open: false, message: 'Le prenotazioni riaprono Lunedì alle 7:00' };
+  // Saturday before 7:00 AM - bookings for next week not yet open
+  if (currentDay === 6 && currentHour < 7) {
+    return { open: true, message: 'Prenotazioni settimana prossima alle 7:00' };
   }
   
-  // Monday before 7:00 AM - not yet open
-  if (currentDay === 1 && currentHour < 7) {
-    return { open: false, message: 'Le prenotazioni aprono alle 7:00' };
-  }
-  
+  // Bookings always open (Saturday 7AM onwards, Sunday, Mon-Fri)
   return { open: true, message: null };
 };
 
