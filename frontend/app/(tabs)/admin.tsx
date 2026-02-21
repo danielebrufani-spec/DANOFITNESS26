@@ -10,6 +10,7 @@ import {
   Alert,
   Modal,
   TextInput,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -41,10 +42,19 @@ export default function AdminScreen() {
   const [expiredSubscriptions, setExpiredSubscriptions] = useState<Subscription[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   
+  // Add subscription modal
   const [showAddSubscription, setShowAddSubscription] = useState(false);
   const [selectedUser, setSelectedUser] = useState<string>('');
   const [selectedType, setSelectedType] = useState<string>('lezioni_8');
+  const [customLessons, setCustomLessons] = useState<string>('');
   const [addingSubscription, setAddingSubscription] = useState(false);
+
+  // Edit subscription modal
+  const [showEditSubscription, setShowEditSubscription] = useState(false);
+  const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
+  const [editLessons, setEditLessons] = useState<string>('');
+  const [editExpiry, setEditExpiry] = useState<string>('');
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const [selectedDate, setSelectedDate] = useState(new Date());
 
@@ -114,12 +124,20 @@ export default function AdminScreen() {
     
     setAddingSubscription(true);
     try {
-      await apiService.createSubscription({
+      const data: any = {
         user_id: selectedUser,
         tipo: selectedType,
-      });
+      };
+      
+      // If custom lessons specified, use it
+      if (customLessons && (selectedType === 'lezioni_8' || selectedType === 'lezioni_16')) {
+        data.lezioni_rimanenti = parseInt(customLessons);
+      }
+      
+      await apiService.createSubscription(data);
       setShowAddSubscription(false);
       setSelectedUser('');
+      setCustomLessons('');
       Alert.alert('Successo', 'Abbonamento creato');
       await loadData();
     } catch (error: any) {
@@ -127,6 +145,76 @@ export default function AdminScreen() {
     } finally {
       setAddingSubscription(false);
     }
+  };
+
+  const openEditModal = (subscription: Subscription) => {
+    setEditingSubscription(subscription);
+    setEditLessons(subscription.lezioni_rimanenti?.toString() || '');
+    // Format date for input (YYYY-MM-DD)
+    const expiryDate = new Date(subscription.data_scadenza);
+    setEditExpiry(expiryDate.toISOString().split('T')[0]);
+    setShowEditSubscription(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingSubscription) return;
+    
+    setSavingEdit(true);
+    try {
+      const updateData: any = {};
+      
+      // Update lessons if changed and subscription has lessons
+      if (editLessons && editingSubscription.lezioni_rimanenti !== null) {
+        const newLessons = parseInt(editLessons);
+        if (!isNaN(newLessons) && newLessons >= 0) {
+          updateData.lezioni_rimanenti = newLessons;
+        }
+      }
+      
+      // Update expiry if changed
+      if (editExpiry) {
+        updateData.data_scadenza = new Date(editExpiry).toISOString();
+      }
+      
+      if (Object.keys(updateData).length === 0) {
+        Alert.alert('Errore', 'Nessuna modifica da salvare');
+        setSavingEdit(false);
+        return;
+      }
+      
+      await apiService.updateSubscription(editingSubscription.id, updateData);
+      setShowEditSubscription(false);
+      setEditingSubscription(null);
+      Alert.alert('Successo', 'Abbonamento aggiornato');
+      await loadData();
+    } catch (error: any) {
+      Alert.alert('Errore', error.response?.data?.detail || 'Errore durante l\'aggiornamento');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleDeleteSubscription = async (subscriptionId: string) => {
+    Alert.alert(
+      'Elimina Abbonamento',
+      'Sei sicuro di voler eliminare questo abbonamento?',
+      [
+        { text: 'Annulla', style: 'cancel' },
+        {
+          text: 'Elimina',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await apiService.deleteSubscription(subscriptionId);
+              await loadData();
+              Alert.alert('Successo', 'Abbonamento eliminato');
+            } catch (error) {
+              Alert.alert('Errore', 'Impossibile eliminare');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleDeleteBooking = async (bookingId: string) => {
@@ -322,7 +410,11 @@ export default function AdminScreen() {
                 {expiredSubscriptions.map((sub) => {
                   const info = ABBONAMENTO_INFO[sub.tipo] || { nome: sub.tipo };
                   return (
-                    <View key={sub.id} style={[styles.subscriptionCard, styles.expiredCard]}>
+                    <TouchableOpacity 
+                      key={sub.id} 
+                      style={[styles.subscriptionCard, styles.expiredCard]}
+                      onPress={() => openEditModal(sub)}
+                    >
                       <View style={styles.subscriptionInfo}>
                         <Text style={styles.subscriptionUser}>
                           {sub.user_nome} {sub.user_cognome}
@@ -337,8 +429,16 @@ export default function AdminScreen() {
                           Scaduto: {formatDate(sub.data_scadenza)}
                         </Text>
                       </View>
-                      <Ionicons name="alert-circle" size={24} color={COLORS.error} />
-                    </View>
+                      <View style={styles.subscriptionActions}>
+                        <TouchableOpacity 
+                          style={styles.editButton}
+                          onPress={() => openEditModal(sub)}
+                        >
+                          <Ionicons name="pencil" size={18} color={COLORS.primary} />
+                        </TouchableOpacity>
+                        <Ionicons name="alert-circle" size={24} color={COLORS.error} />
+                      </View>
+                    </TouchableOpacity>
                   );
                 })}
               </>
@@ -350,9 +450,10 @@ export default function AdminScreen() {
             {subscriptions.map((sub) => {
               const info = ABBONAMENTO_INFO[sub.tipo] || { nome: sub.tipo };
               return (
-                <View
+                <TouchableOpacity
                   key={sub.id}
                   style={[styles.subscriptionCard, sub.scaduto && styles.expiredCard]}
+                  onPress={() => openEditModal(sub)}
                 >
                   <View style={styles.subscriptionInfo}>
                     <Text style={styles.subscriptionUser}>
@@ -368,12 +469,20 @@ export default function AdminScreen() {
                       Scadenza: {formatDate(sub.data_scadenza)}
                     </Text>
                   </View>
-                  {sub.scaduto ? (
-                    <Ionicons name="close-circle" size={24} color={COLORS.error} />
-                  ) : (
-                    <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />
-                  )}
-                </View>
+                  <View style={styles.subscriptionActions}>
+                    <TouchableOpacity 
+                      style={styles.editButton}
+                      onPress={() => openEditModal(sub)}
+                    >
+                      <Ionicons name="pencil" size={18} color={COLORS.primary} />
+                    </TouchableOpacity>
+                    {sub.scaduto ? (
+                      <Ionicons name="close-circle" size={24} color={COLORS.error} />
+                    ) : (
+                      <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />
+                    )}
+                  </View>
+                </TouchableOpacity>
               );
             })}
           </>
@@ -471,6 +580,25 @@ export default function AdminScreen() {
               ))}
             </View>
 
+            {(selectedType === 'lezioni_8' || selectedType === 'lezioni_16') && (
+              <>
+                <Text style={styles.modalLabel}>Lezioni Rimanenti (opzionale)</Text>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder={`Default: ${selectedType === 'lezioni_8' ? '8' : '16'}`}
+                    placeholderTextColor={COLORS.textSecondary}
+                    value={customLessons}
+                    onChangeText={setCustomLessons}
+                    keyboardType="number-pad"
+                  />
+                </View>
+                <Text style={styles.inputHint}>
+                  Lascia vuoto per usare il valore predefinito
+                </Text>
+              </>
+            )}
+
             <TouchableOpacity
               style={[styles.modalButton, addingSubscription && styles.modalButtonDisabled]}
               onPress={handleAddSubscription}
@@ -482,6 +610,108 @@ export default function AdminScreen() {
                 <Text style={styles.modalButtonText}>Crea Abbonamento</Text>
               )}
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Edit Subscription Modal */}
+      <Modal
+        visible={showEditSubscription}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowEditSubscription(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Modifica Abbonamento</Text>
+              <TouchableOpacity onPress={() => setShowEditSubscription(false)}>
+                <Ionicons name="close" size={24} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
+
+            {editingSubscription && (
+              <>
+                <View style={styles.editUserInfo}>
+                  <Text style={styles.editUserName}>
+                    {editingSubscription.user_nome} {editingSubscription.user_cognome}
+                  </Text>
+                  <Text style={styles.editSubscriptionType}>
+                    {ABBONAMENTO_INFO[editingSubscription.tipo]?.nome || editingSubscription.tipo}
+                  </Text>
+                </View>
+
+                {editingSubscription.lezioni_rimanenti !== null && (
+                  <>
+                    <Text style={styles.modalLabel}>Lezioni Rimanenti</Text>
+                    <View style={styles.inputContainer}>
+                      <TextInput
+                        style={styles.modalInput}
+                        placeholder="Numero lezioni"
+                        placeholderTextColor={COLORS.textSecondary}
+                        value={editLessons}
+                        onChangeText={setEditLessons}
+                        keyboardType="number-pad"
+                      />
+                    </View>
+                    <View style={styles.quickButtons}>
+                      <TouchableOpacity 
+                        style={styles.quickButton}
+                        onPress={() => setEditLessons(Math.max(0, parseInt(editLessons || '0') - 1).toString())}
+                      >
+                        <Ionicons name="remove" size={20} color={COLORS.text} />
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={styles.quickButton}
+                        onPress={() => setEditLessons((parseInt(editLessons || '0') + 1).toString())}
+                      >
+                        <Ionicons name="add" size={20} color={COLORS.text} />
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                )}
+
+                <Text style={styles.modalLabel}>Data Scadenza</Text>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor={COLORS.textSecondary}
+                    value={editExpiry}
+                    onChangeText={setEditExpiry}
+                  />
+                </View>
+                <Text style={styles.inputHint}>Formato: AAAA-MM-GG (es. 2025-12-31)</Text>
+
+                <View style={styles.modalActions}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.deleteButton]}
+                    onPress={() => {
+                      setShowEditSubscription(false);
+                      handleDeleteSubscription(editingSubscription.id);
+                    }}
+                  >
+                    <Ionicons name="trash-outline" size={20} color={COLORS.text} />
+                    <Text style={styles.modalButtonText}>Elimina</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.saveButton, savingEdit && styles.modalButtonDisabled]}
+                    onPress={handleSaveEdit}
+                    disabled={savingEdit}
+                  >
+                    {savingEdit ? (
+                      <ActivityIndicator color={COLORS.text} />
+                    ) : (
+                      <>
+                        <Ionicons name="checkmark" size={20} color={COLORS.text} />
+                        <Text style={styles.modalButtonText}>Salva</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
           </View>
         </View>
       </Modal>
@@ -729,6 +959,16 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: 2,
   },
+  subscriptionActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  editButton: {
+    padding: 8,
+    backgroundColor: COLORS.cardLight,
+    borderRadius: 8,
+  },
   userCard: {
     backgroundColor: COLORS.card,
     borderRadius: 12,
@@ -787,7 +1027,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
-    maxHeight: '80%',
+    maxHeight: '85%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -805,9 +1045,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.textSecondary,
     marginBottom: 12,
+    marginTop: 8,
   },
   userList: {
-    marginBottom: 24,
+    marginBottom: 16,
   },
   userOption: {
     paddingHorizontal: 16,
@@ -831,7 +1072,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
-    marginBottom: 24,
+    marginBottom: 16,
   },
   typeOption: {
     width: '48%',
@@ -857,11 +1098,70 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     marginTop: 4,
   },
+  inputContainer: {
+    backgroundColor: COLORS.cardLight,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  modalInput: {
+    height: 50,
+    color: COLORS.text,
+    fontSize: 16,
+  },
+  inputHint: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginBottom: 16,
+  },
+  quickButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  quickButton: {
+    flex: 1,
+    backgroundColor: COLORS.cardLight,
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+  },
+  editUserInfo: {
+    backgroundColor: COLORS.cardLight,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  editUserName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  editSubscriptionType: {
+    fontSize: 14,
+    color: COLORS.primary,
+    marginTop: 4,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+  },
   modalButton: {
+    flex: 1,
     backgroundColor: COLORS.success,
     borderRadius: 12,
     padding: 16,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  deleteButton: {
+    backgroundColor: COLORS.error,
+  },
+  saveButton: {
+    backgroundColor: COLORS.success,
   },
   modalButtonDisabled: {
     opacity: 0.7,
