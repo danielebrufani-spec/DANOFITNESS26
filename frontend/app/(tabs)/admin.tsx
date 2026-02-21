@@ -616,10 +616,10 @@ export default function AdminScreen() {
                   </View>
                 ) : (
                   <TouchableOpacity 
-                    style={styles.deleteBtn}
+                    style={styles.actionBtn}
                     onPress={() => handleDeleteUser(user.id, `${user.nome} ${user.cognome}`)}
                   >
-                    <Text style={styles.deleteBtnText}>Elimina</Text>
+                    <Ionicons name="trash-outline" size={22} color={COLORS.error} />
                   </TouchableOpacity>
                 )}
               </View>
