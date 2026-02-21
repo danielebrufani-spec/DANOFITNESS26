@@ -1,0 +1,377 @@
+import React, { useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  RefreshControl,
+  ActivityIndicator,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from 'expo-router';
+import { apiService, Subscription } from '../../src/services/api';
+import { COLORS, ABBONAMENTO_INFO, formatDate } from '../../src/utils/constants';
+
+export default function AbbonamentoScreen() {
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+
+  const loadData = async () => {
+    try {
+      const response = await apiService.getMySubscriptions();
+      setSubscriptions(response.data);
+    } catch (error) {
+      console.error('Error loading subscriptions:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [])
+  );
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadData();
+  };
+
+  const activeSubscriptions = subscriptions.filter((s) => s.attivo && !s.scaduto);
+  const expiredSubscriptions = subscriptions.filter((s) => s.scaduto);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={COLORS.primary}
+          />
+        }
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.title}>Il Mio Abbonamento</Text>
+
+        {/* Active Subscriptions */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Abbonamenti Attivi</Text>
+          {activeSubscriptions.length > 0 ? (
+            activeSubscriptions.map((sub) => {
+              const info = ABBONAMENTO_INFO[sub.tipo] || { nome: sub.tipo, prezzo: '' };
+              return (
+                <View key={sub.id} style={styles.subscriptionCard}>
+                  <View style={styles.subscriptionHeader}>
+                    <View style={styles.subscriptionBadge}>
+                      <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
+                      <Text style={styles.subscriptionStatus}>Attivo</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.subscriptionType}>{info.nome}</Text>
+                  <Text style={styles.subscriptionPrice}>{info.prezzo}</Text>
+                  
+                  <View style={styles.subscriptionDetails}>
+                    {sub.lezioni_rimanenti !== null && (
+                      <View style={styles.detailRow}>
+                        <Ionicons name="fitness-outline" size={18} color={COLORS.primary} />
+                        <Text style={styles.detailText}>
+                          <Text style={styles.detailHighlight}>{sub.lezioni_rimanenti}</Text> lezioni rimanenti
+                        </Text>
+                      </View>
+                    )}
+                    <View style={styles.detailRow}>
+                      <Ionicons name="calendar-outline" size={18} color={COLORS.textSecondary} />
+                      <Text style={styles.detailText}>
+                        Inizio: {formatDate(sub.data_inizio)}
+                      </Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Ionicons name="time-outline" size={18} color={COLORS.textSecondary} />
+                      <Text style={styles.detailText}>
+                        Scadenza: {formatDate(sub.data_scadenza)}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              );
+            })
+          ) : (
+            <View style={styles.emptyCard}>
+              <Ionicons name="card-outline" size={48} color={COLORS.textSecondary} />
+              <Text style={styles.emptyText}>Nessun abbonamento attivo</Text>
+              <Text style={styles.emptySubtext}>
+                Contatta Daniele per acquistare un abbonamento
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Expired Subscriptions */}
+        {expiredSubscriptions.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Abbonamenti Scaduti</Text>
+            {expiredSubscriptions.map((sub) => {
+              const info = ABBONAMENTO_INFO[sub.tipo] || { nome: sub.tipo, prezzo: '' };
+              return (
+                <View key={sub.id} style={[styles.subscriptionCard, styles.expiredCard]}>
+                  <View style={styles.subscriptionHeader}>
+                    <View style={[styles.subscriptionBadge, styles.expiredBadge]}>
+                      <Ionicons name="close-circle" size={20} color={COLORS.error} />
+                      <Text style={[styles.subscriptionStatus, styles.expiredStatus]}>Scaduto</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.subscriptionType}>{info.nome}</Text>
+                  
+                  <View style={styles.subscriptionDetails}>
+                    {sub.lezioni_rimanenti !== null && (
+                      <View style={styles.detailRow}>
+                        <Ionicons name="fitness-outline" size={18} color={COLORS.textSecondary} />
+                        <Text style={styles.detailText}>
+                          {sub.lezioni_rimanenti} lezioni rimanenti
+                        </Text>
+                      </View>
+                    )}
+                    <View style={styles.detailRow}>
+                      <Ionicons name="time-outline" size={18} color={COLORS.error} />
+                      <Text style={[styles.detailText, styles.expiredText]}>
+                        Scaduto: {formatDate(sub.data_scadenza)}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
+
+        {/* Pricing Info */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Pacchetti Disponibili</Text>
+          <View style={styles.pricingGrid}>
+            <View style={styles.pricingCard}>
+              <Text style={styles.pricingName}>8 Lezioni</Text>
+              <Text style={styles.pricingPrice}>55 €</Text>
+              <Text style={styles.pricingNote}>Validità annuale</Text>
+            </View>
+            <View style={styles.pricingCard}>
+              <Text style={styles.pricingName}>16 Lezioni</Text>
+              <Text style={styles.pricingPrice}>95 €</Text>
+              <Text style={styles.pricingNote}>Validità annuale</Text>
+            </View>
+            <View style={styles.pricingCard}>
+              <Text style={styles.pricingName}>Mensile</Text>
+              <Text style={styles.pricingPrice}>65 €</Text>
+              <Text style={styles.pricingNote}>30 giorni</Text>
+            </View>
+            <View style={styles.pricingCard}>
+              <Text style={styles.pricingName}>Trimestrale</Text>
+              <Text style={styles.pricingPrice}>175 €</Text>
+              <Text style={styles.pricingNote}>90 giorni</Text>
+            </View>
+          </View>
+          <View style={styles.registrationFee}>
+            <Ionicons name="information-circle" size={20} color={COLORS.primary} />
+            <Text style={styles.registrationFeeText}>
+              Quota iscrizione stagionale: 30 €
+            </Text>
+          </View>
+        </View>
+
+        {/* Contact Info */}
+        <View style={styles.contactCard}>
+          <Ionicons name="call" size={24} color={COLORS.primary} />
+          <View style={styles.contactInfo}>
+            <Text style={styles.contactTitle}>Per acquistare o rinnovare</Text>
+            <Text style={styles.contactText}>Daniele - 339 50 20 625</Text>
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 32,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginBottom: 24,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 12,
+  },
+  subscriptionCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: COLORS.success,
+  },
+  expiredCard: {
+    borderColor: COLORS.error,
+    opacity: 0.8,
+  },
+  subscriptionHeader: {
+    marginBottom: 12,
+  },
+  subscriptionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  expiredBadge: {},
+  subscriptionStatus: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.success,
+  },
+  expiredStatus: {
+    color: COLORS.error,
+  },
+  subscriptionType: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  subscriptionPrice: {
+    fontSize: 18,
+    color: COLORS.primary,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  subscriptionDetails: {
+    gap: 8,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  detailText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  detailHighlight: {
+    color: COLORS.primary,
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  expiredText: {
+    color: COLORS.error,
+  },
+  emptyCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    gap: 12,
+  },
+  emptyText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+  },
+  pricingGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  pricingCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    padding: 16,
+    width: '48%',
+    alignItems: 'center',
+  },
+  pricingName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  pricingPrice: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    marginTop: 4,
+  },
+  pricingNote: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 4,
+  },
+  registrationFee: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  registrationFeeText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  contactCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  contactInfo: {
+    flex: 1,
+  },
+  contactTitle: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  contactText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginTop: 2,
+  },
+});
