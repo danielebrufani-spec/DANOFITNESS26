@@ -231,49 +231,23 @@ export default function AdminScreen() {
   };
 
   const handleDeleteSubscription = async (subscriptionId: string) => {
-    Alert.alert(
-      'Elimina Abbonamento',
-      'Sei sicuro di voler eliminare questo abbonamento?',
-      [
-        { text: 'Annulla', style: 'cancel' },
-        {
-          text: 'Elimina',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await apiService.deleteSubscription(subscriptionId);
-              await loadData();
-              Alert.alert('Successo', 'Abbonamento eliminato');
-            } catch (error) {
-              Alert.alert('Errore', 'Impossibile eliminare');
-            }
-          },
-        },
-      ]
-    );
+    // Elimina direttamente senza conferma (più veloce)
+    try {
+      await apiService.deleteSubscription(subscriptionId);
+      await loadData();
+    } catch (error) {
+      console.error('Errore eliminazione abbonamento:', error);
+    }
   };
 
   const handleDeleteUser = async (userId: string, userName: string) => {
-    Alert.alert(
-      'Elimina Utente',
-      `Sei sicuro di voler eliminare ${userName}?\n\nVerranno eliminati anche tutti i suoi abbonamenti e prenotazioni.`,
-      [
-        { text: 'Annulla', style: 'cancel' },
-        {
-          text: 'Elimina',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await apiService.deleteUser(userId);
-              await loadData();
-              Alert.alert('Successo', 'Utente eliminato');
-            } catch (error: any) {
-              Alert.alert('Errore', error.response?.data?.detail || 'Impossibile eliminare');
-            }
-          },
-        },
-      ]
-    );
+    // Elimina direttamente senza conferma
+    try {
+      await apiService.deleteUser(userId);
+      await loadData();
+    } catch (error: any) {
+      console.error('Errore eliminazione utente:', error);
+    }
   };
 
   const handleDeleteBooking = async (bookingId: string) => {
@@ -281,7 +255,7 @@ export default function AdminScreen() {
       await apiService.cancelBooking(bookingId);
       await loadData();
     } catch (error) {
-      Alert.alert('Errore', 'Impossibile eliminare');
+      console.error('Errore eliminazione prenotazione:', error);
     }
   };
 
