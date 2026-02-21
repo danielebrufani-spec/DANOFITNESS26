@@ -215,8 +215,13 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
     marginTop: 16,
+  },
+  logoImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
   },
   logo: {
     fontSize: 28,
