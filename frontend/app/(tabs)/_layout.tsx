@@ -54,17 +54,18 @@ export default function TabsLayout() {
           ),
         }}
       />
-      {isAdmin && (
-        <Tabs.Screen
-          name="admin"
-          options={{
-            title: 'Admin',
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="settings-outline" size={size} color={color} />
-            ),
-          }}
-        />
-      )}
+      <Tabs.Screen
+        name="admin"
+        options={{
+          title: 'Admin',
+          href: isAdmin ? '/admin' : null,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="settings-outline" size={size} color={color} />
+          ),
+          tabBarStyle: isAdmin ? undefined : { display: 'none' },
+          tabBarButton: isAdmin ? undefined : () => null,
+        }}
+      />
       <Tabs.Screen
         name="profilo"
         options={{
