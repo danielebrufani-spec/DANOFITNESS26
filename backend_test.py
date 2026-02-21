@@ -341,6 +341,71 @@ class DanoFitnessAPITester:
         
         print("❌ Process day failed")
         return False
+    
+    def test_health_endpoint(self):
+        """Test health endpoint"""
+        print("\n❤️  Testing: Health Endpoint")
+        response = self.make_request("GET", "/health")
+        if response and response.status_code == 200:
+            result = response.json()
+            if result.get("status") == "healthy" and result.get("service") == "DanoFitness23 API":
+                print("✅ Health endpoint successful")
+                print(f"   Status: {result.get('status')}, Service: {result.get('service')}")
+                return True
+            else:
+                print(f"❌ Health endpoint returned unexpected data: {result}")
+                return False
+        
+        print("❌ Health endpoint failed")
+        return False
+    
+    def test_weekly_bookings(self):
+        """Test weekly bookings endpoint (admin)"""
+        print("\n📅 Testing: Weekly Bookings Endpoint (Admin)")
+        response = self.make_request("GET", "/admin/weekly-bookings", token=self.admin_token)
+        if response and response.status_code == 200:
+            result = response.json()
+            
+            # Verify required structure
+            required_keys = ["settimana_inizio", "settimana_fine", "giorni"]
+            for key in required_keys:
+                if key not in result:
+                    print(f"❌ Missing key in response: {key}")
+                    return False
+            
+            giorni = result.get("giorni", [])
+            if len(giorni) != 6:
+                print(f"❌ Expected 6 days (Mon-Sat), got {len(giorni)}")
+                return False
+            
+            # Verify each day structure
+            for day in giorni:
+                day_keys = ["data", "giorno", "lezioni"]
+                for key in day_keys:
+                    if key not in day:
+                        print(f"❌ Missing key in day: {key}")
+                        return False
+                
+                # Verify lessons structure
+                for lesson in day.get("lezioni", []):
+                    lesson_keys = ["lesson_id", "orario", "tipo_attivita", "partecipanti", "totale_iscritti"]
+                    for key in lesson_keys:
+                        if key not in lesson:
+                            print(f"❌ Missing key in lesson: {key}")
+                            return False
+            
+            print("✅ Weekly bookings endpoint successful")
+            print(f"   Week: {result.get('settimana_inizio')} to {result.get('settimana_fine')}")
+            print(f"   Days: {len(giorni)} (Mon-Sat)")
+            
+            # Show summary of lessons per day
+            for day in giorni:
+                print(f"   {day['giorno']}: {len(day['lezioni'])} lessons")
+            
+            return True
+        
+        print("❌ Weekly bookings endpoint failed")
+        return False
 
     def run_all_tests(self):
         """Run all backend API tests"""
