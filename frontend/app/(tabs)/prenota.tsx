@@ -23,14 +23,96 @@ import {
   formatDate,
 } from '../../src/utils/constants';
 
+// Get current booking week (Monday to Saturday)
+const getBookingWeek = () => {
+  const now = new Date();
+  const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  const currentHour = now.getHours();
+  
+  // Find this week's Monday
+  let monday = new Date(now);
+  
+  if (currentDay === 0) {
+    // It's Sunday - no bookings available, show message
+    // Next week starts tomorrow (Monday)
+    monday.setDate(now.getDate() + 1);
+  } else if (currentDay === 1 && currentHour < 7) {
+    // It's Monday before 7:00 AM - bookings not yet open
+    // Show previous week? Or just wait message
+    // For now, we'll still show current week but with a message
+    monday.setDate(now.getDate());
+  } else {
+    // Normal case: find this week's Monday
+    const daysFromMonday = currentDay - 1;
+    monday.setDate(now.getDate() - daysFromMonday);
+  }
+  
+  monday.setHours(0, 0, 0, 0);
+  
+  // Generate Mon-Sat dates
+  const weekDates = [];
+  for (let i = 0; i < 6; i++) { // 6 days: Mon to Sat
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + i);
+    weekDates.push(date);
+  }
+  
+  return weekDates;
+};
+
+// Check if bookings are open
+const areBookingsOpen = () => {
+  const now = new Date();
+  const currentDay = now.getDay();
+  const currentHour = now.getHours();
+  
+  // Sunday - bookings closed
+  if (currentDay === 0) {
+    return { open: false, message: 'Le prenotazioni riaprono Lunedì alle 7:00' };
+  }
+  
+  // Monday before 7:00 AM - not yet open
+  if (currentDay === 1 && currentHour < 7) {
+    return { open: false, message: 'Le prenotazioni aprono alle 7:00' };
+  }
+  
+  return { open: true, message: null };
+};
+
+// Check if a date is in the past
+const isDatePassed = (dateString: string) => {
+  const today = getTodayDateString();
+  return dateString < today;
+};
+
 export default function PrenotaScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [bookingLoading, setBookingLoading] = useState<string | null>(null);
   const [cancelLoading, setCancelLoading] = useState<string | null>(null);
+  const [bookingStatus, setBookingStatus] = useState({ open: true, message: null as string | null });
+
+  const weekDates = getBookingWeek();
+
+  useEffect(() => {
+    // Set initial selected date to today if it's in the week, otherwise first available
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const todayInWeek = weekDates.find(d => getDateString(d) === getDateString(today));
+    if (todayInWeek && !isDatePassed(getDateString(todayInWeek))) {
+      setSelectedDate(todayInWeek);
+    } else {
+      // Find first non-passed date
+      const firstAvailable = weekDates.find(d => !isDatePassed(getDateString(d)));
+      setSelectedDate(firstAvailable || weekDates[0]);
+    }
+    
+    setBookingStatus(areBookingsOpen());
+  }, []);
 
   const loadData = async () => {
     try {
@@ -51,23 +133,14 @@ export default function PrenotaScreen() {
   useFocusEffect(
     useCallback(() => {
       loadData();
+      setBookingStatus(areBookingsOpen());
     }, [])
   );
 
   const onRefresh = () => {
     setRefreshing(true);
+    setBookingStatus(areBookingsOpen());
     loadData();
-  };
-
-  const getWeekDates = () => {
-    const dates = [];
-    const today = new Date();
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      dates.push(date);
-    }
-    return dates;
   };
 
   const getDayName = (date: Date) => {
@@ -93,7 +166,20 @@ export default function PrenotaScreen() {
 
   // Book a lesson
   const handleBook = async (lessonId: string) => {
+    if (!selectedDate) return;
+    
+    if (!bookingStatus.open) {
+      Alert.alert('Prenotazioni Chiuse', bookingStatus.message || 'Le prenotazioni non sono attive');
+      return;
+    }
+    
     const dateString = getDateString(selectedDate);
+    
+    if (isDatePassed(dateString)) {
+      Alert.alert('Errore', 'Non puoi prenotare per una data passata');
+      return;
+    }
+    
     setBookingLoading(lessonId);
     try {
       const response = await apiService.createBooking({
@@ -115,8 +201,10 @@ export default function PrenotaScreen() {
     }
   };
 
-  // Cancel a booking - INSTANT, no confirmation
+  // Cancel a booking - INSTANT
   const handleCancel = async (lessonId: string) => {
+    if (!selectedDate) return;
+    
     const dateString = getDateString(selectedDate);
     const bookingId = getBookingId(lessonId, dateString);
     
@@ -146,15 +234,15 @@ export default function PrenotaScreen() {
     }
   };
 
-  const weekDates = getWeekDates();
-  const dayLessons = getLessonsForDay(getDayName(selectedDate));
-
-  // Sort lessons by time
+  const dayLessons = selectedDate ? getLessonsForDay(getDayName(selectedDate)) : [];
   dayLessons.sort((a, b) => a.orario.localeCompare(b.orario));
 
-  // Get upcoming bookings
-  const upcomingBookings = myBookings
-    .filter((b) => b.data_lezione >= getTodayDateString())
+  // Get this week's bookings only
+  const weekStart = weekDates[0] ? getDateString(weekDates[0]) : '';
+  const weekEnd = weekDates[5] ? getDateString(weekDates[5]) : '';
+  
+  const thisWeekBookings = myBookings
+    .filter((b) => b.data_lezione >= weekStart && b.data_lezione <= weekEnd)
     .sort((a, b) => a.data_lezione.localeCompare(b.data_lezione));
 
   if (loading) {
@@ -171,9 +259,18 @@ export default function PrenotaScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Prenota Lezione</Text>
+        <Text style={styles.subtitle}>Settimana {formatDate(getDateString(weekDates[0]))} - {formatDate(getDateString(weekDates[5]))}</Text>
       </View>
 
-      {/* Date Selector */}
+      {/* Booking Status Banner */}
+      {!bookingStatus.open && (
+        <View style={styles.closedBanner}>
+          <Ionicons name="time-outline" size={20} color={COLORS.warning} />
+          <Text style={styles.closedBannerText}>{bookingStatus.message}</Text>
+        </View>
+      )}
+
+      {/* Week Date Selector (Mon-Sat only) */}
       <View style={styles.dateSelector}>
         <ScrollView
           horizontal
@@ -181,34 +278,44 @@ export default function PrenotaScreen() {
           contentContainerStyle={styles.dateSelectorContent}
         >
           {weekDates.map((date, index) => {
-            const isSelected = getDateString(date) === getDateString(selectedDate);
-            const isToday = getDateString(date) === getTodayDateString();
+            const dateString = getDateString(date);
+            const isSelected = selectedDate && getDateString(selectedDate) === dateString;
+            const isToday = dateString === getTodayDateString();
+            const isPassed = isDatePassed(dateString);
+            
             return (
               <TouchableOpacity
                 key={index}
                 style={[
                   styles.dateItem,
                   isSelected && styles.dateItemSelected,
+                  isPassed && styles.dateItemPassed,
                 ]}
                 onPress={() => setSelectedDate(date)}
+                disabled={isPassed}
               >
                 <Text
                   style={[
                     styles.dateDay,
                     isSelected && styles.dateDaySelected,
+                    isPassed && styles.dateDayPassed,
                   ]}
                 >
-                  {GIORNI_DISPLAY[getDayName(date)]?.substring(0, 3) || getDayName(date).substring(0, 3)}
+                  {GIORNI_DISPLAY[getDayName(date)]?.substring(0, 3)}
                 </Text>
                 <Text
                   style={[
                     styles.dateNumber,
                     isSelected && styles.dateNumberSelected,
+                    isPassed && styles.dateNumberPassed,
                   ]}
                 >
                   {date.getDate()}
                 </Text>
-                {isToday && <View style={styles.todayDot} />}
+                {isToday && !isPassed && <View style={styles.todayDot} />}
+                {isPassed && (
+                  <Ionicons name="checkmark" size={12} color={COLORS.textSecondary} style={styles.passedIcon} />
+                )}
               </TouchableOpacity>
             );
           })}
@@ -216,12 +323,19 @@ export default function PrenotaScreen() {
       </View>
 
       {/* Selected Date Info */}
-      <View style={styles.selectedDateInfo}>
-        <Ionicons name="calendar" size={20} color={COLORS.primary} />
-        <Text style={styles.selectedDateText}>
-          {GIORNI_DISPLAY[getDayName(selectedDate)]} {formatDate(getDateString(selectedDate))}
-        </Text>
-      </View>
+      {selectedDate && (
+        <View style={styles.selectedDateInfo}>
+          <Ionicons name="calendar" size={20} color={COLORS.primary} />
+          <Text style={styles.selectedDateText}>
+            {GIORNI_DISPLAY[getDayName(selectedDate)]} {formatDate(getDateString(selectedDate))}
+          </Text>
+          {isDatePassed(getDateString(selectedDate)) && (
+            <View style={styles.passedBadge}>
+              <Text style={styles.passedBadgeText}>Passato</Text>
+            </View>
+          )}
+        </View>
+      )}
 
       {/* Lessons List */}
       <ScrollView
@@ -236,15 +350,17 @@ export default function PrenotaScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {dayLessons.length > 0 ? (
+        {selectedDate && dayLessons.length > 0 ? (
           dayLessons.map((lesson) => {
             const info = ATTIVITA_INFO[lesson.tipo_attivita] || {};
             const dateString = getDateString(selectedDate);
             const booked = isBooked(lesson.id, dateString);
             const isLoadingThis = bookingLoading === lesson.id;
+            const isPassed = isDatePassed(dateString);
+            const canBook = bookingStatus.open && !isPassed;
 
             return (
-              <View key={lesson.id} style={styles.lessonCard}>
+              <View key={lesson.id} style={[styles.lessonCard, isPassed && styles.lessonCardPassed]}>
                 <View
                   style={[
                     styles.lessonColorBar,
@@ -253,56 +369,63 @@ export default function PrenotaScreen() {
                 />
                 <View style={styles.lessonContent}>
                   <View style={styles.lessonHeader}>
-                    <Text style={styles.lessonTime}>{lesson.orario}</Text>
-                    <Text style={styles.lessonType}>{info.nome || lesson.tipo_attivita}</Text>
+                    <Text style={[styles.lessonTime, isPassed && styles.lessonTimePassed]}>{lesson.orario}</Text>
+                    <Text style={[styles.lessonType, { color: isPassed ? COLORS.textSecondary : (info.colore || COLORS.primary) }]}>
+                      {info.nome || lesson.tipo_attivita}
+                    </Text>
                   </View>
-                  {lesson.descrizione && (
-                    <Text style={styles.lessonDescription}>{lesson.descrizione}</Text>
-                  )}
                 </View>
-                <TouchableOpacity
-                  style={[
-                    styles.bookButton,
-                    booked && styles.bookedButton,
-                  ]}
-                  onPress={() => booked ? handleCancel(lesson.id) : handleBook(lesson.id)}
-                  disabled={isLoadingThis}
-                >
-                  {isLoadingThis ? (
-                    <ActivityIndicator size="small" color={COLORS.text} />
-                  ) : (
-                    <>
-                      <Ionicons
-                        name={booked ? 'close-circle' : 'add-circle-outline'}
-                        size={24}
-                        color={COLORS.text}
-                      />
-                      <Text style={styles.bookButtonText}>
-                        {booked ? 'Cancella' : 'Prenota'}
-                      </Text>
-                    </>
-                  )}
-                </TouchableOpacity>
+                {!isPassed ? (
+                  <TouchableOpacity
+                    style={[
+                      styles.bookButton,
+                      booked && styles.bookedButton,
+                      !canBook && styles.disabledButton,
+                    ]}
+                    onPress={() => booked ? handleCancel(lesson.id) : handleBook(lesson.id)}
+                    disabled={isLoadingThis || !canBook}
+                  >
+                    {isLoadingThis ? (
+                      <ActivityIndicator size="small" color={COLORS.text} />
+                    ) : (
+                      <>
+                        <Ionicons
+                          name={booked ? 'close-circle' : 'add-circle-outline'}
+                          size={24}
+                          color={COLORS.text}
+                        />
+                        <Text style={styles.bookButtonText}>
+                          {booked ? 'Cancella' : 'Prenota'}
+                        </Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.passedIndicator}>
+                    <Text style={styles.passedIndicatorText}>Passato</Text>
+                  </View>
+                )}
               </View>
             );
           })
-        ) : (
+        ) : selectedDate ? (
           <View style={styles.noLessonsContainer}>
             <Ionicons name="calendar-outline" size={48} color={COLORS.textSecondary} />
             <Text style={styles.noLessonsText}>Nessuna lezione in questo giorno</Text>
           </View>
-        )}
+        ) : null}
 
-        {/* My Bookings Section */}
+        {/* This Week's Bookings */}
         <View style={styles.myBookingsSection}>
-          <Text style={styles.sectionTitle}>Le Mie Prenotazioni ({upcomingBookings.length})</Text>
-          {upcomingBookings.length > 0 ? (
-            upcomingBookings.map((booking) => {
+          <Text style={styles.sectionTitle}>Prenotazioni Settimana ({thisWeekBookings.length})</Text>
+          {thisWeekBookings.length > 0 ? (
+            thisWeekBookings.map((booking) => {
               const info = ATTIVITA_INFO[booking.lesson_info?.tipo_attivita || ''] || {};
               const isLoadingCancel = cancelLoading === booking.id;
+              const isPassed = isDatePassed(booking.data_lezione);
               
               return (
-                <View key={booking.id} style={styles.bookingItem}>
+                <View key={booking.id} style={[styles.bookingItem, isPassed && styles.bookingItemPassed]}>
                   <View
                     style={[
                       styles.bookingColorBar,
@@ -310,7 +433,9 @@ export default function PrenotaScreen() {
                     ]}
                   />
                   <View style={styles.bookingContent}>
-                    <Text style={styles.bookingDate}>{formatDate(booking.data_lezione)}</Text>
+                    <Text style={[styles.bookingDate, isPassed && styles.bookingDatePassed]}>
+                      {GIORNI_DISPLAY[booking.lesson_info?.giorno || '']?.substring(0, 3)} {formatDate(booking.data_lezione)}
+                    </Text>
                     <Text style={styles.bookingDetails}>
                       {booking.lesson_info?.orario} - {info.nome || booking.lesson_info?.tipo_attivita}
                     </Text>
@@ -320,22 +445,29 @@ export default function PrenotaScreen() {
                       <Ionicons name="warning" size={14} color={COLORS.secondary} />
                     </View>
                   )}
-                  <TouchableOpacity
-                    style={styles.cancelButton}
-                    onPress={() => handleCancelFromList(booking.id)}
-                    disabled={isLoadingCancel}
-                  >
-                    {isLoadingCancel ? (
-                      <ActivityIndicator size="small" color={COLORS.error} />
-                    ) : (
-                      <Ionicons name="trash-outline" size={22} color={COLORS.error} />
-                    )}
-                  </TouchableOpacity>
+                  {!isPassed && (
+                    <TouchableOpacity
+                      style={styles.cancelButton}
+                      onPress={() => handleCancelFromList(booking.id)}
+                      disabled={isLoadingCancel}
+                    >
+                      {isLoadingCancel ? (
+                        <ActivityIndicator size="small" color={COLORS.error} />
+                      ) : (
+                        <Ionicons name="trash-outline" size={22} color={COLORS.error} />
+                      )}
+                    </TouchableOpacity>
+                  )}
+                  {isPassed && (
+                    <View style={styles.completedBadge}>
+                      <Ionicons name="checkmark" size={16} color={COLORS.success} />
+                    </View>
+                  )}
                 </View>
               );
             })
           ) : (
-            <Text style={styles.noBookingsText}>Nessuna prenotazione</Text>
+            <Text style={styles.noBookingsText}>Nessuna prenotazione questa settimana</Text>
           )}
         </View>
       </ScrollView>
@@ -362,8 +494,29 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.text,
   },
+  subtitle: {
+    fontSize: 14,
+    color: COLORS.primary,
+    marginTop: 4,
+  },
+  closedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    marginHorizontal: 16,
+    padding: 12,
+    borderRadius: 12,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: COLORS.warning,
+  },
+  closedBannerText: {
+    color: COLORS.warning,
+    fontSize: 14,
+    fontWeight: '500',
+  },
   dateSelector: {
-    paddingVertical: 8,
+    paddingVertical: 12,
   },
   dateSelectorContent: {
     paddingHorizontal: 16,
@@ -371,7 +524,7 @@ const styles = StyleSheet.create({
   },
   dateItem: {
     width: 56,
-    height: 72,
+    height: 76,
     backgroundColor: COLORS.card,
     borderRadius: 12,
     justifyContent: 'center',
@@ -383,6 +536,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     borderColor: COLORS.primary,
   },
+  dateItemPassed: {
+    backgroundColor: COLORS.cardLight,
+    borderColor: COLORS.border,
+    opacity: 0.6,
+  },
   dateDay: {
     fontSize: 12,
     color: COLORS.textSecondary,
@@ -391,6 +549,9 @@ const styles = StyleSheet.create({
   },
   dateDaySelected: {
     color: COLORS.text,
+  },
+  dateDayPassed: {
+    color: COLORS.textSecondary,
   },
   dateNumber: {
     fontSize: 20,
@@ -401,11 +562,17 @@ const styles = StyleSheet.create({
   dateNumberSelected: {
     color: COLORS.text,
   },
+  dateNumberPassed: {
+    color: COLORS.textSecondary,
+  },
   todayDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
     backgroundColor: COLORS.success,
+    marginTop: 4,
+  },
+  passedIcon: {
     marginTop: 4,
   },
   selectedDateInfo: {
@@ -419,6 +586,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.text,
     fontWeight: '500',
+    flex: 1,
+  },
+  passedBadge: {
+    backgroundColor: COLORS.textSecondary,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  passedBadgeText: {
+    color: COLORS.background,
+    fontSize: 12,
+    fontWeight: '600',
   },
   lessonsList: {
     flex: 1,
@@ -433,6 +612,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     overflow: 'hidden',
     flexDirection: 'row',
+  },
+  lessonCardPassed: {
+    opacity: 0.5,
   },
   lessonColorBar: {
     width: 6,
@@ -449,16 +631,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.text,
   },
+  lessonTimePassed: {
+    color: COLORS.textSecondary,
+  },
   lessonType: {
     fontSize: 16,
-    color: COLORS.primary,
     fontWeight: '500',
     marginTop: 2,
-  },
-  lessonDescription: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginTop: 8,
   },
   bookButton: {
     backgroundColor: COLORS.primary,
@@ -471,10 +650,24 @@ const styles = StyleSheet.create({
   bookedButton: {
     backgroundColor: COLORS.error,
   },
+  disabledButton: {
+    backgroundColor: COLORS.textSecondary,
+    opacity: 0.5,
+  },
   bookButtonText: {
     color: COLORS.text,
     fontSize: 12,
     fontWeight: '600',
+  },
+  passedIndicator: {
+    backgroundColor: COLORS.cardLight,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  passedIndicatorText: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
   },
   noLessonsContainer: {
     alignItems: 'center',
@@ -505,6 +698,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
   },
+  bookingItemPassed: {
+    opacity: 0.6,
+  },
   bookingColorBar: {
     width: 4,
     alignSelf: 'stretch',
@@ -517,6 +713,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: COLORS.text,
+  },
+  bookingDatePassed: {
+    color: COLORS.textSecondary,
   },
   bookingDetails: {
     fontSize: 13,
@@ -533,6 +732,11 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   cancelButton: {
+    padding: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  completedBadge: {
     padding: 16,
     justifyContent: 'center',
     alignItems: 'center',
