@@ -10,18 +10,14 @@ import {
   Alert,
   Modal,
   TextInput,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import {
   apiService,
-  Booking,
   Subscription,
   User,
-  DailyStats,
-  Lesson,
 } from '../../src/services/api';
 import {
   COLORS,
@@ -29,22 +25,44 @@ import {
   ABBONAMENTO_INFO,
   GIORNI_DISPLAY,
   formatDate,
-  getTodayDateString,
-  getDateString,
-  getDayNameFromDate,
 } from '../../src/utils/constants';
+
+interface WeeklyLesson {
+  lesson_id: string;
+  orario: string;
+  tipo_attivita: string;
+  partecipanti: Array<{
+    booking_id: string;
+    user_id: string;
+    nome: string;
+    cognome: string;
+    abbonamento_scaduto: boolean;
+    lezione_scalata: boolean;
+  }>;
+  totale_iscritti: number;
+}
+
+interface WeeklyDay {
+  data: string;
+  giorno: string;
+  lezioni: WeeklyLesson[];
+}
+
+interface WeeklyBookings {
+  settimana_inizio: string;
+  settimana_fine: string;
+  giorni: WeeklyDay[];
+}
 
 export default function AdminScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'presenze' | 'abbonamenti' | 'utenti'>('presenze');
   
-  const [todayBookings, setTodayBookings] = useState<Booking[]>([]);
-  const [dailyStats, setDailyStats] = useState<DailyStats | null>(null);
+  const [weeklyBookings, setWeeklyBookings] = useState<WeeklyBookings | null>(null);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [expiredSubscriptions, setExpiredSubscriptions] = useState<Subscription[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [lessons, setLessons] = useState<Lesson[]>([]);
   
   // Add subscription modal
   const [showAddSubscription, setShowAddSubscription] = useState(false);
@@ -60,26 +78,26 @@ export default function AdminScreen() {
   const [editExpiry, setEditExpiry] = useState<string>('');
   const [savingEdit, setSavingEdit] = useState(false);
 
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  // Expanded days
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
 
   const loadData = async () => {
     try {
-      const dateString = getDateString(selectedDate);
-      const [bookingsRes, statsRes, subsRes, expiredRes, usersRes, lessonsRes] = await Promise.all([
-        apiService.getBookingsByDate(dateString),
-        apiService.getDailyStats(dateString),
+      const [weeklyRes, subsRes, expiredRes, usersRes] = await Promise.all([
+        apiService.getWeeklyBookings(),
         apiService.getAllSubscriptions(),
         apiService.getExpiredSubscriptions(),
         apiService.getAllUsers(),
-        apiService.getLessons(),
       ]);
       
-      setTodayBookings(bookingsRes.data);
-      setDailyStats(statsRes.data);
+      setWeeklyBookings(weeklyRes.data);
       setSubscriptions(subsRes.data);
       setExpiredSubscriptions(expiredRes.data);
       setUsers(usersRes.data);
-      setLessons(lessonsRes.data);
+      
+      // Auto-expand today
+      const today = new Date().toISOString().split('T')[0];
+      setExpandedDays(new Set([today]));
     } catch (error) {
       console.error('Error loading admin data:', error);
     } finally {
@@ -91,7 +109,7 @@ export default function AdminScreen() {
   useFocusEffect(
     useCallback(() => {
       loadData();
-    }, [selectedDate])
+    }, [])
   );
 
   const onRefresh = () => {
@@ -99,27 +117,16 @@ export default function AdminScreen() {
     loadData();
   };
 
-  const handleProcessDay = async () => {
-    const dateString = getDateString(selectedDate);
-    Alert.alert(
-      'Elabora Fine Giornata',
-      `Vuoi elaborare le prenotazioni del ${formatDate(dateString)}?\nLe lezioni verranno scalate dagli abbonamenti a lezione.`,
-      [
-        { text: 'Annulla', style: 'cancel' },
-        {
-          text: 'Elabora',
-          onPress: async () => {
-            try {
-              const response = await apiService.processEndOfDay(dateString);
-              Alert.alert('Successo', `Elaborate ${response.data.processed} prenotazioni`);
-              await loadData();
-            } catch (error: any) {
-              Alert.alert('Errore', error.response?.data?.detail || 'Errore durante l\'elaborazione');
-            }
-          },
-        },
-      ]
-    );
+  const toggleDay = (date: string) => {
+    setExpandedDays(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(date)) {
+        newSet.delete(date);
+      } else {
+        newSet.add(date);
+      }
+      return newSet;
+    });
   };
 
   const handleAddSubscription = async () => {
@@ -220,55 +227,25 @@ export default function AdminScreen() {
   };
 
   const handleDeleteBooking = async (bookingId: string) => {
-    Alert.alert(
-      'Elimina Prenotazione',
-      'Sei sicuro di voler eliminare questa prenotazione?',
-      [
-        { text: 'Annulla', style: 'cancel' },
-        {
-          text: 'Elimina',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await apiService.cancelBooking(bookingId);
-              await loadData();
-            } catch (error) {
-              Alert.alert('Errore', 'Impossibile eliminare');
-            }
-          },
-        },
-      ]
-    );
+    try {
+      await apiService.cancelBooking(bookingId);
+      await loadData();
+    } catch (error) {
+      Alert.alert('Errore', 'Impossibile eliminare');
+    }
   };
 
-  const changeDate = (days: number) => {
-    const newDate = new Date(selectedDate);
-    newDate.setDate(newDate.getDate() + days);
-    setSelectedDate(newDate);
+  // Calculate totals
+  const getTotalParticipants = () => {
+    if (!weeklyBookings) return 0;
+    return weeklyBookings.giorni.reduce((sum, day) => 
+      sum + day.lezioni.reduce((lessonSum, lesson) => lessonSum + lesson.totale_iscritti, 0), 0);
   };
 
-  // Get lessons for the selected day and group bookings by lesson
-  const getBookingsGroupedByLesson = () => {
-    const dateString = getDateString(selectedDate);
-    const dayName = getDayNameFromDate(dateString);
-    
-    // Filter lessons for this day
-    const dayLessons = lessons.filter(l => l.giorno === dayName);
-    
-    // Sort by time
-    dayLessons.sort((a, b) => a.orario.localeCompare(b.orario));
-    
-    // Group bookings by lesson
-    const grouped = dayLessons.map(lesson => {
-      const lessonBookings = todayBookings.filter(b => b.lesson_id === lesson.id);
-      return {
-        lesson,
-        bookings: lessonBookings,
-        count: lessonBookings.length,
-      };
-    });
-    
-    return grouped;
+  const getTotalLessonsWithBookings = () => {
+    if (!weeklyBookings) return 0;
+    return weeklyBookings.giorni.reduce((sum, day) => 
+      sum + day.lezioni.filter(l => l.totale_iscritti > 0).length, 0);
   };
 
   if (loading) {
@@ -281,13 +258,15 @@ export default function AdminScreen() {
     );
   }
 
-  const groupedBookings = getBookingsGroupedByLesson();
-  const totalParticipants = todayBookings.length;
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Admin</Text>
+        {weeklyBookings && (
+          <Text style={styles.weekRange}>
+            {formatDate(weeklyBookings.settimana_inizio)} - {formatDate(weeklyBookings.settimana_fine)}
+          </Text>
+        )}
       </View>
 
       {/* Tabs */}
@@ -334,113 +313,122 @@ export default function AdminScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* PRESENZE TAB */}
-        {activeTab === 'presenze' && (
+        {/* PRESENZE TAB - WEEKLY VIEW */}
+        {activeTab === 'presenze' && weeklyBookings && (
           <>
-            {/* Date Navigator */}
-            <View style={styles.dateNavigator}>
-              <TouchableOpacity onPress={() => changeDate(-1)} style={styles.dateNavButton}>
-                <Ionicons name="chevron-back" size={24} color={COLORS.text} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setSelectedDate(new Date())}
-                style={styles.dateDisplay}
-              >
-                <Text style={styles.dateText}>
-                  {GIORNI_DISPLAY[getDayNameFromDate(getDateString(selectedDate))]} {formatDate(getDateString(selectedDate))}
-                </Text>
-                {getDateString(selectedDate) === getTodayDateString() && (
-                  <Text style={styles.todayLabel}>Oggi</Text>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => changeDate(1)} style={styles.dateNavButton}>
-                <Ionicons name="chevron-forward" size={24} color={COLORS.text} />
-              </TouchableOpacity>
-            </View>
-
             {/* Summary Stats */}
             <View style={styles.statsCard}>
               <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{totalParticipants}</Text>
-                <Text style={styles.statLabel}>Totale Iscritti</Text>
+                <Text style={styles.statNumber}>{getTotalParticipants()}</Text>
+                <Text style={styles.statLabel}>Prenotazioni Totali</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{groupedBookings.filter(g => g.count > 0).length}</Text>
-                <Text style={styles.statLabel}>Lezioni Attive</Text>
+                <Text style={styles.statNumber}>{getTotalLessonsWithBookings()}</Text>
+                <Text style={styles.statLabel}>Lezioni con Iscritti</Text>
               </View>
             </View>
 
-            {/* Process Day Button */}
-            <TouchableOpacity style={styles.processButton} onPress={handleProcessDay}>
-              <Ionicons name="checkmark-done" size={20} color={COLORS.text} />
-              <Text style={styles.processButtonText}>Elabora Fine Giornata</Text>
-            </TouchableOpacity>
+            <View style={styles.autoProcessInfo}>
+              <Ionicons name="time-outline" size={16} color={COLORS.success} />
+              <Text style={styles.autoProcessText}>
+                Aggiornamento automatico a mezzanotte
+              </Text>
+            </View>
 
-            {/* Lessons List with Participants */}
-            <Text style={styles.sectionTitle}>Riepilogo Lezioni</Text>
-            
-            {groupedBookings.length > 0 ? (
-              groupedBookings.map(({ lesson, bookings, count }) => {
-                const info = ATTIVITA_INFO[lesson.tipo_attivita] || {};
-                return (
-                  <View key={lesson.id} style={styles.lessonCard}>
-                    {/* Lesson Header */}
-                    <View style={[styles.lessonHeader, { borderLeftColor: info.colore || COLORS.primary }]}>
-                      <View style={styles.lessonInfo}>
-                        <Text style={styles.lessonTime}>{lesson.orario}</Text>
-                        <Text style={[styles.lessonType, { color: info.colore || COLORS.primary }]}>
-                          {info.nome || lesson.tipo_attivita}
-                        </Text>
-                      </View>
-                      <View style={styles.countBadge}>
-                        <Ionicons name="people" size={16} color={COLORS.text} />
-                        <Text style={styles.countText}>{count}</Text>
-                      </View>
+            {/* Weekly Days List */}
+            {weeklyBookings.giorni.map((day) => {
+              const isExpanded = expandedDays.has(day.data);
+              const dayTotalBookings = day.lezioni.reduce((sum, l) => sum + l.totale_iscritti, 0);
+              const isToday = day.data === new Date().toISOString().split('T')[0];
+              const isPast = day.data < new Date().toISOString().split('T')[0];
+              
+              return (
+                <View key={day.data} style={[styles.dayCard, isPast && styles.dayCardPast]}>
+                  {/* Day Header */}
+                  <TouchableOpacity 
+                    style={styles.dayHeader}
+                    onPress={() => toggleDay(day.data)}
+                  >
+                    <View style={styles.dayInfo}>
+                      <Text style={[styles.dayName, isToday && styles.dayNameToday]}>
+                        {GIORNI_DISPLAY[day.giorno]}
+                        {isToday && ' (Oggi)'}
+                      </Text>
+                      <Text style={styles.dayDate}>{formatDate(day.data)}</Text>
                     </View>
-                    
-                    {/* Participants List */}
-                    {count > 0 ? (
-                      <View style={styles.participantsList}>
-                        {bookings.map((booking, index) => (
-                          <View key={booking.id} style={styles.participantRow}>
-                            <View style={styles.participantNumber}>
-                              <Text style={styles.participantNumberText}>{index + 1}</Text>
-                            </View>
-                            <Text style={styles.participantName}>
-                              {booking.user_nome} {booking.user_cognome}
-                            </Text>
-                            {booking.abbonamento_scaduto && (
-                              <View style={styles.warningBadge}>
-                                <Ionicons name="warning" size={12} color={COLORS.secondary} />
+                    <View style={styles.dayStats}>
+                      <View style={styles.dayCountBadge}>
+                        <Ionicons name="people" size={14} color={COLORS.text} />
+                        <Text style={styles.dayCountText}>{dayTotalBookings}</Text>
+                      </View>
+                      <Ionicons 
+                        name={isExpanded ? 'chevron-up' : 'chevron-down'} 
+                        size={20} 
+                        color={COLORS.textSecondary} 
+                      />
+                    </View>
+                  </TouchableOpacity>
+
+                  {/* Expanded Lessons */}
+                  {isExpanded && (
+                    <View style={styles.lessonsContainer}>
+                      {day.lezioni.length > 0 ? (
+                        day.lezioni.map((lesson) => {
+                          const info = ATTIVITA_INFO[lesson.tipo_attivita] || {};
+                          return (
+                            <View key={lesson.lesson_id} style={styles.lessonItem}>
+                              <View style={[styles.lessonHeader, { borderLeftColor: info.colore || COLORS.primary }]}>
+                                <View style={styles.lessonInfo}>
+                                  <Text style={styles.lessonTime}>{lesson.orario}</Text>
+                                  <Text style={[styles.lessonType, { color: info.colore || COLORS.primary }]}>
+                                    {info.nome || lesson.tipo_attivita}
+                                  </Text>
+                                </View>
+                                <View style={styles.lessonCount}>
+                                  <Text style={styles.lessonCountText}>{lesson.totale_iscritti}</Text>
+                                </View>
                               </View>
-                            )}
-                            {booking.lezione_scalata && (
-                              <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
-                            )}
-                            <TouchableOpacity 
-                              style={styles.removeParticipant}
-                              onPress={() => handleDeleteBooking(booking.id)}
-                            >
-                              <Ionicons name="close-circle" size={20} color={COLORS.error} />
-                            </TouchableOpacity>
-                          </View>
-                        ))}
-                      </View>
-                    ) : (
-                      <View style={styles.noParticipants}>
-                        <Text style={styles.noParticipantsText}>Nessun iscritto</Text>
-                      </View>
-                    )}
-                  </View>
-                );
-              })
-            ) : (
-              <View style={styles.emptyContainer}>
-                <Ionicons name="calendar-outline" size={48} color={COLORS.textSecondary} />
-                <Text style={styles.emptyText}>Nessuna lezione in questo giorno</Text>
-              </View>
-            )}
+                              
+                              {lesson.partecipanti.length > 0 ? (
+                                <View style={styles.participantsList}>
+                                  {lesson.partecipanti.map((p, index) => (
+                                    <View key={p.booking_id} style={styles.participantRow}>
+                                      <Text style={styles.participantNumber}>{index + 1}.</Text>
+                                      <Text style={styles.participantName}>
+                                        {p.nome} {p.cognome}
+                                      </Text>
+                                      {p.abbonamento_scaduto && (
+                                        <Ionicons name="warning" size={14} color={COLORS.warning} />
+                                      )}
+                                      {p.lezione_scalata && (
+                                        <Ionicons name="checkmark-circle" size={14} color={COLORS.success} />
+                                      )}
+                                      {!isPast && (
+                                        <TouchableOpacity 
+                                          onPress={() => handleDeleteBooking(p.booking_id)}
+                                          style={styles.removeButton}
+                                        >
+                                          <Ionicons name="close" size={16} color={COLORS.error} />
+                                        </TouchableOpacity>
+                                      )}
+                                    </View>
+                                  ))}
+                                </View>
+                              ) : (
+                                <Text style={styles.noParticipants}>Nessun iscritto</Text>
+                              )}
+                            </View>
+                          );
+                        })
+                      ) : (
+                        <Text style={styles.noLessons}>Nessuna lezione</Text>
+                      )}
+                    </View>
+                  )}
+                </View>
+              );
+            })}
           </>
         )}
 
@@ -646,9 +634,6 @@ export default function AdminScreen() {
                     keyboardType="number-pad"
                   />
                 </View>
-                <Text style={styles.inputHint}>
-                  Lascia vuoto per usare il valore predefinito
-                </Text>
               </>
             )}
 
@@ -724,17 +709,16 @@ export default function AdminScreen() {
                   </>
                 )}
 
-                <Text style={styles.modalLabel}>Data Scadenza</Text>
+                <Text style={styles.modalLabel}>Data Scadenza (AAAA-MM-GG)</Text>
                 <View style={styles.inputContainer}>
                   <TextInput
                     style={styles.modalInput}
-                    placeholder="YYYY-MM-DD"
+                    placeholder="2025-12-31"
                     placeholderTextColor={COLORS.textSecondary}
                     value={editExpiry}
                     onChangeText={setEditExpiry}
                   />
                 </View>
-                <Text style={styles.inputHint}>Formato: AAAA-MM-GG (es. 2025-12-31)</Text>
 
                 <View style={styles.modalActions}>
                   <TouchableOpacity
@@ -791,6 +775,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.text,
   },
+  weekRange: {
+    fontSize: 14,
+    color: COLORS.primary,
+    marginTop: 4,
+  },
   tabs: {
     flexDirection: 'row',
     paddingHorizontal: 16,
@@ -836,39 +825,12 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     paddingBottom: 32,
   },
-  dateNavigator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-    gap: 12,
-  },
-  dateNavButton: {
-    padding: 8,
-    backgroundColor: COLORS.card,
-    borderRadius: 8,
-  },
-  dateDisplay: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  dateText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text,
-    textAlign: 'center',
-  },
-  todayLabel: {
-    fontSize: 12,
-    color: COLORS.primary,
-    marginTop: 2,
-  },
   statsCard: {
     backgroundColor: COLORS.card,
     borderRadius: 16,
     padding: 20,
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   statItem: {
     flex: 1,
@@ -879,33 +841,161 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.primary,
   },
-  statWarning: {
-    color: COLORS.warning,
-  },
   statLabel: {
     fontSize: 12,
     color: COLORS.textSecondary,
     marginTop: 4,
+    textAlign: 'center',
   },
   statDivider: {
     width: 1,
     backgroundColor: COLORS.border,
     marginHorizontal: 16,
   },
-  processButton: {
-    backgroundColor: COLORS.success,
-    borderRadius: 12,
-    padding: 16,
+  autoProcessInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginBottom: 24,
+    marginBottom: 16,
+    padding: 8,
+    backgroundColor: COLORS.card,
+    borderRadius: 8,
   },
-  processButtonText: {
+  autoProcessText: {
+    fontSize: 12,
+    color: COLORS.success,
+  },
+  dayCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  dayCardPast: {
+    opacity: 0.7,
+  },
+  dayHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+  },
+  dayInfo: {
+    flex: 1,
+  },
+  dayName: {
     fontSize: 16,
     fontWeight: '600',
     color: COLORS.text,
+  },
+  dayNameToday: {
+    color: COLORS.primary,
+  },
+  dayDate: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  dayStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  dayCountBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  dayCountText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  lessonsContainer: {
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    padding: 12,
+  },
+  lessonItem: {
+    marginBottom: 12,
+  },
+  lessonHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingLeft: 12,
+    paddingVertical: 8,
+    borderLeftWidth: 4,
+    backgroundColor: COLORS.cardLight,
+    borderRadius: 8,
+  },
+  lessonInfo: {
+    flex: 1,
+  },
+  lessonTime: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  lessonType: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  lessonCount: {
+    backgroundColor: COLORS.primary,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  lessonCountText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  participantsList: {
+    marginTop: 8,
+    paddingLeft: 16,
+  },
+  participantRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    gap: 8,
+  },
+  participantNumber: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    width: 24,
+  },
+  participantName: {
+    flex: 1,
+    fontSize: 14,
+    color: COLORS.text,
+  },
+  removeButton: {
+    padding: 4,
+  },
+  noParticipants: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    fontStyle: 'italic',
+    marginTop: 8,
+    paddingLeft: 16,
+  },
+  noLessons: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingVertical: 12,
   },
   sectionTitle: {
     fontSize: 16,
@@ -915,151 +1005,6 @@ const styles = StyleSheet.create({
   },
   warningTitle: {
     color: COLORS.warning,
-  },
-  lessonCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    marginBottom: 16,
-    overflow: 'hidden',
-  },
-  lessonHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderLeftWidth: 4,
-    backgroundColor: COLORS.cardLight,
-  },
-  lessonInfo: {
-    flex: 1,
-  },
-  lessonTime: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.text,
-  },
-  lessonType: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  countBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    gap: 6,
-  },
-  countText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: COLORS.text,
-  },
-  participantsList: {
-    padding: 12,
-  },
-  participantRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  participantNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: COLORS.cardLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  participantNumberText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-  },
-  participantName: {
-    flex: 1,
-    fontSize: 15,
-    color: COLORS.text,
-    fontWeight: '500',
-  },
-  warningBadge: {
-    backgroundColor: COLORS.warning,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  removeParticipant: {
-    padding: 4,
-    marginLeft: 8,
-  },
-  noParticipants: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  noParticipantsText: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingVertical: 48,
-    gap: 12,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-  },
-  bookingCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: 12,
-    marginBottom: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  bookingColor: {
-    width: 4,
-    alignSelf: 'stretch',
-  },
-  bookingContent: {
-    flex: 1,
-    padding: 12,
-  },
-  bookingTime: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: COLORS.text,
-  },
-  bookingType: {
-    fontSize: 14,
-    color: COLORS.primary,
-  },
-  bookingUser: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginTop: 4,
-  },
-  bookingActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingRight: 12,
-  },
-  expiredBadge: {
-    backgroundColor: COLORS.warning,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   addButton: {
     backgroundColor: COLORS.primary,
@@ -1260,11 +1205,6 @@ const styles = StyleSheet.create({
     height: 50,
     color: COLORS.text,
     fontSize: 16,
-  },
-  inputHint: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginBottom: 16,
   },
   quickButtons: {
     flexDirection: 'row',
