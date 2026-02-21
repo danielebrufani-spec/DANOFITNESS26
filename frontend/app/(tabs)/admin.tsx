@@ -253,6 +253,29 @@ export default function AdminScreen() {
     );
   };
 
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    Alert.alert(
+      'Elimina Utente',
+      `Sei sicuro di voler eliminare ${userName}?\n\nVerranno eliminati anche tutti i suoi abbonamenti e prenotazioni.`,
+      [
+        { text: 'Annulla', style: 'cancel' },
+        {
+          text: 'Elimina',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await apiService.deleteUser(userId);
+              await loadData();
+              Alert.alert('Successo', 'Utente eliminato');
+            } catch (error: any) {
+              Alert.alert('Errore', error.response?.data?.detail || 'Impossibile eliminare');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleDeleteBooking = async (bookingId: string) => {
     try {
       await apiService.cancelBooking(bookingId);
