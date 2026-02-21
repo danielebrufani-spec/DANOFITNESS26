@@ -1410,6 +1410,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  deleteUserButtonPressed: {
+    backgroundColor: COLORS.border,
+    opacity: 0.7,
+  },
+  deleteSubButton: {
+    padding: 8,
+    backgroundColor: COLORS.cardLight,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  buttonPressed: {
+    opacity: 0.6,
+  },
   noResults: {
     fontSize: 14,
     color: COLORS.textSecondary,
