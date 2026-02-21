@@ -392,8 +392,8 @@ export default function AdminScreen() {
             {weeklyBookings.giorni.map((day) => {
               const isExpanded = expandedDays.has(day.data);
               const dayTotalBookings = day.lezioni.reduce((sum, l) => sum + l.totale_iscritti, 0);
-              const isToday = day.data === new Date().toISOString().split('T')[0];
-              const isPast = day.data < new Date().toISOString().split('T')[0];
+              const isToday = day.data === getTodayDateString();
+              const isPast = day.data < getTodayDateString();
               
               return (
                 <View key={day.data} style={[styles.dayCard, isPast && styles.dayCardPast]}>
