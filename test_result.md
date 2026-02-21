@@ -310,3 +310,5 @@ agent_communication:
     message: "MVP complete. Login, bookings, subscriptions all working. Need backend testing to verify all endpoints."
   - agent: "testing"
     message: "Comprehensive backend API testing completed. All 18 endpoints tested successfully including full auth flow, CRUD operations, admin functions, and subscription management. Backend is fully functional."
+  - agent: "main"
+    message: "Implemented weekly admin view and automatic midnight processing. Added DanoFitness23 logo to login/register screens. Backend scheduler is configured with APScheduler. Weekly bookings endpoint tested via curl - working correctly. Need to test frontend UI."
