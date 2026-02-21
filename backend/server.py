@@ -825,6 +825,172 @@ async def process_end_of_day(date: str, admin_user: dict = Depends(get_admin_use
     
     return {"message": f"Elaborate {processed} prenotazioni", "processed": processed}
 
+# ======================== WEEKLY BOOKINGS VIEW (ADMIN ONLY) ========================
+
+@api_router.get("/admin/weekly-bookings")
+async def get_weekly_bookings(admin_user: dict = Depends(get_admin_user)):
+    """Get all bookings for the current week grouped by lesson"""
+    # Calculate current week (Mon-Sat)
+    today = datetime.utcnow()
+    current_day = today.weekday()  # 0 = Monday
+    
+    # If it's Saturday after 7 AM or Sunday, show next week
+    if current_day == 5 and today.hour >= 7:  # Saturday after 7 AM
+        days_until_monday = 2
+        monday = today + timedelta(days=days_until_monday)
+    elif current_day == 6:  # Sunday
+        days_until_monday = 1
+        monday = today + timedelta(days=days_until_monday)
+    else:
+        # Find this week's Monday
+        days_from_monday = current_day
+        monday = today - timedelta(days=days_from_monday)
+    
+    monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
+    saturday = monday + timedelta(days=5)
+    
+    # Get date strings for the week
+    week_dates = []
+    for i in range(6):  # Mon to Sat
+        d = monday + timedelta(days=i)
+        week_dates.append(d.strftime("%Y-%m-%d"))
+    
+    # Get all lessons
+    lessons = await db.lessons.find().to_list(100)
+    
+    # Get all bookings for this week
+    all_bookings = await db.bookings.find({
+        "data_lezione": {"$in": week_dates}
+    }).to_list(5000)
+    
+    # Group bookings by date and lesson
+    result = []
+    for date_str in week_dates:
+        date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+        day_name = ["lunedi", "martedi", "mercoledi", "giovedi", "venerdi", "sabato"][date_obj.weekday()]
+        
+        # Get lessons for this day
+        day_lessons = [l for l in lessons if l["giorno"] == day_name]
+        day_lessons.sort(key=lambda x: x["orario"])
+        
+        day_data = {
+            "data": date_str,
+            "giorno": day_name,
+            "lezioni": []
+        }
+        
+        for lesson in day_lessons:
+            lesson_id = str(lesson["_id"])
+            lesson_bookings = [b for b in all_bookings if b["lesson_id"] == lesson_id and b["data_lezione"] == date_str]
+            
+            # Get user details for each booking
+            participants = []
+            for booking in lesson_bookings:
+                try:
+                    user = await db.users.find_one({"_id": ObjectId(booking["user_id"])})
+                    if user:
+                        participants.append({
+                            "booking_id": str(booking["_id"]),
+                            "user_id": booking["user_id"],
+                            "nome": user["nome"],
+                            "cognome": user["cognome"],
+                            "abbonamento_scaduto": booking.get("abbonamento_scaduto", False),
+                            "lezione_scalata": booking.get("lezione_scalata", False)
+                        })
+                except:
+                    pass
+            
+            day_data["lezioni"].append({
+                "lesson_id": lesson_id,
+                "orario": lesson["orario"],
+                "tipo_attivita": lesson["tipo_attivita"],
+                "partecipanti": participants,
+                "totale_iscritti": len(participants)
+            })
+        
+        result.append(day_data)
+    
+    return {
+        "settimana_inizio": week_dates[0],
+        "settimana_fine": week_dates[5],
+        "giorni": result
+    }
+
+# ======================== AUTOMATIC MIDNIGHT PROCESSING ========================
+
+async def process_day_automatically():
+    """Automatically process bookings at midnight - deduct lessons from subscriptions"""
+    # Get yesterday's date (the day that just ended)
+    yesterday = (datetime.utcnow() - timedelta(days=1)).strftime("%Y-%m-%d")
+    
+    logger.info(f"[SCHEDULER] Processing bookings for {yesterday}")
+    
+    bookings = await db.bookings.find({
+        "data_lezione": yesterday,
+        "lezione_scalata": False,
+        "confermata": True
+    }).to_list(1000)
+    
+    processed = 0
+    for booking in bookings:
+        user_id = booking["user_id"]
+        
+        # Find active per-lesson subscription
+        sub = await db.subscriptions.find_one({
+            "user_id": user_id,
+            "attivo": True,
+            "tipo": {"$in": ["lezioni_8", "lezioni_16"]},
+            "lezioni_rimanenti": {"$gt": 0}
+        })
+        
+        if sub:
+            # Deduct lesson
+            await db.subscriptions.update_one(
+                {"_id": sub["_id"]},
+                {"$inc": {"lezioni_rimanenti": -1}}
+            )
+            
+            # Mark booking as processed
+            await db.bookings.update_one(
+                {"_id": booking["_id"]},
+                {"$set": {"lezione_scalata": True}}
+            )
+            
+            processed += 1
+            
+            # Check if subscription is now empty
+            updated_sub = await db.subscriptions.find_one({"_id": sub["_id"]})
+            if updated_sub["lezioni_rimanenti"] <= 0:
+                notification = {
+                    "user_id": user_id,
+                    "tipo": "abbonamento_esaurito",
+                    "messaggio": f"Il tuo abbonamento {sub['tipo']} è esaurito. Rinnova per continuare a prenotare.",
+                    "letta": False,
+                    "created_at": datetime.utcnow()
+                }
+                await db.notifications.insert_one(notification)
+    
+    logger.info(f"[SCHEDULER] Processed {processed} bookings for {yesterday}")
+    
+    # Log the processing
+    await db.processing_logs.insert_one({
+        "data": yesterday,
+        "processed": processed,
+        "timestamp": datetime.utcnow()
+    })
+
+@api_router.get("/admin/processing-logs")
+async def get_processing_logs(admin_user: dict = Depends(get_admin_user)):
+    """Get logs of automatic processing"""
+    logs = await db.processing_logs.find().sort("timestamp", -1).to_list(30)
+    return [
+        {
+            "data": log["data"],
+            "processed": log["processed"],
+            "timestamp": log["timestamp"].isoformat()
+        } for log in logs
+    ]
+
 @api_router.get("/admin/notifications", response_model=List[NotificationResponse])
 async def get_all_notifications(admin_user: dict = Depends(get_admin_user)):
     notifications = await db.notifications.find().sort("created_at", -1).to_list(100)
