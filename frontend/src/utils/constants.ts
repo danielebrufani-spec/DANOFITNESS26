@@ -89,9 +89,12 @@ export const getTodayDateString = (): string => {
   return today.toISOString().split('T')[0];
 };
 
-// Get date string for a given date
+// Get date string for a given date (in local timezone, NOT UTC)
 export const getDateString = (date: Date): string => {
-  return date.toISOString().split('T')[0];
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 // Get day name from date
