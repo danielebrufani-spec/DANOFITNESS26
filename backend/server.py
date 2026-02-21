@@ -366,7 +366,12 @@ async def create_subscription(data: SubscriptionCreate, admin_user: dict = Depen
     
     start_date = data.data_inizio or datetime.utcnow()
     expiry_date = calculate_expiry_date(data.tipo, start_date)
-    initial_lessons = get_initial_lessons(data.tipo)
+    
+    # Use custom lessons if provided, otherwise use default
+    if data.lezioni_rimanenti is not None:
+        initial_lessons = data.lezioni_rimanenti
+    else:
+        initial_lessons = get_initial_lessons(data.tipo)
     
     subscription = {
         "user_id": data.user_id,
