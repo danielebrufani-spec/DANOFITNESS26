@@ -101,3 +101,156 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: "App per gestire prenotazioni lezioni fitness DanoFitness23 con abbonamenti a lezione/mensili/trimestrali, lista giornaliera prenotazioni, notifiche scadenze"
+
+backend:
+  - task: "User Authentication (Register/Login)"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "JWT auth with bcrypt password hashing working. Tested via curl."
+
+  - task: "Lessons CRUD"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Lessons auto-initialized from schedule. GET /api/lessons working."
+
+  - task: "Subscriptions Management"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Create/Get/Delete subscriptions working. Expiry calculation correct."
+
+  - task: "Bookings System"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Create/Cancel bookings working. Expired subscription flag working."
+
+  - task: "Admin Daily Processing"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "End of day processing deducts lessons from per-lesson subscriptions."
+
+frontend:
+  - task: "Login/Register Screens"
+    implemented: true
+    working: true
+    file: "/app/frontend/app/login.tsx, /app/frontend/app/register.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Login with admin credentials working. Registration form complete."
+
+  - task: "Home Screen"
+    implemented: true
+    working: true
+    file: "/app/frontend/app/(tabs)/home.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Shows subscription status, today's lessons, upcoming bookings."
+
+  - task: "Prenota Screen"
+    implemented: true
+    working: true
+    file: "/app/frontend/app/(tabs)/prenota.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Date selector, lesson list, booking functionality."
+
+  - task: "Abbonamento Screen"
+    implemented: true
+    working: true
+    file: "/app/frontend/app/(tabs)/abbonamento.tsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Shows active/expired subscriptions, pricing info."
+
+  - task: "Admin Screen"
+    implemented: true
+    working: true
+    file: "/app/frontend/app/(tabs)/admin.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Daily bookings view, subscription management, end-of-day processing."
+
+  - task: "Profile Screen"
+    implemented: true
+    working: true
+    file: "/app/frontend/app/(tabs)/profilo.tsx"
+    stuck_count: 0
+    priority: "low"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "User info display, logout functionality."
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "Backend API testing"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: "MVP complete. Login, bookings, subscriptions all working. Need backend testing to verify all endpoints."
