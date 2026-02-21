@@ -124,7 +124,7 @@ export default function AdminScreen() {
       setUsers(usersRes.data);
       
       // Auto-expand today
-      const today = new Date().toISOString().split('T')[0];
+      const today = getTodayDateString();
       setExpandedDays(new Set([today]));
     } catch (error) {
       console.error('Error loading admin data:', error);
