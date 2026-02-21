@@ -442,6 +442,10 @@ class DanoFitnessAPITester:
         test_results["daily_stats"] = self.test_daily_stats()
         test_results["process_day"] = self.test_process_day()
         
+        # Specific endpoints from review request
+        test_results["health_endpoint"] = self.test_health_endpoint()
+        test_results["weekly_bookings"] = self.test_weekly_bookings()
+        
         # Summary
         print("\n" + "=" * 60)
         print("📋 TEST SUMMARY")
