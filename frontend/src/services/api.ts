@@ -115,6 +115,8 @@ export const apiService = {
   getAllUsers: () => api.get<User[]>('/admin/users'),
   getDailyStats: (date: string) => api.get<DailyStats>(`/admin/daily-stats/${date}`),
   processEndOfDay: (date: string) => api.post(`/admin/process-day/${date}`),
+  getWeeklyBookings: () => api.get('/admin/weekly-bookings'),
+  getProcessingLogs: () => api.get('/admin/processing-logs'),
 
   // Notifications
   getMyNotifications: () => api.get<Notification[]>('/notifications/me'),
