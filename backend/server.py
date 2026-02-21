@@ -90,6 +90,12 @@ class SubscriptionCreate(BaseModel):
     user_id: str
     tipo: SubscriptionType
     data_inizio: Optional[datetime] = None
+    lezioni_rimanenti: Optional[int] = None  # Allow setting initial lessons
+
+class SubscriptionUpdate(BaseModel):
+    lezioni_rimanenti: Optional[int] = None
+    data_scadenza: Optional[datetime] = None
+    attivo: Optional[bool] = None
 
 class SubscriptionResponse(BaseModel):
     id: str
