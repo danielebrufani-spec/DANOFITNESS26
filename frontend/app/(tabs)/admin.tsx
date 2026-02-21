@@ -612,7 +612,7 @@ export default function AdminScreen() {
                     {user.nome?.charAt(0)}{user.cognome?.charAt(0)}
                   </Text>
                 </View>
-                <View style={styles.userInfo}>
+                <View style={styles.userInfoFlex}>
                   <Text style={styles.userName}>{user.nome} {user.cognome}</Text>
                   <Text style={styles.userEmail}>{user.email}</Text>
                   {user.telefono && (
@@ -621,18 +621,14 @@ export default function AdminScreen() {
                 </View>
                 {user.role === 'admin' ? (
                   <View style={styles.adminBadge}>
-                    <Ionicons name="shield" size={14} color={COLORS.text} />
+                    <Text style={styles.adminBadgeText}>Admin</Text>
                   </View>
                 ) : (
                   <TouchableOpacity 
-                    style={styles.deleteUserButton}
-                    onPress={() => {
-                      console.log('Delete user clicked:', user.id);
-                      handleDeleteUser(user.id, `${user.nome} ${user.cognome}`);
-                    }}
-                    activeOpacity={0.6}
+                    style={styles.deleteBtn}
+                    onPress={() => handleDeleteUser(user.id, `${user.nome} ${user.cognome}`)}
                   >
-                    <Ionicons name="trash-outline" size={22} color={COLORS.error} />
+                    <Text style={styles.deleteBtnText}>Elimina</Text>
                   </TouchableOpacity>
                 )}
               </View>
