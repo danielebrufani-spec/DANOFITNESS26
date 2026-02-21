@@ -648,14 +648,33 @@ export default function AdminScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Nuovo Abbonamento</Text>
-              <TouchableOpacity onPress={() => setShowAddSubscription(false)}>
+              <TouchableOpacity onPress={() => {
+                setShowAddSubscription(false);
+                setSubscriptionUserSearch('');
+                setSelectedUser('');
+              }}>
                 <Ionicons name="close" size={24} color={COLORS.text} />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.modalLabel}>Seleziona Utente</Text>
+            <Text style={styles.modalLabel}>Cerca Utente</Text>
+            <View style={styles.modalSearchContainer}>
+              <Ionicons name="search" size={18} color={COLORS.textSecondary} />
+              <TextInput
+                style={styles.modalSearchInput}
+                placeholder="Nome o cognome..."
+                placeholderTextColor={COLORS.textSecondary}
+                value={subscriptionUserSearch}
+                onChangeText={setSubscriptionUserSearch}
+              />
+              {subscriptionUserSearch.length > 0 && (
+                <TouchableOpacity onPress={() => setSubscriptionUserSearch('')}>
+                  <Ionicons name="close-circle" size={18} color={COLORS.textSecondary} />
+                </TouchableOpacity>
+              )}
+            </View>
             <ScrollView style={styles.userList} horizontal showsHorizontalScrollIndicator={false}>
-              {users.filter(u => u.role !== 'admin').map((user) => (
+              {filteredUsersForSubscription.map((user) => (
                 <TouchableOpacity
                   key={user.id}
                   style={[
@@ -675,6 +694,9 @@ export default function AdminScreen() {
                 </TouchableOpacity>
               ))}
             </ScrollView>
+            {filteredUsersForSubscription.length === 0 && (
+              <Text style={styles.noUsersText}>Nessun utente trovato</Text>
+            )}
 
             <Text style={styles.modalLabel}>Tipo Abbonamento</Text>
             <View style={styles.typeGrid}>
