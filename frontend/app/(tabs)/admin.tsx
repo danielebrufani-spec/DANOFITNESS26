@@ -133,6 +133,15 @@ export default function AdminScreen() {
     }
   };
 
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadData();
+    }, 30000); // 30 seconds
+    
+    return () => clearInterval(interval);
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       loadData();
