@@ -9,11 +9,14 @@ from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from passlib.context import CryptContext
 import jwt
 from bson import ObjectId
 from enum import Enum
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
+import asyncio
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -27,6 +30,9 @@ db = client[os.environ.get('DB_NAME', 'danofitness')]
 SECRET_KEY = os.environ.get('JWT_SECRET', 'danofitness_secret_key_2025')
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS = 30
+
+# Scheduler for automatic tasks
+scheduler = AsyncIOScheduler()
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
