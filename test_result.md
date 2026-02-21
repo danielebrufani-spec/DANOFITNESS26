@@ -131,6 +131,9 @@ backend:
       - working: true
         agent: "main"
         comment: "Lessons auto-initialized from schedule. GET /api/lessons working."
+      - working: true
+        agent: "testing"
+        comment: "Lessons API fully tested. GET /api/lessons returns 13 lessons correctly. GET /api/lessons/day/{giorno} tested for lunedi, martedi, sabato with correct filtering."
 
   - task: "Subscriptions Management"
     implemented: true
