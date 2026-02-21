@@ -1015,6 +1015,36 @@ async def get_all_notifications(admin_user: dict = Depends(get_admin_user)):
     
     return result
 
+@api_router.delete("/admin/users/{user_id}")
+async def delete_user(user_id: str, admin_user: dict = Depends(get_admin_user)):
+    """Delete a user and all their associated data (subscriptions, bookings)"""
+    try:
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            raise HTTPException(status_code=404, detail="Utente non trovato")
+        
+        # Cannot delete admin users
+        if user.get("role") == UserRole.ADMIN:
+            raise HTTPException(status_code=400, detail="Non puoi eliminare un admin")
+        
+        # Delete user's subscriptions
+        await db.subscriptions.delete_many({"user_id": user_id})
+        
+        # Delete user's bookings
+        await db.bookings.delete_many({"user_id": user_id})
+        
+        # Delete user's notifications
+        await db.notifications.delete_many({"user_id": user_id})
+        
+        # Delete the user
+        await db.users.delete_one({"_id": ObjectId(user_id)})
+        
+        return {"message": "Utente eliminato con successo"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.get("/notifications/me", response_model=List[NotificationResponse])
 async def get_my_notifications(current_user: dict = Depends(get_current_user)):
     user_id = str(current_user["_id"])
