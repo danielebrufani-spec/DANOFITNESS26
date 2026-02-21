@@ -282,6 +282,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.text,
   },
+  logoImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+  },
   logoContainer: {
     width: 48,
     height: 48,
