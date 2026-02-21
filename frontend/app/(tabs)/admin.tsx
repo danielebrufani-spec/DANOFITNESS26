@@ -64,6 +64,10 @@ export default function AdminScreen() {
   const [expiredSubscriptions, setExpiredSubscriptions] = useState<Subscription[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   
+  // Search
+  const [userSearchQuery, setUserSearchQuery] = useState<string>('');
+  const [subscriptionUserSearch, setSubscriptionUserSearch] = useState<string>('');
+  
   // Add subscription modal
   const [showAddSubscription, setShowAddSubscription] = useState(false);
   const [selectedUser, setSelectedUser] = useState<string>('');
@@ -80,6 +84,29 @@ export default function AdminScreen() {
 
   // Expanded days
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
+
+  // Filtered users based on search
+  const filteredUsers = users.filter(user => {
+    if (!userSearchQuery.trim()) return true;
+    const searchLower = userSearchQuery.toLowerCase();
+    return (
+      user.nome?.toLowerCase().includes(searchLower) ||
+      user.cognome?.toLowerCase().includes(searchLower) ||
+      user.email?.toLowerCase().includes(searchLower) ||
+      user.telefono?.includes(searchLower)
+    );
+  });
+
+  // Filtered users for subscription modal
+  const filteredUsersForSubscription = users.filter(u => {
+    if (u.role === 'admin') return false;
+    if (!subscriptionUserSearch.trim()) return true;
+    const searchLower = subscriptionUserSearch.toLowerCase();
+    return (
+      u.nome?.toLowerCase().includes(searchLower) ||
+      u.cognome?.toLowerCase().includes(searchLower)
+    );
+  });
 
   const loadData = async () => {
     try {
