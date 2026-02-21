@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 class DanoFitnessAPITester:
     def __init__(self):
         # Use the frontend env URL for external access
-        self.base_url = "https://dano-schedule-mgmt.preview.emergentagent.com/api"
+        self.base_url = "https://danofitness-booking-1.preview.emergentagent.com/api"
         self.admin_token = None
         self.user_token = None
         self.test_user_id = None
