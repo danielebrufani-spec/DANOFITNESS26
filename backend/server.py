@@ -495,6 +495,62 @@ async def get_expired_subscriptions(admin_user: dict = Depends(get_admin_user)):
     
     return result
 
+@api_router.put("/subscriptions/{subscription_id}", response_model=SubscriptionResponse)
+async def update_subscription(subscription_id: str, data: SubscriptionUpdate, admin_user: dict = Depends(get_admin_user)):
+    """Update subscription - admin only. Can modify remaining lessons, expiry date, or active status."""
+    try:
+        sub = await db.subscriptions.find_one({"_id": ObjectId(subscription_id)})
+    except:
+        raise HTTPException(status_code=404, detail="Abbonamento non trovato")
+    
+    if not sub:
+        raise HTTPException(status_code=404, detail="Abbonamento non trovato")
+    
+    # Build update dict
+    update_data = {}
+    if data.lezioni_rimanenti is not None:
+        update_data["lezioni_rimanenti"] = data.lezioni_rimanenti
+    if data.data_scadenza is not None:
+        update_data["data_scadenza"] = data.data_scadenza
+    if data.attivo is not None:
+        update_data["attivo"] = data.attivo
+    
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Nessun dato da aggiornare")
+    
+    # Update subscription
+    await db.subscriptions.update_one(
+        {"_id": ObjectId(subscription_id)},
+        {"$set": update_data}
+    )
+    
+    # Get updated subscription
+    updated_sub = await db.subscriptions.find_one({"_id": ObjectId(subscription_id)})
+    
+    # Get user info
+    try:
+        user = await db.users.find_one({"_id": ObjectId(updated_sub["user_id"])})
+    except:
+        user = None
+    
+    is_expired = updated_sub["data_scadenza"] < datetime.utcnow()
+    if updated_sub["lezioni_rimanenti"] is not None and updated_sub["lezioni_rimanenti"] <= 0:
+        is_expired = True
+    
+    return SubscriptionResponse(
+        id=str(updated_sub["_id"]),
+        user_id=updated_sub["user_id"],
+        user_nome=user["nome"] if user else "Sconosciuto",
+        user_cognome=user["cognome"] if user else "",
+        tipo=updated_sub["tipo"],
+        lezioni_rimanenti=updated_sub["lezioni_rimanenti"],
+        data_inizio=updated_sub["data_inizio"],
+        data_scadenza=updated_sub["data_scadenza"],
+        attivo=updated_sub["attivo"],
+        scaduto=is_expired,
+        created_at=updated_sub["created_at"]
+    )
+
 @api_router.delete("/subscriptions/{subscription_id}")
 async def delete_subscription(subscription_id: str, admin_user: dict = Depends(get_admin_user)):
     try:
