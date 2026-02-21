@@ -54,7 +54,11 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
-            <Text style={styles.logo}>DANOFITNESS</Text>
+            <Image 
+              source={require('../assets/images/logo.jpg')} 
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
             <Text style={styles.subtitle}>Programma Invernale 2025/26</Text>
           </View>
 
