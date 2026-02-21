@@ -1397,6 +1397,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.text,
   },
+  cardActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+    justifyContent: 'flex-end',
+  },
+  actionBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.cardLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   cardButtons: {
     flexDirection: 'row',
     gap: 8,
