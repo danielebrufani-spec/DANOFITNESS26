@@ -17,31 +17,38 @@ export default function TabsLayout() {
       if (!user) return;
       
       try {
-        const lastReadTime = await AsyncStorage.getItem('lastChatReadTime');
         const response = await apiService.getMessages();
         const messages = response.data;
         
-        if (lastReadTime) {
-          const lastRead = new Date(lastReadTime);
-          let count = 0;
-          messages.forEach(msg => {
-            if (new Date(msg.created_at) > lastRead) count++;
-            msg.replies.forEach(reply => {
-              if (new Date(reply.created_at) > lastRead && reply.user_id !== user.id) count++;
-            });
+        // Get last read time from storage
+        const lastReadStr = await AsyncStorage.getItem('lastChatReadTime');
+        const lastRead = lastReadStr ? new Date(lastReadStr) : new Date(0);
+        
+        let count = 0;
+        messages.forEach(msg => {
+          // Count new messages
+          if (new Date(msg.created_at) > lastRead) {
+            count++;
+          }
+          // Count new replies from others
+          msg.replies?.forEach(reply => {
+            if (new Date(reply.created_at) > lastRead && reply.user_id !== user.id) {
+              count++;
+            }
           });
-          setUnreadCount(count);
-        } else {
-          setUnreadCount(messages.length > 0 ? messages.length : 0);
-        }
+        });
+        
+        setUnreadCount(count);
       } catch (error) {
         console.error('Error checking unread:', error);
       }
     };
 
-    checkUnread();
-    const interval = setInterval(checkUnread, 30000);
-    return () => clearInterval(interval);
+    if (user) {
+      checkUnread();
+      const interval = setInterval(checkUnread, 10000); // Check every 10 seconds
+      return () => clearInterval(interval);
+    }
   }, [user]);
 
   return (
