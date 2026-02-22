@@ -230,26 +230,51 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* Quick Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Azioni Rapide</Text>
-          <View style={styles.actionsGrid}>
-            <TouchableOpacity
-              style={styles.actionCard}
-              onPress={() => router.push('/(tabs)/prenota')}
-            >
-              <Ionicons name="calendar" size={32} color={COLORS.primary} />
-              <Text style={styles.actionText}>Prenota Lezione</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionCard}
-              onPress={() => router.push('/(tabs)/abbonamento')}
-            >
-              <Ionicons name="card" size={32} color={COLORS.primary} />
-              <Text style={styles.actionText}>Abbonamento</Text>
-            </TouchableOpacity>
+        {/* Quick Actions - Solo per clienti */}
+        {!isAdmin && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Azioni Rapide</Text>
+            <View style={styles.actionsGrid}>
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => router.push('/(tabs)/prenota')}
+              >
+                <Ionicons name="calendar" size={32} color={COLORS.primary} />
+                <Text style={styles.actionText}>Prenota Lezione</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => router.push('/(tabs)/abbonamento')}
+              >
+                <Ionicons name="card" size={32} color={COLORS.primary} />
+                <Text style={styles.actionText}>Abbonamento</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        )}
+
+        {/* Quick Actions - Solo per admin */}
+        {isAdmin && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Azioni Rapide</Text>
+            <View style={styles.actionsGrid}>
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => router.push('/(tabs)/admin')}
+              >
+                <Ionicons name="people" size={32} color={COLORS.primary} />
+                <Text style={styles.actionText}>Gestione Utenti</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => router.push('/(tabs)/admin')}
+              >
+                <Ionicons name="clipboard" size={32} color={COLORS.primary} />
+                <Text style={styles.actionText}>Presenze</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
