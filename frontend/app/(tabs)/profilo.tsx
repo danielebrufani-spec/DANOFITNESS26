@@ -459,6 +459,11 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: 2,
   },
+  notSupported: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    fontStyle: 'italic',
+  },
   errorText: {
     fontSize: 12,
     color: COLORS.error,
