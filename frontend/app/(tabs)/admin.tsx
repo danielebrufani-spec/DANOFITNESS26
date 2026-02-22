@@ -611,9 +611,13 @@ export default function AdminScreen() {
             {filteredUsers.map((user) => (
               <View key={user.id} style={styles.userCard}>
                 <View style={styles.userAvatar}>
-                  <Text style={styles.userAvatarText}>
-                    {user.nome?.charAt(0)}{user.cognome?.charAt(0)}
-                  </Text>
+                  {user.profile_image ? (
+                    <Image source={{ uri: user.profile_image }} style={styles.userAvatarImage} />
+                  ) : (
+                    <Text style={styles.userAvatarText}>
+                      {user.nome?.charAt(0)}{user.cognome?.charAt(0)}
+                    </Text>
+                  )}
                 </View>
                 <View style={styles.userInfoFlex}>
                   <Text style={styles.userName}>{user.nome} {user.cognome}</Text>
