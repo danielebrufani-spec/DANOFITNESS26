@@ -32,8 +32,13 @@ self.addEventListener('push', (event) => {
     body: data.body,
     icon: data.icon || '/icon-192.png',
     badge: data.badge || '/icon-192.png',
-    vibrate: [200, 100, 200],
+    vibrate: [200, 100, 200, 100, 200],
+    sound: '/notification.mp3',
     data: data.data || {},
+    tag: 'danofitness-notification',
+    renotify: true,
+    requireInteraction: false,
+    silent: false,
     actions: [
       { action: 'open', title: 'Apri App' }
     ]
