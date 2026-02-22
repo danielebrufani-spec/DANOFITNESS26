@@ -71,17 +71,17 @@ export default function TabsLayout() {
 
   // Calculate safe tab bar height for different platforms
   const tabBarHeight = Platform.select({
-    ios: 90,
-    android: 70,
-    web: 75,
-    default: 75,
+    ios: 100,
+    android: 85,
+    web: 90,
+    default: 90,
   });
   
   const tabBarPaddingBottom = Platform.select({
-    ios: 30,
-    android: 12,
-    web: 15,
-    default: 15,
+    ios: 35,
+    android: 20,
+    web: 25,
+    default: 25,
   });
 
   return (
