@@ -760,7 +760,8 @@ async def get_all_users(admin_user: dict = Depends(get_admin_user)):
             telefono=user.get("telefono"),
             role=user["role"],
             created_at=user["created_at"],
-            push_token=user.get("push_token")
+            push_token=user.get("push_token"),
+            profile_image=user.get("profile_image")
         ) for user in users
     ]
 
