@@ -1130,6 +1130,125 @@ async def mark_notification_read(notification_id: str, current_user: dict = Depe
     except:
         raise HTTPException(status_code=404, detail="Notifica non trovata")
 
+# ======================== CHAT/COMUNICAZIONI ========================
+
+@api_router.post("/messages", response_model=MessageResponse)
+async def create_message(message: MessageCreate, admin_user: dict = Depends(get_admin_user)):
+    """Admin creates a new message/announcement"""
+    message_doc = {
+        "sender_id": str(admin_user["_id"]),
+        "content": message.content,
+        "created_at": datetime.utcnow(),
+        "replies": [],
+        "is_admin_message": True
+    }
+    
+    result = await db.messages.insert_one(message_doc)
+    
+    # Send push notification to all users
+    users = await db.users.find({"role": "client", "push_subscription": {"$exists": True}}).to_list(1000)
+    for user in users:
+        await send_push_notification(
+            str(user["_id"]),
+            "Nuova Comunicazione",
+            message.content[:100] + "..." if len(message.content) > 100 else message.content
+        )
+    
+    return MessageResponse(
+        id=str(result.inserted_id),
+        sender_id=str(admin_user["_id"]),
+        sender_nome=admin_user["nome"],
+        sender_cognome=admin_user["cognome"],
+        sender_profile_image=admin_user.get("profile_image"),
+        content=message.content,
+        created_at=message_doc["created_at"],
+        replies=[],
+        is_admin_message=True
+    )
+
+@api_router.get("/messages", response_model=List[MessageResponse])
+async def get_messages(current_user: dict = Depends(get_current_user)):
+    """Get all messages with replies"""
+    messages = await db.messages.find().sort("created_at", -1).to_list(100)
+    
+    result = []
+    for msg in messages:
+        sender = await db.users.find_one({"_id": ObjectId(msg["sender_id"])})
+        
+        replies = []
+        for reply in msg.get("replies", []):
+            reply_user = await db.users.find_one({"_id": ObjectId(reply["user_id"])})
+            if reply_user:
+                replies.append(ReplyResponse(
+                    id=reply["id"],
+                    user_id=reply["user_id"],
+                    user_nome=reply_user["nome"],
+                    user_cognome=reply_user["cognome"],
+                    user_profile_image=reply_user.get("profile_image"),
+                    content=reply["content"],
+                    created_at=reply["created_at"]
+                ))
+        
+        result.append(MessageResponse(
+            id=str(msg["_id"]),
+            sender_id=msg["sender_id"],
+            sender_nome=sender["nome"] if sender else "Admin",
+            sender_cognome=sender["cognome"] if sender else "",
+            sender_profile_image=sender.get("profile_image") if sender else None,
+            content=msg["content"],
+            created_at=msg["created_at"],
+            replies=replies,
+            is_admin_message=msg.get("is_admin_message", True)
+        ))
+    
+    return result
+
+@api_router.post("/messages/{message_id}/reply", response_model=ReplyResponse)
+async def reply_to_message(message_id: str, reply: ReplyCreate, current_user: dict = Depends(get_current_user)):
+    """Reply to a message"""
+    message = await db.messages.find_one({"_id": ObjectId(message_id)})
+    if not message:
+        raise HTTPException(status_code=404, detail="Messaggio non trovato")
+    
+    reply_doc = {
+        "id": str(uuid.uuid4()),
+        "user_id": str(current_user["_id"]),
+        "content": reply.content,
+        "created_at": datetime.utcnow()
+    }
+    
+    await db.messages.update_one(
+        {"_id": ObjectId(message_id)},
+        {"$push": {"replies": reply_doc}}
+    )
+    
+    # Send push notification to admin
+    admin = await db.users.find_one({"role": "admin", "push_subscription": {"$exists": True}})
+    if admin:
+        await send_push_notification(
+            str(admin["_id"]),
+            f"Risposta da {current_user['nome']}",
+            reply.content[:100] + "..." if len(reply.content) > 100 else reply.content
+        )
+    
+    return ReplyResponse(
+        id=reply_doc["id"],
+        user_id=str(current_user["_id"]),
+        user_nome=current_user["nome"],
+        user_cognome=current_user["cognome"],
+        user_profile_image=current_user.get("profile_image"),
+        content=reply.content,
+        created_at=reply_doc["created_at"]
+    )
+
+@api_router.delete("/messages/{message_id}")
+async def delete_message(message_id: str, admin_user: dict = Depends(get_admin_user)):
+    """Admin deletes a message"""
+    result = await db.messages.delete_one({"_id": ObjectId(message_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Messaggio non trovato")
+    return {"message": "Messaggio eliminato"}
+
 # ======================== PUSH NOTIFICATIONS ========================
 
 @api_router.get("/push/vapid-public-key")
