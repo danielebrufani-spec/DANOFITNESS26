@@ -1,176 +1,242 @@
-<analysis>
-
-**original_problem_statement:**
-The user, Daniele, who runs Danofitness23, requested a mobile application to manage his fitness studio's class bookings.
+<analysis>**original_problem_statement:**
+The user, Daniele, who runs Danofitness23, requested a mobile-first web application to manage his fitness studio's class bookings, subscriptions, and users.
 
 **PRODUCT REQUIREMENTS:**
-- **User Management:**
-    - Clients can register for the app.
-    - Admin (Daniele) can manage users, including deleting them.
-- **Subscription Management:**
-    - The app must handle per-lesson and time-based subscription packs.
-    - Admin must be able to manually edit and delete a client's subscription.
-- **Booking System:**
-    - Clients can book and cancel classes.
-    - Bookings are managed on a weekly basis.
-    - The admin needs a real-time view of all bookings for the week.
-- **Class & Schedule Management:**
-    - The app should display a daily list of activities.
-    - The Admin needs a screen to see an overview of attendance for each class (Presenze).
+- **User Management:** Clients can register and manage their profiles. The admin can manage all users, including viewing their profile pictures and deleting them.
+- **Subscription Management:** The app must handle per-lesson and time-based subscription packs. The admin can create, edit, and delete client subscriptions.
+- **Booking System:** Clients can book and cancel classes from a weekly schedule.
+- **Admin Panel:** A comprehensive dashboard for the admin to get a real-time overview of weekly class attendance (Presenze), manage all users, and manage all subscriptions.
+- **Communication:** A chat feature where the admin can send broadcast messages to all users, and users can reply. This should include notifications.
+- **Profile Customization:** Users can upload their own profile pictures.
 - **UI/UX:**
-    - The app should feature the Danofitness23 logo on the login screen and inside the app.
-    - The admin panel should have a search bar for users.
-    - The admin panel should have a refresh button to see new bookings in real-time.
-    - The admin panel should have clear icons/buttons for actions like edit and delete.
+    - The app must feature the Danofitness23 logo.
+    - The app should be installable on a phone's home screen (PWA) with a custom icon.
+    - The UI should be mobile-friendly and intuitive for both clients and the admin.
 
 **User's preferred language**: Italiano. The next agent MUST respond in Italian.
 
 **what currently exists?**
-A full-stack application with a FastAPI backend and an Expo (React Native) frontend.
-- **Backend:** JWT authentication, data models for users, subscriptions, lessons, and bookings. API endpoints for all core functionalities, including user/subscription deletion and a weekly booking overview. An automated midnight job is also implemented.
-- **Frontend:** User registration, login, and a tab-based navigation system.
-    - **Client Panel:** View weekly schedule, book/cancel lessons.
-    - **Admin Panel:** A dashboard with three tabs: Presenze (weekly attendance view), Abbonamenti (subscriptions management), and Utenti (users management). The admin panel includes a user search bar, delete functionality for users and subscriptions, and both a manual refresh button and an automatic 30-second refresh for the attendance view.
-- The Danofitness23 logo is present on the login, registration, and home screens.
+A full-stack application with a FastAPI backend and a React Native (Expo) frontend. A major architectural change was made: the frontend is no longer served via the unstable Expo development tunnel. It is now a **static build** (env: load .env
+env: export EXPO_TUNNEL_SUBDOMAIN EXPO_PACKAGER_HOSTNAME EXPO_PUBLIC_BACKEND_URL EXPO_USE_FAST_RESOLVER METRO_CACHE_ROOT EXPO_PACKAGER_PROXY_URL
+Fast resolver is enabled.
+Starting Metro Bundler
+Static rendering is enabled. Learn more: https://docs.expo.dev/router/reference/static-rendering/
+λ Bundled 1556ms node_modules/expo-router/node/render.js (930 modules)
+Web Bundled 1852ms node_modules/expo-router/entry.js (819 modules)
+
+› web bundles (1):
+_expo/static/js/web/entry-65ca78746a4c9467d66abac3f0316255.js (1.64 MB)
+
+› Static routes (17):
+/home (31.7 kB)
+/ (index) (23.9 kB)
+/login (26 kB)
+/admin (31.7 kB)
+/prenota (31.7 kB)
+/profilo (34.5 kB)
+/register (27.7 kB)
+/_sitemap (22.9 kB)
+/+not-found (22.9 kB)
+/abbonamento (31.7 kB)
+/(tabs)/home (31.7 kB)
+/(tabs)/admin (31.7 kB)
+/comunicazioni (31.7 kB)
+/(tabs)/prenota (31.7 kB)
+/(tabs)/profilo (34.5 kB)
+/(tabs)/abbonamento (31.7 kB)
+/(tabs)/comunicazioni (31.7 kB)
+
+Exported: dist) served by a simple Python HTTP server managed by Supervisor. This has made the app stable and fast but introduces challenges with browser caching.
+
+The application includes:
+- **Backend:** JWT authentication, data models and API endpoints for users, subscriptions, lessons, bookings, profile pictures, a chat system, and web push notifications. A scheduled job runs daily to check for expiring subscriptions.
+- **Frontend:**
+    - User registration, login, and profile management with picture uploads.
+    - A client-side booking system.
+    - A Chat tab for communications.
+    - A tab-based layout that conditionally renders tabs based on user role (client vs. admin).
+    - A comprehensive Admin Panel with tabs for Presenze (Attendance), Abbonamenti (Subscriptions), and Utenti (Users).
+    - The app is configured as a Progressive Web App (PWA), allowing it to be added to a phone's home screen with the Danofitness23 logo.
+- The critical bug causing incorrect booking dates has been **resolved**.
 
 **Last working item**:
-- **Last item agent was working:** The user Daniele reported again that he could not see all the bookings for a client named Carla Starnini. The agent discovered that the frontend was *still* creating bookings with incorrect dates (e.g., booking a Tuesday lesson but saving it with Monday's date). The agent manually corrected the dates in the database for the existing incorrect bookings and then provided the user with a cache-busting link.
-- **Status:** USER VERIFICATION PENDING
-- **Agent Testing Done:** Y (Agent verified the data correction in the DB and via API call).
-- **Which testing method agent to use?** Manual testing by user. The core bug requires frontend code fixing.
-- **User Testing Done:** N (User has been given a new link but has not confirmed if the issue is resolved).
+- **Last item agent was working:** The user reported two UI issues: 1) The unread message count badge on the Chat tab was not appearing. 2) The bottom tab bar was too short on mobile devices, cutting off the text labels below the icons. The agent attempted to fix both issues by modifying the logic for the badge and increasing the height of the tab bar in .
+- **Status:** IN PROGRESS
+- **Agent Testing Done:** N
+- **Which testing method agent to use?** Frontend testing agent. The test should involve:
+    1. Logging in as admin and taking a screenshot to verify the new tab bar height.
+    2. Logging in as a test client, then having the admin send a message in the chat.
+    3. Switching back to the client's session to check if the red badge with a number appears on the Chat tab icon.
+- **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-- **Issue 1: Root Cause of Incorrect Bookings in Frontend (P0 - CRITICAL)**
-    - **Description:** The application's most critical bug is in the client-side booking logic (). When a user selects a day and then books a lesson corresponding to a *different* day of the week, the frontend saves the booking with the selected date, not the lesson's correct date. This creates data inconsistency, making the bookings invisible in the admin's weekly view. The agent has repeatedly fixed the data in the database, but this only cures the symptom, not the cause.
-    - **Attempted fixes:** The agent has tried multiple times to fix the logic in  by ensuring the correct date is calculated based on the lesson's day. However, the bug persists, indicating the fixes were either incorrect or incomplete. The last attempt involved modifying  to recalculate the date, but it seems to have failed.
-    - **Next debug checklist:**
-        1.  Thoroughly review the  function in .
-        2.  Add  statements to trace the Sat Feb 21 17:39:24 UTC 2026 being sent to the  API call.
-        3.  The agent's last fix attempt was in , ensuring  is derived from  and . This logic appears correct but is clearly not being executed properly or is being bypassed. The next agent must trace why this logic fails.
-        4.  Reproduce the bug by logging in as a client, selecting a Monday, and booking a lesson for Tuesday. Check the network request payload and the resulting database entry.
-    - **Why fix this issue and what will be achieved with the fix?** This is the core function of the app. Fixing it will ensure data integrity and make the admin's attendance view reliable, resolving the user's primary and most frequent complaint.
-    - **Status:** IN PROGRESS
-    - **Is recurring issue?** Y
-    - **Should Test frontend/backend/both after fix?** both
-    - **Blocked on other issue:** None
+- **Issue 1: Unread Message Badge on Chat Tab is Not Working (P0 - HIGH)**
+  - **Description:** The user reported that despite new messages in the chat, the red badge indicating the number of unread messages does not appear on the Chat tab icon.
+  - **Attempted fixes:** The agent modified the logic in  and the  hook multiple times, but the issue persists, likely due to a logic flaw or aggressive browser caching of the static files.
+  - **Next debug checklist:**
+    1.  Review the  hook and the associated  logic for .
+    2.  Add extensive  statements to trace the  value within .
+    3.  Verify that  is correctly updated in  only when the chat tab is actually viewed.
+    4.  The most reliable test: use two separate incognito browser windows (one for admin, one for a client) to test the flow in real-time.
+  - **Status:** IN PROGRESS
+  - **Is recurring issue?** Y
+  - **Should Test frontend/backend/both after fix?** frontend
 
-- **Issue 2: Expo Preview Tunnel Instability (P1)**
-    - **Description:** The Expo development server's ngrok tunnel is highly unstable, frequently resulting in  errors and connection timeouts. This severely slows down development and testing.
-    - **Attempted fixes:** The agent has used expo: ERROR (not running)
-expo: started multiple times and has called the . The issue is environmental and related to ngrok session limits. A clean restart ( then ) sometimes helps.
-    - **Next debug checklist:** If the issue occurs, stop the expo service (expo: stopped), wait 10 seconds, then start it again (expo: started). If it persists after 2 attempts, call the .
-    - **Why fix this issue and what will be achieved with the fix?** A stable development environment is crucial for efficient debugging and feature implementation.
-    - **Status:** IN PROGRESS
-    - **Is recurring issue?** Y
-    - **Should Test frontend/backend/both after fix?** frontend
-    - **Blocked on other issue:** None
+- **Issue 2: Bottom Tab Bar UI is Cut Off on Mobile (P0 - HIGH)**
+  - **Description:** The user stated that on mobile phones, the text labels under the icons in the bottom navigation bar are not visible because the bar is not tall enough.
+  - **Attempted fixes:** The agent increased the  property in the  within .
+  - **Next debug checklist:**
+    1.  Inspect the  in . A static  might not be the best solution.
+    2.  Consider using  instead of, or in addition to,  to account for the safe area on different devices.
+    3.  Use the screenshot tool with a mobile viewport to verify the fix before asking the user.
+  - **Status:** IN PROGRESS
+  - **Is recurring issue?** N
+  - **Should Test frontend/backend/both after fix?** frontend
+
+- **Issue 3: Push Notification User Experience is Unreliable (P1 - MEDIUM)**
+  - **Description:** The user has struggled to see and enable the push notification feature. They also reported not hearing a sound. Backend logs confirm notifications are being *sent*, but the client-side experience is failing.
+  - **Attempted fixes:** The agent made the notification toggle in the profile visible, added  to the service worker, and repeatedly rebuilt the app. The core issue seems to be a mix of browser caching (preventing UI updates) and potential browser/OS settings on the user's end.
+  - **Next debug checklist:**
+    1.  Verify the UI for the notification toggle in  is robust and provides clear feedback (e.g., Enabled, Disabled, Not supported by browser).
+    2.  Check the service worker () registration and push event listener.
+    3.  Create a very clear, step-by-step guide for the user on how to clear their browser cache and re-enable notifications.
+  - **Status:** IN PROGRESS
+  - **Is recurring issue?** Y
+  - **Should Test frontend/backend/both after fix?** both
 
 **In progress Task List**:
-- **Task 1: Fix the Booking Logic (P0)**
-    - **Description**: This is the frontend part of Issue 1.
-    - **Where to resume**: . The  function is the primary suspect.
-    - **What will be achieved with this?** Bookings will be saved with the correct date, and they will appear correctly in the admin's attendance view. This will fix the user's main frustration.
-    - **Status:** IN PROGRESS
-    - **Should Test frontend/backend/both after fix?** both
-    - **Blocked on something:** None
+N/A
 
 **Upcoming and Future Tasks**
-- **Upcoming Tasks:**
-    - **Push Notifications (P1):** Implement push notifications for events like booking confirmations or reminders. This was an early user request that has not been addressed.
-    - **Expired Subscription Notifications (P1):** Implement a system to notify the user and/or admin about expired subscriptions.
 - **Future Tasks:**
-    - **Seasonal Registration Fee (P2):** The initial requirements mentioned a  seasonal registration fee. No logic for this exists.
+    - **Seasonal Registration Fee (P2):** Implement the  seasonal registration fee mentioned in the original requirements. This has not been started.
 
 **Completed work in this session**
-- **Recently completed:**
-  - **User & Subscription Deletion (DONE):** Implemented backend endpoints (, ) and corresponding frontend UI in the admin panel.
-  - **Admin Panel UI/UX (DONE):**
-    - Added a user search bar.
-    - Replaced initial Elimina text buttons with clearer  and  icons for editing/deleting subscriptions and users.
-    - Added a manual Aggiorna (Refresh) button.
-    - Implemented an automatic 30-second data refresh on the Presenze tab.
-  - **Logo Integration (DONE):** Added the user-provided logo to the login, registration, and main home screens.
-  - **QR Code Generation (DONE):** Generated a QR code for the app's preview link.
-  - **Admin Weekly View (DONE):** The initial task to replace the daily view with a weekly one was completed.
+- **Critical Bug Fix:** Permanently resolved the recurring bug where bookings were saved with the wrong date due to a  timezone conflict.
+- **App Stability Overhaul:** Switched the frontend from the unstable Expo dev server to a fast and stable **static build**, solving all connection-related issues.
+- **Feature - Chat System:** Implemented a real-time communication channel for the admin and clients.
+- **Feature - Profile Picture Upload:** Users can now upload and display a profile picture. The admin can see these pictures in the user list.
+- **Feature - PWA & Home Screen Icon:** Configured the application as a Progressive Web App, allowing it to be installed on a phone's home screen with the DanoFitness23 logo.
+- **Feature - Push Notifications:** Implemented the backend logic and frontend UI for sending web push notifications for chat messages and expiring subscriptions. (Note: User verification is still pending).
+- **Admin Panel Restoration:** Simplified the admin panel and then restored it to its full functionality per the user's request.
+- **UI/UX Enhancements:**
+    - Corrected the logic for hiding tabs (Admin, Prenota) based on user role.
+    - Created a custom, role-specific Home screen.
+    - Fixed the logic for the Expired Subscription badge.
+    - Fixed the web-incompatible  on the logout button.
 
 **Earlier issues found/mentioned but not fixed**
-   - The root cause of the incorrect booking dates () is the only major unfixed issue. All other reported problems were either addressed or were symptoms of this main bug.
+- The push notification feature's unreliability is the primary feature that was implemented but remains unfixed from a user-experience perspective.
 
 **Known issue recurrence from previous fork**
-  - **Issue recurrence in previous fork:** Expo Preview Tunnel Instability.
-  - **Recurrence count:** High (occurred repeatedly throughout the session).
-  - **Status:** NOT STARTED (It's an environmental issue, with workarounds but no permanent fix).
-  - **Note:** The issue of incorrect booking data has become a recurring issue within this session due to the agent only fixing the symptoms (the data) and not the root cause (the frontend code).
+- **Issue recurrence in previous fork:** Expo Preview Tunnel Instability.
+- **Recurrence count:** High.
+- **Status:** **RESOLVED**. This was permanently fixed by switching to a static build architecture.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Backend:** FastAPI, Pydantic, JWT, APScheduler, Uvicorn, Motor (async MongoDB driver).
-- **Frontend:** Expo, React Native, TypeScript, Expo Router, Zustand, .
+- **Backend:** FastAPI, Pydantic, JWT, APScheduler, Motor.
+- **Frontend:** Expo (for web), React Native, TypeScript, Zustand, .
+- **Architecture:** The frontend is a **Static Build** served by a Python . It is NOT using the Expo development server.
+- **Features:** Web Push Notifications, Progressive Web App (PWA).
 - **Database:** MongoDB.
 
 **key DB schema**
-  - **users**: 
-  - **subscriptions**: 
-  - **bookings**:  (Note:  is the problematic field)
-  - **lessons**: 
+- **users**: 
+- **subscriptions**: 
+- **bookings**: 
+- **lessons**: 
+- **messages**:  (New)
+- **push_subscriptions**:  (New)
 
 **changes in tech stack**
-  -  python library was installed in the backend to generate the QR code.
+-  was added to the frontend.
+-  was added to the backend.
 
 **All files of reference**
-- **Created/Updated:**
-  - : Added  endpoints for users and subscriptions. Temporarily modified the weekly bookings endpoint to handle inconsistent data (this should be reverted after the bug fix).
-  - : Heavily modified to add tabs, search, delete functionality, refresh buttons, auto-refresh logic, and UI changes (icons).
-  - : **Contains the critical bug.** This file has been modified multiple times in an attempt to fix the booking logic, but the issue persists.
-  - : Added  and  functions.
-  - , , : Modified to add the logo.
-  - , : New files added.
+- **Architecture Change:**  was created to run the static server, and  was modified to execute it.
+- **PWA/Push:** , ,  were created/modified.
+- **Chat:**  was created.  and  were heavily updated.
+- **Profile Picture:** , ,  were all modified.
+- **Bug Fixes:**  (for UI bugs),  (for date bug).
 
 **Areas that need refactoring**:
-- The  component, which is used for delete confirmations, does not work on Expo for Web. The agent removed the confirmation dialog entirely, leading to direct deletion on click. This is a poor UX and a potential risk for accidental deletions. A custom modal component should be created for web-compatible confirmations.
+- ** is a monolith.** It urgently needs to be broken down into a standard FastAPI structure (e.g., , , ) to be maintainable.
+- **Confirmation Modals:** Destructive actions (delete user, delete subscription, logout) lack confirmation dialogs because  is not web-compatible. A custom, web-friendly modal component should be implemented and used for these actions to prevent accidental data loss.
 
 **key api endpoints**
-- : Creates a new booking. (Source of the problem's data).
-- : Cancels a booking.
-- : Fetches all bookings for the current week for the admin view.
-- : Deletes a user.
-- : Deletes a subscription.
+- , : Chat endpoints.
+- , : Push notification endpoints.
+- : Profile picture upload endpoint.
+- : Now returns .
+- : Now returns .
 
 **Critical Info for New Agent**
 - **MUST RESPOND IN ITALIANO.**
-- **Your IMMEDIATE and ONLY priority is to fix the booking bug in .** Stop patching the database. The root cause is that the frontend is sending the wrong  to the  endpoint. You must ensure the date sent corresponds to the actual day of the lesson for the current week, not the day the user has selected in the UI.
-- The user is frustrated with the booking issue. Acknowledge this and focus on delivering a permanent fix.
-- Be aware that  does not work in the web preview. For any confirmation dialogues, you will need to build a custom modal. The current implementation of direct deletion without confirmation is a temporary workaround and should be improved.
-- The Expo tunnel is unstable. Be prepared to restart the service (expo: stopped
-expo: started) or call the  if you get stuck.
+- **The app is a STATIC BUILD.** All frontend changes require a rebuild (env: load .env
+env: export EXPO_TUNNEL_SUBDOMAIN EXPO_PACKAGER_HOSTNAME EXPO_PUBLIC_BACKEND_URL EXPO_USE_FAST_RESOLVER METRO_CACHE_ROOT EXPO_PACKAGER_PROXY_URL
+Fast resolver is enabled.
+Starting Metro Bundler
+Static rendering is enabled. Learn more: https://docs.expo.dev/router/reference/static-rendering/
+λ Bundled 1312ms node_modules/expo-router/node/render.js (929 modules)
+Web Bundled 1557ms node_modules/expo-router/entry.js (795 modules)
+
+› web bundles (1):
+_expo/static/js/web/entry-65ca78746a4c9467d66abac3f0316255.js (1.64 MB)
+
+› Static routes (17):
+/home (31.7 kB)
+/ (index) (23.9 kB)
+/login (26 kB)
+/admin (31.7 kB)
+/prenota (31.7 kB)
+/profilo (34.5 kB)
+/register (27.7 kB)
+/_sitemap (22.9 kB)
+/+not-found (22.9 kB)
+/abbonamento (31.7 kB)
+/(tabs)/home (31.7 kB)
+/(tabs)/admin (31.7 kB)
+/comunicazioni (31.7 kB)
+/(tabs)/prenota (31.7 kB)
+/(tabs)/profilo (34.5 kB)
+/(tabs)/abbonamento (31.7 kB)
+/(tabs)/comunicazioni (31.7 kB)
+
+Exported: dist) and a restart of the frontend service (frontend: ERROR (no such process)
+frontend: ERROR (no such process)). Do not try to debug the Expo dev server; it is no longer in use.
+- **Browser caching is the BIGGEST obstacle.** The user frequently does not see updates. You MUST provide cache-busting URLs (e.g., ) for every change and strongly advise the user to test in an **incognito window**. This is not optional.
+- Your immediate priorities are the two UI bugs the user last reported: the **unread message badge** and the **tab bar height**. Fix these first.
+
+**documents and test reports created in this job**
+-  (From the successful test of the booking bug fix).
+- PRD has been updated multiple times.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Asks for a new cache version for clients because of the booking issue. (DONE)
-2.  **User:** Reports again that he cannot see Carla's bookings. (IN PROGRESS - symptom fixed, root cause pending)
-3.  **User:** Reports the app is not updating when bookings are changed/removed. (ADDRESSED - auto-refresh was added)
-4.  **User:** Asks for the logo to be added inside the app, not just on the login screen. (DONE)
-5.  **User:** Reports the icons are back to being ugly squares. (ADDRESSED - styles were fixed)
-6.  **User:** Reports another user's (Maria Vittoria) bookings are not visible. (ADDRESSED - agent manually fixed the data)
-7.  **User:** Asks for a refresh button and clearer icons instead of squares. (DONE)
-8.  **User:** Reports that Carla Starnini made 3 bookings but they are not visible. (ADDRESSED - agent manually fixed the data)
-9.  **User:** Reports that after the booking logic fix, bookings are now in Altre prenotazioni which is not what he wants. (ADDRESSED - agent reverted the backend workaround and attempted another frontend fix)
-10. **User:** Reports that a client made a booking but it's not visible in the admin panel. (This was the start of the main recurring bug investigation in this session).
+- : Badge not appearing, tab bar too low. (IN PROGRESS)
+- : Unread count not working. (IN PROGRESS)
+- : Asks for faster chat refresh and check on notifications. (DONE, chat refresh is 5s)
+- : Notification toggle found, but no sound. (IN PROGRESS, likely OS/browser issue)
+- : Asks for both badge and push notifications. (DONE)
+- : Chat message sent, but no notification received. (ADDRESSED, user had to enable first)
+- : Requests a chat feature for mass communication with replies. (DONE)
+- : Wants to see user profile pictures in the admin panel. (DONE)
+- : Profile pic upload chooses photo but doesn't load it in the app. (FIXED)
+- : New admin panel is not good, restore the previous one. (DONE)
 
 **Project Health Check:**
-- **Broken:** The core booking feature is fundamentally broken due to a persistent frontend bug that creates inconsistent data.
+- **Broken:** Chat's unread message badge, mobile tab bar UI.
 - **Mocked:** N/A.
 
 **3rd Party Integrations**
-- **qrcode** (Python library): Used once to generate a static QR code image.
+- **pywebpush**: For sending web push notifications.
 
 **Testing status**
-- **Testing agent used after significant changes:** YES,  was used and all backend tests passed.
-- **Troubleshoot agent used after agent stuck in loop:** YES, used for the recurring Expo tunnel issue.
+- **Testing agent used after significant changes:** YES, for the initial booking bug fix.
 - **Test files created:** None.
-- **Known regressions:** The booking system is in a regressed state, creating bad data despite multiple attempts to fix it.
+- **Known regressions:** None, but the recent UI changes for the badge and tab bar are unverified.
 
 **Credentials to test flow:**
 - **Role:** Admin
@@ -178,7 +244,5 @@ expo: started) or call the  if you get stuck.
 - **Password:** 
 
 **What agent forgot to execute**
-- A permanent fix for the root cause of the booking bug in .
-- Implementation of Push Notifications, Expired Subscription Notifications, and the Seasonal Registration Fee from the original PRD.
-
-</analysis>
+- The agent has not implemented a web-compatible confirmation modal for destructive actions, which was a known issue from the previous handoff. Actions like deleting users still happen instantly on click.
+- The  from the original product requirements has not been implemented.</analysis>
