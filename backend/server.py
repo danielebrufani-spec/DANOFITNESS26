@@ -1088,6 +1088,133 @@ async def mark_notification_read(notification_id: str, current_user: dict = Depe
     except:
         raise HTTPException(status_code=404, detail="Notifica non trovata")
 
+# ======================== PUSH NOTIFICATIONS ========================
+
+@api_router.get("/push/vapid-public-key")
+async def get_vapid_public_key():
+    """Get the VAPID public key for push subscription"""
+    return {"publicKey": VAPID_PUBLIC_KEY}
+
+@api_router.post("/push/subscribe")
+async def subscribe_push(subscription: PushSubscription, current_user: dict = Depends(get_current_user)):
+    """Save push subscription for user"""
+    user_id = current_user["_id"]
+    
+    # Save subscription to database
+    await db.users.update_one(
+        {"_id": user_id},
+        {"$set": {"push_subscription": subscription.dict()}}
+    )
+    
+    logger.info(f"[PUSH] User {user_id} subscribed to push notifications")
+    return {"message": "Iscrizione alle notifiche push completata"}
+
+@api_router.delete("/push/unsubscribe")
+async def unsubscribe_push(current_user: dict = Depends(get_current_user)):
+    """Remove push subscription for user"""
+    user_id = current_user["_id"]
+    
+    await db.users.update_one(
+        {"_id": user_id},
+        {"$unset": {"push_subscription": ""}}
+    )
+    
+    logger.info(f"[PUSH] User {user_id} unsubscribed from push notifications")
+    return {"message": "Disiscrizione dalle notifiche push completata"}
+
+async def send_push_notification(user_id: str, title: str, body: str, data: dict = None):
+    """Send push notification to a specific user"""
+    user = await db.users.find_one({"_id": ObjectId(user_id)})
+    if not user or "push_subscription" not in user:
+        logger.info(f"[PUSH] User {user_id} has no push subscription")
+        return False
+    
+    subscription = user["push_subscription"]
+    
+    try:
+        payload = json.dumps({
+            "title": title,
+            "body": body,
+            "data": data or {},
+            "icon": "/icon-192.png",
+            "badge": "/icon-192.png"
+        })
+        
+        webpush(
+            subscription_info=subscription,
+            data=payload,
+            vapid_private_key=VAPID_PRIVATE_KEY,
+            vapid_claims={"sub": f"mailto:{VAPID_EMAIL}"}
+        )
+        
+        logger.info(f"[PUSH] Notification sent to user {user_id}: {title}")
+        return True
+    except WebPushException as e:
+        logger.error(f"[PUSH] Failed to send notification to user {user_id}: {e}")
+        # If subscription is invalid, remove it
+        if e.response and e.response.status_code in [404, 410]:
+            await db.users.update_one(
+                {"_id": ObjectId(user_id)},
+                {"$unset": {"push_subscription": ""}}
+            )
+        return False
+
+async def check_expiring_subscriptions():
+    """Check for expiring subscriptions and send notifications"""
+    logger.info("[SCHEDULER] Checking for expiring subscriptions...")
+    
+    now = datetime.utcnow()
+    three_days_later = now + timedelta(days=3)
+    
+    # Check time-based subscriptions (mensile, trimestrale) - 3 days before expiration
+    time_based_subs = await db.subscriptions.find({
+        "tipo": {"$in": ["mensile", "trimestrale"]},
+        "attivo": True,
+        "data_scadenza": {"$lte": three_days_later, "$gt": now},
+        "notifica_scadenza_inviata": {"$ne": True}
+    }).to_list(100)
+    
+    for sub in time_based_subs:
+        user = await db.users.find_one({"_id": ObjectId(sub["user_id"])})
+        if user:
+            days_left = (sub["data_scadenza"] - now).days
+            await send_push_notification(
+                str(sub["user_id"]),
+                "Abbonamento in Scadenza",
+                f"Il tuo abbonamento scade tra {days_left} giorni. Rinnova per continuare ad allenarti!"
+            )
+            
+            # Mark notification as sent
+            await db.subscriptions.update_one(
+                {"_id": sub["_id"]},
+                {"$set": {"notifica_scadenza_inviata": True}}
+            )
+            logger.info(f"[PUSH] Sent expiration notification to user {sub['user_id']}")
+    
+    # Check lesson-based subscriptions (8, 16 lezioni) - 2 lessons remaining
+    lesson_based_subs = await db.subscriptions.find({
+        "tipo": {"$in": ["lezioni_8", "lezioni_16"]},
+        "attivo": True,
+        "lezioni_rimanenti": {"$lte": 2, "$gt": 0},
+        "notifica_lezioni_inviata": {"$ne": True}
+    }).to_list(100)
+    
+    for sub in lesson_based_subs:
+        user = await db.users.find_one({"_id": ObjectId(sub["user_id"])})
+        if user:
+            await send_push_notification(
+                str(sub["user_id"]),
+                "Poche Lezioni Rimaste",
+                f"Ti restano solo {sub['lezioni_rimanenti']} lezioni. Rinnova il tuo abbonamento!"
+            )
+            
+            # Mark notification as sent
+            await db.subscriptions.update_one(
+                {"_id": sub["_id"]},
+                {"$set": {"notifica_lezioni_inviata": True}}
+            )
+            logger.info(f"[PUSH] Sent lessons notification to user {sub['user_id']}")
+
 # ======================== INIT ADMIN ========================
 
 @api_router.post("/init/admin")
