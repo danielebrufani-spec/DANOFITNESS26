@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,21 +6,41 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
+  Switch,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { COLORS } from '../../src/utils/constants';
+import { usePushNotifications } from '../../src/hooks/usePushNotifications';
 
 export default function ProfiloScreen() {
   const { user, logout, isAdmin } = useAuth();
   const router = useRouter();
+  const { isSupported, isSubscribed, isLoading, subscribe, unsubscribe } = usePushNotifications();
+  const [notificationError, setNotificationError] = useState<string | null>(null);
 
   const handleLogout = async () => {
     // Alert.alert non funziona su web, quindi facciamo logout diretto
     await logout();
     router.replace('/');
+  };
+
+  const handleNotificationToggle = async () => {
+    setNotificationError(null);
+    if (isSubscribed) {
+      const success = await unsubscribe();
+      if (!success) {
+        setNotificationError('Errore nella disattivazione delle notifiche');
+      }
+    } else {
+      const success = await subscribe();
+      if (!success) {
+        setNotificationError('Errore nell\'attivazione delle notifiche. Assicurati di aver dato il permesso.');
+      }
+    }
   };
 
   return (
