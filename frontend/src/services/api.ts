@@ -124,6 +124,12 @@ export const apiService = {
   getAllNotifications: () => api.get<Notification[]>('/admin/notifications'),
   markNotificationRead: (id: string) => api.put(`/notifications/${id}/read`),
 
+  // Push Notifications
+  getVapidPublicKey: () => api.get<{ publicKey: string }>('/push/vapid-public-key'),
+  subscribePush: (subscription: { endpoint: string; keys: { p256dh: string; auth: string } }) => 
+    api.post('/push/subscribe', subscription),
+  unsubscribePush: () => api.delete('/push/unsubscribe'),
+
   // Push token
   updatePushToken: (push_token: string) => api.put('/auth/push-token', { push_token }),
 
