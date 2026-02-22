@@ -160,6 +160,10 @@ class NotificationResponse(BaseModel):
 class PushTokenUpdate(BaseModel):
     push_token: str
 
+class PushSubscription(BaseModel):
+    endpoint: str
+    keys: dict  # Contains p256dh and auth keys
+
 class DailyStats(BaseModel):
     data: str
     totale_prenotazioni: int
