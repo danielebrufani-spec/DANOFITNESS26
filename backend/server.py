@@ -33,6 +33,11 @@ SECRET_KEY = os.environ.get('JWT_SECRET', 'danofitness_secret_key_2025')
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS = 30
 
+# VAPID Config for Push Notifications
+VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY')
+VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY')
+VAPID_EMAIL = os.environ.get('VAPID_EMAIL', 'admin@danofitness.it')
+
 # Scheduler for automatic tasks
 scheduler = AsyncIOScheduler()
 
