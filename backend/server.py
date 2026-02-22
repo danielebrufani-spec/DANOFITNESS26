@@ -98,6 +98,7 @@ class UserResponse(BaseModel):
     role: str
     created_at: datetime
     push_token: Optional[str] = None
+    profile_image: Optional[str] = None
 
 class SubscriptionCreate(BaseModel):
     user_id: str
