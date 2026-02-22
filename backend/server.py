@@ -1219,7 +1219,7 @@ async def get_unread_count(last_read: str = None, current_user: dict = Depends(g
         else:
             last_read_dt = datetime(1970, 1, 1)
         
-        user_id = current_user["id"]
+        user_id = str(current_user["_id"])
         is_admin = current_user.get("role") == "admin"
         
         logging.info(f"[UNREAD] Checking for user {user_id}, is_admin: {is_admin}, last_read: {last_read_dt}")
@@ -1234,7 +1234,7 @@ async def get_unread_count(last_read: str = None, current_user: dict = Depends(g
             if msg_time and msg_time > last_read_dt:
                 # Per client: conta tutti i messaggi
                 # Per admin: non conta i propri messaggi
-                if not is_admin or str(msg.get("sender_id")) != str(user_id):
+                if not is_admin or str(msg.get("sender_id")) != user_id:
                     count += 1
                     logging.info(f"[UNREAD] Counting this message, count now: {count}")
             
@@ -1242,7 +1242,7 @@ async def get_unread_count(last_read: str = None, current_user: dict = Depends(g
             for reply in msg.get("replies", []):
                 reply_time = reply.get("created_at")
                 if reply_time and reply_time > last_read_dt:
-                    if str(reply.get("user_id")) != str(user_id):
+                    if str(reply.get("user_id")) != user_id:
                         count += 1
         
         logging.info(f"[UNREAD] Final count: {count}")
