@@ -161,6 +161,7 @@ export const apiService = {
 
   // Chat/Messages
   getMessages: () => api.get<Message[]>('/messages'),
+  getUnreadCount: (lastRead?: string) => api.get<{ unread_count: number }>(`/messages/unread-count${lastRead ? `?last_read=${lastRead}` : ''}`),
   createMessage: (content: string) => api.post<Message>('/messages', { content }),
   replyToMessage: (messageId: string, content: string) => api.post<Reply>(`/messages/${messageId}/reply`, { content }),
   deleteMessage: (messageId: string) => api.delete(`/messages/${messageId}`),
