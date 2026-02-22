@@ -1203,6 +1203,41 @@ async def get_messages(current_user: dict = Depends(get_current_user)):
     
     return result
 
+@api_router.get("/messages/unread-count")
+async def get_unread_count(last_read: str = None, current_user: dict = Depends(get_current_user)):
+    """Get count of unread messages since last_read timestamp"""
+    try:
+        if last_read:
+            last_read_dt = datetime.fromisoformat(last_read.replace('Z', '+00:00'))
+        else:
+            last_read_dt = datetime(1970, 1, 1)
+        
+        user_id = current_user["id"]
+        is_admin = current_user.get("role") == "admin"
+        
+        count = 0
+        messages = await db.messages.find().to_list(100)
+        
+        for msg in messages:
+            msg_time = msg.get("created_at")
+            if isinstance(msg_time, datetime) and msg_time > last_read_dt:
+                # Per client: conta tutti i messaggi
+                # Per admin: non conta i propri messaggi
+                if not is_admin or msg.get("sender_id") != user_id:
+                    count += 1
+            
+            # Count replies from others
+            for reply in msg.get("replies", []):
+                reply_time = reply.get("created_at")
+                if isinstance(reply_time, datetime) and reply_time > last_read_dt:
+                    if reply.get("user_id") != user_id:
+                        count += 1
+        
+        return {"unread_count": count}
+    except Exception as e:
+        logging.error(f"Error getting unread count: {e}")
+        return {"unread_count": 0}
+
 @api_router.post("/messages/{message_id}/reply", response_model=ReplyResponse)
 async def reply_to_message(message_id: str, reply: ReplyCreate, current_user: dict = Depends(get_current_user)):
     """Reply to a message"""
