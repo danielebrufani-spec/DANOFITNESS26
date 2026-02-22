@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { Tabs, useFocusEffect } from 'expo-router';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { Tabs } from 'expo-router';
+import { View, Text, StyleSheet, Platform, AppState } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
 import { COLORS } from '../../src/utils/constants';
@@ -12,6 +12,7 @@ const LAST_READ_KEY = 'chat_last_read_timestamp';
 export default function TabsLayout() {
   const { isAdmin, user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
+  const appState = useRef(AppState.currentState);
 
   // Check for unread messages
   const checkUnread = useCallback(async () => {
@@ -26,15 +27,23 @@ export default function TabsLayout() {
       
       // Get last read timestamp from storage
       const lastReadStr = await AsyncStorage.getItem(LAST_READ_KEY);
+      // Se non c'è timestamp, usa una data molto vecchia (non l'attuale)
       const lastReadTime = lastReadStr ? new Date(lastReadStr).getTime() : 0;
       
       let count = 0;
       for (const msg of messages) {
-        // Count new messages (not from current user if admin)
         const msgTime = new Date(msg.created_at).getTime();
+        
+        // Per i client: conta tutti i messaggi nuovi
+        // Per admin: non contare i propri messaggi
         if (msgTime > lastReadTime) {
-          // Don't count own messages for admin
-          if (!(isAdmin && msg.sender_id === user.id)) {
+          if (isAdmin) {
+            // Admin non conta i propri messaggi
+            if (msg.sender_id !== user.id) {
+              count++;
+            }
+          } else {
+            // Client conta tutti i messaggi (sono sempre dall'admin)
             count++;
           }
         }
@@ -49,22 +58,43 @@ export default function TabsLayout() {
         }
       }
       
+      console.log('[Chat Badge] Unread count:', count, 'Last read:', lastReadStr);
       setUnreadCount(count);
     } catch (error) {
       console.error('Error checking unread messages:', error);
     }
   }, [user, isAdmin]);
 
+  // Check messages when app comes to foreground
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+        // App tornata in primo piano - controlla messaggi
+        console.log('[Chat Badge] App became active, checking messages...');
+        checkUnread();
+      }
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [checkUnread]);
+
+  // Initial check and interval
   useEffect(() => {
     if (user) {
+      // Check immediately on mount
       checkUnread();
-      const interval = setInterval(checkUnread, 5000); // Check every 5 seconds
+      // Then check every 5 seconds
+      const interval = setInterval(checkUnread, 5000);
       return () => clearInterval(interval);
     }
   }, [user, checkUnread]);
 
-  // Mark messages as read when entering chat tab
+  // Mark messages as read - chiamato SOLO quando si apre la tab Chat
   const markAsRead = useCallback(async () => {
+    console.log('[Chat Badge] Marking as read...');
     await AsyncStorage.setItem(LAST_READ_KEY, new Date().toISOString());
     setUnreadCount(0);
   }, []);
