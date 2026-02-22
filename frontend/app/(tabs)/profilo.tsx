@@ -17,22 +17,10 @@ export default function ProfiloScreen() {
   const { user, logout, isAdmin } = useAuth();
   const router = useRouter();
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Sei sicuro di voler uscire?',
-      [
-        { text: 'Annulla', style: 'cancel' },
-        {
-          text: 'Esci',
-          style: 'destructive',
-          onPress: async () => {
-            await logout();
-            router.replace('/login');
-          },
-        },
-      ]
-    );
+  const handleLogout = async () => {
+    // Alert.alert non funziona su web, quindi facciamo logout diretto
+    await logout();
+    router.replace('/');
   };
 
   return (
