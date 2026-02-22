@@ -107,46 +107,13 @@ export default function ProfiloScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Notifiche</Text>
           <View style={styles.infoCard}>
-            {isSupported ? (
-              <>
-                <View style={styles.notificationRow}>
-                  <View style={styles.notificationInfo}>
-                    <Ionicons name="notifications-outline" size={20} color={COLORS.textSecondary} />
-                    <View style={styles.infoContent}>
-                      <Text style={styles.infoLabel}>Notifiche Push</Text>
-                      <Text style={styles.notificationDescription}>
-                        Ricevi avvisi per abbonamenti in scadenza
-                      </Text>
-                    </View>
-                  </View>
-                  {isLoading ? (
-                    <ActivityIndicator size="small" color={COLORS.primary} />
-                  ) : (
-                    <Switch
-                      value={isSubscribed}
-                      onValueChange={handleNotificationToggle}
-                      trackColor={{ false: COLORS.border, true: COLORS.primary }}
-                      thumbColor={COLORS.text}
-                    />
-                  )}
-                </View>
-                {notificationError && (
-                  <Text style={styles.errorText}>{notificationError}</Text>
-                )}
-              </>
-            ) : (
-              <View style={styles.notificationRow}>
-                <View style={styles.notificationInfo}>
-                  <Ionicons name="notifications-off-outline" size={20} color={COLORS.textSecondary} />
-                  <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Notifiche Push</Text>
-                    <Text style={styles.notificationDescription}>
-                      Per ricevere notifiche, aggiungi l'app alla schermata Home del telefono
-                    </Text>
-                  </View>
-                </View>
+            <View style={styles.infoRow}>
+              <Ionicons name="notifications-outline" size={20} color={COLORS.textSecondary} />
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Notifiche Push</Text>
+                <Text style={styles.infoValue}>Attive automaticamente</Text>
               </View>
-            )}
+            </View>
           </View>
         </View>
 
