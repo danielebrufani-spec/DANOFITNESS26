@@ -12,6 +12,7 @@ interface User {
   telefono?: string;
   role: string;
   push_token?: string;
+  profile_image?: string;
 }
 
 interface AuthContextType {
@@ -22,6 +23,7 @@ interface AuthContextType {
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   isAdmin: boolean;
+  refreshUser: () => Promise<void>;
 }
 
 interface RegisterData {
