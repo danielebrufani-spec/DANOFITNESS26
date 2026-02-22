@@ -46,7 +46,7 @@ export default function TabsLayout() {
 
     if (user) {
       checkUnread();
-      const interval = setInterval(checkUnread, 10000); // Check every 10 seconds
+      const interval = setInterval(checkUnread, 10000);
       return () => clearInterval(interval);
     }
   }, [user]);
@@ -59,15 +59,16 @@ export default function TabsLayout() {
           backgroundColor: COLORS.card,
           borderTopColor: COLORS.border,
           borderTopWidth: 1,
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
+          height: 85,
+          paddingBottom: 25,
+          paddingTop: 10,
         },
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.textSecondary,
         tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '500',
+          fontSize: 11,
+          fontWeight: '600',
+          marginTop: 4,
         },
       }}
     >
