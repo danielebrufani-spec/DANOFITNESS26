@@ -327,6 +327,17 @@ async def update_push_token(data: PushTokenUpdate, current_user: dict = Depends(
     )
     return {"message": "Token push aggiornato"}
 
+class ProfileImageUpdate(BaseModel):
+    profile_image: str
+
+@api_router.put("/auth/profile-image")
+async def update_profile_image(data: ProfileImageUpdate, current_user: dict = Depends(get_current_user)):
+    await db.users.update_one(
+        {"_id": current_user["_id"]},
+        {"$set": {"profile_image": data.profile_image}}
+    )
+    return {"message": "Immagine profilo aggiornata"}
+
 # ======================== LESSONS ROUTES ========================
 
 @api_router.get("/lessons", response_model=List[LessonResponse])
