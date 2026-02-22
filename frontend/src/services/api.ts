@@ -133,6 +133,9 @@ export const apiService = {
   // Push token
   updatePushToken: (push_token: string) => api.put('/auth/push-token', { push_token }),
 
+  // Profile Image
+  updateProfileImage: (image: string) => api.put('/auth/profile-image', { profile_image: image }),
+
   // Init
   initAdmin: () => api.post('/init/admin'),
 };
