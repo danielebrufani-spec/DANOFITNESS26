@@ -6,20 +6,49 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { COLORS } from '../../src/utils/constants';
+import * as ImagePicker from 'expo-image-picker';
+import { apiService } from '../../src/services/api';
 
 export default function ProfiloScreen() {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, refreshUser } = useAuth();
   const router = useRouter();
+  const [uploading, setUploading] = useState(false);
 
   const handleLogout = async () => {
     await logout();
     router.replace('/');
+  };
+
+  const pickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets[0].base64) {
+        setUploading(true);
+        const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
+        await apiService.updateProfileImage(base64Image);
+        if (refreshUser) {
+          await refreshUser();
+        }
+        setUploading(false);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      setUploading(false);
+    }
   };
 
   return (
