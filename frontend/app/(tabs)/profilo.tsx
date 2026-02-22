@@ -124,6 +124,39 @@ export default function ProfiloScreen() {
           </View>
         </View>
 
+        {/* Notifications Section - Solo per clienti */}
+        {!isAdmin && isSupported && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Notifiche</Text>
+            <View style={styles.infoCard}>
+              <View style={styles.notificationRow}>
+                <View style={styles.notificationInfo}>
+                  <Ionicons name="notifications-outline" size={20} color={COLORS.textSecondary} />
+                  <View style={styles.infoContent}>
+                    <Text style={styles.infoLabel}>Notifiche Push</Text>
+                    <Text style={styles.notificationDescription}>
+                      Ricevi avvisi per abbonamenti in scadenza
+                    </Text>
+                  </View>
+                </View>
+                {isLoading ? (
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                ) : (
+                  <Switch
+                    value={isSubscribed}
+                    onValueChange={handleNotificationToggle}
+                    trackColor={{ false: COLORS.border, true: COLORS.primary }}
+                    thumbColor={COLORS.text}
+                  />
+                )}
+              </View>
+              {notificationError && (
+                <Text style={styles.errorText}>{notificationError}</Text>
+              )}
+            </View>
+          </View>
+        )}
+
         {/* Contact */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Contatti</Text>
