@@ -8,7 +8,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
   ActivityIndicator,
   Image,
 } from 'react-native';
@@ -23,12 +22,15 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const { login } = useAuth();
   const router = useRouter();
 
   const handleLogin = async () => {
+    setErrorMessage('');
+    
     if (!email.trim() || !password.trim()) {
-      Alert.alert('Errore', 'Inserisci email e password');
+      setErrorMessage('Inserisci email e password');
       return;
     }
 
@@ -37,7 +39,7 @@ export default function LoginScreen() {
       await login(email.trim(), password);
       router.replace('/(tabs)/home');
     } catch (error: any) {
-      Alert.alert('Errore', error.message);
+      setErrorMessage(error.message || 'Errore durante il login');
     } finally {
       setLoading(false);
     }
@@ -64,6 +66,13 @@ export default function LoginScreen() {
 
           <View style={styles.form}>
             <Text style={styles.title}>Accedi</Text>
+
+            {errorMessage ? (
+              <View style={styles.errorContainer}>
+                <Ionicons name="alert-circle" size={20} color="#EF4444" />
+                <Text style={styles.errorText}>{errorMessage}</Text>
+              </View>
+            ) : null}
 
             <View style={styles.inputContainer}>
               <Ionicons name="mail-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
@@ -230,5 +239,19 @@ const styles = StyleSheet.create({
   footerText: {
     color: COLORS.textSecondary,
     fontSize: 12,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    gap: 8,
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 14,
+    flex: 1,
   },
 });
