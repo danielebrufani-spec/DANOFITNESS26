@@ -317,7 +317,8 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         telefono=current_user.get("telefono"),
         role=current_user["role"],
         created_at=current_user["created_at"],
-        push_token=current_user.get("push_token")
+        push_token=current_user.get("push_token"),
+        profile_image=current_user.get("profile_image")
     )
 
 @api_router.put("/auth/push-token")
