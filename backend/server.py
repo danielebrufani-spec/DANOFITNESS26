@@ -165,6 +165,34 @@ class PushSubscription(BaseModel):
     endpoint: str
     keys: dict  # Contains p256dh and auth keys
 
+# ======================== CHAT/COMUNICAZIONI MODELS ========================
+
+class MessageCreate(BaseModel):
+    content: str
+
+class ReplyCreate(BaseModel):
+    content: str
+
+class ReplyResponse(BaseModel):
+    id: str
+    user_id: str
+    user_nome: str
+    user_cognome: str
+    user_profile_image: Optional[str] = None
+    content: str
+    created_at: datetime
+
+class MessageResponse(BaseModel):
+    id: str
+    sender_id: str
+    sender_nome: str
+    sender_cognome: str
+    sender_profile_image: Optional[str] = None
+    content: str
+    created_at: datetime
+    replies: List[ReplyResponse] = []
+    is_admin_message: bool = True
+
 class DailyStats(BaseModel):
     data: str
     totale_prenotazioni: int
