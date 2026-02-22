@@ -1208,31 +1208,44 @@ async def get_unread_count(last_read: str = None, current_user: dict = Depends(g
     """Get count of unread messages since last_read timestamp"""
     try:
         if last_read:
-            last_read_dt = datetime.fromisoformat(last_read.replace('Z', '+00:00'))
+            # Parse the ISO format string, handle various formats
+            try:
+                last_read_dt = datetime.fromisoformat(last_read.replace('Z', '+00:00'))
+                # Make it naive for comparison
+                if last_read_dt.tzinfo:
+                    last_read_dt = last_read_dt.replace(tzinfo=None)
+            except:
+                last_read_dt = datetime(1970, 1, 1)
         else:
             last_read_dt = datetime(1970, 1, 1)
         
         user_id = current_user["id"]
         is_admin = current_user.get("role") == "admin"
         
+        logging.info(f"[UNREAD] Checking for user {user_id}, is_admin: {is_admin}, last_read: {last_read_dt}")
+        
         count = 0
         messages = await db.messages.find().to_list(100)
         
         for msg in messages:
             msg_time = msg.get("created_at")
-            if isinstance(msg_time, datetime) and msg_time > last_read_dt:
+            logging.info(f"[UNREAD] Message time: {msg_time}, sender: {msg.get('sender_id')}")
+            
+            if msg_time and msg_time > last_read_dt:
                 # Per client: conta tutti i messaggi
                 # Per admin: non conta i propri messaggi
-                if not is_admin or msg.get("sender_id") != user_id:
+                if not is_admin or str(msg.get("sender_id")) != str(user_id):
                     count += 1
+                    logging.info(f"[UNREAD] Counting this message, count now: {count}")
             
             # Count replies from others
             for reply in msg.get("replies", []):
                 reply_time = reply.get("created_at")
-                if isinstance(reply_time, datetime) and reply_time > last_read_dt:
-                    if reply.get("user_id") != user_id:
+                if reply_time and reply_time > last_read_dt:
+                    if str(reply.get("user_id")) != str(user_id):
                         count += 1
         
+        logging.info(f"[UNREAD] Final count: {count}")
         return {"unread_count": count}
     except Exception as e:
         logging.error(f"Error getting unread count: {e}")
