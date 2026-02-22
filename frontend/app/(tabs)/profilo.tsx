@@ -231,18 +231,34 @@ export default function ProfiloScreen() {
         </View>
 
         {/* Notifications Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notifiche</Text>
-          <View style={styles.infoCard}>
-            <View style={styles.infoRow}>
-              <Ionicons name="notifications-outline" size={20} color={COLORS.textSecondary} />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Notifiche Push</Text>
-                <Text style={styles.infoValue}>Attive automaticamente</Text>
+        {pushSupported && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Notifiche</Text>
+            <View style={styles.infoCard}>
+              <View style={styles.notificationRow}>
+                <View style={styles.notificationInfo}>
+                  <Ionicons name="notifications-outline" size={20} color={COLORS.textSecondary} />
+                  <View style={styles.infoContent}>
+                    <Text style={styles.infoLabel}>Notifiche Push</Text>
+                    <Text style={styles.notificationDescription}>
+                      Ricevi avvisi per nuovi messaggi e abbonamenti
+                    </Text>
+                  </View>
+                </View>
+                {pushLoading ? (
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                ) : (
+                  <Switch
+                    value={pushEnabled}
+                    onValueChange={togglePushNotifications}
+                    trackColor={{ false: COLORS.border, true: COLORS.primary }}
+                    thumbColor="#fff"
+                  />
+                )}
               </View>
             </View>
           </View>
-        </View>
+        )}
 
         {/* Contact */}
         <View style={styles.section}>
