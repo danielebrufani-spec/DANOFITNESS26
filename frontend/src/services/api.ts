@@ -82,6 +82,28 @@ export interface User {
   profile_image?: string;
 }
 
+export interface Reply {
+  id: string;
+  user_id: string;
+  user_nome: string;
+  user_cognome: string;
+  user_profile_image?: string;
+  content: string;
+  created_at: string;
+}
+
+export interface Message {
+  id: string;
+  sender_id: string;
+  sender_nome: string;
+  sender_cognome: string;
+  sender_profile_image?: string;
+  content: string;
+  created_at: string;
+  replies: Reply[];
+  is_admin_message: boolean;
+}
+
 export interface DailyStats {
   data: string;
   totale_prenotazioni: number;
