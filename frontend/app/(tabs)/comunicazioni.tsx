@@ -48,9 +48,9 @@ export default function ComunicazioniScreen() {
     }, [])
   );
 
-  // Auto-refresh every 15 seconds
+  // Auto-refresh every 5 seconds for real-time chat
   useEffect(() => {
-    const interval = setInterval(loadMessages, 15000);
+    const interval = setInterval(loadMessages, 5000);
     return () => clearInterval(interval);
   }, []);
 
