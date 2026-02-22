@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,9 @@ import {
   Alert,
   ScrollView,
   Image,
+  Switch,
+  ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,10 +19,92 @@ import { COLORS } from '../../src/utils/constants';
 import * as ImagePicker from 'expo-image-picker';
 import { apiService } from '../../src/services/api';
 
+// Utility function to convert base64 to Uint8Array
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
 export default function ProfiloScreen() {
   const { user, logout, isAdmin, refreshUser } = useAuth();
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
+  
+  // Push notification state
+  const [pushSupported, setPushSupported] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
+
+  useEffect(() => {
+    // Check if push notifications are supported
+    if (Platform.OS === 'web' && 'serviceWorker' in navigator && 'PushManager' in window) {
+      setPushSupported(true);
+      checkPushStatus();
+    }
+  }, []);
+
+  const checkPushStatus = async () => {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+      setPushEnabled(!!subscription);
+    } catch (error) {
+      console.error('Error checking push status:', error);
+    }
+  };
+
+  const togglePushNotifications = async () => {
+    setPushLoading(true);
+    try {
+      if (pushEnabled) {
+        // Unsubscribe
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+          await subscription.unsubscribe();
+          await apiService.unsubscribePush();
+        }
+        setPushEnabled(false);
+      } else {
+        // Subscribe
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          Alert.alert('Permesso negato', 'Devi permettere le notifiche per riceverle.');
+          setPushLoading(false);
+          return;
+        }
+
+        await navigator.serviceWorker.register('/sw.js');
+        const registration = await navigator.serviceWorker.ready;
+        
+        const { data } = await apiService.getVapidPublicKey();
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(data.publicKey)
+        });
+
+        const subscriptionJSON = subscription.toJSON();
+        await apiService.subscribePush({
+          endpoint: subscriptionJSON.endpoint!,
+          keys: {
+            p256dh: subscriptionJSON.keys!.p256dh,
+            auth: subscriptionJSON.keys!.auth
+          }
+        });
+        
+        setPushEnabled(true);
+      }
+    } catch (error) {
+      console.error('Error toggling push:', error);
+    }
+    setPushLoading(false);
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -32,7 +117,7 @@ export default function ProfiloScreen() {
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.3,  // Lower quality for smaller file size
+        quality: 0.3,
         base64: true,
       });
 
