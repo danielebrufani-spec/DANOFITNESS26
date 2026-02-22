@@ -15,9 +15,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiService, Message } from '../../src/services/api';
 import { useAuth } from '../../src/context/AuthContext';
 import { COLORS } from '../../src/utils/constants';
+
+const LAST_READ_KEY = 'chat_last_read_timestamp';
 
 export default function ComunicazioniScreen() {
   const { isAdmin, user } = useAuth();
@@ -29,6 +32,11 @@ export default function ComunicazioniScreen() {
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  // Mark messages as read when screen is focused
+  const markAsRead = useCallback(async () => {
+    await AsyncStorage.setItem(LAST_READ_KEY, new Date().toISOString());
+  }, []);
 
   const loadMessages = async () => {
     try {
@@ -45,7 +53,8 @@ export default function ComunicazioniScreen() {
   useFocusEffect(
     useCallback(() => {
       loadMessages();
-    }, [])
+      markAsRead(); // Mark as read when screen comes into focus
+    }, [markAsRead])
   );
 
   // Auto-refresh every 5 seconds for real-time chat
@@ -57,6 +66,7 @@ export default function ComunicazioniScreen() {
   const onRefresh = async () => {
     setRefreshing(true);
     await loadMessages();
+    markAsRead(); // Mark as read on refresh
   };
 
   const handleSendMessage = async () => {
