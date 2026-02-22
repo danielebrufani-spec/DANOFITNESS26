@@ -137,6 +137,12 @@ export const apiService = {
   // Profile Image
   updateProfileImage: (image: string) => api.put('/auth/profile-image', { profile_image: image }),
 
+  // Chat/Messages
+  getMessages: () => api.get<Message[]>('/messages'),
+  createMessage: (content: string) => api.post<Message>('/messages', { content }),
+  replyToMessage: (messageId: string, content: string) => api.post<Reply>(`/messages/${messageId}/reply`, { content }),
+  deleteMessage: (messageId: string) => api.delete(`/messages/${messageId}`),
+
   // Init
   initAdmin: () => api.post('/init/admin'),
 };
