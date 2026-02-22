@@ -40,6 +40,7 @@ export default function TabsLayout() {
         name="prenota"
         options={{
           title: 'Prenota',
+          href: isAdmin ? null : '/prenota',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="calendar-outline" size={size} color={color} />
           ),
@@ -49,6 +50,7 @@ export default function TabsLayout() {
         name="abbonamento"
         options={{
           title: 'Abbonamento',
+          href: isAdmin ? null : '/abbonamento',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="card-outline" size={size} color={color} />
           ),
