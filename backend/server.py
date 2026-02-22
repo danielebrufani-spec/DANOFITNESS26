@@ -1267,8 +1267,18 @@ async def startup_event():
         id="midnight_processing",
         replace_existing=True
     )
+    
+    # Schedule subscription expiration check at 9:00 AM every day
+    scheduler.add_job(
+        check_expiring_subscriptions,
+        CronTrigger(hour=9, minute=0),  # Run at 9 AM
+        id="subscription_expiration_check",
+        replace_existing=True
+    )
+    
     scheduler.start()
     logger.info("[SCHEDULER] Started automatic midnight processing scheduler")
+    logger.info("[SCHEDULER] Started subscription expiration check scheduler (9:00 AM daily)")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
