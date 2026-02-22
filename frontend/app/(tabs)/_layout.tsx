@@ -62,8 +62,6 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="settings-outline" size={size} color={color} />
           ),
-          tabBarStyle: isAdmin ? undefined : { display: 'none' },
-          tabBarButton: isAdmin ? undefined : () => null,
         }}
       />
       <Tabs.Screen
