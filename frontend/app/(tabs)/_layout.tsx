@@ -14,7 +14,7 @@ export default function TabsLayout() {
   const [unreadCount, setUnreadCount] = useState(0);
   const appState = useRef(AppState.currentState);
 
-  // Check for unread messages
+  // Check for unread messages using the API
   const checkUnread = useCallback(async () => {
     if (!user) {
       setUnreadCount(0);
@@ -22,54 +22,20 @@ export default function TabsLayout() {
     }
     
     try {
-      const response = await apiService.getMessages();
-      const messages = response.data || [];
-      
-      // Get last read timestamp from storage
       const lastReadStr = await AsyncStorage.getItem(LAST_READ_KEY);
-      // Se non c'è timestamp, usa una data molto vecchia (non l'attuale)
-      const lastReadTime = lastReadStr ? new Date(lastReadStr).getTime() : 0;
-      
-      let count = 0;
-      for (const msg of messages) {
-        const msgTime = new Date(msg.created_at).getTime();
-        
-        // Per i client: conta tutti i messaggi nuovi
-        // Per admin: non contare i propri messaggi
-        if (msgTime > lastReadTime) {
-          if (isAdmin) {
-            // Admin non conta i propri messaggi
-            if (msg.sender_id !== user.id) {
-              count++;
-            }
-          } else {
-            // Client conta tutti i messaggi (sono sempre dall'admin)
-            count++;
-          }
-        }
-        
-        // Count new replies from others
-        const replies = msg.replies || [];
-        for (const reply of replies) {
-          const replyTime = new Date(reply.created_at).getTime();
-          if (replyTime > lastReadTime && reply.user_id !== user.id) {
-            count++;
-          }
-        }
-      }
-      
-      console.log('[Chat Badge] Unread count:', count, 'Last read:', lastReadStr);
+      const response = await apiService.getUnreadCount(lastReadStr || undefined);
+      const count = response.data?.unread_count || 0;
+      console.log('[Chat Badge] Unread count from API:', count);
       setUnreadCount(count);
     } catch (error) {
       console.error('Error checking unread messages:', error);
     }
-  }, [user, isAdmin]);
+  }, [user]);
 
   // Check messages when app comes to foreground
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextAppState => {
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-        // App tornata in primo piano - controlla messaggi
         console.log('[Chat Badge] App became active, checking messages...');
         checkUnread();
       }
@@ -84,9 +50,7 @@ export default function TabsLayout() {
   // Initial check and interval
   useEffect(() => {
     if (user) {
-      // Check immediately on mount
       checkUnread();
-      // Then check every 5 seconds
       const interval = setInterval(checkUnread, 5000);
       return () => clearInterval(interval);
     }
