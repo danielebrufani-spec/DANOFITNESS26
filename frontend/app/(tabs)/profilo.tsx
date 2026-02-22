@@ -230,8 +230,8 @@ export default function ProfiloScreen() {
           </View>
         </View>
 
-        {/* Notifications Section */}
-        {pushSupported && (
+        {/* Notifications Section - Always show for web */}
+        {Platform.OS === 'web' && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Notifiche</Text>
             <View style={styles.infoCard}>
@@ -241,19 +241,23 @@ export default function ProfiloScreen() {
                   <View style={styles.infoContent}>
                     <Text style={styles.infoLabel}>Notifiche Push</Text>
                     <Text style={styles.notificationDescription}>
-                      Ricevi avvisi per nuovi messaggi e abbonamenti
+                      {pushSupported 
+                        ? 'Ricevi avvisi per nuovi messaggi e abbonamenti'
+                        : 'Le notifiche non sono supportate in questo browser'}
                     </Text>
                   </View>
                 </View>
                 {pushLoading ? (
                   <ActivityIndicator size="small" color={COLORS.primary} />
-                ) : (
+                ) : pushSupported ? (
                   <Switch
                     value={pushEnabled}
                     onValueChange={togglePushNotifications}
                     trackColor={{ false: COLORS.border, true: COLORS.primary }}
                     thumbColor="#fff"
                   />
+                ) : (
+                  <Text style={styles.notSupported}>N/D</Text>
                 )}
               </View>
             </View>
