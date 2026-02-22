@@ -37,7 +37,12 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await login(email.trim(), password);
-      router.replace('/(tabs)/home');
+      // Use window.location for more reliable navigation in static build
+      if (typeof window !== 'undefined') {
+        window.location.href = '/home';
+      } else {
+        router.replace('/(tabs)/home');
+      }
     } catch (error: any) {
       setErrorMessage(error.message || 'Errore durante il login');
     } finally {
