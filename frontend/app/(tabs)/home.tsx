@@ -201,6 +201,8 @@ export default function HomeScreen() {
           {upcomingBookings.length > 0 ? (
             upcomingBookings.map((booking) => {
               const info = ATTIVITA_INFO[booking.lesson_info?.tipo_attivita || ''] || {};
+              // Mostra "Abb. Scaduto" solo se NON c'è un abbonamento attivo
+              const showExpiredBadge = booking.abbonamento_scaduto && !activeSubscription;
               return (
                 <View key={booking.id} style={styles.bookingCard}>
                   <View
@@ -215,7 +217,7 @@ export default function HomeScreen() {
                       {booking.lesson_info?.orario} - {info.nome || booking.lesson_info?.tipo_attivita}
                     </Text>
                   </View>
-                  {booking.abbonamento_scaduto && (
+                  {showExpiredBadge && (
                     <View style={styles.expiredBadge}>
                       <Text style={styles.expiredBadgeText}>Abb. Scaduto</Text>
                     </View>
