@@ -79,6 +79,7 @@ export interface User {
   telefono?: string;
   role: string;
   push_token?: string;
+  profile_image?: string;
 }
 
 export interface DailyStats {
