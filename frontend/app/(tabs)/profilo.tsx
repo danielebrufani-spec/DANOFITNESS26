@@ -32,16 +32,22 @@ export default function ProfiloScreen() {
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.5,
+        quality: 0.3,  // Lower quality for smaller file size
         base64: true,
       });
 
       if (!result.canceled && result.assets[0].base64) {
         setUploading(true);
-        const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
-        await apiService.updateProfileImage(base64Image);
-        if (refreshUser) {
-          await refreshUser();
+        try {
+          const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
+          console.log('Uploading image, size:', base64Image.length);
+          await apiService.updateProfileImage(base64Image);
+          console.log('Image uploaded successfully');
+          if (refreshUser) {
+            await refreshUser();
+          }
+        } catch (uploadError) {
+          console.error('Upload error:', uploadError);
         }
         setUploading(false);
       }
