@@ -1258,9 +1258,13 @@ async def reply_to_message(message_id: str, reply: ReplyCreate, current_user: di
     if not message:
         raise HTTPException(status_code=404, detail="Messaggio non trovato")
     
+    user_id = str(current_user["_id"])
+    user_role = current_user.get("role", "client")
+    user_name = f"{current_user['nome']} {current_user.get('cognome', '')}".strip()
+    
     reply_doc = {
         "id": str(uuid.uuid4()),
-        "user_id": str(current_user["_id"]),
+        "user_id": user_id,
         "content": reply.content,
         "created_at": datetime.utcnow()
     }
@@ -1270,14 +1274,46 @@ async def reply_to_message(message_id: str, reply: ReplyCreate, current_user: di
         {"$push": {"replies": reply_doc}}
     )
     
-    # Send push notification to admin
-    admin = await db.users.find_one({"role": "admin", "push_subscription": {"$exists": True}})
-    if admin:
-        await send_push_notification(
-            str(admin["_id"]),
-            f"Risposta da {current_user['nome']}",
-            reply.content[:100] + "..." if len(reply.content) > 100 else reply.content
-        )
+    # Prepare notification content
+    notification_body = reply.content[:100] + "..." if len(reply.content) > 100 else reply.content
+    
+    # If a client replies, notify the admin
+    if user_role == "client":
+        # Find all admins with push subscriptions
+        admins = await db.users.find({
+            "role": "admin", 
+            "push_subscription": {"$exists": True, "$ne": None}
+        }).to_list(10)
+        
+        for admin in admins:
+            logging.info(f"[PUSH] Sending reply notification to admin {admin['_id']}")
+            await send_push_notification(
+                str(admin["_id"]),
+                f"Risposta da {user_name}",
+                notification_body
+            )
+    
+    # If admin replies, notify the original message sender (if it's not admin)
+    elif user_role == "admin":
+        # Also notify all clients who have replied to this message
+        notified_users = set()
+        
+        # Notify message participants
+        for existing_reply in message.get("replies", []):
+            reply_user_id = existing_reply.get("user_id")
+            if reply_user_id and reply_user_id != user_id and reply_user_id not in notified_users:
+                user = await db.users.find_one({
+                    "_id": ObjectId(reply_user_id),
+                    "push_subscription": {"$exists": True, "$ne": None}
+                })
+                if user:
+                    logging.info(f"[PUSH] Sending admin reply notification to user {reply_user_id}")
+                    await send_push_notification(
+                        reply_user_id,
+                        f"Risposta da {user_name}",
+                        notification_body
+                    )
+                    notified_users.add(reply_user_id)
     
     return ReplyResponse(
         id=reply_doc["id"],
