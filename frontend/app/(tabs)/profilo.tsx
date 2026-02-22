@@ -61,11 +61,18 @@ export default function ProfiloScreen() {
 
         {/* User Info Card */}
         <View style={styles.userCard}>
-          <View style={styles.avatarContainer}>
-            <Text style={styles.avatarText}>
-              {user?.nome?.charAt(0)}{user?.cognome?.charAt(0)}
-            </Text>
-          </View>
+          <TouchableOpacity style={styles.avatarContainer} onPress={pickImage} disabled={uploading}>
+            {user?.profile_image ? (
+              <Image source={{ uri: user.profile_image }} style={styles.avatarImage} />
+            ) : (
+              <Text style={styles.avatarText}>
+                {user?.nome?.charAt(0)}{user?.cognome?.charAt(0)}
+              </Text>
+            )}
+            <View style={styles.editAvatarBadge}>
+              <Ionicons name="camera" size={14} color={COLORS.text} />
+            </View>
+          </TouchableOpacity>
           <Text style={styles.userName}>{user?.nome} {user?.cognome}</Text>
           <Text style={styles.userEmail}>{user?.email}</Text>
           {isAdmin && (
