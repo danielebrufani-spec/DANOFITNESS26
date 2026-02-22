@@ -1,55 +1,88 @@
-import React, { useEffect, useState } from 'react';
-import { Tabs } from 'expo-router';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Tabs, useFocusEffect } from 'expo-router';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
 import { COLORS } from '../../src/utils/constants';
 import { apiService } from '../../src/services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const LAST_READ_KEY = 'chat_last_read_timestamp';
+
 export default function TabsLayout() {
   const { isAdmin, user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
 
   // Check for unread messages
-  useEffect(() => {
-    const checkUnread = async () => {
-      if (!user) return;
+  const checkUnread = useCallback(async () => {
+    if (!user) {
+      setUnreadCount(0);
+      return;
+    }
+    
+    try {
+      const response = await apiService.getMessages();
+      const messages = response.data || [];
       
-      try {
-        const response = await apiService.getMessages();
-        const messages = response.data;
-        
-        // Get last read time from storage
-        const lastReadStr = await AsyncStorage.getItem('lastChatReadTime');
-        const lastRead = lastReadStr ? new Date(lastReadStr) : new Date(0);
-        
-        let count = 0;
-        messages.forEach(msg => {
-          // Count new messages
-          if (new Date(msg.created_at) > lastRead) {
+      // Get last read timestamp from storage
+      const lastReadStr = await AsyncStorage.getItem(LAST_READ_KEY);
+      const lastReadTime = lastReadStr ? new Date(lastReadStr).getTime() : 0;
+      
+      let count = 0;
+      for (const msg of messages) {
+        // Count new messages (not from current user if admin)
+        const msgTime = new Date(msg.created_at).getTime();
+        if (msgTime > lastReadTime) {
+          // Don't count own messages for admin
+          if (!(isAdmin && msg.sender_id === user.id)) {
             count++;
           }
-          // Count new replies from others
-          msg.replies?.forEach(reply => {
-            if (new Date(reply.created_at) > lastRead && reply.user_id !== user.id) {
-              count++;
-            }
-          });
-        });
+        }
         
-        setUnreadCount(count);
-      } catch (error) {
-        console.error('Error checking unread:', error);
+        // Count new replies from others
+        const replies = msg.replies || [];
+        for (const reply of replies) {
+          const replyTime = new Date(reply.created_at).getTime();
+          if (replyTime > lastReadTime && reply.user_id !== user.id) {
+            count++;
+          }
+        }
       }
-    };
+      
+      setUnreadCount(count);
+    } catch (error) {
+      console.error('Error checking unread messages:', error);
+    }
+  }, [user, isAdmin]);
 
+  useEffect(() => {
     if (user) {
       checkUnread();
-      const interval = setInterval(checkUnread, 10000);
+      const interval = setInterval(checkUnread, 5000); // Check every 5 seconds
       return () => clearInterval(interval);
     }
-  }, [user]);
+  }, [user, checkUnread]);
+
+  // Mark messages as read when entering chat tab
+  const markAsRead = useCallback(async () => {
+    await AsyncStorage.setItem(LAST_READ_KEY, new Date().toISOString());
+    setUnreadCount(0);
+  }, []);
+
+  // Calculate safe tab bar height for different platforms
+  const tabBarHeight = Platform.select({
+    ios: 90,
+    android: 70,
+    web: 75,
+    default: 75,
+  });
+  
+  const tabBarPaddingBottom = Platform.select({
+    ios: 30,
+    android: 12,
+    web: 15,
+    default: 15,
+  });
 
   return (
     <Tabs
@@ -59,16 +92,16 @@ export default function TabsLayout() {
           backgroundColor: COLORS.card,
           borderTopColor: COLORS.border,
           borderTopWidth: 1,
-          height: 85,
-          paddingBottom: 25,
-          paddingTop: 10,
+          height: tabBarHeight,
+          paddingBottom: tabBarPaddingBottom,
+          paddingTop: 8,
         },
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.textSecondary,
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',
-          marginTop: 4,
+          marginTop: 2,
         },
       }}
     >
@@ -96,11 +129,13 @@ export default function TabsLayout() {
         options={{
           title: 'Chat',
           tabBarIcon: ({ color, size }) => (
-            <View>
+            <View style={styles.iconContainer}>
               <Ionicons name="chatbubbles-outline" size={size} color={color} />
               {unreadCount > 0 && (
                 <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                  <Text style={styles.badgeText}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </Text>
                 </View>
               )}
             </View>
@@ -108,8 +143,10 @@ export default function TabsLayout() {
         }}
         listeners={{
           tabPress: () => {
-            AsyncStorage.setItem('lastChatReadTime', new Date().toISOString());
-            setUnreadCount(0);
+            markAsRead();
+          },
+          focus: () => {
+            markAsRead();
           },
         }}
       />
@@ -147,21 +184,30 @@ export default function TabsLayout() {
 }
 
 const styles = StyleSheet.create({
-  badge: {
-    position: 'absolute',
-    right: -8,
-    top: -4,
-    backgroundColor: COLORS.error,
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
+  iconContainer: {
+    position: 'relative',
+    width: 28,
+    height: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 4,
+  },
+  badge: {
+    position: 'absolute',
+    right: -10,
+    top: -6,
+    backgroundColor: '#EF4444',
+    borderRadius: 12,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 5,
+    borderWidth: 2,
+    borderColor: COLORS.card,
   },
   badgeText: {
-    color: '#fff',
-    fontSize: 10,
+    color: '#FFFFFF',
+    fontSize: 11,
     fontWeight: 'bold',
   },
 });
