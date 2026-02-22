@@ -125,33 +125,49 @@ export default function ProfiloScreen() {
         </View>
 
         {/* Notifications Section - Solo per clienti */}
-        {!isAdmin && isSupported && (
+        {!isAdmin && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Notifiche</Text>
             <View style={styles.infoCard}>
-              <View style={styles.notificationRow}>
-                <View style={styles.notificationInfo}>
-                  <Ionicons name="notifications-outline" size={20} color={COLORS.textSecondary} />
-                  <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Notifiche Push</Text>
-                    <Text style={styles.notificationDescription}>
-                      Ricevi avvisi per abbonamenti in scadenza
-                    </Text>
+              {isSupported ? (
+                <>
+                  <View style={styles.notificationRow}>
+                    <View style={styles.notificationInfo}>
+                      <Ionicons name="notifications-outline" size={20} color={COLORS.textSecondary} />
+                      <View style={styles.infoContent}>
+                        <Text style={styles.infoLabel}>Notifiche Push</Text>
+                        <Text style={styles.notificationDescription}>
+                          Ricevi avvisi per abbonamenti in scadenza
+                        </Text>
+                      </View>
+                    </View>
+                    {isLoading ? (
+                      <ActivityIndicator size="small" color={COLORS.primary} />
+                    ) : (
+                      <Switch
+                        value={isSubscribed}
+                        onValueChange={handleNotificationToggle}
+                        trackColor={{ false: COLORS.border, true: COLORS.primary }}
+                        thumbColor={COLORS.text}
+                      />
+                    )}
+                  </View>
+                  {notificationError && (
+                    <Text style={styles.errorText}>{notificationError}</Text>
+                  )}
+                </>
+              ) : (
+                <View style={styles.notificationRow}>
+                  <View style={styles.notificationInfo}>
+                    <Ionicons name="notifications-off-outline" size={20} color={COLORS.textSecondary} />
+                    <View style={styles.infoContent}>
+                      <Text style={styles.infoLabel}>Notifiche Push</Text>
+                      <Text style={styles.notificationDescription}>
+                        Per ricevere notifiche, aggiungi l'app alla schermata Home del telefono
+                      </Text>
+                    </View>
                   </View>
                 </View>
-                {isLoading ? (
-                  <ActivityIndicator size="small" color={COLORS.primary} />
-                ) : (
-                  <Switch
-                    value={isSubscribed}
-                    onValueChange={handleNotificationToggle}
-                    trackColor={{ false: COLORS.border, true: COLORS.primary }}
-                    thumbColor={COLORS.text}
-                  />
-                )}
-              </View>
-              {notificationError && (
-                <Text style={styles.errorText}>{notificationError}</Text>
               )}
             </View>
           </View>
