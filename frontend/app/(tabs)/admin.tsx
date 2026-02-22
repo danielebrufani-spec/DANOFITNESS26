@@ -58,26 +58,13 @@ interface WeeklyBookings {
 export default function AdminScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'presenze' | 'abbonamenti' | 'utenti'>('presenze');
+  const [activeTab, setActiveTab] = useState<'presenze' | 'utenti'>('presenze');
   
   const [weeklyBookings, setWeeklyBookings] = useState<WeeklyBookings | null>(null);
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
-  const [expiredSubscriptions, setExpiredSubscriptions] = useState<Subscription[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   
   // Search
   const [userSearchQuery, setUserSearchQuery] = useState<string>('');
-  const [subscriptionUserSearch, setSubscriptionUserSearch] = useState<string>('');
-  
-  // Add subscription modal
-  const [showAddSubscription, setShowAddSubscription] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<string>('');
-  const [selectedType, setSelectedType] = useState<string>('lezioni_8');
-  const [customLessons, setCustomLessons] = useState<string>('');
-  const [addingSubscription, setAddingSubscription] = useState(false);
-
-  // Edit subscription modal
-  const [showEditSubscription, setShowEditSubscription] = useState(false);
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
   const [editLessons, setEditLessons] = useState<string>('');
   const [editExpiry, setEditExpiry] = useState<string>('');
