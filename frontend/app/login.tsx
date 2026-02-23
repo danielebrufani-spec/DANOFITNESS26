@@ -200,40 +200,40 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   eyeButton: {
-    padding: 8,
+    padding: 6,
   },
   button: {
     backgroundColor: COLORS.primary,
-    borderRadius: 12,
-    height: 56,
+    borderRadius: 10,
+    height: 46,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: 16,
   },
   buttonDisabled: {
     opacity: 0.7,
   },
   buttonText: {
     color: COLORS.text,
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '600',
   },
   registerContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 24,
+    marginTop: 16,
   },
   registerText: {
     color: COLORS.textSecondary,
-    fontSize: 14,
+    fontSize: 12,
   },
   registerLink: {
     color: COLORS.primary,
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
   },
   footer: {
-    marginTop: 48,
+    marginTop: 32,
     alignItems: 'center',
   },
   footerText: {
