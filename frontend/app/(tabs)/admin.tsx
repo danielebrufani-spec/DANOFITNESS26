@@ -1779,4 +1779,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 16,
   },
+  scalaLezioniButton: {
+    backgroundColor: COLORS.success,
+    borderRadius: 12,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  scalaLezioniButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
 });
