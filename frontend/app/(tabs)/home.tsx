@@ -347,11 +347,11 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   greeting: {
-    fontSize: 14,
+    fontSize: 10,
     color: COLORS.textSecondary,
   },
   userName: {
-    fontSize: 20,
+    fontSize: 10,
     fontWeight: 'bold',
     color: COLORS.text,
   },
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    fontSize: 16,
+    fontSize: 10,
     fontWeight: 'bold',
     color: COLORS.text,
   },
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   subscriptionTitle: {
-    fontSize: 13,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
     marginLeft: 10,
@@ -402,17 +402,17 @@ const styles = StyleSheet.create({
     marginLeft: 28,
   },
   subscriptionType: {
-    fontSize: 13,
+    fontSize: 10,
     color: COLORS.primary,
     fontWeight: '600',
   },
   lessonsRemaining: {
-    fontSize: 11,
+    fontSize: 10,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
   expiryDate: {
-    fontSize: 11,
+    fontSize: 10,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
@@ -429,16 +429,16 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
   },
   sectionSubtitle: {
-    fontSize: 12,
+    fontSize: 10,
     color: COLORS.primary,
   },
   seeAll: {
-    fontSize: 12,
+    fontSize: 10,
     color: COLORS.primary,
     fontWeight: '500',
   },
@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   lessonTime: {
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
   },
@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   lessonType: {
-    fontSize: 12,
+    fontSize: 10,
     color: COLORS.textSecondary,
     marginTop: 1,
   },
@@ -505,29 +505,29 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bookingMainText: {
-    fontSize: 13,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
   },
   bookingActivity: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '500',
     color: COLORS.primary,
     marginTop: 1,
   },
   bookingDate: {
-    fontSize: 13,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: 2,
   },
   bookingTime: {
-    fontSize: 12,
+    fontSize: 10,
     color: COLORS.primary,
     fontWeight: '500',
   },
   bookingType: {
-    fontSize: 12,
+    fontSize: 10,
     color: COLORS.text,
     marginTop: 1,
   },
@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
     color: COLORS.secondary,
   },
   noData: {
-    fontSize: 14,
+    fontSize: 10,
     color: COLORS.textSecondary,
     textAlign: 'center',
     paddingVertical: 16,
@@ -568,7 +568,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   actionText: {
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: '500',
     color: COLORS.text,
     textAlign: 'center',
