@@ -425,6 +425,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
+  lessonCardPassed: {
+    opacity: 0.6,
+  },
   lessonColor: {
     width: 4,
     height: 40,
@@ -439,10 +442,25 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.text,
   },
+  lessonTimePassed: {
+    color: COLORS.textSecondary,
+  },
   lessonType: {
     fontSize: 14,
     color: COLORS.textSecondary,
     marginTop: 2,
+  },
+  lessonTypePassed: {
+    color: COLORS.textSecondary,
+  },
+  lessonCoach: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+    fontStyle: 'italic',
+  },
+  lessonCoachPassed: {
+    opacity: 0.7,
   },
   bookingCard: {
     backgroundColor: COLORS.card,
