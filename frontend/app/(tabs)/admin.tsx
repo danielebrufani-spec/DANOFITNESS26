@@ -262,32 +262,69 @@ export default function AdminScreen() {
   };
 
   const handleDeleteSubscription = async (subscriptionId: string) => {
-    // Elimina direttamente senza conferma (più veloce)
-    try {
-      await apiService.deleteSubscription(subscriptionId);
-      await loadData();
-    } catch (error) {
-      console.error('Errore eliminazione abbonamento:', error);
-    }
+    Alert.alert(
+      '⚠️ Conferma Eliminazione',
+      'Sei sicuro di voler eliminare questo abbonamento?',
+      [
+        { text: 'No', style: 'cancel' },
+        { 
+          text: 'Sì, Elimina', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await apiService.deleteSubscription(subscriptionId);
+              await loadData();
+            } catch (error) {
+              console.error('Errore eliminazione abbonamento:', error);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleDeleteUser = async (userId: string, userName: string) => {
-    // Elimina direttamente senza conferma
-    try {
-      await apiService.deleteUser(userId);
-      await loadData();
-    } catch (error: any) {
-      console.error('Errore eliminazione utente:', error);
-    }
+    Alert.alert(
+      '⚠️ Conferma Eliminazione',
+      `Sei sicuro di voler eliminare l'utente ${userName}?\n\nQuesto eliminerà anche tutti i suoi abbonamenti e prenotazioni.`,
+      [
+        { text: 'No', style: 'cancel' },
+        { 
+          text: 'Sì, Elimina', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await apiService.deleteUser(userId);
+              await loadData();
+            } catch (error: any) {
+              console.error('Errore eliminazione utente:', error);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleDeleteBooking = async (bookingId: string) => {
-    try {
-      await apiService.cancelBooking(bookingId);
-      await loadData();
-    } catch (error) {
-      console.error('Errore eliminazione prenotazione:', error);
-    }
+    Alert.alert(
+      '⚠️ Conferma Eliminazione',
+      'Sei sicuro di voler eliminare questa prenotazione?',
+      [
+        { text: 'No', style: 'cancel' },
+        { 
+          text: 'Sì, Elimina', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await apiService.cancelBooking(bookingId);
+              await loadData();
+            } catch (error) {
+              console.error('Errore eliminazione prenotazione:', error);
+            }
+          }
+        }
+      ]
+    );
   };
 
   // Calculate totals
