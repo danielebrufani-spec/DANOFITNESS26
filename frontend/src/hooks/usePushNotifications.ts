@@ -1,8 +1,22 @@
-import { useEffect, useState } from 'react';
-import { Platform } from 'react-native';
+import { useEffect, useState, useRef } from 'react';
+import { Platform, Alert } from 'react-native';
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 import apiService from '../services/api';
 
-// Utility function to convert base64 to Uint8Array
+// Configure how notifications are handled when app is in foreground
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
+
+// Utility function to convert base64 to Uint8Array (for web)
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
   const base64 = (base64String + padding)
@@ -22,20 +36,61 @@ export const usePushNotifications = () => {
   const [isSupported, setIsSupported] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [permission, setPermission] = useState<NotificationPermission | null>(null);
+  const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
+  const [permission, setPermission] = useState<string | null>(null);
+  
+  const notificationListener = useRef<Notifications.EventSubscription>();
+  const responseListener = useRef<Notifications.EventSubscription>();
 
   useEffect(() => {
-    // Check if push notifications are supported (only on web)
-    if (Platform.OS === 'web' && 'serviceWorker' in navigator && 'PushManager' in window) {
-      setIsSupported(true);
-      setPermission(Notification.permission);
-      
-      // Check if already subscribed
-      checkSubscription();
+    if (Platform.OS === 'web') {
+      // Web: Check if push notifications are supported
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
+        setIsSupported(true);
+        setPermission(Notification.permission);
+        checkWebSubscription();
+      }
+    } else {
+      // Mobile: Always supported on real devices
+      setIsSupported(Device.isDevice);
+      checkMobilePermission();
+    }
+
+    // Set up notification listeners for mobile
+    if (Platform.OS !== 'web') {
+      // Listener for notifications received while app is foregrounded
+      notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+        console.log('[NOTIFICATION] Received:', notification);
+      });
+
+      // Listener for when user taps on notification
+      responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+        console.log('[NOTIFICATION] Response:', response);
+        // Navigate to relevant screen based on notification data
+        const data = response.notification.request.content.data;
+        if (data?.screen) {
+          // Handle navigation here if needed
+        }
+      });
+
+      return () => {
+        if (notificationListener.current) {
+          Notifications.removeNotificationSubscription(notificationListener.current);
+        }
+        if (responseListener.current) {
+          Notifications.removeNotificationSubscription(responseListener.current);
+        }
+      };
     }
   }, []);
 
-  const checkSubscription = async () => {
+  const checkMobilePermission = async () => {
+    const { status } = await Notifications.getPermissionsAsync();
+    setPermission(status);
+    setIsSubscribed(status === 'granted');
+  };
+
+  const checkWebSubscription = async () => {
     try {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
@@ -45,47 +100,126 @@ export const usePushNotifications = () => {
     }
   };
 
+  // Register for Expo Push Notifications (mobile)
+  const registerForExpoPushNotifications = async (): Promise<string | null> => {
+    if (!Device.isDevice) {
+      Alert.alert('Errore', 'Le notifiche push funzionano solo su dispositivi fisici');
+      return null;
+    }
+
+    // Check existing permission
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    // Request permission if not granted
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== 'granted') {
+      Alert.alert(
+        'Permesso Negato',
+        'Per ricevere notifiche, abilita i permessi nelle impostazioni del telefono'
+      );
+      return null;
+    }
+
+    setPermission(finalStatus);
+
+    // Get Expo push token
+    try {
+      const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
+      
+      const tokenData = await Notifications.getExpoPushTokenAsync({
+        projectId: projectId,
+      });
+      
+      const token = tokenData.data;
+      setExpoPushToken(token);
+      
+      // Configure Android notification channel
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('default', {
+          name: 'DanoFitness',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#FF6B35',
+          sound: 'default',
+          enableVibrate: true,
+          enableLights: true,
+        });
+      }
+
+      return token;
+    } catch (error) {
+      console.error('Error getting Expo push token:', error);
+      return null;
+    }
+  };
+
+  // Subscribe to push notifications
   const subscribe = async (): Promise<boolean> => {
-    if (!isSupported) return false;
+    if (!isSupported) {
+      Alert.alert('Non Supportato', 'Le notifiche push non sono supportate su questo dispositivo');
+      return false;
+    }
     
     setIsLoading(true);
+
     try {
-      // Request notification permission
-      const result = await Notification.requestPermission();
-      setPermission(result);
-      
-      if (result !== 'granted') {
+      if (Platform.OS === 'web') {
+        // Web subscription
+        const result = await Notification.requestPermission();
+        setPermission(result);
+        
+        if (result !== 'granted') {
+          setIsLoading(false);
+          return false;
+        }
+
+        const registration = await navigator.serviceWorker.register('/sw.js');
+        await navigator.serviceWorker.ready;
+
+        const { data } = await apiService.getVapidPublicKey();
+        const vapidPublicKey = data.publicKey;
+
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+        });
+
+        const subscriptionJSON = subscription.toJSON();
+        await apiService.subscribePush({
+          endpoint: subscriptionJSON.endpoint!,
+          keys: {
+            p256dh: subscriptionJSON.keys!.p256dh,
+            auth: subscriptionJSON.keys!.auth
+          }
+        });
+
+        setIsSubscribed(true);
+        setIsLoading(false);
+        return true;
+      } else {
+        // Mobile subscription (Expo)
+        const token = await registerForExpoPushNotifications();
+        
+        if (token) {
+          // Send token to backend
+          try {
+            await apiService.registerExpoPushToken(token);
+            setIsSubscribed(true);
+            setIsLoading(false);
+            return true;
+          } catch (error) {
+            console.error('Error registering token with backend:', error);
+          }
+        }
+        
         setIsLoading(false);
         return false;
       }
-
-      // Register service worker
-      const registration = await navigator.serviceWorker.register('/sw.js');
-      await navigator.serviceWorker.ready;
-
-      // Get VAPID public key from backend
-      const { data } = await apiService.getVapidPublicKey();
-      const vapidPublicKey = data.publicKey;
-
-      // Subscribe to push notifications
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
-      });
-
-      // Send subscription to backend
-      const subscriptionJSON = subscription.toJSON();
-      await apiService.subscribePush({
-        endpoint: subscriptionJSON.endpoint!,
-        keys: {
-          p256dh: subscriptionJSON.keys!.p256dh,
-          auth: subscriptionJSON.keys!.auth
-        }
-      });
-
-      setIsSubscribed(true);
-      setIsLoading(false);
-      return true;
     } catch (error) {
       console.error('Error subscribing to push notifications:', error);
       setIsLoading(false);
@@ -93,17 +227,26 @@ export const usePushNotifications = () => {
     }
   };
 
+  // Unsubscribe from push notifications
   const unsubscribe = async (): Promise<boolean> => {
     if (!isSupported) return false;
     
     setIsLoading(true);
+    
     try {
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
-      
-      if (subscription) {
-        await subscription.unsubscribe();
-        await apiService.unsubscribePush();
+      if (Platform.OS === 'web') {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        
+        if (subscription) {
+          await subscription.unsubscribe();
+          await apiService.unsubscribePush();
+        }
+      } else {
+        // Mobile: Remove token from backend
+        if (expoPushToken) {
+          await apiService.unregisterExpoPushToken();
+        }
       }
 
       setIsSubscribed(false);
@@ -116,12 +259,31 @@ export const usePushNotifications = () => {
     }
   };
 
+  // Send a local notification (for testing)
+  const sendLocalNotification = async (title: string, body: string) => {
+    if (Platform.OS !== 'web') {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title,
+          body,
+          sound: 'default',
+          data: { screen: 'comunicazioni' },
+        },
+        trigger: null, // Immediately
+      });
+    }
+  };
+
   return {
     isSupported,
     isSubscribed,
     isLoading,
     permission,
+    expoPushToken,
     subscribe,
-    unsubscribe
+    unsubscribe,
+    sendLocalNotification,
   };
 };
+
+export default usePushNotifications;
