@@ -1884,6 +1884,14 @@ async def startup_event():
     logger.info("[SCHEDULER] Started automatic midnight processing scheduler")
     logger.info("[SCHEDULER] Started subscription expiration check scheduler (9:00 AM daily)")
     logger.info("[SCHEDULER] Started automatic lesson scaling (every 30 minutes)")
+    
+    # IMMEDIATELY process any pending lessons on startup
+    logger.info("[STARTUP] Running immediate lesson scaling check...")
+    try:
+        await process_completed_lessons()
+        logger.info("[STARTUP] Immediate lesson scaling completed")
+    except Exception as e:
+        logger.error(f"[STARTUP] Error during immediate scaling: {e}")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
