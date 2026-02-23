@@ -153,6 +153,10 @@ export const apiService = {
     api.post('/push/subscribe', subscription),
   unsubscribePush: () => api.delete('/push/unsubscribe'),
 
+  // Expo Push Notifications (Mobile)
+  registerExpoPushToken: (token: string) => api.post('/push/expo-token', { expo_push_token: token }),
+  unregisterExpoPushToken: () => api.delete('/push/expo-token'),
+
   // Push token
   updatePushToken: (push_token: string) => api.put('/auth/push-token', { push_token }),
 
