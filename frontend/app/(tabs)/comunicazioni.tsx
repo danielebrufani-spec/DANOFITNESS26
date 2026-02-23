@@ -100,12 +100,25 @@ export default function ComunicazioniScreen() {
   };
 
   const handleDeleteMessage = async (messageId: string) => {
-    try {
-      await apiService.deleteMessage(messageId);
-      await loadMessages();
-    } catch (error) {
-      console.error('Error deleting message:', error);
-    }
+    Alert.alert(
+      '⚠️ Conferma Eliminazione',
+      'Sei sicuro di voler eliminare questa comunicazione?',
+      [
+        { text: 'No', style: 'cancel' },
+        { 
+          text: 'Sì, Elimina', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await apiService.deleteMessage(messageId);
+              await loadMessages();
+            } catch (error) {
+              console.error('Error deleting message:', error);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const formatDate = (dateString: string) => {
