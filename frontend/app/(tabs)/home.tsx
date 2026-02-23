@@ -501,6 +501,12 @@ const styles = StyleSheet.create({
   bookingInfo: {
     flex: 1,
   },
+  bookingMainText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 4,
+  },
   bookingDate: {
     fontSize: 16,
     fontWeight: '600',
