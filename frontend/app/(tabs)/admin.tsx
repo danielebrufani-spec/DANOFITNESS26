@@ -59,12 +59,16 @@ interface WeeklyBookings {
 export default function AdminScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'presenze' | 'abbonamenti' | 'utenti'>('presenze');
+  const [activeTab, setActiveTab] = useState<'riepilogo' | 'presenze' | 'abbonamenti' | 'utenti'>('riepilogo');
   
   const [weeklyBookings, setWeeklyBookings] = useState<WeeklyBookings | null>(null);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [expiredSubscriptions, setExpiredSubscriptions] = useState<Subscription[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  
+  // Daily stats
+  const [dailyStats, setDailyStats] = useState<any>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
   
   // Search
   const [userSearchQuery, setUserSearchQuery] = useState<string>('');
