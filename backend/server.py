@@ -1117,6 +1117,88 @@ async def process_day_automatically():
         "timestamp": datetime.utcnow()
     })
 
+@api_router.post("/admin/process-day/{date}")
+async def process_day_manually(date: str, admin_user: dict = Depends(get_admin_user)):
+    """Manually process bookings for a specific date - deduct lessons from subscriptions"""
+    logger.info(f"[ADMIN] Manual processing requested for {date}")
+    
+    bookings = await db.bookings.find({
+        "data_lezione": date,
+        "lezione_scalata": False,
+        "confermata": True
+    }).to_list(1000)
+    
+    processed = 0
+    details = []
+    
+    for booking in bookings:
+        user_id = booking["user_id"]
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        user_name = f"{user['nome']} {user['cognome']}" if user else "Sconosciuto"
+        
+        # Find active per-lesson subscription
+        sub = await db.subscriptions.find_one({
+            "user_id": user_id,
+            "attivo": True,
+            "tipo": {"$in": ["lezioni_8", "lezioni_16"]},
+            "lezioni_rimanenti": {"$gt": 0}
+        })
+        
+        if sub:
+            # Deduct lesson
+            await db.subscriptions.update_one(
+                {"_id": sub["_id"]},
+                {"$inc": {"lezioni_rimanenti": -1}}
+            )
+            
+            # Mark booking as processed
+            await db.bookings.update_one(
+                {"_id": booking["_id"]},
+                {"$set": {"lezione_scalata": True}}
+            )
+            
+            processed += 1
+            
+            # Get updated lesson count
+            updated_sub = await db.subscriptions.find_one({"_id": sub["_id"]})
+            details.append({
+                "utente": user_name,
+                "lezioni_rimaste": updated_sub["lezioni_rimanenti"]
+            })
+            
+            # Check if subscription is now empty
+            if updated_sub["lezioni_rimanenti"] <= 0:
+                notification = {
+                    "user_id": user_id,
+                    "tipo": "abbonamento_esaurito",
+                    "messaggio": f"Il tuo abbonamento {sub['tipo']} è esaurito. Rinnova per continuare a prenotare.",
+                    "letta": False,
+                    "created_at": datetime.utcnow()
+                }
+                await db.notifications.insert_one(notification)
+        else:
+            details.append({
+                "utente": user_name,
+                "lezioni_rimaste": "N/A (abbonamento a tempo o nessun abbonamento)"
+            })
+    
+    logger.info(f"[ADMIN] Processed {processed} bookings for {date}")
+    
+    # Log the processing
+    await db.processing_logs.insert_one({
+        "data": date,
+        "processed": processed,
+        "manual": True,
+        "timestamp": datetime.utcnow()
+    })
+    
+    return {
+        "message": f"Processate {processed} prenotazioni per {date}",
+        "data": date,
+        "processed": processed,
+        "details": details
+    }
+
 @api_router.get("/admin/processing-logs")
 async def get_processing_logs(admin_user: dict = Depends(get_admin_user)):
     """Get logs of automatic processing"""
