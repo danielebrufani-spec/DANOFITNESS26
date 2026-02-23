@@ -392,27 +392,27 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   subscriptionTitle: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '600',
     color: COLORS.text,
-    marginLeft: 12,
+    marginLeft: 10,
   },
   subscriptionDetails: {
     flex: 1,
-    marginLeft: 36,
+    marginLeft: 28,
   },
   subscriptionType: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.primary,
     fontWeight: '600',
   },
   lessonsRemaining: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
   expiryDate: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
