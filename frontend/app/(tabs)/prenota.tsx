@@ -703,10 +703,23 @@ const styles = StyleSheet.create({
   lessonTimePassed: {
     color: COLORS.textSecondary,
   },
+  lessonTypeContainer: {
+    flexDirection: 'column',
+  },
   lessonType: {
     fontSize: 16,
     fontWeight: '500',
     marginTop: 2,
+  },
+  coachName: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+    fontStyle: 'italic',
+  },
+  coachNamePassed: {
+    color: COLORS.textSecondary,
+    opacity: 0.7,
   },
   bookButton: {
     backgroundColor: COLORS.primary,
