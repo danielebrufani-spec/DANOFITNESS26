@@ -479,9 +479,9 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   lessonCoach: {
-    fontSize: 12,
+    fontSize: 10,
     color: COLORS.textSecondary,
-    marginTop: 2,
+    marginTop: 1,
     fontStyle: 'italic',
   },
   lessonCoachPassed: {
