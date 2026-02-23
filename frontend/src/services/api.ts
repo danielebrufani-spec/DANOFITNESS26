@@ -109,6 +109,7 @@ export interface DailyStats {
   totale_prenotazioni: number;
   prenotazioni_per_lezione: { [key: string]: number };
   abbonamenti_scaduti: number;
+  lezioni_scalate: number;
 }
 
 // API functions
