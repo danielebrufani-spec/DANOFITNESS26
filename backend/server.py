@@ -1385,6 +1385,72 @@ async def unsubscribe_push(current_user: dict = Depends(get_current_user)):
     logger.info(f"[PUSH] User {user_id} unsubscribed from push notifications")
     return {"message": "Disiscrizione dalle notifiche push completata"}
 
+# Expo Push Token endpoints
+class ExpoPushTokenRequest(BaseModel):
+    expo_push_token: str
+
+@api_router.post("/push/expo-token")
+async def register_expo_push_token(data: ExpoPushTokenRequest, current_user: dict = Depends(get_current_user)):
+    """Register Expo push token for mobile notifications"""
+    user_id = current_user["_id"]
+    
+    await db.users.update_one(
+        {"_id": user_id},
+        {"$set": {"expo_push_token": data.expo_push_token}}
+    )
+    
+    logger.info(f"[EXPO PUSH] User {user_id} registered token: {data.expo_push_token[:20]}...")
+    return {"message": "Token Expo registrato con successo"}
+
+@api_router.delete("/push/expo-token")
+async def unregister_expo_push_token(current_user: dict = Depends(get_current_user)):
+    """Remove Expo push token"""
+    user_id = current_user["_id"]
+    
+    await db.users.update_one(
+        {"_id": user_id},
+        {"$unset": {"expo_push_token": ""}}
+    )
+    
+    logger.info(f"[EXPO PUSH] User {user_id} unregistered expo token")
+    return {"message": "Token Expo rimosso"}
+
+async def send_expo_push_notification(expo_token: str, title: str, body: str, data: dict = None):
+    """Send push notification via Expo Push API"""
+    import httpx
+    
+    message = {
+        "to": expo_token,
+        "sound": "default",
+        "title": title,
+        "body": body,
+        "data": data or {},
+        "priority": "high",
+        "channelId": "default",
+    }
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://exp.host/--/api/v2/push/send",
+                json=message,
+                headers={
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                }
+            )
+            
+            if response.status_code == 200:
+                logger.info(f"[EXPO PUSH] Notification sent: {title}")
+                return True
+            else:
+                logger.error(f"[EXPO PUSH] Failed: {response.text}")
+                return False
+    except Exception as e:
+        logger.error(f"[EXPO PUSH] Error: {e}")
+        return False
+
+
 async def send_push_notification(user_id: str, title: str, body: str, data: dict = None):
     """Send push notification to a specific user"""
     user = await db.users.find_one({"_id": ObjectId(user_id)})
