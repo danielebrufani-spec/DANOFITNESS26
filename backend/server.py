@@ -1197,13 +1197,21 @@ async def create_message(message: MessageCreate, admin_user: dict = Depends(get_
     
     result = await db.messages.insert_one(message_doc)
     
-    # Send push notification to all users
-    users = await db.users.find({"role": "client", "push_subscription": {"$exists": True}}).to_list(1000)
+    # Send push notification to all users (both web and mobile)
+    users = await db.users.find({
+        "role": "client",
+        "$or": [
+            {"push_subscription": {"$exists": True}},
+            {"expo_push_token": {"$exists": True}}
+        ]
+    }).to_list(1000)
+    
     for user in users:
         await send_push_notification(
             str(user["_id"]),
-            "Nuova Comunicazione",
-            message.content[:100] + "..." if len(message.content) > 100 else message.content
+            "💬 Nuova Comunicazione",
+            message.content[:100] + "..." if len(message.content) > 100 else message.content,
+            {"screen": "comunicazioni", "type": "chat"}
         )
     
     return MessageResponse(
