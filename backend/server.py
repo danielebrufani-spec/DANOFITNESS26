@@ -1452,41 +1452,60 @@ async def send_expo_push_notification(expo_token: str, title: str, body: str, da
 
 
 async def send_push_notification(user_id: str, title: str, body: str, data: dict = None):
-    """Send push notification to a specific user"""
+    """Send push notification to a specific user (Web + Expo)"""
     user = await db.users.find_one({"_id": ObjectId(user_id)})
-    if not user or "push_subscription" not in user:
-        logger.info(f"[PUSH] User {user_id} has no push subscription")
+    if not user:
+        logger.info(f"[PUSH] User {user_id} not found")
         return False
     
-    subscription = user["push_subscription"]
+    sent = False
     
-    try:
-        payload = json.dumps({
-            "title": title,
-            "body": body,
-            "data": data or {},
-            "icon": "/icon-192.png",
-            "badge": "/icon-192.png"
-        })
-        
-        webpush(
-            subscription_info=subscription,
-            data=payload,
-            vapid_private_key=VAPID_PRIVATE_KEY,
-            vapid_claims={"sub": f"mailto:{VAPID_EMAIL}"}
+    # Try Expo Push first (mobile)
+    if "expo_push_token" in user and user["expo_push_token"]:
+        expo_sent = await send_expo_push_notification(
+            user["expo_push_token"], 
+            title, 
+            body, 
+            data
         )
-        
-        logger.info(f"[PUSH] Notification sent to user {user_id}: {title}")
-        return True
-    except WebPushException as e:
-        logger.error(f"[PUSH] Failed to send notification to user {user_id}: {e}")
-        # If subscription is invalid, remove it
-        if e.response and e.response.status_code in [404, 410]:
-            await db.users.update_one(
-                {"_id": ObjectId(user_id)},
-                {"$unset": {"push_subscription": ""}}
+        if expo_sent:
+            sent = True
+            logger.info(f"[EXPO PUSH] Notification sent to user {user_id}: {title}")
+    
+    # Try Web Push
+    if "push_subscription" in user and user["push_subscription"]:
+        subscription = user["push_subscription"]
+        try:
+            payload = json.dumps({
+                "title": title,
+                "body": body,
+                "data": data or {},
+                "icon": "/icon-192.png",
+                "badge": "/icon-192.png"
+            })
+            
+            webpush(
+                subscription_info=subscription,
+                data=payload,
+                vapid_private_key=VAPID_PRIVATE_KEY,
+                vapid_claims={"sub": f"mailto:{VAPID_EMAIL}"}
             )
-        return False
+            
+            logger.info(f"[WEB PUSH] Notification sent to user {user_id}: {title}")
+            sent = True
+        except WebPushException as e:
+            logger.error(f"[WEB PUSH] Failed to send notification to user {user_id}: {e}")
+            # If subscription is invalid, remove it
+            if e.response and e.response.status_code in [404, 410]:
+                await db.users.update_one(
+                    {"_id": ObjectId(user_id)},
+                    {"$unset": {"push_subscription": ""}}
+                )
+    
+    if not sent:
+        logger.info(f"[PUSH] User {user_id} has no push subscription")
+    
+    return sent
 
 async def check_expiring_subscriptions():
     """Check for expiring subscriptions and send notifications"""
