@@ -832,16 +832,32 @@ async def get_daily_stats(date: str, admin_user: dict = Depends(get_admin_user))
     bookings = await db.bookings.find({"data_lezione": date}).to_list(1000)
     
     prenotazioni_per_lezione = {}
+    lezioni_scalate = 0
+    
     for booking in bookings:
-        try:
-            lesson = await db.lessons.find_one({"_id": ObjectId(booking["lesson_id"])})
-            if lesson:
-                key = f"{lesson['orario']} - {lesson['tipo_attivita']}"
-                if key not in prenotazioni_per_lezione:
-                    prenotazioni_per_lezione[key] = 0
-                prenotazioni_per_lezione[key] += 1
-        except:
-            pass
+        # Usa lesson_data salvato nella prenotazione o recupera dalla collection
+        lesson_data = booking.get("lesson_data")
+        if not lesson_data:
+            try:
+                lesson = await db.lessons.find_one({"_id": ObjectId(booking["lesson_id"])})
+                if lesson:
+                    lesson_data = {
+                        "orario": lesson["orario"],
+                        "tipo_attivita": lesson["tipo_attivita"],
+                        "coach": lesson.get("coach", "Daniele")
+                    }
+            except:
+                pass
+        
+        if lesson_data:
+            key = f"{lesson_data['orario']} - {lesson_data['tipo_attivita'].capitalize()}"
+            if key not in prenotazioni_per_lezione:
+                prenotazioni_per_lezione[key] = 0
+            prenotazioni_per_lezione[key] += 1
+        
+        # Conta lezioni scalate (solo abbonamenti a numero di lezioni)
+        if booking.get("lezione_scalata", False):
+            lezioni_scalate += 1
     
     # Count expired subscriptions
     now = datetime.utcnow()
@@ -858,7 +874,8 @@ async def get_daily_stats(date: str, admin_user: dict = Depends(get_admin_user))
         data=date,
         totale_prenotazioni=len(bookings),
         prenotazioni_per_lezione=prenotazioni_per_lezione,
-        abbonamenti_scaduti=abbonamenti_scaduti
+        abbonamenti_scaduti=abbonamenti_scaduti,
+        lezioni_scalate=lezioni_scalate
     )
 
 @api_router.post("/admin/process-day/{date}")
