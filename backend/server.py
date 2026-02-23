@@ -1717,6 +1717,100 @@ async def check_expiring_subscriptions():
             )
             logger.info(f"[PUSH] Sent lessons notification to user {sub['user_id']}")
 
+async def process_completed_lessons():
+    """Process lessons that have ended - deduct from subscriptions automatically"""
+    now = datetime.utcnow()
+    today = now.strftime("%Y-%m-%d")
+    current_time = now.strftime("%H:%M")
+    
+    logger.info(f"[AUTO-SCALE] Checking for completed lessons at {today} {current_time}")
+    
+    # Get all bookings for today that haven't been processed yet
+    bookings = await db.bookings.find({
+        "data_lezione": today,
+        "lezione_scalata": False,
+        "confermata": True
+    }).to_list(1000)
+    
+    processed = 0
+    for booking in bookings:
+        # Get lesson info to check the time
+        lesson_data = booking.get("lesson_data", {})
+        lesson_time_str = lesson_data.get("orario", "")
+        
+        if not lesson_time_str:
+            # Try to get from lesson collection
+            try:
+                lesson = await db.lessons.find_one({"_id": ObjectId(booking["lesson_id"])})
+                if lesson:
+                    lesson_time_str = lesson.get("orario", "")
+            except:
+                pass
+        
+        if not lesson_time_str:
+            continue
+            
+        # Parse lesson time and check if it's been more than 1 hour since lesson started
+        try:
+            lesson_hour, lesson_min = map(int, lesson_time_str.split(':'))
+            lesson_datetime = now.replace(hour=lesson_hour, minute=lesson_min, second=0, microsecond=0)
+            cutoff_time = lesson_datetime + timedelta(hours=1)
+            
+            # Only process if current time is past the cutoff (lesson ended)
+            if now < cutoff_time:
+                continue
+                
+        except Exception as e:
+            logger.error(f"[AUTO-SCALE] Error parsing time {lesson_time_str}: {e}")
+            continue
+        
+        user_id = booking["user_id"]
+        
+        # Find active per-lesson subscription
+        sub = await db.subscriptions.find_one({
+            "user_id": user_id,
+            "attivo": True,
+            "tipo": {"$in": ["lezioni_8", "lezioni_16"]},
+            "lezioni_rimanenti": {"$gt": 0}
+        })
+        
+        if sub:
+            # Deduct lesson
+            await db.subscriptions.update_one(
+                {"_id": sub["_id"]},
+                {"$inc": {"lezioni_rimanenti": -1}}
+            )
+            
+            # Mark booking as processed
+            await db.bookings.update_one(
+                {"_id": booking["_id"]},
+                {"$set": {"lezione_scalata": True}}
+            )
+            
+            processed += 1
+            
+            # Get user name for logging
+            user = await db.users.find_one({"_id": ObjectId(user_id)})
+            user_name = f"{user['nome']} {user['cognome']}" if user else "Unknown"
+            
+            # Check remaining lessons
+            updated_sub = await db.subscriptions.find_one({"_id": sub["_id"]})
+            logger.info(f"[AUTO-SCALE] Scaled lesson for {user_name} - remaining: {updated_sub['lezioni_rimanenti']}")
+            
+            # Check if subscription is now empty
+            if updated_sub["lezioni_rimanenti"] <= 0:
+                notification = {
+                    "user_id": user_id,
+                    "tipo": "abbonamento_esaurito",
+                    "messaggio": f"Il tuo abbonamento {sub['tipo']} è esaurito. Rinnova per continuare a prenotare.",
+                    "letta": False,
+                    "created_at": datetime.utcnow()
+                }
+                await db.notifications.insert_one(notification)
+    
+    if processed > 0:
+        logger.info(f"[AUTO-SCALE] Processed {processed} completed lessons for {today}")
+
 # ======================== INIT ADMIN ========================
 
 @api_router.post("/init/admin")
