@@ -9,14 +9,24 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Scatta foto per il tuo profilo",
+        "NSPhotoLibraryUsageDescription": "Seleziona foto per il tuo profilo"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#1A1A2E"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -43,8 +53,22 @@
           "resizeMode": "contain",
           "backgroundColor": "#1A1A2E"
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon-192.png",
+          "color": "#FF6B35",
+          "sounds": []
+        }
       ]
     ],
+    "notification": {
+      "icon": "./assets/images/icon-192.png",
+      "color": "#FF6B35",
+      "androidMode": "default",
+      "androidCollapsedTitle": "DanoFitness23"
+    },
     "experiments": {
       "typedRoutes": true
     }
