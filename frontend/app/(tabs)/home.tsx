@@ -198,7 +198,7 @@ export default function HomeScreen() {
                   </View>
                   {isLessonPassed ? (
                     <View style={styles.expiredBadge}>
-                      <Text style={styles.expiredBadgeText}>Scaduta</Text>
+                      <Text style={styles.expiredBadgeText}>Non prenotabile</Text>
                     </View>
                   ) : (
                     <Ionicons name="add-circle-outline" size={24} color={COLORS.primary} />
