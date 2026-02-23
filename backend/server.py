@@ -1855,8 +1855,8 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_event():
-    """Start the scheduler for automatic midnight processing"""
-    # Schedule the job to run at midnight (00:00) every day
+    """Start the scheduler for automatic processing"""
+    # Schedule the job to run at midnight (00:00) every day - cleanup and daily processing
     scheduler.add_job(
         process_day_automatically,
         CronTrigger(hour=0, minute=0),  # Run at midnight
@@ -1872,9 +1872,18 @@ async def startup_event():
         replace_existing=True
     )
     
+    # Schedule automatic lesson scaling every 30 minutes
+    scheduler.add_job(
+        process_completed_lessons,
+        CronTrigger(minute='0,30'),  # Run at :00 and :30 of every hour
+        id="auto_scale_lessons",
+        replace_existing=True
+    )
+    
     scheduler.start()
     logger.info("[SCHEDULER] Started automatic midnight processing scheduler")
     logger.info("[SCHEDULER] Started subscription expiration check scheduler (9:00 AM daily)")
+    logger.info("[SCHEDULER] Started automatic lesson scaling (every 30 minutes)")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
