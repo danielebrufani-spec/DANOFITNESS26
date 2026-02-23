@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.card,
     borderRadius: 10,
-    marginBottom: 12,
+    marginBottom: 8,
     paddingHorizontal: 14,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    height: 48,
+    height: 38,
     color: COLORS.text,
     fontSize: 10,
   },
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: COLORS.primary,
     borderRadius: 10,
-    height: 46,
+    height: 36,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 16,
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
     borderRadius: 8,
     padding: 12,
-    marginBottom: 16,
+    marginBottom: 10,
     gap: 8,
   },
   errorText: {

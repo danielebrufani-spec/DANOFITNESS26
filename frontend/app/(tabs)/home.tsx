@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   scrollContent: {
-    padding: 16,
+    padding: 12,
     paddingBottom: 32,
   },
   header: {
@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
   subscriptionCard: {
     backgroundColor: COLORS.card,
     borderRadius: 16,
-    padding: 16,
+    padding: 12,
     marginBottom: 24,
     flexDirection: 'row',
     alignItems: 'center',
@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   sectionTitle: {
     fontSize: 10,
@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
   bookingCard: {
     backgroundColor: COLORS.card,
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,

@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   messagesContent: {
-    padding: 16,
+    padding: 12,
   },
   emptyContainer: {
     flex: 1,
@@ -340,14 +340,14 @@ const styles = StyleSheet.create({
   messageCard: {
     backgroundColor: COLORS.card,
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    padding: 12,
+    marginBottom: 10,
   },
   messageHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   senderInfo: {
     flexDirection: 'row',
@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    padding: 16,
+    padding: 12,
     backgroundColor: COLORS.card,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,

@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.card,
     borderRadius: 12,
-    marginBottom: 16,
+    marginBottom: 10,
     paddingHorizontal: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    height: 56,
+    height: 42,
     color: COLORS.text,
     fontSize: 10,
   },
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: COLORS.primary,
     borderRadius: 12,
-    height: 56,
+    height: 42,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 24,

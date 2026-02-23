@@ -566,7 +566,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   header: {
-    padding: 16,
+    padding: 12,
     paddingBottom: 8,
   },
   title: {
@@ -683,13 +683,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   lessonsContent: {
-    padding: 16,
+    padding: 12,
     paddingTop: 0,
   },
   lessonCard: {
     backgroundColor: COLORS.card,
     borderRadius: 16,
-    marginBottom: 12,
+    marginBottom: 8,
     overflow: 'hidden',
     flexDirection: 'row',
   },
@@ -701,7 +701,7 @@ const styles = StyleSheet.create({
   },
   lessonContent: {
     flex: 1,
-    padding: 16,
+    padding: 12,
   },
   lessonHeader: {
     marginBottom: 4,
@@ -781,7 +781,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
-    marginBottom: 16,
+    marginBottom: 10,
   },
   bookingItem: {
     backgroundColor: COLORS.card,
@@ -838,12 +838,12 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   cancelButton: {
-    padding: 16,
+    padding: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   completedBadge: {
-    padding: 16,
+    padding: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },

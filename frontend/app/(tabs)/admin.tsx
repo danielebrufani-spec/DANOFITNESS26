@@ -960,7 +960,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   header: {
-    padding: 16,
+    padding: 12,
     paddingBottom: 8,
   },
   title: {
@@ -977,7 +977,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 16,
     gap: 8,
-    marginBottom: 16,
+    marginBottom: 10,
   },
   tab: {
     flex: 1,
@@ -1022,7 +1022,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 12,
     marginHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 8,
     gap: 8,
   },
   refreshButtonText: {
@@ -1034,7 +1034,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   scrollContent: {
-    padding: 16,
+    padding: 12,
     paddingTop: 0,
     paddingBottom: 32,
   },
@@ -1043,7 +1043,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     flexDirection: 'row',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   statItem: {
     flex: 1,
@@ -1070,7 +1070,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginBottom: 16,
+    marginBottom: 10,
     padding: 8,
     backgroundColor: COLORS.card,
     borderRadius: 8,
@@ -1082,7 +1082,7 @@ const styles = StyleSheet.create({
   dayCard: {
     backgroundColor: COLORS.card,
     borderRadius: 16,
-    marginBottom: 12,
+    marginBottom: 8,
     overflow: 'hidden',
   },
   dayCardPast: {
@@ -1092,7 +1092,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    padding: 12,
   },
   dayInfo: {
     flex: 1,
@@ -1135,7 +1135,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   lessonItem: {
-    marginBottom: 12,
+    marginBottom: 8,
   },
   lessonHeader: {
     flexDirection: 'row',
@@ -1214,7 +1214,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   warningTitle: {
     color: COLORS.warning,
@@ -1222,7 +1222,7 @@ const styles = StyleSheet.create({
   addButton: {
     backgroundColor: COLORS.primary,
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1237,7 +1237,7 @@ const styles = StyleSheet.create({
   subscriptionCard: {
     backgroundColor: COLORS.card,
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
     marginBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
@@ -1282,7 +1282,7 @@ const styles = StyleSheet.create({
   userCard: {
     backgroundColor: COLORS.card,
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
     marginBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
@@ -1360,11 +1360,11 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     color: COLORS.textSecondary,
-    marginBottom: 12,
+    marginBottom: 8,
     marginTop: 8,
   },
   userList: {
-    marginBottom: 16,
+    marginBottom: 10,
   },
   userOption: {
     paddingHorizontal: 16,
@@ -1388,13 +1388,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 10,
   },
   typeOption: {
     width: '48%',
     backgroundColor: COLORS.cardLight,
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
     alignItems: 'center',
   },
   typeOptionSelected: {
@@ -1428,7 +1428,7 @@ const styles = StyleSheet.create({
   quickButtons: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 10,
   },
   quickButton: {
     flex: 1,
@@ -1440,8 +1440,8 @@ const styles = StyleSheet.create({
   editUserInfo: {
     backgroundColor: COLORS.cardLight,
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    padding: 12,
+    marginBottom: 10,
   },
   editUserName: {
     fontSize: 10,
@@ -1462,7 +1462,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.success,
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1489,7 +1489,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    marginBottom: 16,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
@@ -1609,7 +1609,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    marginBottom: 12,
+    marginBottom: 8,
     gap: 8,
   },
   modalSearchInput: {
@@ -1621,7 +1621,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: COLORS.textSecondary,
     fontStyle: 'italic',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   // Riepilogo Giornaliero Styles
   riepilogoContainer: {
@@ -1636,14 +1636,14 @@ const styles = StyleSheet.create({
   riepilogoDate: {
     fontSize: 10,
     color: COLORS.primary,
-    marginBottom: 16,
+    marginBottom: 10,
   },
   totalCard: {
     backgroundColor: COLORS.card,
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   totalNumber: {
     fontSize: 36,

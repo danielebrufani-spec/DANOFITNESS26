@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   scrollContent: {
-    padding: 16,
+    padding: 12,
     paddingBottom: 120,
   },
   title: {
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 10,
     position: 'relative',
   },
   avatarImage: {
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
   userEmail: {
     fontSize: 10,
     color: COLORS.textSecondary,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   adminBadge: {
     flexDirection: 'row',
@@ -373,14 +373,14 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     color: COLORS.textSecondary,
-    marginBottom: 12,
+    marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   infoCard: {
     backgroundColor: COLORS.card,
     borderRadius: 16,
-    padding: 16,
+    padding: 12,
   },
   infoRow: {
     flexDirection: 'row',
@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: COLORS.card,
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
     borderWidth: 1,
     borderColor: COLORS.error,
   },

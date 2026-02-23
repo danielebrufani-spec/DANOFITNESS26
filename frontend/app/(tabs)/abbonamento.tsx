@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   scrollContent: {
-    padding: 16,
+    padding: 12,
     paddingBottom: 32,
   },
   title: {
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   subscriptionCard: {
     backgroundColor: COLORS.card,
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   subscriptionHeader: {
-    marginBottom: 12,
+    marginBottom: 8,
   },
   subscriptionBadge: {
     flexDirection: 'row',
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: COLORS.primary,
     fontWeight: '600',
-    marginBottom: 16,
+    marginBottom: 10,
   },
   subscriptionDetails: {
     gap: 8,
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
   pricingCard: {
     backgroundColor: COLORS.card,
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
     width: '48%',
     alignItems: 'center',
   },
