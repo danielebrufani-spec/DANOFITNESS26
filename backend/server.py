@@ -787,7 +787,8 @@ async def get_bookings_by_date(date: str, admin_user: dict = Depends(get_admin_u
             lesson_info={
                 "giorno": lesson["giorno"] if lesson else "",
                 "orario": lesson["orario"] if lesson else "",
-                "tipo_attivita": lesson["tipo_attivita"] if lesson else ""
+                "tipo_attivita": lesson["tipo_attivita"] if lesson else "",
+                "coach": lesson.get("coach", "Daniele") if lesson else "Daniele"
             } if lesson else None,
             data_lezione=booking["data_lezione"],
             abbonamento_scaduto=booking.get("abbonamento_scaduto", False),
