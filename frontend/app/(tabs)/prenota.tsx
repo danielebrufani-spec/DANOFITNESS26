@@ -811,9 +811,22 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   bookingDetails: {
-    fontSize: 13,
+    fontSize: 14,
+    color: COLORS.primary,
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  bookingDetailsPassed: {
+    color: COLORS.textSecondary,
+  },
+  bookingCoach: {
+    fontSize: 12,
     color: COLORS.textSecondary,
     marginTop: 2,
+    fontStyle: 'italic',
+  },
+  bookingCoachPassed: {
+    opacity: 0.7,
   },
   warningBadge: {
     backgroundColor: COLORS.warning,
