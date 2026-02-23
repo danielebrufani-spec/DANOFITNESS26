@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 10,
     fontWeight: 'bold',
     color: COLORS.text,
   },
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: COLORS.textSecondary,
-    fontSize: 16,
+    fontSize: 10,
     marginTop: 16,
   },
   messageCard: {
@@ -370,24 +370,24 @@ const styles = StyleSheet.create({
   avatarText: {
     color: COLORS.text,
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: 10,
   },
   senderName: {
-    fontSize: 16,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
   },
   adminTag: {
     color: COLORS.primary,
-    fontSize: 12,
+    fontSize: 10,
   },
   messageTime: {
-    fontSize: 12,
+    fontSize: 10,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
   messageContent: {
-    fontSize: 15,
+    fontSize: 10,
     color: COLORS.text,
     lineHeight: 22,
   },
@@ -431,16 +431,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   replyName: {
-    fontSize: 13,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
   },
   replyTime: {
-    fontSize: 11,
+    fontSize: 10,
     color: COLORS.textSecondary,
   },
   replyContent: {
-    fontSize: 14,
+    fontSize: 10,
     color: COLORS.text,
     marginLeft: 36,
   },
@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
   },
   replyButtonText: {
     color: COLORS.primary,
-    fontSize: 14,
+    fontSize: 10,
   },
   replyInputContainer: {
     marginTop: 12,
@@ -462,7 +462,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     color: COLORS.text,
-    fontSize: 14,
+    fontSize: 10,
     minHeight: 60,
     textAlignVertical: 'top',
   },
@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     color: COLORS.text,
-    fontSize: 16,
+    fontSize: 10,
     maxHeight: 100,
     minHeight: 44,
   },
