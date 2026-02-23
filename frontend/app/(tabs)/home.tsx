@@ -429,41 +429,41 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '600',
     color: COLORS.text,
   },
   sectionSubtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: COLORS.primary,
   },
   seeAll: {
-    fontSize: 14,
+    fontSize: 12,
     color: COLORS.primary,
     fontWeight: '500',
   },
   lessonCard: {
     backgroundColor: COLORS.card,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 10,
+    padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   lessonCardPassed: {
     opacity: 0.6,
   },
   lessonColor: {
-    width: 4,
-    height: 40,
+    width: 3,
+    height: 32,
     borderRadius: 2,
-    marginRight: 12,
+    marginRight: 10,
   },
   lessonInfo: {
     flex: 1,
   },
   lessonTime: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: COLORS.text,
   },
@@ -471,9 +471,9 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   lessonType: {
-    fontSize: 14,
+    fontSize: 12,
     color: COLORS.textSecondary,
-    marginTop: 2,
+    marginTop: 1,
   },
   lessonTypePassed: {
     color: COLORS.textSecondary,
