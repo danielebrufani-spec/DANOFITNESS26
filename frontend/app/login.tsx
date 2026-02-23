@@ -62,7 +62,6 @@ export default function LoginScreen() {
               style={styles.logoImage}
               resizeMode="contain"
             />
-            <Text style={styles.subtitle}>Programma Invernale 2025/26</Text>
           </View>
 
           <View style={styles.form}>
