@@ -492,6 +492,14 @@ export default function PrenotaScreen() {
               // Use new isLessonPassed function that considers time + 1 hour buffer
               const lessonTime = booking.lesson_info?.orario || '00:00';
               const isPassed = isLessonPassed(booking.data_lezione, lessonTime);
+              const attivitaNome = info.nome || booking.lesson_info?.tipo_attivita || 'Lezione';
+              const lessonCoach = booking.lesson_info?.coach || 'Daniele';
+              
+              // Formato data: es "Lunedì 23"
+              const date = new Date(booking.data_lezione + 'T00:00:00');
+              const giorni = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
+              const giornoSettimana = giorni[date.getDay()];
+              const numero = date.getDate();
               
               return (
                 <View key={booking.id} style={[styles.bookingItem, isPassed && styles.bookingItemPassed]}>
@@ -503,10 +511,13 @@ export default function PrenotaScreen() {
                   />
                   <View style={styles.bookingContent}>
                     <Text style={[styles.bookingDate, isPassed && styles.bookingDatePassed]}>
-                      {GIORNI_DISPLAY[booking.lesson_info?.giorno || '']?.substring(0, 3)} {formatDate(booking.data_lezione)}
+                      {giornoSettimana} {numero} ore {lessonTime}
                     </Text>
-                    <Text style={styles.bookingDetails}>
-                      {booking.lesson_info?.orario} - {info.nome || booking.lesson_info?.tipo_attivita}
+                    <Text style={[styles.bookingDetails, isPassed && styles.bookingDetailsPassed]}>
+                      {attivitaNome}
+                    </Text>
+                    <Text style={[styles.bookingCoach, isPassed && styles.bookingCoachPassed]}>
+                      Coach {lessonCoach}
                     </Text>
                   </View>
                   {booking.abbonamento_scaduto && (
