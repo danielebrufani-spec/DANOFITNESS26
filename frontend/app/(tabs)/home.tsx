@@ -165,23 +165,44 @@ export default function HomeScreen() {
           {todayLessons.length > 0 ? (
             todayLessons.map((lesson) => {
               const info = ATTIVITA_INFO[lesson.tipo_attivita] || {};
+              
+              // Check if lesson is passed (more than 1 hour after start)
+              const now = new Date();
+              const [hours, minutes] = lesson.orario.split(':').map(Number);
+              const lessonTime = new Date();
+              lessonTime.setHours(hours, minutes, 0, 0);
+              const cutoffTime = new Date(lessonTime.getTime() + 60 * 60 * 1000); // +1 hour
+              const isLessonPassed = now > cutoffTime;
+              
               return (
                 <TouchableOpacity
                   key={lesson.id}
-                  style={styles.lessonCard}
+                  style={[styles.lessonCard, isLessonPassed && styles.lessonCardPassed]}
                   onPress={() => router.push('/(tabs)/prenota')}
+                  disabled={isLessonPassed}
                 >
                   <View
                     style={[
                       styles.lessonColor,
-                      { backgroundColor: info.colore || COLORS.primary },
+                      { backgroundColor: isLessonPassed ? COLORS.textSecondary : (info.colore || COLORS.primary) },
                     ]}
                   />
                   <View style={styles.lessonInfo}>
-                    <Text style={styles.lessonTime}>{lesson.orario}</Text>
-                    <Text style={styles.lessonType}>{info.nome || lesson.tipo_attivita}</Text>
+                    <Text style={[styles.lessonTime, isLessonPassed && styles.lessonTimePassed]}>{lesson.orario}</Text>
+                    <Text style={[styles.lessonType, isLessonPassed && styles.lessonTypePassed]}>{info.nome || lesson.tipo_attivita}</Text>
+                    {lesson.coach && (
+                      <Text style={[styles.lessonCoach, isLessonPassed && styles.lessonCoachPassed]}>
+                        Coach {lesson.coach}
+                      </Text>
+                    )}
                   </View>
-                  <Ionicons name="add-circle-outline" size={24} color={COLORS.primary} />
+                  {isLessonPassed ? (
+                    <View style={styles.expiredBadge}>
+                      <Text style={styles.expiredBadgeText}>Scaduta</Text>
+                    </View>
+                  ) : (
+                    <Ionicons name="add-circle-outline" size={24} color={COLORS.primary} />
+                  )}
                 </TouchableOpacity>
               );
             })
