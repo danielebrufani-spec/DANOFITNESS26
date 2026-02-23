@@ -126,6 +126,20 @@ export default function HomeScreen() {
           />
         </View>
 
+        {/* Alert per Abbonamento Scaduto - Solo per clienti senza abbonamento */}
+        {!isAdmin && !activeSubscription && (
+          <View style={styles.expiredAlert}>
+            <Ionicons name="warning" size={24} color={COLORS.text} />
+            <View style={styles.expiredAlertContent}>
+              <Text style={styles.expiredAlertTitle}>Abbonamento Scaduto!</Text>
+              <Text style={styles.expiredAlertText}>
+                Per continuare a prenotare, contatta Daniele per rinnovare il tuo abbonamento.
+              </Text>
+              <Text style={styles.expiredAlertPhone}>📞 339 50 20 625</Text>
+            </View>
+          </View>
+        )}
+
         {/* Subscription Status */}
         <TouchableOpacity
           style={[
