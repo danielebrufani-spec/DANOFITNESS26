@@ -1080,10 +1080,40 @@ async def process_day_automatically():
     
     logger.info(f"[SCHEDULER] Processed {processed} bookings for {yesterday}")
     
+    # ======================== AUTO-DELETE EXPIRED SUBSCRIPTIONS ========================
+    now = datetime.utcnow()
+    deleted_count = 0
+    
+    # 1. Delete time-based subscriptions (mensile, trimestrale) that are past their expiry date
+    expired_time_subs = await db.subscriptions.find({
+        "tipo": {"$in": ["mensile", "trimestrale"]},
+        "data_scadenza": {"$lt": now}
+    }).to_list(500)
+    
+    for sub in expired_time_subs:
+        await db.subscriptions.delete_one({"_id": sub["_id"]})
+        deleted_count += 1
+        logger.info(f"[CLEANUP] Deleted expired time-based subscription for user {sub['user_id']}")
+    
+    # 2. Delete lesson-based subscriptions (lezioni_8, lezioni_16) with 0 lessons remaining
+    expired_lesson_subs = await db.subscriptions.find({
+        "tipo": {"$in": ["lezioni_8", "lezioni_16"]},
+        "lezioni_rimanenti": {"$lte": 0}
+    }).to_list(500)
+    
+    for sub in expired_lesson_subs:
+        await db.subscriptions.delete_one({"_id": sub["_id"]})
+        deleted_count += 1
+        logger.info(f"[CLEANUP] Deleted exhausted lesson-based subscription for user {sub['user_id']}")
+    
+    logger.info(f"[CLEANUP] Deleted {deleted_count} expired subscriptions")
+    # ==================================================================================
+    
     # Log the processing
     await db.processing_logs.insert_one({
         "data": yesterday,
         "processed": processed,
+        "deleted_subscriptions": deleted_count,
         "timestamp": datetime.utcnow()
     })
 
