@@ -634,6 +634,24 @@ async def create_booking(data: BookingCreate, current_user: dict = Depends(get_c
     if not lesson:
         raise HTTPException(status_code=404, detail="Lezione non trovata")
     
+    # Check if lesson is passed (with 1 hour buffer)
+    # Lesson is bookable until 1 hour after start
+    try:
+        lesson_date = datetime.strptime(data.data_lezione, "%Y-%m-%d")
+        lesson_time_parts = lesson["orario"].split(":")
+        lesson_hour = int(lesson_time_parts[0])
+        lesson_minute = int(lesson_time_parts[1]) if len(lesson_time_parts) > 1 else 0
+        lesson_datetime = lesson_date.replace(hour=lesson_hour, minute=lesson_minute)
+        
+        # Add 1 hour buffer
+        cutoff_time = lesson_datetime + timedelta(hours=1)
+        
+        if datetime.utcnow() > cutoff_time:
+            raise HTTPException(status_code=400, detail="Non puoi prenotare una lezione già passata")
+    except ValueError as e:
+        logging.error(f"Error parsing lesson datetime: {e}")
+        # Continue anyway if there's a parsing error
+    
     # Check if already booked
     existing_booking = await db.bookings.find_one({
         "user_id": user_id,
