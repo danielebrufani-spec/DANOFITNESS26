@@ -689,7 +689,14 @@ async def create_booking(data: BookingCreate, current_user: dict = Depends(get_c
         "abbonamento_scaduto": abbonamento_scaduto,
         "confermata": True,
         "lezione_scalata": False,
-        "created_at": datetime.utcnow()
+        "created_at": datetime.utcnow(),
+        # Salva i dati della lezione direttamente nella prenotazione
+        "lesson_data": {
+            "giorno": lesson["giorno"],
+            "orario": lesson["orario"],
+            "tipo_attivita": lesson["tipo_attivita"],
+            "coach": lesson.get("coach", "Daniele")
+        }
     }
     
     result = await db.bookings.insert_one(booking)
@@ -700,12 +707,7 @@ async def create_booking(data: BookingCreate, current_user: dict = Depends(get_c
         user_nome=current_user["nome"],
         user_cognome=current_user["cognome"],
         lesson_id=data.lesson_id,
-        lesson_info={
-            "giorno": lesson["giorno"],
-            "orario": lesson["orario"],
-            "tipo_attivita": lesson["tipo_attivita"],
-            "coach": lesson.get("coach", "Daniele")
-        },
+        lesson_info=booking["lesson_data"],
         data_lezione=data.data_lezione,
         abbonamento_scaduto=abbonamento_scaduto,
         confermata=True,
