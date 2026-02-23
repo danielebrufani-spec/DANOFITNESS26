@@ -327,6 +327,14 @@ export default function AdminScreen() {
       {/* Tabs */}
       <View style={styles.tabs}>
         <TouchableOpacity
+          style={[styles.tab, activeTab === 'riepilogo' && styles.tabActive]}
+          onPress={() => setActiveTab('riepilogo')}
+        >
+          <Text style={[styles.tabText, activeTab === 'riepilogo' && styles.tabTextActive]}>
+            Oggi
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'presenze' && styles.tabActive]}
           onPress={() => setActiveTab('presenze')}
         >
@@ -339,7 +347,7 @@ export default function AdminScreen() {
           onPress={() => setActiveTab('abbonamenti')}
         >
           <Text style={[styles.tabText, activeTab === 'abbonamenti' && styles.tabTextActive]}>
-            Abbonamenti
+            Abbon.
           </Text>
           {expiredSubscriptions.length > 0 && (
             <View style={styles.badge}>
