@@ -415,7 +415,8 @@ export default function PrenotaScreen() {
             
             const booked = isBooked(lesson.id);
             const isLoadingThis = bookingLoading === lesson.id;
-            const isPassed = dateString ? isDatePassed(dateString) : false;
+            // Use new isLessonPassed function that considers time + 1 hour buffer
+            const isPassed = dateString ? isLessonPassed(dateString, lesson.orario) : false;
             const canBook = bookingStatus.open && !isPassed;
 
             return (
