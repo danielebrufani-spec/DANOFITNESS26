@@ -1623,4 +1623,92 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginBottom: 12,
   },
+  // Riepilogo Giornaliero Styles
+  riepilogoContainer: {
+    paddingHorizontal: 16,
+  },
+  riepilogoTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  riepilogoDate: {
+    fontSize: 13,
+    color: COLORS.primary,
+    marginBottom: 16,
+  },
+  totalCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  totalNumber: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+  },
+  totalLabel: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 4,
+  },
+  riepilogoSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  lessonStatCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+  },
+  lessonStatColor: {
+    width: 4,
+    height: 36,
+    borderRadius: 2,
+    marginRight: 10,
+  },
+  lessonStatInfo: {
+    flex: 1,
+  },
+  lessonStatTime: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  lessonStatType: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+  },
+  lessonStatBadge: {
+    alignItems: 'center',
+    backgroundColor: COLORS.primary + '20',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  lessonStatCount: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+  },
+  lessonStatUnit: {
+    fontSize: 9,
+    color: COLORS.textSecondary,
+  },
+  noDataText: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 16,
+  },
 });
