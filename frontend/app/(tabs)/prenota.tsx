@@ -575,7 +575,7 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 10,
     color: COLORS.primary,
     marginTop: 4,
   },
@@ -592,7 +592,7 @@ const styles = StyleSheet.create({
   },
   closedBannerText: {
     color: COLORS.warning,
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: '500',
   },
   dateSelector: {
@@ -622,7 +622,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   dateDay: {
-    fontSize: 12,
+    fontSize: 10,
     color: COLORS.textSecondary,
     fontWeight: '500',
     textTransform: 'capitalize',
@@ -634,7 +634,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   dateNumber: {
-    fontSize: 20,
+    fontSize: 10,
     fontWeight: 'bold',
     color: COLORS.text,
     marginTop: 4,
@@ -663,7 +663,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   selectedDateText: {
-    fontSize: 16,
+    fontSize: 10,
     color: COLORS.text,
     fontWeight: '500',
     flex: 1,
@@ -676,7 +676,7 @@ const styles = StyleSheet.create({
   },
   passedBadgeText: {
     color: COLORS.background,
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
   },
   lessonsList: {
@@ -707,7 +707,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   lessonTime: {
-    fontSize: 18,
+    fontSize: 10,
     fontWeight: 'bold',
     color: COLORS.text,
   },
@@ -718,12 +718,12 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
   },
   lessonType: {
-    fontSize: 16,
+    fontSize: 10,
     fontWeight: '500',
     marginTop: 2,
   },
   coachName: {
-    fontSize: 13,
+    fontSize: 10,
     color: COLORS.textSecondary,
     marginTop: 2,
     fontStyle: 'italic',
@@ -749,7 +749,7 @@ const styles = StyleSheet.create({
   },
   bookButtonText: {
     color: COLORS.text,
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
   },
   passedIndicator: {
@@ -760,7 +760,7 @@ const styles = StyleSheet.create({
   },
   passedIndicatorText: {
     color: COLORS.textSecondary,
-    fontSize: 12,
+    fontSize: 10,
   },
   noLessonsContainer: {
     alignItems: 'center',
@@ -768,7 +768,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   noLessonsText: {
-    fontSize: 16,
+    fontSize: 10,
     color: COLORS.textSecondary,
   },
   myBookingsSection: {
@@ -778,7 +778,7 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.border,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: 16,
@@ -803,7 +803,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   bookingDate: {
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
   },
@@ -811,7 +811,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   bookingDetails: {
-    fontSize: 14,
+    fontSize: 10,
     color: COLORS.primary,
     fontWeight: '500',
     marginTop: 2,
@@ -820,7 +820,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   bookingCoach: {
-    fontSize: 12,
+    fontSize: 10,
     color: COLORS.textSecondary,
     marginTop: 2,
     fontStyle: 'italic',
@@ -848,7 +848,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   noBookingsText: {
-    fontSize: 14,
+    fontSize: 10,
     color: COLORS.textSecondary,
     textAlign: 'center',
     paddingVertical: 16,
