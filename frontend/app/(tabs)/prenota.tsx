@@ -469,7 +469,7 @@ export default function PrenotaScreen() {
                   </TouchableOpacity>
                 ) : (
                   <View style={styles.passedIndicator}>
-                    <Text style={styles.passedIndicatorText}>Passato</Text>
+                    <Text style={styles.passedIndicatorText}>Non prenotabile</Text>
                   </View>
                 )}
               </View>
