@@ -482,7 +482,9 @@ export default function PrenotaScreen() {
             thisWeekBookings.map((booking) => {
               const info = ATTIVITA_INFO[booking.lesson_info?.tipo_attivita || ''] || {};
               const isLoadingCancel = cancelLoading === booking.id;
-              const isPassed = isDatePassed(booking.data_lezione);
+              // Use new isLessonPassed function that considers time + 1 hour buffer
+              const lessonTime = booking.lesson_info?.orario || '00:00';
+              const isPassed = isLessonPassed(booking.data_lezione, lessonTime);
               
               return (
                 <View key={booking.id} style={[styles.bookingItem, isPassed && styles.bookingItemPassed]}>
