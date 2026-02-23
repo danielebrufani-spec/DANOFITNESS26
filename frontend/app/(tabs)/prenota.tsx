@@ -263,28 +263,56 @@ export default function PrenotaScreen() {
     
     if (!bookingId) return;
     
-    setBookingLoading(lessonId);
-    try {
-      await apiService.cancelBooking(bookingId);
-      await loadData();
-    } catch (error: any) {
-      Alert.alert('Errore', error.response?.data?.detail || 'Errore durante la cancellazione');
-    } finally {
-      setBookingLoading(null);
-    }
+    // Conferma prima di cancellare
+    Alert.alert(
+      '⚠️ Conferma Cancellazione',
+      'Sei sicuro di voler cancellare questa prenotazione?',
+      [
+        { text: 'No', style: 'cancel' },
+        { 
+          text: 'Sì, Cancella', 
+          style: 'destructive',
+          onPress: async () => {
+            setBookingLoading(lessonId);
+            try {
+              await apiService.cancelBooking(bookingId);
+              await loadData();
+            } catch (error: any) {
+              Alert.alert('Errore', error.response?.data?.detail || 'Errore durante la cancellazione');
+            } finally {
+              setBookingLoading(null);
+            }
+          }
+        }
+      ]
+    );
   };
 
   // Cancel from my bookings list - INSTANT
   const handleCancelFromList = async (bookingId: string) => {
-    setCancelLoading(bookingId);
-    try {
-      await apiService.cancelBooking(bookingId);
-      await loadData();
-    } catch (error: any) {
-      Alert.alert('Errore', error.response?.data?.detail || 'Errore durante la cancellazione');
-    } finally {
-      setCancelLoading(null);
-    }
+    // Conferma prima di cancellare
+    Alert.alert(
+      '⚠️ Conferma Cancellazione',
+      'Sei sicuro di voler cancellare questa prenotazione?',
+      [
+        { text: 'No', style: 'cancel' },
+        { 
+          text: 'Sì, Cancella', 
+          style: 'destructive',
+          onPress: async () => {
+            setCancelLoading(bookingId);
+            try {
+              await apiService.cancelBooking(bookingId);
+              await loadData();
+            } catch (error: any) {
+              Alert.alert('Errore', error.response?.data?.detail || 'Errore durante la cancellazione');
+            } finally {
+              setCancelLoading(null);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const dayLessons = selectedDate ? getLessonsForDay(getDayName(selectedDate)) : [];
