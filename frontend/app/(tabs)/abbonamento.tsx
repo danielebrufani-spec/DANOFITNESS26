@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: 12,
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
   },
   expiredBadge: {},
   subscriptionStatus: {
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.success,
   },
@@ -264,13 +264,13 @@ const styles = StyleSheet.create({
     color: COLORS.error,
   },
   subscriptionType: {
-    fontSize: 24,
+    fontSize: 10,
     fontWeight: 'bold',
     color: COLORS.text,
     marginBottom: 4,
   },
   subscriptionPrice: {
-    fontSize: 18,
+    fontSize: 10,
     color: COLORS.primary,
     fontWeight: '600',
     marginBottom: 16,
@@ -284,13 +284,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   detailText: {
-    fontSize: 14,
+    fontSize: 10,
     color: COLORS.textSecondary,
   },
   detailHighlight: {
     color: COLORS.primary,
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 10,
   },
   expiredText: {
     color: COLORS.error,
@@ -303,12 +303,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: 10,
     color: COLORS.textSecondary,
     textAlign: 'center',
   },
@@ -325,18 +325,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   pricingName: {
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
   },
   pricingPrice: {
-    fontSize: 20,
+    fontSize: 10,
     fontWeight: 'bold',
     color: COLORS.primary,
     marginTop: 4,
   },
   pricingNote: {
-    fontSize: 12,
+    fontSize: 10,
     color: COLORS.textSecondary,
     marginTop: 4,
   },
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.border,
   },
   registrationFeeText: {
-    fontSize: 14,
+    fontSize: 10,
     color: COLORS.textSecondary,
   },
   contactCard: {
@@ -365,11 +365,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contactTitle: {
-    fontSize: 14,
+    fontSize: 10,
     color: COLORS.textSecondary,
   },
   contactText: {
-    fontSize: 18,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
     marginTop: 2,
