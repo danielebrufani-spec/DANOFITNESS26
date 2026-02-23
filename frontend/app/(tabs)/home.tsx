@@ -508,7 +508,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: COLORS.text,
-    marginBottom: 4,
+  },
+  bookingActivity: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.primary,
+    marginTop: 2,
   },
   bookingDate: {
     fontSize: 16,
