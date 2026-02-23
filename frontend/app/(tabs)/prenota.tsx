@@ -484,7 +484,7 @@ export default function PrenotaScreen() {
 
         {/* This Week's Bookings */}
         <View style={styles.myBookingsSection}>
-          <Text style={styles.sectionTitle}>Prenotazioni Settimana ({thisWeekBookings.length})</Text>
+          <Text style={styles.sectionTitle}>Prenotazioni Settimanali</Text>
           {thisWeekBookings.length > 0 ? (
             thisWeekBookings.map((booking) => {
               const info = ATTIVITA_INFO[booking.lesson_info?.tipo_attivita || ''] || {};
