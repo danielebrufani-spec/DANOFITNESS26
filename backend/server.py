@@ -703,7 +703,8 @@ async def create_booking(data: BookingCreate, current_user: dict = Depends(get_c
         lesson_info={
             "giorno": lesson["giorno"],
             "orario": lesson["orario"],
-            "tipo_attivita": lesson["tipo_attivita"]
+            "tipo_attivita": lesson["tipo_attivita"],
+            "coach": lesson.get("coach", "Daniele")
         },
         data_lezione=data.data_lezione,
         abbonamento_scaduto=abbonamento_scaduto,
