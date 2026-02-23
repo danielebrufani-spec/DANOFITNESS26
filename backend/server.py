@@ -130,6 +130,7 @@ class LessonResponse(BaseModel):
     orario: str
     tipo_attivita: str
     descrizione: Optional[str] = None
+    coach: Optional[str] = None
 
 class BookingCreate(BaseModel):
     lesson_id: str
