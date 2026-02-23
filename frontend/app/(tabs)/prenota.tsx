@@ -84,6 +84,25 @@ const isDatePassed = (dateString: string) => {
   return dateString < today;
 };
 
+// Check if a lesson is passed (considering lesson time + 1 hour buffer)
+// Returns true if current time is more than 1 hour after the lesson start
+const isLessonPassed = (dateString: string, lessonTime: string) => {
+  const now = new Date();
+  
+  // Parse lesson date and time
+  const [year, month, day] = dateString.split('-').map(Number);
+  const [hours, minutes] = lessonTime.split(':').map(Number);
+  
+  // Create lesson datetime
+  const lessonDateTime = new Date(year, month - 1, day, hours, minutes, 0);
+  
+  // Add 1 hour buffer - lesson is bookable until 1 hour after start
+  const cutoffTime = new Date(lessonDateTime.getTime() + 60 * 60 * 1000); // +1 hour
+  
+  // Lesson is passed if current time is after cutoff
+  return now > cutoffTime;
+};
+
 export default function PrenotaScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
