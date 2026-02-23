@@ -65,11 +65,30 @@ export default function HomeScreen() {
     return mySubscriptions.find((sub) => sub.attivo && !sub.scaduto);
   };
 
-  const upcomingBookings = myBookings.filter(
-    (b) => b.data_lezione >= getTodayDateString()
-  ).slice(0, 3);
+  // Ordina le prenotazioni cronologicamente (data + ora)
+  const upcomingBookings = myBookings
+    .filter((b) => b.data_lezione >= getTodayDateString())
+    .sort((a, b) => {
+      // Prima ordina per data
+      const dateCompare = a.data_lezione.localeCompare(b.data_lezione);
+      if (dateCompare !== 0) return dateCompare;
+      // Poi per ora
+      const timeA = a.lesson_info?.orario || '00:00';
+      const timeB = b.lesson_info?.orario || '00:00';
+      return timeA.localeCompare(timeB);
+    })
+    .slice(0, 5);
 
   const activeSubscription = getActiveSubscription();
+
+  // Funzione per formattare la data con giorno della settimana
+  const formatBookingDate = (dateString: string) => {
+    const date = new Date(dateString + 'T00:00:00');
+    const giorni = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
+    const giorno = giorni[date.getDay()];
+    const numero = date.getDate();
+    return `${giorno} ${numero}`;
+  };
 
   if (loading) {
     return (
