@@ -1797,6 +1797,20 @@ async def process_completed_lessons():
             updated_sub = await db.subscriptions.find_one({"_id": sub["_id"]})
             logger.info(f"[AUTO-SCALE] Scaled lesson for {user_name} - remaining: {updated_sub['lezioni_rimanenti']}")
             
+            # Send notification if 2 or fewer lessons remaining
+            if updated_sub["lezioni_rimanenti"] <= 2 and updated_sub["lezioni_rimanenti"] > 0:
+                if not updated_sub.get("notifica_lezioni_inviata"):
+                    await send_push_notification(
+                        user_id,
+                        "⚠️ Poche Lezioni Rimaste",
+                        f"Ti restano solo {updated_sub['lezioni_rimanenti']} lezioni. Rinnova il tuo abbonamento!"
+                    )
+                    await db.subscriptions.update_one(
+                        {"_id": updated_sub["_id"]},
+                        {"$set": {"notifica_lezioni_inviata": True}}
+                    )
+                    logger.info(f"[PUSH] Sent low lessons notification to {user_name}")
+            
             # Check if subscription is now empty
             if updated_sub["lezioni_rimanenti"] <= 0:
                 notification = {
