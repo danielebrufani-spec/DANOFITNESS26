@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 56,
     color: COLORS.text,
-    fontSize: 16,
+    fontSize: 10,
   },
   eyeButton: {
     padding: 8,
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: COLORS.text,
-    fontSize: 18,
+    fontSize: 10,
     fontWeight: '600',
   },
   loginContainer: {
@@ -291,11 +291,11 @@ const styles = StyleSheet.create({
   },
   loginText: {
     color: COLORS.textSecondary,
-    fontSize: 14,
+    fontSize: 10,
   },
   loginLink: {
     color: COLORS.primary,
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: '600',
   },
 });
