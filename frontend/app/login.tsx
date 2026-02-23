@@ -160,13 +160,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   logo: {
-    fontSize: 24,
+    fontSize: 10,
     fontWeight: 'bold',
     color: COLORS.primary,
     letterSpacing: 2,
   },
   subtitle: {
-    fontSize: 12,
+    fontSize: 10,
     color: COLORS.textSecondary,
     marginTop: 6,
   },
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   title: {
-    fontSize: 22,
+    fontSize: 17,
     fontWeight: 'bold',
     color: COLORS.text,
     marginBottom: 24,
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 48,
     color: COLORS.text,
-    fontSize: 14,
+    fontSize: 10,
   },
   eyeButton: {
     padding: 6,
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: COLORS.text,
-    fontSize: 15,
+    fontSize: 10,
     fontWeight: '600',
   },
   registerContainer: {
@@ -225,11 +225,11 @@ const styles = StyleSheet.create({
   },
   registerText: {
     color: COLORS.textSecondary,
-    fontSize: 12,
+    fontSize: 10,
   },
   registerLink: {
     color: COLORS.primary,
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
   },
   footer: {
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     color: COLORS.textSecondary,
-    fontSize: 12,
+    fontSize: 10,
   },
   errorContainer: {
     flexDirection: 'row',
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#EF4444',
-    fontSize: 14,
+    fontSize: 10,
     flex: 1,
   },
 });
