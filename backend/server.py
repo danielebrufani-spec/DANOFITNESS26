@@ -722,10 +722,22 @@ async def get_my_bookings(current_user: dict = Depends(get_current_user)):
     
     result = []
     for booking in bookings:
-        try:
-            lesson = await db.lessons.find_one({"_id": ObjectId(booking["lesson_id"])})
-        except:
-            lesson = None
+        # Prima prova a usare lesson_data salvato nella prenotazione
+        lesson_info = booking.get("lesson_data")
+        
+        # Se non c'è lesson_data, prova a recuperare dalla collection lessons
+        if not lesson_info:
+            try:
+                lesson = await db.lessons.find_one({"_id": ObjectId(booking["lesson_id"])})
+                if lesson:
+                    lesson_info = {
+                        "giorno": lesson["giorno"],
+                        "orario": lesson["orario"],
+                        "tipo_attivita": lesson["tipo_attivita"],
+                        "coach": lesson.get("coach", "Daniele")
+                    }
+            except:
+                lesson_info = None
         
         result.append(BookingResponse(
             id=str(booking["_id"]),
@@ -733,12 +745,7 @@ async def get_my_bookings(current_user: dict = Depends(get_current_user)):
             user_nome=current_user["nome"],
             user_cognome=current_user["cognome"],
             lesson_id=booking["lesson_id"],
-            lesson_info={
-                "giorno": lesson["giorno"] if lesson else "",
-                "orario": lesson["orario"] if lesson else "",
-                "tipo_attivita": lesson["tipo_attivita"] if lesson else "",
-                "coach": lesson.get("coach", "Daniele") if lesson else "Daniele"
-            } if lesson else None,
+            lesson_info=lesson_info,
             data_lezione=booking["data_lezione"],
             abbonamento_scaduto=booking.get("abbonamento_scaduto", False),
             confermata=booking.get("confermata", True),
