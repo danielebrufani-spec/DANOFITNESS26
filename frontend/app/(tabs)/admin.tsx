@@ -131,11 +131,26 @@ export default function AdminScreen() {
       // Auto-expand today
       const today = getTodayDateString();
       setExpandedDays(new Set([today]));
+      
+      // Carica le statistiche giornaliere
+      loadDailyStats(today);
     } catch (error) {
       console.error('Error loading admin data:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const loadDailyStats = async (date: string) => {
+    setLoadingStats(true);
+    try {
+      const response = await apiService.getDailyStats(date);
+      setDailyStats(response.data);
+    } catch (error) {
+      console.error('Error loading daily stats:', error);
+    } finally {
+      setLoadingStats(false);
     }
   };
 
