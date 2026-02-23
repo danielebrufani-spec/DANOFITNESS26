@@ -430,9 +430,16 @@ export default function PrenotaScreen() {
                 <View style={styles.lessonContent}>
                   <View style={styles.lessonHeader}>
                     <Text style={[styles.lessonTime, isPassed && styles.lessonTimePassed]}>{lesson.orario}</Text>
-                    <Text style={[styles.lessonType, { color: isPassed ? COLORS.textSecondary : (info.colore || COLORS.primary) }]}>
-                      {info.nome || lesson.tipo_attivita}
-                    </Text>
+                    <View style={styles.lessonTypeContainer}>
+                      <Text style={[styles.lessonType, { color: isPassed ? COLORS.textSecondary : (info.colore || COLORS.primary) }]}>
+                        {info.nome || lesson.tipo_attivita}
+                      </Text>
+                      {lesson.coach && (
+                        <Text style={[styles.coachName, isPassed && styles.coachNamePassed]}>
+                          Coach {lesson.coach}
+                        </Text>
+                      )}
+                    </View>
                   </View>
                 </View>
                 {!isPassed ? (
