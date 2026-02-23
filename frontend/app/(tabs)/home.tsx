@@ -486,11 +486,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: COLORS.text,
+    marginBottom: 4,
+  },
+  bookingTime: {
+    fontSize: 14,
+    color: COLORS.primary,
+    fontWeight: '500',
   },
   bookingType: {
     fontSize: 14,
+    color: COLORS.text,
+    marginTop: 2,
+  },
+  bookingCoach: {
+    fontSize: 12,
     color: COLORS.textSecondary,
     marginTop: 2,
+    fontStyle: 'italic',
   },
   expiredBadge: {
     backgroundColor: COLORS.warning,
