@@ -969,7 +969,7 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   weekRange: {
-    fontSize: 14,
+    fontSize: 10,
     color: COLORS.primary,
     marginTop: 4,
   },
@@ -993,7 +993,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   tabText: {
-    fontSize: 13,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.textSecondary,
   },
@@ -1009,7 +1009,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   badgeText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: 'bold',
     color: COLORS.text,
   },
@@ -1027,7 +1027,7 @@ const styles = StyleSheet.create({
   },
   refreshButtonText: {
     color: COLORS.text,
-    fontSize: 16,
+    fontSize: 10,
     fontWeight: '600',
   },
   spinning: {
@@ -1055,7 +1055,7 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 10,
     color: COLORS.textSecondary,
     marginTop: 4,
     textAlign: 'center',
@@ -1076,7 +1076,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   autoProcessText: {
-    fontSize: 12,
+    fontSize: 10,
     color: COLORS.success,
   },
   dayCard: {
@@ -1098,7 +1098,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dayName: {
-    fontSize: 16,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
   },
@@ -1106,7 +1106,7 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   dayDate: {
-    fontSize: 13,
+    fontSize: 10,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
@@ -1125,7 +1125,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   dayCountText: {
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: 'bold',
     color: COLORS.text,
   },
@@ -1151,12 +1151,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   lessonTime: {
-    fontSize: 16,
+    fontSize: 10,
     fontWeight: 'bold',
     color: COLORS.text,
   },
   lessonType: {
-    fontSize: 13,
+    fontSize: 10,
     fontWeight: '500',
   },
   lessonCount: {
@@ -1169,7 +1169,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   lessonCountText: {
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: 'bold',
     color: COLORS.text,
   },
@@ -1184,34 +1184,34 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   participantNumber: {
-    fontSize: 13,
+    fontSize: 10,
     color: COLORS.textSecondary,
     width: 24,
   },
   participantName: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 10,
     color: COLORS.text,
   },
   removeButton: {
     padding: 4,
   },
   noParticipants: {
-    fontSize: 13,
+    fontSize: 10,
     color: COLORS.textSecondary,
     fontStyle: 'italic',
     marginTop: 8,
     paddingLeft: 16,
   },
   noLessons: {
-    fontSize: 13,
+    fontSize: 10,
     color: COLORS.textSecondary,
     fontStyle: 'italic',
     textAlign: 'center',
     paddingVertical: 12,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: 12,
@@ -1230,7 +1230,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   addButtonText: {
-    fontSize: 16,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
   },
@@ -1250,22 +1250,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   subscriptionUser: {
-    fontSize: 16,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
   },
   subscriptionType: {
-    fontSize: 14,
+    fontSize: 10,
     color: COLORS.primary,
     marginTop: 2,
   },
   subscriptionLessons: {
-    fontSize: 12,
+    fontSize: 10,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
   subscriptionExpiry: {
-    fontSize: 12,
+    fontSize: 10,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
@@ -1303,7 +1303,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
   },
   userAvatarText: {
-    fontSize: 16,
+    fontSize: 10,
     fontWeight: 'bold',
     color: COLORS.text,
   },
@@ -1311,17 +1311,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   userName: {
-    fontSize: 16,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
   },
   userEmail: {
-    fontSize: 13,
+    fontSize: 10,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
   userPhone: {
-    fontSize: 13,
+    fontSize: 10,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
@@ -1352,12 +1352,12 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 10,
     fontWeight: 'bold',
     color: COLORS.text,
   },
   modalLabel: {
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.textSecondary,
     marginBottom: 12,
@@ -1377,7 +1377,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   userOptionText: {
-    fontSize: 14,
+    fontSize: 10,
     color: COLORS.textSecondary,
   },
   userOptionTextSelected: {
@@ -1401,7 +1401,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   typeOptionName: {
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
   },
@@ -1409,7 +1409,7 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   typeOptionPrice: {
-    fontSize: 16,
+    fontSize: 10,
     fontWeight: 'bold',
     color: COLORS.primary,
     marginTop: 4,
@@ -1423,7 +1423,7 @@ const styles = StyleSheet.create({
   modalInput: {
     height: 50,
     color: COLORS.text,
-    fontSize: 16,
+    fontSize: 10,
   },
   quickButtons: {
     flexDirection: 'row',
@@ -1444,12 +1444,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   editUserName: {
-    fontSize: 18,
+    fontSize: 10,
     fontWeight: 'bold',
     color: COLORS.text,
   },
   editSubscriptionType: {
-    fontSize: 14,
+    fontSize: 10,
     color: COLORS.primary,
     marginTop: 4,
   },
@@ -1478,7 +1478,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   modalButtonText: {
-    fontSize: 16,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
   },
@@ -1498,7 +1498,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 10,
     color: COLORS.text,
   },
   cardActions: {
@@ -1538,7 +1538,7 @@ const styles = StyleSheet.create({
   },
   editBtnText: {
     color: COLORS.text,
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: '600',
   },
   deleteBtn: {
@@ -1551,7 +1551,7 @@ const styles = StyleSheet.create({
   },
   deleteBtnText: {
     color: COLORS.text,
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: '600',
   },
   expiredBadge: {
@@ -1570,7 +1570,7 @@ const styles = StyleSheet.create({
   },
   adminBadgeText: {
     color: COLORS.text,
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
   },
   deleteUserButton: {
@@ -1596,7 +1596,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   noResults: {
-    fontSize: 14,
+    fontSize: 10,
     color: COLORS.textSecondary,
     fontStyle: 'italic',
     textAlign: 'center',
@@ -1614,11 +1614,11 @@ const styles = StyleSheet.create({
   },
   modalSearchInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 10,
     color: COLORS.text,
   },
   noUsersText: {
-    fontSize: 13,
+    fontSize: 10,
     color: COLORS.textSecondary,
     fontStyle: 'italic',
     marginBottom: 12,
@@ -1628,13 +1628,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   riepilogoTitle: {
-    fontSize: 18,
+    fontSize: 10,
     fontWeight: 'bold',
     color: COLORS.text,
     marginBottom: 4,
   },
   riepilogoDate: {
-    fontSize: 13,
+    fontSize: 10,
     color: COLORS.primary,
     marginBottom: 16,
   },
@@ -1651,12 +1651,12 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   totalLabel: {
-    fontSize: 12,
+    fontSize: 10,
     color: COLORS.textSecondary,
     marginTop: 4,
   },
   riepilogoSectionTitle: {
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
     marginTop: 12,
@@ -1680,12 +1680,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   lessonStatTime: {
-    fontSize: 15,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
   },
   lessonStatType: {
-    fontSize: 12,
+    fontSize: 10,
     color: COLORS.textSecondary,
   },
   lessonStatBadge: {
@@ -1696,7 +1696,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   lessonStatCount: {
-    fontSize: 18,
+    fontSize: 10,
     fontWeight: 'bold',
     color: COLORS.primary,
   },
@@ -1705,7 +1705,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   noDataText: {
-    fontSize: 13,
+    fontSize: 10,
     color: COLORS.textSecondary,
     fontStyle: 'italic',
     textAlign: 'center',
