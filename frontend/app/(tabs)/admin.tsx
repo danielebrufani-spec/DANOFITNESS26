@@ -436,6 +436,37 @@ export default function AdminScreen() {
             <Text style={styles.riepilogoTitle}>📊 Riepilogo Giornaliero</Text>
             <Text style={styles.riepilogoDate}>{formatDate(getTodayDateString())}</Text>
             
+            {/* Pulsante Scala Lezioni */}
+            <TouchableOpacity
+              style={styles.scalaLezioniButton}
+              onPress={async () => {
+                Alert.alert(
+                  '⚠️ Conferma Scalatura',
+                  'Vuoi scalare le lezioni per le prenotazioni di oggi? Questa azione detrarrà 1 lezione dagli abbonamenti a pacchetto.',
+                  [
+                    { text: 'Annulla', style: 'cancel' },
+                    {
+                      text: 'Sì, Scala',
+                      onPress: async () => {
+                        try {
+                          const today = getTodayDateString();
+                          const response = await apiService.processEndOfDay(today);
+                          Alert.alert('✅ Completato', response.data.message || 'Lezioni scalate con successo');
+                          loadData();
+                          loadDailyStats(today);
+                        } catch (error: any) {
+                          Alert.alert('Errore', error.response?.data?.detail || 'Errore durante la scalatura');
+                        }
+                      }
+                    }
+                  ]
+                );
+              }}
+            >
+              <Ionicons name="checkmark-done-circle" size={20} color={COLORS.text} />
+              <Text style={styles.scalaLezioniButtonText}>Scala Lezioni Oggi</Text>
+            </TouchableOpacity>
+            
             {loadingStats ? (
               <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 20 }} />
             ) : dailyStats ? (
