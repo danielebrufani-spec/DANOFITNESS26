@@ -256,19 +256,19 @@ def get_initial_lessons(tipo: SubscriptionType) -> Optional[int]:
 # ======================== SCHEDULE DATA ========================
 
 SCHEDULE = [
-    {"giorno": "lunedi", "orario": "08:30", "tipo_attivita": ActivityType.CIRCUITO, "descrizione": "Allenamento a stazioni per resistenza, forza e velocità"},
-    {"giorno": "lunedi", "orario": "20:30", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata"},
-    {"giorno": "martedi", "orario": "13:15", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata"},
-    {"giorno": "martedi", "orario": "17:30", "tipo_attivita": ActivityType.CIRCUITO, "descrizione": "Allenamento a stazioni per resistenza, forza e velocità"},
-    {"giorno": "martedi", "orario": "20:15", "tipo_attivita": ActivityType.PILATES, "descrizione": "Per postura, flessibilità e concentrazione"},
-    {"giorno": "mercoledi", "orario": "08:30", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata"},
-    {"giorno": "mercoledi", "orario": "20:30", "tipo_attivita": ActivityType.CIRCUITO, "descrizione": "Allenamento a stazioni per resistenza, forza e velocità"},
-    {"giorno": "giovedi", "orario": "13:15", "tipo_attivita": ActivityType.CIRCUITO, "descrizione": "Allenamento a stazioni per resistenza, forza e velocità"},
-    {"giorno": "giovedi", "orario": "17:30", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata"},
-    {"giorno": "giovedi", "orario": "20:15", "tipo_attivita": ActivityType.PILATES, "descrizione": "Per postura, flessibilità e concentrazione"},
-    {"giorno": "venerdi", "orario": "08:30", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata"},
-    {"giorno": "venerdi", "orario": "20:15", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata"},
-    {"giorno": "sabato", "orario": "13:30", "tipo_attivita": ActivityType.YOGA, "descrizione": "Disciplina che unisce respiro, movimento e meditazione"},
+    {"giorno": "lunedi", "orario": "08:30", "tipo_attivita": ActivityType.CIRCUITO, "descrizione": "Allenamento a stazioni per resistenza, forza e velocità", "coach": "Daniele"},
+    {"giorno": "lunedi", "orario": "20:30", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Daniele"},
+    {"giorno": "martedi", "orario": "13:15", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Fabio"},
+    {"giorno": "martedi", "orario": "17:30", "tipo_attivita": ActivityType.CIRCUITO, "descrizione": "Allenamento a stazioni per resistenza, forza e velocità", "coach": "Daniele"},
+    {"giorno": "martedi", "orario": "20:15", "tipo_attivita": ActivityType.PILATES, "descrizione": "Per postura, flessibilità e concentrazione", "coach": "Toto"},
+    {"giorno": "mercoledi", "orario": "08:30", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Daniele"},
+    {"giorno": "mercoledi", "orario": "20:30", "tipo_attivita": ActivityType.CIRCUITO, "descrizione": "Allenamento a stazioni per resistenza, forza e velocità", "coach": "Daniele"},
+    {"giorno": "giovedi", "orario": "13:15", "tipo_attivita": ActivityType.CIRCUITO, "descrizione": "Allenamento a stazioni per resistenza, forza e velocità", "coach": "Daniele"},
+    {"giorno": "giovedi", "orario": "17:30", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Daniele"},
+    {"giorno": "giovedi", "orario": "20:15", "tipo_attivita": ActivityType.PILATES, "descrizione": "Per postura, flessibilità e concentrazione", "coach": "Toto"},
+    {"giorno": "venerdi", "orario": "08:30", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Fabio"},
+    {"giorno": "venerdi", "orario": "20:15", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Daniele"},
+    {"giorno": "sabato", "orario": "13:30", "tipo_attivita": ActivityType.YOGA, "descrizione": "Disciplina che unisce respiro, movimento e meditazione", "coach": "Costanza"},
 ]
 
 # ======================== AUTH ROUTES ========================
