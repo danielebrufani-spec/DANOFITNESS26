@@ -382,7 +382,8 @@ async def get_lessons(current_user: dict = Depends(get_current_user)):
                 "giorno": lesson["giorno"],
                 "orario": lesson["orario"],
                 "tipo_attivita": lesson["tipo_attivita"].value if hasattr(lesson["tipo_attivita"], 'value') else lesson["tipo_attivita"],
-                "descrizione": lesson["descrizione"]
+                "descrizione": lesson["descrizione"],
+                "coach": lesson.get("coach", "Daniele")
             })
         await db.lessons.insert_many(lessons_to_insert)
     
@@ -393,7 +394,8 @@ async def get_lessons(current_user: dict = Depends(get_current_user)):
             giorno=lesson["giorno"],
             orario=lesson["orario"],
             tipo_attivita=lesson["tipo_attivita"],
-            descrizione=lesson.get("descrizione")
+            descrizione=lesson.get("descrizione"),
+            coach=lesson.get("coach", "Daniele")
         ) for lesson in lessons
     ]
 
@@ -406,7 +408,8 @@ async def get_lessons_by_day(giorno: str, current_user: dict = Depends(get_curre
             giorno=lesson["giorno"],
             orario=lesson["orario"],
             tipo_attivita=lesson["tipo_attivita"],
-            descrizione=lesson.get("descrizione")
+            descrizione=lesson.get("descrizione"),
+            coach=lesson.get("coach", "Daniele")
         ) for lesson in lessons
     ]
 
