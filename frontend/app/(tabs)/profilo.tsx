@@ -342,13 +342,13 @@ const styles = StyleSheet.create({
     borderColor: COLORS.card,
   },
   userName: {
-    fontSize: 22,
+    fontSize: 17,
     fontWeight: 'bold',
     color: COLORS.text,
     marginBottom: 4,
   },
   userEmail: {
-    fontSize: 14,
+    fontSize: 10,
     color: COLORS.textSecondary,
     marginBottom: 12,
   },
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   adminBadgeText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
   },
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.textSecondary,
     marginBottom: 12,
@@ -392,11 +392,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   infoLabel: {
-    fontSize: 12,
+    fontSize: 10,
     color: COLORS.textSecondary,
   },
   infoValue: {
-    fontSize: 16,
+    fontSize: 10,
     color: COLORS.text,
     marginTop: 2,
   },
@@ -417,12 +417,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contactName: {
-    fontSize: 16,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.text,
   },
   contactNumber: {
-    fontSize: 14,
+    fontSize: 10,
     color: COLORS.primary,
     marginTop: 2,
   },
@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.error,
   },
   logoutText: {
-    fontSize: 16,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.error,
   },
@@ -455,17 +455,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   notificationDescription: {
-    fontSize: 12,
+    fontSize: 10,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
   notSupported: {
-    fontSize: 12,
+    fontSize: 10,
     color: COLORS.textSecondary,
     fontStyle: 'italic',
   },
   errorText: {
-    fontSize: 12,
+    fontSize: 10,
     color: COLORS.error,
     marginTop: 8,
     textAlign: 'center',
