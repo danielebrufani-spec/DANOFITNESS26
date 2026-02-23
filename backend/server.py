@@ -199,6 +199,7 @@ class DailyStats(BaseModel):
     totale_prenotazioni: int
     prenotazioni_per_lezione: dict
     abbonamenti_scaduti: int
+    lezioni_scalate: int = 0
 
 # ======================== HELPER FUNCTIONS ========================
 
