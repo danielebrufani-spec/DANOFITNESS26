@@ -1324,6 +1324,8 @@ async def create_message(message: MessageCreate, admin_user: dict = Depends(get_
     message_doc = {
         "sender_id": str(admin_user["_id"]),
         "content": message.content,
+        "media_url": message.media_url,
+        "media_type": message.media_type,
         "created_at": datetime.utcnow(),
         "replies": [],
         "is_admin_message": True
@@ -1340,11 +1342,20 @@ async def create_message(message: MessageCreate, admin_user: dict = Depends(get_
         ]
     }).to_list(1000)
     
+    # Determine notification text
+    notif_text = message.content[:100] if message.content else ""
+    if message.media_type == "image":
+        notif_text = "📷 " + (notif_text or "Foto")
+    elif message.media_type == "video":
+        notif_text = "🎥 " + (notif_text or "Video")
+    if len(message.content or "") > 100:
+        notif_text += "..."
+    
     for user in users:
         await send_push_notification(
             str(user["_id"]),
             "💬 Nuova Comunicazione",
-            message.content[:100] + "..." if len(message.content) > 100 else message.content,
+            notif_text,
             {"screen": "comunicazioni", "type": "chat"}
         )
     
@@ -1355,6 +1366,8 @@ async def create_message(message: MessageCreate, admin_user: dict = Depends(get_
         sender_cognome=admin_user["cognome"],
         sender_profile_image=admin_user.get("profile_image"),
         content=message.content,
+        media_url=message.media_url,
+        media_type=message.media_type,
         created_at=message_doc["created_at"],
         replies=[],
         is_admin_message=True
