@@ -26,6 +26,7 @@ export interface Lesson {
   orario: string;
   tipo_attivita: string;
   descrizione?: string;
+  coach?: string;
 }
 
 export interface Subscription {
