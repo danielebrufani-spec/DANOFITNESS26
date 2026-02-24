@@ -1477,6 +1477,8 @@ async def reply_to_message(message_id: str, reply: ReplyCreate, current_user: di
         "id": str(uuid.uuid4()),
         "user_id": user_id,
         "content": reply.content,
+        "media_url": reply.media_url,
+        "media_type": reply.media_type,
         "created_at": datetime.utcnow()
     }
     
@@ -1486,7 +1488,13 @@ async def reply_to_message(message_id: str, reply: ReplyCreate, current_user: di
     )
     
     # Prepare notification content
-    notification_body = reply.content[:100] + "..." if len(reply.content) > 100 else reply.content
+    notif_text = reply.content[:100] if reply.content else ""
+    if reply.media_type == "image":
+        notif_text = "📷 " + (notif_text or "Foto")
+    elif reply.media_type == "video":
+        notif_text = "🎥 " + (notif_text or "Video")
+    if len(reply.content or "") > 100:
+        notif_text += "..."
     
     # If a client replies, notify the admin
     if user_role == "client":
@@ -1501,7 +1509,7 @@ async def reply_to_message(message_id: str, reply: ReplyCreate, current_user: di
             await send_push_notification(
                 str(admin["_id"]),
                 f"Risposta da {user_name}",
-                notification_body
+                notif_text
             )
     
     # If admin replies, notify the original message sender (if it's not admin)
