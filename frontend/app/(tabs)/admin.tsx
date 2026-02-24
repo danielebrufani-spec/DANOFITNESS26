@@ -647,7 +647,13 @@ export default function AdminScreen() {
                 <Text style={[styles.sectionTitle, styles.warningTitle]}>
                   Abbonamenti Scaduti ({expiredSubscriptions.length})
                 </Text>
-                {expiredSubscriptions.map((sub) => {
+                {[...expiredSubscriptions]
+                  .sort((a, b) => {
+                    const nameA = `${a.user_cognome || ''} ${a.user_nome || ''}`.toLowerCase();
+                    const nameB = `${b.user_cognome || ''} ${b.user_nome || ''}`.toLowerCase();
+                    return nameA.localeCompare(nameB);
+                  })
+                  .map((sub) => {
                   const info = ABBONAMENTO_INFO[sub.tipo] || { nome: sub.tipo };
                   return (
                     <TouchableOpacity 
