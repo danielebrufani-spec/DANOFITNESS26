@@ -13,6 +13,7 @@ Applicazione di prenotazione fitness per "DanoFitness23" con:
 - **Frontend**: React Native, Expo SDK 54, Expo Router, Zustand, Axios
 - **Backend**: Python, FastAPI, Pydantic, APScheduler
 - **Database**: MongoDB
+- **Timezone**: Europe/Rome (orario italiano)
 
 ## What's Been Implemented
 
@@ -31,12 +32,14 @@ Applicazione di prenotazione fitness per "DanoFitness23" con:
 - Aggiunto messaggio di benvenuto grande nella Home:
   - "Ciao [Nome]!" (32px bold)
   - "Signore Pietà, Cristo pietà" (citazione in corsivo)
+- **Corretto fuso orario**: Backend ora usa Europe/Rome invece di UTC
+  - Scalatura lezioni usa orario italiano
+  - Job automatici usano orario italiano
 
 ## Known Issues (P0-P1)
 1. **P0 - Logout si blocca**: App si congela al logout
-2. **P0 - Statistiche "Oggi"**: Calcoli da verificare
-3. **P1 - Allegati chat**: Funzione incompleta/rotta
-4. **P1 - UI Login**: Testo "oppure" possibilmente troncato
+2. **P1 - Allegati chat**: Funzione incompleta/rotta
+3. **P1 - UI Login**: Testo "oppure" possibilmente troncato
 
 ## Backlog
 - P2: Migrazione Expo SDK 54 → 55 (futuro)
@@ -49,3 +52,4 @@ Applicazione di prenotazione fitness per "DanoFitness23" con:
 ## Important Notes
 - Push notifications RIMOSSE (utente le ha trovate complicate)
 - Modifiche visibili su Expo Go solo dopo DEPLOY + riavvio app
+- Il sistema di scalatura lezioni ora usa l'orario italiano (Europe/Rome)
