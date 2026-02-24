@@ -1393,6 +1393,8 @@ async def get_messages(current_user: dict = Depends(get_current_user)):
                     user_cognome=reply_user["cognome"],
                     user_profile_image=reply_user.get("profile_image"),
                     content=reply["content"],
+                    media_url=reply.get("media_url"),
+                    media_type=reply.get("media_type"),
                     created_at=reply["created_at"]
                 ))
         
@@ -1402,7 +1404,9 @@ async def get_messages(current_user: dict = Depends(get_current_user)):
             sender_nome=sender["nome"] if sender else "Admin",
             sender_cognome=sender["cognome"] if sender else "",
             sender_profile_image=sender.get("profile_image") if sender else None,
-            content=msg["content"],
+            content=msg.get("content", ""),
+            media_url=msg.get("media_url"),
+            media_type=msg.get("media_type"),
             created_at=msg["created_at"],
             replies=replies,
             is_admin_message=msg.get("is_admin_message", True)
