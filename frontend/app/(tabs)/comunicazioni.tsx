@@ -36,6 +36,13 @@ export default function ComunicazioniScreen() {
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
+  
+  // Media attachment states
+  const [attachment, setAttachment] = useState<{uri: string, type: 'image' | 'video'} | null>(null);
+  const [replyAttachment, setReplyAttachment] = useState<{uri: string, type: 'image' | 'video'} | null>(null);
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
+  const [isReplyMedia, setIsReplyMedia] = useState(false);
+  const [fullScreenMedia, setFullScreenMedia] = useState<{uri: string, type: 'image' | 'video'} | null>(null);
 
   // Mark messages as read when screen is focused
   const markAsRead = useCallback(async () => {
