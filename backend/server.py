@@ -868,18 +868,18 @@ async def get_daily_stats(date: str, admin_user: dict = Depends(get_admin_user))
                 prenotazioni_per_lezione[key] = 0
             prenotazioni_per_lezione[key] += 1
         
-        # Conta lezioni scalate (solo abbonamenti a numero di lezioni)
+        # Conta lezioni scalate (abbonamenti a pacchetto lezioni)
         if booking.get("lezione_scalata", False):
             lezioni_scalate += 1
-        else:
-            # Verifica se l'utente ha un abbonamento a tempo
-            sub = await db.subscriptions.find_one({
-                "user_id": user_id,
-                "attivo": True,
-                "tipo": {"$in": ["mensile", "trimestrale"]}
-            })
-            if sub:
-                presenze_abbonamento_tempo += 1
+        
+        # Verifica il tipo di abbonamento dell'utente
+        sub_tempo = await db.subscriptions.find_one({
+            "user_id": user_id,
+            "attivo": True,
+            "tipo": {"$in": ["mensile", "trimestrale"]}
+        })
+        if sub_tempo:
+            presenze_abbonamento_tempo += 1
     
     # Count expired subscriptions
     now = datetime.utcnow()
