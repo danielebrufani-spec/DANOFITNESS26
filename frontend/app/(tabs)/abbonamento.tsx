@@ -286,6 +286,46 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginBottom: 20,
   },
+  // Alert Abbonamento Scaduto
+  expiredAlert: {
+    backgroundColor: COLORS.error,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 16,
+  },
+  expiredAlertContent: {
+    flex: 1,
+  },
+  expiredAlertTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 8,
+  },
+  expiredAlertText: {
+    fontSize: 14,
+    color: '#fff',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  expiredAlertButton: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+  },
+  expiredAlertButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   section: {
     marginBottom: 24,
   },
