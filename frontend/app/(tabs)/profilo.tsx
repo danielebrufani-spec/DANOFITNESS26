@@ -151,9 +151,14 @@ export default function ProfiloScreen() {
           text: 'Esci',
           style: 'destructive',
           onPress: async () => {
-            await logout();
-            router.dismissAll();
-            router.replace('/login');
+            try {
+              await logout();
+            } finally {
+              // Force navigation to login
+              setTimeout(() => {
+                router.replace('/login');
+              }, 100);
+            }
           }
         }
       ]
