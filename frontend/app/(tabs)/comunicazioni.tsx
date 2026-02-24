@@ -537,13 +537,20 @@ export default function ComunicazioniScreen() {
                 resizeMode="contain"
               />
             ) : fullScreenMedia?.type === 'video' ? (
-              <Video
-                source={{ uri: fullScreenMedia.uri }}
-                style={styles.fullScreenVideo}
-                useNativeControls
-                resizeMode={ResizeMode.CONTAIN}
-                shouldPlay
-              />
+              <View style={styles.videoFullScreenPlaceholder}>
+                <Ionicons name="videocam" size={64} color={COLORS.primary} />
+                <Text style={styles.videoFullScreenText}>Video</Text>
+                <TouchableOpacity 
+                  style={styles.openVideoButton}
+                  onPress={() => {
+                    if (fullScreenMedia?.uri) {
+                      Linking.openURL(fullScreenMedia.uri);
+                    }
+                  }}
+                >
+                  <Text style={styles.openVideoButtonText}>Apri Video</Text>
+                </TouchableOpacity>
+              </View>
             ) : null}
           </View>
         </Modal>
