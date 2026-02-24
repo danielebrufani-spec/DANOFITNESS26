@@ -169,10 +169,14 @@ class PushSubscription(BaseModel):
 # ======================== CHAT/COMUNICAZIONI MODELS ========================
 
 class MessageCreate(BaseModel):
-    content: str
+    content: str = ""
+    media_url: Optional[str] = None
+    media_type: Optional[str] = None
 
 class ReplyCreate(BaseModel):
-    content: str
+    content: str = ""
+    media_url: Optional[str] = None
+    media_type: Optional[str] = None
 
 class ReplyResponse(BaseModel):
     id: str
@@ -181,6 +185,8 @@ class ReplyResponse(BaseModel):
     user_cognome: str
     user_profile_image: Optional[str] = None
     content: str
+    media_url: Optional[str] = None
+    media_type: Optional[str] = None
     created_at: datetime
 
 class MessageResponse(BaseModel):
