@@ -129,21 +129,14 @@ export const usePushNotifications = () => {
 
     // Get Expo push token
     try {
-      // Per Expo Go, proviamo prima senza projectId
-      let tokenData;
-      try {
-        tokenData = await Notifications.getExpoPushTokenAsync();
-      } catch (e) {
-        // Se fallisce, proviamo con un projectId generico
-        const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? 
-                         Constants.easConfig?.projectId ?? 
-                         'danofitness23-push';
-        
-        console.log('[PUSH] Retrying with projectId:', projectId);
-        tokenData = await Notifications.getExpoPushTokenAsync({
-          projectId: projectId,
-        });
-      }
+      // Usa experienceId basato su @anonymous/slug per Expo Go
+      const experienceId = `@anonymous/${Constants.expoConfig?.slug || 'danofitness23'}`;
+      
+      console.log('[PUSH] Getting token with experienceId:', experienceId);
+      
+      const tokenData = await Notifications.getExpoPushTokenAsync({
+        experienceId: experienceId,
+      });
       
       const token = tokenData.data;
       console.log('[PUSH] Got token:', token);
