@@ -167,8 +167,10 @@ export const apiService = {
   // Chat/Messages
   getMessages: () => api.get<Message[]>('/messages'),
   getUnreadCount: (lastRead?: string) => api.get<{ unread_count: number }>(`/messages/unread-count${lastRead ? `?last_read=${lastRead}` : ''}`),
-  createMessage: (content: string) => api.post<Message>('/messages', { content }),
-  replyToMessage: (messageId: string, content: string) => api.post<Reply>(`/messages/${messageId}/reply`, { content }),
+  createMessage: (content: string, mediaUrl?: string, mediaType?: 'image' | 'video') => 
+    api.post<Message>('/messages', { content, media_url: mediaUrl, media_type: mediaType }),
+  replyToMessage: (messageId: string, content: string, mediaUrl?: string, mediaType?: 'image' | 'video') => 
+    api.post<Reply>(`/messages/${messageId}/reply`, { content, media_url: mediaUrl, media_type: mediaType }),
   deleteMessage: (messageId: string) => api.delete(`/messages/${messageId}`),
 
   // Init
