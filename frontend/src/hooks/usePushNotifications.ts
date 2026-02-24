@@ -131,11 +131,14 @@ export const usePushNotifications = () => {
     try {
       const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
       
+      console.log('[PUSH] Getting token with projectId:', projectId);
+      
       const tokenData = await Notifications.getExpoPushTokenAsync({
         projectId: projectId,
       });
       
       const token = tokenData.data;
+      console.log('[PUSH] Got token:', token);
       setExpoPushToken(token);
       
       // Configure Android notification channel
@@ -152,8 +155,12 @@ export const usePushNotifications = () => {
       }
 
       return token;
-    } catch (error) {
-      console.error('Error getting Expo push token:', error);
+    } catch (error: any) {
+      console.error('[PUSH] Error getting Expo push token:', error);
+      Alert.alert(
+        'Errore Notifiche',
+        `Non è stato possibile attivare le notifiche: ${error.message || 'Errore sconosciuto'}`
+      );
       return null;
     }
   };
