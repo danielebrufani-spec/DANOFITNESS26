@@ -18,6 +18,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import { COLORS } from '../../src/utils/constants';
 import * as ImagePicker from 'expo-image-picker';
 import { apiService } from '../../src/services/api';
+import { usePushNotifications } from '../../src/hooks/usePushNotifications';
 
 // Utility function to convert base64 to Uint8Array
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
@@ -36,33 +37,42 @@ export default function ProfiloScreen() {
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
   
-  // Push notification state
-  const [pushSupported, setPushSupported] = useState(false);
-  const [pushEnabled, setPushEnabled] = useState(false);
-  const [pushLoading, setPushLoading] = useState(false);
+  // Use the push notifications hook for mobile
+  const { 
+    isSupported: mobileSupported, 
+    isSubscribed: mobileSubscribed, 
+    isLoading: mobileLoading,
+    subscribe: mobileSubscribe,
+    unsubscribe: mobileUnsubscribe 
+  } = usePushNotifications();
+  
+  // Push notification state for web
+  const [webPushSupported, setWebPushSupported] = useState(false);
+  const [webPushEnabled, setWebPushEnabled] = useState(false);
+  const [webPushLoading, setWebPushLoading] = useState(false);
 
   useEffect(() => {
-    // Check if push notifications are supported
+    // Check if push notifications are supported on web
     if (Platform.OS === 'web' && 'serviceWorker' in navigator && 'PushManager' in window) {
-      setPushSupported(true);
-      checkPushStatus();
+      setWebPushSupported(true);
+      checkWebPushStatus();
     }
   }, []);
 
-  const checkPushStatus = async () => {
+  const checkWebPushStatus = async () => {
     try {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
-      setPushEnabled(!!subscription);
+      setWebPushEnabled(!!subscription);
     } catch (error) {
       console.error('Error checking push status:', error);
     }
   };
 
-  const togglePushNotifications = async () => {
-    setPushLoading(true);
+  const toggleWebPushNotifications = async () => {
+    setWebPushLoading(true);
     try {
-      if (pushEnabled) {
+      if (webPushEnabled) {
         // Unsubscribe
         const registration = await navigator.serviceWorker.ready;
         const subscription = await registration.pushManager.getSubscription();
@@ -70,13 +80,13 @@ export default function ProfiloScreen() {
           await subscription.unsubscribe();
           await apiService.unsubscribePush();
         }
-        setPushEnabled(false);
+        setWebPushEnabled(false);
       } else {
         // Subscribe
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') {
           Alert.alert('Permesso negato', 'Devi permettere le notifiche per riceverle.');
-          setPushLoading(false);
+          setWebPushLoading(false);
           return;
         }
 
@@ -98,12 +108,25 @@ export default function ProfiloScreen() {
           }
         });
         
-        setPushEnabled(true);
+        setWebPushEnabled(true);
       }
     } catch (error) {
       console.error('Error toggling push:', error);
     }
-    setPushLoading(false);
+    setWebPushLoading(false);
+  };
+
+  // Toggle for mobile notifications
+  const toggleMobileNotifications = async () => {
+    if (mobileSubscribed) {
+      await mobileUnsubscribe();
+      Alert.alert('Notifiche Disattivate', 'Non riceverai più notifiche push.');
+    } else {
+      const success = await mobileSubscribe();
+      if (success) {
+        Alert.alert('Notifiche Attivate', 'Riceverai notifiche per messaggi e abbonamenti.');
+      }
+    }
   };
 
   const handleLogout = async () => {
