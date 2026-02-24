@@ -872,15 +872,6 @@ export default function AdminScreen() {
                           <Text style={styles.scadutiDetailLabel}>Scaduto il:</Text>
                           <Text style={styles.scadutiDetailValue}>{formatDate(sub.data_scadenza)}</Text>
                         </View>
-                        {sub.lezioni_rimanenti !== null && sub.lezioni_rimanenti > 0 && (
-                          <View style={styles.scadutiDetailRow}>
-                            <Ionicons name="fitness-outline" size={18} color={COLORS.warning} />
-                            <Text style={styles.scadutiDetailLabel}>Lezioni perse:</Text>
-                            <Text style={[styles.scadutiDetailValue, { color: COLORS.warning }]}>
-                              {sub.lezioni_rimanenti}
-                            </Text>
-                          </View>
-                        )}
                       </View>
                       
                       <View style={styles.scadutiAction}>
