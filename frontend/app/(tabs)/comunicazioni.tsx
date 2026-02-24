@@ -146,6 +146,95 @@ export default function ComunicazioniScreen() {
     return date.toLocaleDateString('it-IT');
   };
 
+  // Media picker functions
+  const pickImage = async (forReply: boolean = false) => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permesso negato', 'Serve il permesso per accedere alla galleria');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.7,
+      base64: true,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      const uri = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+      if (forReply) {
+        setReplyAttachment({ uri, type: 'image' });
+      } else {
+        setAttachment({ uri, type: 'image' });
+      }
+    }
+    setShowMediaPicker(false);
+  };
+
+  const pickVideo = async (forReply: boolean = false) => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permesso negato', 'Serve il permesso per accedere alla galleria');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      allowsEditing: true,
+      quality: 0.5,
+      videoMaxDuration: 60,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      if (forReply) {
+        setReplyAttachment({ uri: result.assets[0].uri, type: 'video' });
+      } else {
+        setAttachment({ uri: result.assets[0].uri, type: 'video' });
+      }
+    }
+    setShowMediaPicker(false);
+  };
+
+  const takePhoto = async (forReply: boolean = false) => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permesso negato', 'Serve il permesso per usare la fotocamera');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      quality: 0.7,
+      base64: true,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      const uri = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+      if (forReply) {
+        setReplyAttachment({ uri, type: 'image' });
+      } else {
+        setAttachment({ uri, type: 'image' });
+      }
+    }
+    setShowMediaPicker(false);
+  };
+
+  const openMediaPicker = (forReply: boolean = false) => {
+    setIsReplyMedia(forReply);
+    setShowMediaPicker(true);
+  };
+
+  const removeAttachment = (forReply: boolean = false) => {
+    if (forReply) {
+      setReplyAttachment(null);
+    } else {
+      setAttachment(null);
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
