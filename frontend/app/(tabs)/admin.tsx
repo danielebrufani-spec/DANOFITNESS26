@@ -813,6 +813,86 @@ export default function AdminScreen() {
             )}
           </>
         )}
+
+        {/* SCADUTI TAB */}
+        {activeTab === 'scaduti' && (
+          <>
+            <Text style={styles.scadutiTitle}>
+              Abbonamenti da Rinnovare
+            </Text>
+            <Text style={styles.scadutiSubtitle}>
+              {expiredSubscriptions.length} clienti con abbonamento scaduto
+            </Text>
+            
+            {expiredSubscriptions.length === 0 ? (
+              <View style={styles.emptyScaduti}>
+                <Ionicons name="checkmark-circle" size={64} color={COLORS.success} />
+                <Text style={styles.emptyScadutiText}>Nessun abbonamento scaduto!</Text>
+                <Text style={styles.emptyScadutiSubtext}>Tutti i clienti sono in regola</Text>
+              </View>
+            ) : (
+              [...expiredSubscriptions]
+                .sort((a, b) => {
+                  const nameA = `${a.user_cognome || ''} ${a.user_nome || ''}`.toLowerCase();
+                  const nameB = `${b.user_cognome || ''} ${b.user_nome || ''}`.toLowerCase();
+                  return nameA.localeCompare(nameB);
+                })
+                .map((sub) => {
+                  const info = ABBONAMENTO_INFO[sub.tipo] || { nome: sub.tipo };
+                  const scadenzaDate = new Date(sub.data_scadenza);
+                  const oggi = new Date();
+                  const giorniScaduto = Math.floor((oggi.getTime() - scadenzaDate.getTime()) / (1000 * 60 * 60 * 24));
+                  
+                  return (
+                    <TouchableOpacity 
+                      key={sub.id} 
+                      style={styles.scadutiCard}
+                      onPress={() => openEditModal(sub)}
+                    >
+                      <View style={styles.scadutiCardHeader}>
+                        <View style={styles.scadutiUserInfo}>
+                          <Ionicons name="person-circle" size={40} color={COLORS.error} />
+                          <View>
+                            <Text style={styles.scadutiUserName}>
+                              {sub.user_cognome} {sub.user_nome}
+                            </Text>
+                            <Text style={styles.scadutiTipo}>{info.nome}</Text>
+                          </View>
+                        </View>
+                        <View style={styles.scadutiBadge}>
+                          <Text style={styles.scadutiBadgeText}>
+                            {giorniScaduto > 0 ? `${giorniScaduto}g fa` : 'Oggi'}
+                          </Text>
+                        </View>
+                      </View>
+                      
+                      <View style={styles.scadutiDetails}>
+                        <View style={styles.scadutiDetailRow}>
+                          <Ionicons name="calendar-outline" size={18} color={COLORS.error} />
+                          <Text style={styles.scadutiDetailLabel}>Scaduto il:</Text>
+                          <Text style={styles.scadutiDetailValue}>{formatDate(sub.data_scadenza)}</Text>
+                        </View>
+                        {sub.lezioni_rimanenti !== null && sub.lezioni_rimanenti > 0 && (
+                          <View style={styles.scadutiDetailRow}>
+                            <Ionicons name="fitness-outline" size={18} color={COLORS.warning} />
+                            <Text style={styles.scadutiDetailLabel}>Lezioni perse:</Text>
+                            <Text style={[styles.scadutiDetailValue, { color: COLORS.warning }]}>
+                              {sub.lezioni_rimanenti}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      
+                      <View style={styles.scadutiAction}>
+                        <Ionicons name="create-outline" size={18} color={COLORS.primary} />
+                        <Text style={styles.scadutiActionText}>Tocca per rinnovare</Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })
+            )}
+          </>
+        )}
       </ScrollView>
 
       {/* Add Subscription Modal */}
