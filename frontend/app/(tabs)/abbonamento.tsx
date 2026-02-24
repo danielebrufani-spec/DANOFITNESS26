@@ -259,33 +259,38 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     color: COLORS.text,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   section: {
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 10,
+    fontSize: 14,
     fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: 8,
+    color: COLORS.textSecondary,
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   subscriptionCard: {
     backgroundColor: COLORS.card,
     borderRadius: 16,
     padding: 20,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: COLORS.success,
   },
   expiredCard: {
     borderColor: COLORS.error,
-    opacity: 0.8,
+    opacity: 0.7,
   },
   subscriptionHeader: {
-    marginBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   subscriptionBadge: {
     flexDirection: 'row',
@@ -294,44 +299,121 @@ const styles = StyleSheet.create({
   },
   expiredBadge: {},
   subscriptionStatus: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: 'bold',
     color: COLORS.success,
   },
   expiredStatus: {
     color: COLORS.error,
   },
+  tipoBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: COLORS.primary + '30',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  tipoText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
   subscriptionType: {
-    fontSize: 10,
+    fontSize: 20,
     fontWeight: 'bold',
     color: COLORS.text,
-    marginBottom: 4,
-  },
-  subscriptionPrice: {
-    fontSize: 10,
-    color: COLORS.primary,
-    fontWeight: '600',
-    marginBottom: 10,
+    marginBottom: 16,
   },
   subscriptionDetails: {
-    gap: 8,
+    gap: 12,
   },
-  detailRow: {
+  lezioniBox: {
+    backgroundColor: COLORS.primary + '20',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  lezioniNumber: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+  },
+  lezioniLabel: {
+    fontSize: 14,
+    color: COLORS.text,
+    fontWeight: '500',
+    marginTop: 4,
+  },
+  tempoBox: {
+    backgroundColor: COLORS.success + '20',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  tempoText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.success,
+  },
+  infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    backgroundColor: COLORS.warning + '15',
+    padding: 10,
+    borderRadius: 8,
   },
-  detailText: {
+  infoText: {
+    fontSize: 11,
+    color: COLORS.warning,
+    flex: 1,
+  },
+  dateContainer: {
+    marginTop: 8,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  dateItem: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    padding: 12,
+    borderRadius: 10,
+  },
+  dateLabel: {
     fontSize: 10,
     color: COLORS.textSecondary,
+    marginBottom: 4,
   },
-  detailHighlight: {
-    color: COLORS.primary,
-    fontWeight: 'bold',
-    fontSize: 10,
+  dateValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
   },
-  expiredText: {
+  scadenzaValue: {
+    color: COLORS.warning,
+  },
+  expiredDateValue: {
     color: COLORS.error,
+  },
+  lezioniPerse: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: COLORS.warning + '20',
+    padding: 12,
+    borderRadius: 8,
+  },
+  lezioniPerseText: {
+    fontSize: 12,
+    color: COLORS.warning,
+    fontWeight: '500',
   },
   emptyCard: {
     backgroundColor: COLORS.card,
@@ -341,14 +423,20 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   emptyText: {
-    fontSize: 10,
+    fontSize: 16,
     fontWeight: '600',
     color: COLORS.text,
   },
   emptySubtext: {
-    fontSize: 10,
+    fontSize: 13,
     color: COLORS.textSecondary,
     textAlign: 'center',
+  },
+  emptyPhone: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    marginTop: 8,
   },
   pricingGrid: {
     flexDirection: 'row',
@@ -358,23 +446,23 @@ const styles = StyleSheet.create({
   pricingCard: {
     backgroundColor: COLORS.card,
     borderRadius: 12,
-    padding: 12,
-    width: '48%',
+    padding: 16,
+    width: '47%',
     alignItems: 'center',
   },
   pricingName: {
-    fontSize: 10,
+    fontSize: 14,
     fontWeight: '600',
     color: COLORS.text,
   },
   pricingPrice: {
-    fontSize: 10,
+    fontSize: 22,
     fontWeight: 'bold',
     color: COLORS.primary,
     marginTop: 4,
   },
   pricingNote: {
-    fontSize: 10,
+    fontSize: 11,
     color: COLORS.textSecondary,
     marginTop: 4,
   },
@@ -388,7 +476,7 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.border,
   },
   registrationFeeText: {
-    fontSize: 10,
+    fontSize: 12,
     color: COLORS.textSecondary,
   },
   contactCard: {
@@ -403,11 +491,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contactTitle: {
-    fontSize: 10,
+    fontSize: 12,
     color: COLORS.textSecondary,
   },
   contactText: {
-    fontSize: 10,
+    fontSize: 16,
     fontWeight: '600',
     color: COLORS.text,
     marginTop: 2,
