@@ -129,13 +129,21 @@ export const usePushNotifications = () => {
 
     // Get Expo push token
     try {
-      const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
-      
-      console.log('[PUSH] Getting token with projectId:', projectId);
-      
-      const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId: projectId,
-      });
+      // Per Expo Go, proviamo prima senza projectId
+      let tokenData;
+      try {
+        tokenData = await Notifications.getExpoPushTokenAsync();
+      } catch (e) {
+        // Se fallisce, proviamo con un projectId generico
+        const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? 
+                         Constants.easConfig?.projectId ?? 
+                         'danofitness23-push';
+        
+        console.log('[PUSH] Retrying with projectId:', projectId);
+        tokenData = await Notifications.getExpoPushTokenAsync({
+          projectId: projectId,
+        });
+      }
       
       const token = tokenData.data;
       console.log('[PUSH] Got token:', token);
