@@ -9,7 +9,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional
 import uuid
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, timezone
 from passlib.context import CryptContext
 import jwt
 from bson import ObjectId
@@ -19,6 +19,18 @@ from apscheduler.triggers.cron import CronTrigger
 import asyncio
 from pywebpush import webpush, WebPushException
 import json
+from zoneinfo import ZoneInfo
+
+# Fuso orario italiano
+ITALY_TZ = ZoneInfo("Europe/Rome")
+
+def now_italy() -> datetime:
+    """Restituisce l'orario attuale in Italia"""
+    return datetime.now(ITALY_TZ)
+
+def today_italy() -> str:
+    """Restituisce la data di oggi in formato YYYY-MM-DD (orario italiano)"""
+    return now_italy().strftime("%Y-%m-%d")
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
