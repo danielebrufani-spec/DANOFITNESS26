@@ -118,9 +118,21 @@ export default function ProfiloScreen() {
 
   // Toggle for mobile notifications
   const toggleMobileNotifications = async () => {
+    console.log('[PROFILO] Toggle notifications - subscribed:', mobileSubscribed, 'supported:', mobileSupported);
+    
+    if (!mobileSupported) {
+      Alert.alert(
+        'Non Supportato',
+        'Le notifiche push sono disponibili solo su dispositivi fisici (non emulatore o Expo Go web)'
+      );
+      return;
+    }
+    
     if (mobileSubscribed) {
-      await mobileUnsubscribe();
-      Alert.alert('Notifiche Disattivate', 'Non riceverai più notifiche push.');
+      const success = await mobileUnsubscribe();
+      if (success) {
+        Alert.alert('Notifiche Disattivate', 'Non riceverai più notifiche push.');
+      }
     } else {
       const success = await mobileSubscribe();
       if (success) {
