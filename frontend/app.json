@@ -8,14 +8,22 @@
     "scheme": "danofitness",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "owner": "danofitness",
+    "extra": {
+      "eas": {
+        "projectId": "danofitness23-push"
+      }
+    },
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.danofitness.app",
       "infoPlist": {
         "NSCameraUsageDescription": "Scatta foto per il tuo profilo",
         "NSPhotoLibraryUsageDescription": "Seleziona foto per il tuo profilo"
       }
     },
     "android": {
+      "package": "com.danofitness.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#1A1A2E"
