@@ -1116,7 +1116,7 @@ async def process_day_automatically():
     logger.info(f"[SCHEDULER] Processed {processed} bookings for {yesterday}")
     
     # ======================== AUTO-DELETE EXPIRED SUBSCRIPTIONS ========================
-    now = datetime.utcnow()
+    now = now_italy()
     deleted_count = 0
     
     # 1. Delete time-based subscriptions (mensile, trimestrale) that are past their expiry date
