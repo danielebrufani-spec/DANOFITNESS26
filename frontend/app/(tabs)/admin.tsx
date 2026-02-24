@@ -687,7 +687,13 @@ export default function AdminScreen() {
             <Text style={styles.sectionTitle}>
               Tutti gli Abbonamenti ({subscriptions.length})
             </Text>
-            {subscriptions.map((sub) => {
+            {[...subscriptions]
+              .sort((a, b) => {
+                const nameA = `${a.user_cognome || ''} ${a.user_nome || ''}`.toLowerCase();
+                const nameB = `${b.user_cognome || ''} ${b.user_nome || ''}`.toLowerCase();
+                return nameA.localeCompare(nameB);
+              })
+              .map((sub) => {
               const info = ABBONAMENTO_INFO[sub.tipo] || { nome: sub.tipo };
               return (
                 <View
