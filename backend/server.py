@@ -1062,10 +1062,11 @@ async def get_weekly_bookings(admin_user: dict = Depends(get_admin_user)):
 
 async def process_day_automatically():
     """Automatically process bookings at midnight - deduct lessons from subscriptions"""
-    # Get yesterday's date (the day that just ended)
-    yesterday = (datetime.utcnow() - timedelta(days=1)).strftime("%Y-%m-%d")
+    # Get yesterday's date (the day that just ended) - in Italy timezone
+    now_it = now_italy()
+    yesterday = (now_it - timedelta(days=1)).strftime("%Y-%m-%d")
     
-    logger.info(f"[SCHEDULER] Processing bookings for {yesterday}")
+    logger.info(f"[SCHEDULER] Processing bookings for {yesterday} (Italy time)")
     
     bookings = await db.bookings.find({
         "data_lezione": yesterday,
