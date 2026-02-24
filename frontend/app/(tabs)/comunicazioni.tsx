@@ -310,7 +310,24 @@ export default function ComunicazioniScreen() {
                 </View>
 
                 {/* Message Content */}
-                <Text style={styles.messageContent}>{message.content}</Text>
+                {message.content && <Text style={styles.messageContent}>{message.content}</Text>}
+                
+                {/* Message Media */}
+                {message.media_url && (
+                  <TouchableOpacity 
+                    style={styles.messageMedia}
+                    onPress={() => setFullScreenMedia({ uri: message.media_url!, type: message.media_type as 'image' | 'video' })}
+                  >
+                    {message.media_type === 'image' ? (
+                      <Image source={{ uri: message.media_url }} style={styles.messageImage} resizeMode="cover" />
+                    ) : message.media_type === 'video' ? (
+                      <View style={styles.messageVideoContainer}>
+                        <Ionicons name="play-circle" size={48} color={COLORS.primary} />
+                        <Text style={styles.videoText}>Tocca per riprodurre</Text>
+                      </View>
+                    ) : null}
+                  </TouchableOpacity>
+                )}
 
                 {/* Replies */}
                 {message.replies.length > 0 && (
@@ -332,7 +349,23 @@ export default function ComunicazioniScreen() {
                             <Text style={styles.replyTime}>{formatDate(reply.created_at)}</Text>
                           </View>
                         </View>
-                        <Text style={styles.replyContent}>{reply.content}</Text>
+                        {reply.content && <Text style={styles.replyContent}>{reply.content}</Text>}
+                        
+                        {/* Reply Media */}
+                        {reply.media_url && (
+                          <TouchableOpacity 
+                            style={[styles.messageMedia, { marginLeft: 46 }]}
+                            onPress={() => setFullScreenMedia({ uri: reply.media_url!, type: reply.media_type as 'image' | 'video' })}
+                          >
+                            {reply.media_type === 'image' ? (
+                              <Image source={{ uri: reply.media_url }} style={styles.messageImage} resizeMode="cover" />
+                            ) : reply.media_type === 'video' ? (
+                              <View style={styles.messageVideoContainer}>
+                                <Ionicons name="play-circle" size={36} color={COLORS.primary} />
+                              </View>
+                            ) : null}
+                          </TouchableOpacity>
+                        )}
                       </View>
                     ))}
                   </View>
