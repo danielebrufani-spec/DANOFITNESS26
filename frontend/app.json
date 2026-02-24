@@ -59,7 +59,14 @@
         {
           "icon": "./assets/images/icon-192.png",
           "color": "#FF6B35",
-          "sounds": []
+          "sounds": ["./assets/sounds/notification.wav"],
+          "defaultChannel": {
+            "name": "DanoFitness",
+            "description": "Notifiche DanoFitness23",
+            "importance": 4,
+            "vibrationPattern": [0, 250, 250, 250],
+            "sound": true
+          }
         }
       ]
     ],
