@@ -15,7 +15,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { apiService, Booking, Subscription, Lesson } from '../../src/services/api';
-import { usePushNotifications } from '../../src/hooks/usePushNotifications';
 import {
   COLORS,
   ATTIVITA_INFO,
@@ -28,27 +27,11 @@ import {
 export default function HomeScreen() {
   const { user, isAdmin } = useAuth();
   const router = useRouter();
-  const { isSubscribed, subscribe } = usePushNotifications();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
   const [mySubscriptions, setMySubscriptions] = useState<Subscription[]>([]);
   const [todayLessons, setTodayLessons] = useState<Lesson[]>([]);
-
-  // Auto-register for push notifications
-  useEffect(() => {
-    const registerPush = async () => {
-      if (!isSubscribed && Platform.OS !== 'web') {
-        try {
-          await subscribe();
-          console.log('[PUSH] Auto-registered for notifications');
-        } catch (error) {
-          console.log('[PUSH] Auto-registration failed:', error);
-        }
-      }
-    };
-    registerPush();
-  }, [isSubscribed]);
 
   const loadData = async () => {
     try {
