@@ -1541,6 +1541,8 @@ async def reply_to_message(message_id: str, reply: ReplyCreate, current_user: di
         user_cognome=current_user["cognome"],
         user_profile_image=current_user.get("profile_image"),
         content=reply.content,
+        media_url=reply.media_url,
+        media_type=reply.media_type,
         created_at=reply_doc["created_at"]
     )
 
