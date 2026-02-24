@@ -1763,6 +1763,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 16,
   },
+  abbonamentoStatsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  abbonamentoStatCard: {
+    flex: 1,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  abbonamentoStatNumber: {
+    fontSize: 28,
+    fontWeight: 'bold',
+  },
+  abbonamentoStatLabel: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginTop: 4,
+    textAlign: 'center',
+  },
   scalaLezioniButton: {
     backgroundColor: COLORS.success,
     borderRadius: 12,
