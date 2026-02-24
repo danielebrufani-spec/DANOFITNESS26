@@ -81,30 +81,34 @@ export default function ComunicazioniScreen() {
   };
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !isAdmin) return;
+    if ((!newMessage.trim() && !attachment) || !isAdmin) return;
     
     setSending(true);
     try {
-      await apiService.createMessage(newMessage.trim());
+      await apiService.createMessage(newMessage.trim(), attachment?.uri, attachment?.type);
       setNewMessage('');
+      setAttachment(null);
       await loadMessages();
     } catch (error) {
       console.error('Error sending message:', error);
+      Alert.alert('Errore', 'Impossibile inviare il messaggio');
     }
     setSending(false);
   };
 
   const handleSendReply = async (messageId: string) => {
-    if (!replyText.trim()) return;
+    if (!replyText.trim() && !replyAttachment) return;
     
     setSending(true);
     try {
-      await apiService.replyToMessage(messageId, replyText.trim());
+      await apiService.replyToMessage(messageId, replyText.trim(), replyAttachment?.uri, replyAttachment?.type);
       setReplyText('');
+      setReplyAttachment(null);
       setReplyingTo(null);
       await loadMessages();
     } catch (error) {
       console.error('Error sending reply:', error);
+      Alert.alert('Errore', 'Impossibile inviare la risposta');
     }
     setSending(false);
   };
