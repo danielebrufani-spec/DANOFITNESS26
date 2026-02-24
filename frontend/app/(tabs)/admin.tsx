@@ -875,8 +875,8 @@ export default function AdminScreen() {
                       </View>
                       
                       <View style={styles.scadutiAction}>
-                        <Ionicons name="create-outline" size={18} color={COLORS.primary} />
-                        <Text style={styles.scadutiActionText}>Tocca per rinnovare</Text>
+                        <Ionicons name="add-circle-outline" size={18} color={COLORS.primary} />
+                        <Text style={styles.scadutiActionText}>Assegna nuovo abbonamento</Text>
                       </View>
                     </TouchableOpacity>
                   );
