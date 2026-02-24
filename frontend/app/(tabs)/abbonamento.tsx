@@ -75,37 +75,70 @@ export default function AbbonamentoScreen() {
           {activeSubscriptions.length > 0 ? (
             activeSubscriptions.map((sub) => {
               const info = ABBONAMENTO_INFO[sub.tipo] || { nome: sub.tipo, prezzo: '' };
+              const isLezioniType = sub.tipo === 'lezioni_8' || sub.tipo === 'lezioni_16';
+              const isTempoType = sub.tipo === 'mensile' || sub.tipo === 'trimestrale';
+              
               return (
                 <View key={sub.id} style={styles.subscriptionCard}>
+                  {/* Header con stato */}
                   <View style={styles.subscriptionHeader}>
                     <View style={styles.subscriptionBadge}>
-                      <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
-                      <Text style={styles.subscriptionStatus}>Attivo</Text>
+                      <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />
+                      <Text style={styles.subscriptionStatus}>ATTIVO</Text>
+                    </View>
+                    <View style={styles.tipoBadge}>
+                      <Ionicons 
+                        name={isLezioniType ? "fitness" : "calendar"} 
+                        size={16} 
+                        color={COLORS.text} 
+                      />
+                      <Text style={styles.tipoText}>
+                        {isLezioniType ? 'A Lezioni' : 'A Tempo'}
+                      </Text>
                     </View>
                   </View>
-                  <Text style={styles.subscriptionType}>{info.nome}</Text>
-                  <Text style={styles.subscriptionPrice}>{info.prezzo}</Text>
                   
+                  {/* Nome abbonamento */}
+                  <Text style={styles.subscriptionType}>{info.nome}</Text>
+                  
+                  {/* Dettagli specifici per tipo */}
                   <View style={styles.subscriptionDetails}>
-                    {sub.lezioni_rimanenti !== null && (
-                      <View style={styles.detailRow}>
-                        <Ionicons name="fitness-outline" size={18} color={COLORS.primary} />
-                        <Text style={styles.detailText}>
-                          <Text style={styles.detailHighlight}>{sub.lezioni_rimanenti}</Text> lezioni rimanenti
-                        </Text>
+                    {isLezioniType && (
+                      <>
+                        <View style={styles.lezioniBox}>
+                          <Text style={styles.lezioniNumber}>{sub.lezioni_rimanenti}</Text>
+                          <Text style={styles.lezioniLabel}>Lezioni Rimanenti</Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                          <Ionicons name="alert-circle-outline" size={16} color={COLORS.warning} />
+                          <Text style={styles.infoText}>
+                            Validità annuale - scade anche se non consumato
+                          </Text>
+                        </View>
+                      </>
+                    )}
+                    
+                    {isTempoType && (
+                      <View style={styles.tempoBox}>
+                        <Ionicons name="infinite" size={32} color={COLORS.primary} />
+                        <Text style={styles.tempoText}>Lezioni Illimitate</Text>
                       </View>
                     )}
-                    <View style={styles.detailRow}>
-                      <Ionicons name="calendar-outline" size={18} color={COLORS.textSecondary} />
-                      <Text style={styles.detailText}>
-                        Inizio: {formatDate(sub.data_inizio)}
-                      </Text>
-                    </View>
-                    <View style={styles.detailRow}>
-                      <Ionicons name="time-outline" size={18} color={COLORS.textSecondary} />
-                      <Text style={styles.detailText}>
-                        Scadenza: {formatDate(sub.data_scadenza)}
-                      </Text>
+                    
+                    {/* Date */}
+                    <View style={styles.dateContainer}>
+                      <View style={styles.dateRow}>
+                        <View style={styles.dateItem}>
+                          <Text style={styles.dateLabel}>Data Inizio</Text>
+                          <Text style={styles.dateValue}>{formatDate(sub.data_inizio)}</Text>
+                        </View>
+                        <View style={styles.dateItem}>
+                          <Text style={styles.dateLabel}>Data Scadenza</Text>
+                          <Text style={[styles.dateValue, styles.scadenzaValue]}>
+                            {formatDate(sub.data_scadenza)}
+                          </Text>
+                        </View>
+                      </View>
                     </View>
                   </View>
                 </View>
@@ -118,6 +151,7 @@ export default function AbbonamentoScreen() {
               <Text style={styles.emptySubtext}>
                 Contatta Daniele per acquistare un abbonamento
               </Text>
+              <Text style={styles.emptyPhone}>📞 339 50 20 625</Text>
             </View>
           )}
         </View>
@@ -128,30 +162,34 @@ export default function AbbonamentoScreen() {
             <Text style={styles.sectionTitle}>Abbonamenti Scaduti</Text>
             {expiredSubscriptions.map((sub) => {
               const info = ABBONAMENTO_INFO[sub.tipo] || { nome: sub.tipo, prezzo: '' };
+              const isLezioniType = sub.tipo === 'lezioni_8' || sub.tipo === 'lezioni_16';
+              
               return (
                 <View key={sub.id} style={[styles.subscriptionCard, styles.expiredCard]}>
                   <View style={styles.subscriptionHeader}>
                     <View style={[styles.subscriptionBadge, styles.expiredBadge]}>
-                      <Ionicons name="close-circle" size={20} color={COLORS.error} />
-                      <Text style={[styles.subscriptionStatus, styles.expiredStatus]}>Scaduto</Text>
+                      <Ionicons name="close-circle" size={24} color={COLORS.error} />
+                      <Text style={[styles.subscriptionStatus, styles.expiredStatus]}>SCADUTO</Text>
                     </View>
                   </View>
                   <Text style={styles.subscriptionType}>{info.nome}</Text>
                   
                   <View style={styles.subscriptionDetails}>
-                    {sub.lezioni_rimanenti !== null && (
-                      <View style={styles.detailRow}>
-                        <Ionicons name="fitness-outline" size={18} color={COLORS.textSecondary} />
-                        <Text style={styles.detailText}>
-                          {sub.lezioni_rimanenti} lezioni rimanenti
+                    {isLezioniType && sub.lezioni_rimanenti !== null && sub.lezioni_rimanenti > 0 && (
+                      <View style={styles.lezioniPerse}>
+                        <Ionicons name="warning" size={18} color={COLORS.warning} />
+                        <Text style={styles.lezioniPerseText}>
+                          {sub.lezioni_rimanenti} lezioni non utilizzate (perse)
                         </Text>
                       </View>
                     )}
-                    <View style={styles.detailRow}>
-                      <Ionicons name="time-outline" size={18} color={COLORS.error} />
-                      <Text style={[styles.detailText, styles.expiredText]}>
-                        Scaduto: {formatDate(sub.data_scadenza)}
-                      </Text>
+                    <View style={styles.dateRow}>
+                      <View style={styles.dateItem}>
+                        <Text style={styles.dateLabel}>Scaduto il</Text>
+                        <Text style={[styles.dateValue, styles.expiredDateValue]}>
+                          {formatDate(sub.data_scadenza)}
+                        </Text>
+                      </View>
                     </View>
                   </View>
                 </View>
