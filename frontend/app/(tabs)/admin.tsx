@@ -446,12 +446,6 @@ export default function AdminScreen() {
                   <Text style={styles.totalLabel}>Presenze Totali Oggi</Text>
                 </View>
 
-                {/* Lezioni Scalate Card */}
-                <View style={[styles.totalCard, { backgroundColor: COLORS.warning + '20' }]}>
-                  <Text style={[styles.totalNumber, { color: COLORS.warning }]}>{dailyStats.lezioni_scalate}</Text>
-                  <Text style={styles.totalLabel}>Lezioni Scalate (Abb. a Lezioni)</Text>
-                </View>
-
                 {/* Presenze per Lezione */}
                 <Text style={styles.riepilogoSectionTitle}>Dettaglio per Lezione</Text>
                 
@@ -478,6 +472,27 @@ export default function AdminScreen() {
                 ) : (
                   <Text style={styles.noDataText}>Nessuna prenotazione per oggi</Text>
                 )}
+
+                {/* Riepilogo Abbonamenti */}
+                <Text style={styles.riepilogoSectionTitle}>Riepilogo Abbonamenti</Text>
+                
+                <View style={styles.abbonamentoStatsContainer}>
+                  {/* Lezioni Scalate */}
+                  <View style={[styles.abbonamentoStatCard, { backgroundColor: COLORS.warning + '20' }]}>
+                    <Text style={[styles.abbonamentoStatNumber, { color: COLORS.warning }]}>
+                      {dailyStats.lezioni_scalate}
+                    </Text>
+                    <Text style={styles.abbonamentoStatLabel}>Abb. a Lezioni</Text>
+                  </View>
+                  
+                  {/* Abbonamenti a Tempo */}
+                  <View style={[styles.abbonamentoStatCard, { backgroundColor: COLORS.success + '20' }]}>
+                    <Text style={[styles.abbonamentoStatNumber, { color: COLORS.success }]}>
+                      {dailyStats.presenze_abbonamento_tempo || 0}
+                    </Text>
+                    <Text style={styles.abbonamentoStatLabel}>Abb. a Tempo</Text>
+                  </View>
+                </View>
               </>
             ) : (
               <Text style={styles.noDataText}>Caricamento statistiche...</Text>
