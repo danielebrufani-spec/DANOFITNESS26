@@ -1780,11 +1780,11 @@ async def check_expiring_subscriptions():
 
 async def process_completed_lessons():
     """Process lessons that have ended - deduct from subscriptions automatically"""
-    now = datetime.utcnow()
-    today = now.strftime("%Y-%m-%d")
+    now = now_italy()  # Usa orario italiano
+    today = today_italy()
     current_time = now.strftime("%H:%M")
     
-    logger.info(f"[AUTO-SCALE] Checking for completed lessons at {today} {current_time}")
+    logger.info(f"[AUTO-SCALE] Checking for completed lessons at {today} {current_time} (Italy time)")
     
     # Get all bookings for today that haven't been processed yet
     bookings = await db.bookings.find({
