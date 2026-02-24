@@ -495,7 +495,7 @@ export default function AdminScreen() {
                       {dailyStats.lezioni_scalate}
                     </Text>
                     <Text style={styles.abbonamentoStatLabel}>A Lezione</Text>
-                    <Text style={styles.abbonamentoStatSubLabel}>(8/16 lezioni)</Text>
+                    <Text style={styles.abbonamentoStatSubLabel}>(pacchetto)</Text>
                   </View>
                   
                   {/* Abbonamenti a Tempo */}
@@ -504,7 +504,7 @@ export default function AdminScreen() {
                       {dailyStats.presenze_abbonamento_tempo || 0}
                     </Text>
                     <Text style={styles.abbonamentoStatLabel}>A Tempo</Text>
-                    <Text style={styles.abbonamentoStatSubLabel}>(mensile/trim.)</Text>
+                    <Text style={styles.abbonamentoStatSubLabel}>(mensile/trimestrale)</Text>
                   </View>
                 </View>
               </>
