@@ -7,7 +7,6 @@ import {
   Alert,
   ScrollView,
   Image,
-  Switch,
   ActivityIndicator,
   Platform,
 } from 'react-native';
@@ -18,128 +17,11 @@ import { useAuth } from '../../src/context/AuthContext';
 import { COLORS } from '../../src/utils/constants';
 import * as ImagePicker from 'expo-image-picker';
 import { apiService } from '../../src/services/api';
-import { usePushNotifications } from '../../src/hooks/usePushNotifications';
-
-// Utility function to convert base64 to Uint8Array
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-}
 
 export default function ProfiloScreen() {
   const { user, logout, isAdmin, refreshUser } = useAuth();
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
-  
-  // Use the push notifications hook for mobile
-  const { 
-    isSupported: mobileSupported, 
-    isSubscribed: mobileSubscribed, 
-    isLoading: mobileLoading,
-    subscribe: mobileSubscribe,
-    unsubscribe: mobileUnsubscribe 
-  } = usePushNotifications();
-  
-  // Push notification state for web
-  const [webPushSupported, setWebPushSupported] = useState(false);
-  const [webPushEnabled, setWebPushEnabled] = useState(false);
-  const [webPushLoading, setWebPushLoading] = useState(false);
-
-  useEffect(() => {
-    // Check if push notifications are supported on web
-    if (Platform.OS === 'web' && 'serviceWorker' in navigator && 'PushManager' in window) {
-      setWebPushSupported(true);
-      checkWebPushStatus();
-    }
-  }, []);
-
-  const checkWebPushStatus = async () => {
-    try {
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
-      setWebPushEnabled(!!subscription);
-    } catch (error) {
-      console.error('Error checking push status:', error);
-    }
-  };
-
-  const toggleWebPushNotifications = async () => {
-    setWebPushLoading(true);
-    try {
-      if (webPushEnabled) {
-        // Unsubscribe
-        const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.getSubscription();
-        if (subscription) {
-          await subscription.unsubscribe();
-          await apiService.unsubscribePush();
-        }
-        setWebPushEnabled(false);
-      } else {
-        // Subscribe
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-          Alert.alert('Permesso negato', 'Devi permettere le notifiche per riceverle.');
-          setWebPushLoading(false);
-          return;
-        }
-
-        await navigator.serviceWorker.register('/sw.js');
-        const registration = await navigator.serviceWorker.ready;
-        
-        const { data } = await apiService.getVapidPublicKey();
-        const subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(data.publicKey)
-        });
-
-        const subscriptionJSON = subscription.toJSON();
-        await apiService.subscribePush({
-          endpoint: subscriptionJSON.endpoint!,
-          keys: {
-            p256dh: subscriptionJSON.keys!.p256dh,
-            auth: subscriptionJSON.keys!.auth
-          }
-        });
-        
-        setWebPushEnabled(true);
-      }
-    } catch (error) {
-      console.error('Error toggling push:', error);
-    }
-    setWebPushLoading(false);
-  };
-
-  // Toggle for mobile notifications
-  const toggleMobileNotifications = async () => {
-    console.log('[PROFILO] Toggle notifications - subscribed:', mobileSubscribed, 'supported:', mobileSupported);
-    
-    if (!mobileSupported) {
-      Alert.alert(
-        'Non Supportato',
-        'Le notifiche push sono disponibili solo su dispositivi fisici (non emulatore o Expo Go web)'
-      );
-      return;
-    }
-    
-    if (mobileSubscribed) {
-      const success = await mobileUnsubscribe();
-      if (success) {
-        Alert.alert('Notifiche Disattivate', 'Non riceverai più notifiche push.');
-      }
-    } else {
-      const success = await mobileSubscribe();
-      if (success) {
-        Alert.alert('Notifiche Attivate', 'Riceverai notifiche per messaggi e abbonamenti.');
-      }
-    }
-  };
 
   const handleLogout = () => {
     Alert.alert(
