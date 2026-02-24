@@ -102,11 +102,6 @@ export const usePushNotifications = () => {
 
   // Register for Expo Push Notifications (mobile)
   const registerForExpoPushNotifications = async (): Promise<string | null> => {
-    if (!Device.isDevice) {
-      Alert.alert('Errore', 'Le notifiche push funzionano solo su dispositivi fisici');
-      return null;
-    }
-
     // Check existing permission
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
@@ -118,10 +113,7 @@ export const usePushNotifications = () => {
     }
 
     if (finalStatus !== 'granted') {
-      Alert.alert(
-        'Permesso Negato',
-        'Per ricevere notifiche, abilita i permessi nelle impostazioni del telefono'
-      );
+      console.log('[PUSH] Permission not granted');
       return null;
     }
 
@@ -158,10 +150,6 @@ export const usePushNotifications = () => {
       return token;
     } catch (error: any) {
       console.error('[PUSH] Error getting Expo push token:', error);
-      Alert.alert(
-        'Errore Notifiche',
-        `Non è stato possibile attivare le notifiche: ${error.message || 'Errore sconosciuto'}`
-      );
       return null;
     }
   };
