@@ -1,4 +1,5 @@
 <analysis>
+
 <original_problem_statement>
 The user wants to develop a comprehensive booking application for their fitness business, DanoFitness23.
 
@@ -16,11 +17,9 @@ The user wants to develop a comprehensive booking application for their fitness 
     - A chat feature for communications.
     - Only the admin can initiate conversations.
     - Clients can only reply to messages from the admin.
-- **Push Notifications:**
-    - For new chat messages.
-    - For subscription expiry:
-        - 3 days before expiry for time-based subscriptions (monthly, quarterly).
-        - When 2 lessons remain for usage-based subscriptions (e.g., 8 or 16 lessons pack).
+    - **(New)** Allow attaching photos/videos.
+- **Notifications:**
+    - **(Removed)** Push notifications were implemented and then removed at the user's request due to complexity. The user considered email notifications but also abandoned that idea.
 - **Lesson Schedule & Activities:** The user provided a detailed winter schedule with activities (Circuito, Workout Funzionale, Pilates, Yoga), timings, and prices for various packages.
 - **PWA Icon:** The app should have a custom logo icon when added to a phone's home screen.
 - **Booking Logic:** Past lessons should not be bookable. A lesson should remain bookable until 1 hour after its start time.
@@ -31,181 +30,245 @@ The user wants to develop a comprehensive booking application for their fitness 
     - Add a confirmation dialog before any deletion action.
     - For expired users, the home screen should show an alert to contact the admin for renewal.
     - Font sizes need to be adjusted to fit well on mobile screens (Expo Go).
+    - **(New)** Improve Login page design.
+    - **(New)** Improve Chat page design and font sizes.
+    - **(New)** Sort users and subscriptions alphabetically in the admin panel.
+    - **(New)** Create a dedicated Expired Subscriptions tab for the admin.
 </original_problem_statement>
+
 **User's preferred language**: Italiano
 
 **what currently exists?**
-A full-stack Expo (React Native) and FastAPI application that largely fulfills the user's requirements. Key features implemented include:
--   **Full Authentication:** Login/Registration for clients and a pre-configured admin user.
--   **Core Booking System:** A weekly booking calendar where clients can book and cancel lessons.
--   **Subscription Management:** Backend logic and UI for different subscription types (time-based and usage-based).
--   **Admin Panel:** UI for managing users, subscriptions, and viewing bookings.
--   **Chat System:** A one-way communication channel from admin to clients.
--   **Dual Push Notifications:** Implemented for both Web (via Web Push API) and Mobile (via Expo Push Notifications) for chat messages and subscription expiry warnings.
--   **PWA Functionality:** The web app can be added to a phone's home screen with a custom logo.
--   **Admin Daily Stats:** A new Oggi tab in the admin panel shows daily attendance and other key metrics.
+A full-stack Expo/FastAPI application. During this session, significant changes were made:
+- The entire push notification system was implemented, debugged, and then **completely removed** at the user's request.
+- The lesson deduction (scaling) logic was overhauled from a nightly job to a recurring 30-minute job that also runs on server startup to resolve a major point of user confusion.
+- Multiple UI screens were significantly improved: Admin Oggi (Today) page, client Abbonamento (Subscription) page, Chat, and Login.
+- A new feature to attach media (images/videos) to chat messages was started but ran into technical issues and is likely in a broken state.
+- A dedicated Scaduti (Expired) tab was added to the admin panel.
+- The logout functionality is reported to be broken, causing the app to freeze.
 
 **Last working item**:
--   Last item agent was working: The agent was adding confirmation dialogs before any destructive action (like deleting a booking, user, or subscription). The agent had successfully implemented it for cancelling a booking and was about to implement it for the admin panel actions.
--   Status: IN PROGRESS
--   Agent Testing Done: N
--   Which testing method agent to use? manual testing by curl
--   User Testing Done: N
+- Last item agent was working: The agent was attempting to fix a series of bugs reported by the user: incorrect calculations on the admin Oggi page, truncated text on the login page (oppur instead of oppure), and general UI/UX tweaks. The agent pushed backend and frontend fixes for these issues.
+- Status: IN PROGRESS (Fixes were implemented, but require user verification).
+- Agent Testing Done: N
+- Which testing method agent to use? manual testing by curl
+- User Testing Done: N
 
 **All Pending/In progress Issue list**:
--   Issue 1: The agent was in the middle of implementing confirmation popups for deletions and was interrupted. This is the highest priority task to complete. (P0)
+- Issue 1: Logout freezes the app (P0)
+- Issue 2: Incorrect stats on Admin Oggi page (P0)
+- Issue 3: Chat media attachments feature is broken/incomplete (P1)
+- Issue 4: Truncated text and UI glitches on the Login page (P1)
+- Issue 5: User confusion about Preview vs. Deploy environments (P2)
+- Issue 6: Future Expo SDK upgrade required (P3)
 
   Issues Detail:
-  - Issue 1: Finish implementing confirmation dialogs.
-     - Attempted fixes: The agent successfully added a confirmation dialog using  in  for the  function.
+  - Issue 1: Logout freezes the app
+     - Description: User reports that after logging out from the profile screen, the app freezes and does not redirect to the login page. They have to force-close and reopen the app.
+     - Attempted fixes: The agent modified , replacing a  loop with  and later  followed by . The effectiveness of these fixes is unconfirmed.
      - Next debug checklist:
-        1.  Open .
-        2.  Locate the functions responsible for deleting users () and subscriptions ().
-        3.  Wrap the deletion logic inside a  confirmation box, similar to the implementation in .
-        4.  Check if there are other deletion actions, for instance in , and apply the same pattern.
-     - Why fix this issue and what will be achieved with the fix? This is a direct user request to prevent accidental deletions, improving the user experience and data safety.
+        1. Review the  function in .
+        2. Verify the correct navigation method for  to completely reset the navigation stack and go to the root/login page.  should work, but there might be a race condition or state issue.
+        3. Ensure all user-related state (Zustand store) is properly cleared *before* the navigation is attempted.
+        4. Test the logout flow thoroughly in the preview environment.
+     - Why fix this issue and what will be achieved with the fix? This is a critical usability bug that breaks a fundamental user flow.
      - Status: IN PROGRESS
-     - Is recurring issue? N
+     - Is recurring issue? Y
      - Should Test frontend/backend/both after fix? Frontend
      - Blocked on other issue: None
 
-**In progress Task List**:
--   Task 1: Add confirmation dialogs for all deletion actions.
-     - Where to resume: The agent needs to continue the work in  to add alerts for deleting users and subscriptions.
-     - What will be achieved with this? Prevents accidental data loss by requiring user confirmation before deleting items.
+  - Issue 2: Incorrect stats on Admin Oggi page
+     - Description: User reported that the stats on the Oggi page were incorrect, specifically the count of A tempo vs A lezione attendees.
+     - Attempted fixes: The agent modified the  endpoint in  to change the counting logic for users with time-based subscriptions.
+     - Next debug checklist:
+        1. Manually verify the logic in the  endpoint in .
+        2. Create test users with both time and lesson based subscriptions.
+        3. Create bookings for these users for the current day.
+        4. Call the  endpoint and verify that the  and  counts are correct.
+     - Why fix this issue and what will be achieved with the fix? The admin dashboard provides critical business insights; incorrect data makes it useless.
+     - Status: USER VERIFICATION PENDING
+     - Is recurring issue? Y
+     - Should Test frontend/backend/both after fix? Backend
+     - Blocked on other issue: None
+
+  - Issue 3: Chat media attachments feature is broken/incomplete
+     - Description: The agent implemented functionality to attach photos and videos. However, this caused a deployment failure due to the  package not being compatible with web builds. The agent's fix was to remove , effectively disabling video previews and possibly breaking the feature on mobile.
+     - Attempted fixes: Installed  and . Modified  to handle media uploads (as base64 strings). Modified  to add UI and logic for attachments. Then removed  to fix a build error.
+     - Next debug checklist:
+        1. Decide on a stable strategy: either support only images, or correctly implement video support.
+        2. For video, use platform-specific imports () for  or find a cross-platform video player component.
+        3. The backend saves media as a base64 string in the DB, which is highly inefficient for videos. Refactor this to save files to a persistent storage and store only the URL in the database.
+        4. Test the entire flow: selecting an image/video, sending, and viewing it on both admin and client sides.
+     - Why fix this issue and what will be achieved with the fix? It's a requested feature that is currently in a broken, half-implemented state.
      - Status: IN PROGRESS
+     - Is recurring issue? N
+     - Should Test frontend/backend/both after fix? Both
+     - Blocked on other issue: None
+
+  - Issue 4: Truncated text and UI glitches on the Login page
+     - Description: User reported the word oppure was truncated to oppur.
+     - Attempted fixes: The agent checked the code in  and found the full word. They speculated it was a styling or rendering issue and increased the font size, which is unlikely to fix a truncation issue.
+     - Next debug checklist:
+        1. Examine the styles for the oppure text container in . Check for fixed widths, , or flex properties that could cause truncation.
+        2. Ensure the parent containers allow the text to expand as needed.
+        3. Test on different screen sizes to see if it's a responsive layout problem.
+     - Why fix this issue and what will be achieved with the fix? It's a minor but unprofessional-looking UI bug.
+     - Status: USER VERIFICATION PENDING
+     - Is recurring issue? Y
      - Should Test frontend/backend/both after fix? Frontend
+     - Blocked on other issue: None
+
+  - Issue 5: User confusion about Preview vs. Deploy environments
+     - Description: A recurring theme throughout the session was the user not seeing changes in their deployed Expo Go app because the agent was working in the preview environment. The agent repeatedly explained that a DEPLOY is required.
+     - Attempted fixes: Agent provided verbal explanations.
+     - Next debug checklist: This is a communication challenge. The next agent MUST start any interaction about new features by reminding the user that changes will only be visible on Expo Go AFTER they click DEPLOY.
+     - Why fix this issue and what will be achieved with the fix? Prevents significant user frustration and wasted time debugging issues that are simply not deployed yet.
+     - Status: RECURRING
+     - Is recurring issue? Y
+     - Blocked on other issue: None
+
+  - Issue 6: Future Expo SDK upgrade required
+     - Description: The user received a warning that a future version of the Expo Go app (for SDK 55) might not support their current app (built on SDK 54).
+     - Attempted fixes: The agent correctly identified that this is not an immediate issue and advised the user to disable auto-updates for Expo Go as a precaution.
+     - Next debug checklist: No immediate action. This is a future maintenance task.
+     - Why fix this issue and what will be achieved with the fix? Ensures long-term compatibility of the app.
+     - Status: NOT STARTED
+     - Is recurring issue? N
+     - Blocked on other issue: None
+
+**In progress Task List**:
+  - Task 1: Complete and fix the Chat Attachments feature
+     - Where to resume: Review the code in  and . Decide on a stable implementation strategy for media, especially video, and consider moving away from base64 storage for files.
+     - What will be achieved with this? A working, user-requested feature for sending media in chat.
+     - Status: IN PROGRESS
+     - Should Test frontend/backend/both after fix? Both
      - Blocked on something: None
 
 **Upcoming and Future Tasks**
--   **Upcoming Tasks:**
-    -   **(P0) Automatic Deletion of Expired Subscriptions:** Implement a backend process to automatically delete subscriptions once they expire.
-        -   For time-based subscriptions: delete after the expiry date.
-        -   For usage-based subscriptions: delete at midnight when the last lesson is scaled.
-        -   **File to modify:** , likely within the  scheduled job.
-    -   **(P0) Expired Subscription Alert on Home Screen:** Display a prominent message on the client's home screen () if their subscription is expired, instructing them to contact Daniele for renewal.
-    -   **(P1) Answer User's Pending Question:** The user asked: SE FACCIO FORK SESSION POI MI CHIEDE 50 CREDITI PER DEPOLY (If I fork the session, will it ask me for 50 credits to deploy again?). The agent should explain that a forked session is a new project, and deploying it would indeed be a new, separate deployment instance with its own cost.
+    - (P0) Finalize and verify all recent bug fixes (Logout, Admin Stats, Login UI).
+    - (P2) When the time comes, plan and execute the migration from Expo SDK 54 to 55.
 
 **Completed work in this session**
--   List of all completed tasks with file and method name:
-    -   **PWA Icon:** Configured the app to show a custom logo when added to a phone's home screen using a custom  file and updated .
-    -   **Booking Logic Update:** Made lessons unbookable 1 hour after their start time by modifying  in  and adding backend validation in .
-    -   **Expo Push Notifications:** Added support for native mobile notifications by installing  and updating  and  to handle Expo tokens.
-    -   **Schedule Update:** Changed a lesson time by updating the  collection directly in the MongoDB database.
-    -   **Added Coach Names:** Modified  to add a  field to the  model and updated  to display it.
-    -   **Major Booking Data Integrity Fix:** Refactored the backend () to store a copy of lesson details () within each  document. This makes bookings self-contained and prevents data loss if the original lesson is modified or deleted.
-    -   **UI/UX Refinements:**
-        -   Changed status labels from Scaduta to Non prenotabile in  and .
-        -   Improved the booking list display on the Home screen to be chronological and more detailed.
-        -   Removed the booking count from the Prenotazioni Settimanali title in .
-    -   **Admin Daily Summary Page:** Created a new Oggi tab in  with daily statistics, powered by an enhanced  endpoint in .
-    -   **Notification Sound & Bug Fix:** Confirmed notification sounds are active and fixed a bug in  where chat notifications were not being sent to mobile (Expo) users.
-    -   **Global Font Size Reduction:** Systematically reduced font sizes and adjusted padding across all major screens (, , , , etc.) to improve layout on mobile devices.
-
--   Recently completed:
-    -   Global font size reduction across the app (DONE)
-    -   New Admin Daily Summary page (DONE)
-    -   Fix for chat push notifications on mobile (DONE)
-    -   Booking data integrity improvement (DONE)
+- **Confirmation Dialogs:** Added  to all deletion actions across the app (, ).
+- **Lesson Deduction (Scaling) Overhaul:**
+    - Replaced the nightly cron job with a more robust system in .
+    - A new job  now runs every 30 minutes to deduct lessons for past classes.
+    - The same job is triggered on server startup to handle any missed deductions.
+- **UI/UX Enhancements:**
+    - **Admin Oggi Page ():** Completely redesigned to show total attendance, a breakdown per class, and a new section distinguishing between attendees with lesson-based vs. time-based subscriptions.
+    - **Client Abbonamento Page ():** Redesigned to clearly show subscription type, status, start/end dates, remaining lessons, and an annual validity notice.
+    - **Login Page ():** Redesigned for a more welcoming look with a welcome message.
+    - **Chat Page ():** Increased font sizes and improved message bubble styling for better readability.
+    - **Admin Sorting ():** Implemented client-side alphabetical sorting for the users list and subscriptions list.
+- **New Admin Scaduti Tab:** Created a new dedicated tab in  to list all expired subscriptions for easy follow-up, showing user name and expiration date.
+- **Expired Subscription Alerts:**
+    - Added a prominent alert on the client's Home screen () if their subscription is expired.
+    - Added a similar alert on the Abbonamento screen ().
+- **Push Notification System (Implemented and Removed):**
+    - Fully implemented Expo Push Notifications on frontend and backend.
+    - Debugged token registration issues.
+    - Added a toggle in the user profile.
+    - The entire feature was then **removed** from the backend logic and frontend UI (, , ) at the user's request to simplify the app.
 
 **Earlier issues found/mentioned but not fixed**
-   - Issue 1: The  tunnel used by Expo Go for the preview environment is unreliable and frequently fails.
-     - Debug checklist: This appears to be an environment limitation, not a code issue. The established workaround is to use the Web Preview link for development and testing, or to use the deployed version on Expo Go.
-     - Why to solve this issue and what will be achieved with this? Solving it would allow stable testing with Expo Go during the preview/development phase, but it seems outside the agent's control. The next agent should be aware of this and prefer the web preview.
-     - Should Test frontend/backend/both after fix: NA
-     - Is recurring issue? Y
+   - The core issues are captured in the Pending/In progress Issue list above. The main ones are the **logout bug** and the **broken chat attachment feature**.
 
 **Known issue recurrence from previous fork**
--   None.
+  - None noted, but the Preview vs. Deploy confusion is a persistent theme.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Frontend:** React Native, Expo, Expo Router (file-based routing), Zustand (for state management), Axios.
--   **Backend:** Python, FastAPI, Pydantic (for data validation), APScheduler (for cron jobs).
--   **Database:** MongoDB.
--   **Notifications:** Web Push API (for browsers) and Expo Push Notifications (for native mobile).
--   **Deployment:** The user has deployed the app on Emergent, which provides a 24/7 backend and an Expo Go QR code for the frontend. A separate preview URL exists for web development, but it goes to sleep.
+- **Frontend:** React Native, Expo, Expo Router, Zustand, Axios.
+- **Backend:** Python, FastAPI, Pydantic, APScheduler.
+- **Database:** MongoDB.
+- **Key Change:** Push notifications were removed. Chat attachments were attempted.
 
 **key DB schema**
--   : {email, phone_number, name, password_hash, role ('admin'/'client'), profile_picture, expo_push_token}
--   : {day, time, name, activity, coach}
--   : {user_id, type ('lessons'/'time'), start_date, end_date, lessons_remaining}
--   : {user_id, lesson_id, date, status, **lesson_data** (cached lesson info)}
--   : {sender_id, content, timestamp}
--   : {user_id, subscription_object}
--   : {user_id, token}
+- : {email, phone_number, name, password_hash, role ('admin'/'client')}
+- : {day, time, name, activity, coach}
+- : {user_id, type ('lessons'/'time'), start_date, end_date, lessons_remaining}
+- : {user_id, lesson_id, date, status, lesson_data, lezione_scalata (boolean)}
+- : {sender_id, content, timestamp, **media_url (string, base64), media_type (string)**}
+- : (Defunct)
+- : (Defunct)
 
 **changes in tech stack**
--   None.
+-  was added.
+-  was added and then its usage was removed from the code, but it may still be in , causing potential bloat or conflicts.
+- Push notification logic was removed from the stack.
 
 **All files of reference**
--   : Contains all backend logic, API endpoints, database models, and the background scheduler. Has been modified extensively.
--   : The main client dashboard. Frequently modified for UI/UX changes.
--   : The booking page. Frequently modified for UI and logic changes.
--   : The admin dashboard. Modified to add the new Daily Summary tab.
--   : The login screen. Modified to adjust layout and remove text.
--   : Created to inject PWA meta tags into the web build's HTML head, which is the correct way to handle this in Expo web.
+- : Heavily modified for lesson scaling logic, admin stats, and chat attachments.
+- : Heavily modified for UI overhaul, new Scaduti tab, and sorting.
+- : Heavily modified for UI redesign and broken attachment feature.
+- : Heavily modified for UI redesign.
+- : UI redesign.
+- : Added expiry alert, removed push notification logic.
+- : Removed push notification toggle.
+- : Modified to fix the (still broken) logout flow.
+- : Most logic removed or commented out.
+- : Modified to add/remove push notification settings.
+- : Types updated for new API responses.
 
 **Areas that need refactoring**:
--   None identified. The agent performed a significant and positive refactor by making booking documents self-contained.
+- **Chat Attachments:** The backend implementation of storing media as base64 strings in MongoDB is not scalable and should be refactored to use file storage (like an S3 bucket or a local file server) and only store the URL.
+- ** hook:** This file and related logic are now mostly dead code after the feature was removed. It should be cleaned up or fully removed to avoid confusion.
 
 **key api endpoints**
--    (POST): Login
--    (POST): Register
--    (GET): Get weekly lessons
--    (POST): Create a booking
--    (DELETE): Cancel a booking
--    (GET): Get user's bookings
--    (GET): Get daily statistics for the admin panel
--    (POST): Save web push subscription
--    (POST): Save Expo push token
+-  (GET): Logic was heavily modified.
+-  (POST): Modified to accept  and .
+-  (POST): Modified to accept  and .
 
 **Critical Info for New Agent**
--   **Deploy vs. Preview:** The user has a paid Deploy instance and a free Preview.
-    -   The **Deployed app** is accessible **only via Expo Go** by scanning the QR code. Its backend is active 24/7. To update it, the user must click Deploy again.
-    -   The **Preview app** has a web URL. It's used for development and goes to sleep. Changes are visible here after a service restart.
--   **Booking Data Integrity:** A crucial change was made to store  directly inside each  document. This prevents issues where bookings display incorrect information if the main  collection changes.
--   **Environment Issues:** The development environment's  tunnel for Expo Go is unstable. It's best to rely on the web preview for development feedback.
--   **User's Primary Goal:** The user is focused on getting a polished, production-ready app. They are very attentive to UI details, especially on the mobile (Expo Go) version.
+- **PREVIEW vs. DEPLOY is the #1 source of user confusion.** The user tests on the deployed Expo Go app. You work in the preview environment. You **MUST** tell the user to **DEPLOY** their app and **fully restart** Expo Go on their phone to see your changes. Do not assume they know this.
+- **Push notifications are GONE.** The user found them too complicated and requested their removal. Do not try to re-implement them. The user briefly considered emails but also abandoned that. For now, there are no notifications.
+- The **logout bug** is a top priority. The user is very frustrated by it.
+- The **chat attachment feature** was started but is broken. It caused build failures and was patched by removing video functionality. The entire feature needs to be re-evaluated and fixed properly or removed.
 
 **documents created in this job**
--   None.
+- None.
 
-**Last 10 User Messages and any pending HUMAN messages**
-10.  - User correctly understands why the scaled lessons count is zero. (Resolved)
-9.   - User requests a check on notifications and wants sound. (Completed)
-8.   - User asks for a final pass on reducing all font sizes. (Completed)
-7.   - User asks how to disable one of their two deployed apps to avoid double charges. (Resolved, agent provided instructions)
-6.   - User requests a confirmation dialog for deletions. (In Progress)
-5.   - User asking for a status update. (Resolved)
-4.   - User requests auto-deletion of expired subscriptions and an alert on the home screen. (Not Started)
-3.   - User is encouraging the agent to continue.
-2.   - User asks if forking will incur another deployment cost. (PENDING - Needs Answer)
-1.   - User asking about home screen shortcuts for Expo Go app. (Resolved)
+**Last 10 User Messages and any pending HUMAN messages** 
+10.  - User is frustrated that the app doesn't auto-update on Expo Go without re-scanning the QR code. (Unresolved core confusion).
+9.  - User is worried about the upcoming Expo SDK update. (Agent reassured them it's not an immediate issue).
+8.  - User reports the critical logout bug where the app freezes. (In Progress).
+7.  - User questions why the lessons deducted count is 0, showing a misunderstanding of what the stat represents (it's a today count). (Unresolved confusion).
+6.  - User reports push notifications are not working and the alert for Carla's 2 remaining lessons didn't arrive. This led to the decision to remove notifications entirely. (Resolved by feature removal).
+5.  - User reiterates the critical logout and notification bugs. (In Progress).
+4.  - User is trying to follow agent's advice to disable auto-updates for Expo Go but can't find the setting. (Resolved by agent providing instructions).
+3.  - User is worried that upgrading the app's SDK version is difficult. (Resolved by agent reassurance).
+2.  - User reports the UI bug on the login page and other missing details. (In Progress).
+1.  - User reports the incorrect calculation on the Admin Oggi page. (In Progress).
 
 **Project Health Check:**
--   **Broken:** The Expo Go preview via the  tunnel is unreliable. This is an environment issue.
--   **Mocked:** None.
+- **Broken:**
+  - Logout functionality.
+  - Chat media attachments feature.
+- **Mocked:**
+  - None.
 
 **3rd Party Integrations**
--   None specified.
+- None.
 
 **Testing status**
--   Testing agent used after significant changes: NO
--   Troubleshoot agent used after agent stuck in loop: NO
--   Test files created: []
--   Known regressions: None.
+- Testing agent used after significant changes: NO
+- Troubleshoot agent used after agent stuck in loop: NO
+- Test files created: []
+- Known regressions:
+  - Logout functionality is broken.
+  - Video playback in chat was implicitly removed to fix a build error.
 
 **Credentials to test flow:**
--   **Admin Email:** 
--   **Admin Password:** 
--   Clients can be created via the registration screen.
+- **Admin Email:** 
+- **Admin Password:** 
+- Clients can be created via the registration screen.
 
 **What agent forgot to execute**
-- The agent was interrupted while implementing the confirmation dialogs and did not finish applying the change to all relevant files (, etc.).
-- The agent did not start the task of auto-deleting expired subscriptions.
-- The agent did not answer the user's question about whether forking a session would lead to a new deployment cost.
+- The agent did not successfully resolve the logout bug despite multiple attempts.
+- The agent left the chat attachment feature in an incomplete and broken state after hitting a build issue, creating a new problem.
+- The agent did not fully resolve the user's confusion around the lessons deducted statistic, which is a recurring communication issue.
+- The agent implemented multiple fixes (for admin stats, login UI) but did not guide the user to test and verify them, leading to the user reporting them again.
 
 </analysis>
