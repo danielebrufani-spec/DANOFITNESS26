@@ -1805,10 +1805,17 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   abbonamentoStatLabel: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
+    fontSize: 14,
+    color: COLORS.text,
     marginTop: 4,
     textAlign: 'center',
+    fontWeight: '600',
+  },
+  abbonamentoStatSubLabel: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginTop: 2,
   },
   scalaLezioniButton: {
     backgroundColor: COLORS.success,
