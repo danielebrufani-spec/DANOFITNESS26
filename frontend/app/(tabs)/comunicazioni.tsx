@@ -758,4 +758,131 @@ const styles = StyleSheet.create({
   sendButtonDisabled: {
     opacity: 0.5,
   },
+  // Attachment styles
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  attachButton: {
+    padding: 8,
+  },
+  attachmentPreview: {
+    marginBottom: 12,
+    position: 'relative',
+  },
+  attachmentImage: {
+    width: '100%',
+    height: 150,
+    borderRadius: 12,
+  },
+  videoPlaceholder: {
+    width: '100%',
+    height: 100,
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+  },
+  videoText: {
+    color: COLORS.text,
+    fontSize: 14,
+  },
+  removeAttachment: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+  },
+  // Media Picker Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  mediaPickerModal: {
+    backgroundColor: COLORS.card,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  mediaPickerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  mediaOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  mediaOptionText: {
+    fontSize: 17,
+    color: COLORS.text,
+  },
+  cancelMediaButton: {
+    marginTop: 20,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  cancelMediaText: {
+    fontSize: 17,
+    color: COLORS.error,
+    fontWeight: '600',
+  },
+  // Full Screen Media
+  fullScreenModal: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeFullScreen: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    padding: 10,
+  },
+  fullScreenImage: {
+    width: '100%',
+    height: '80%',
+  },
+  fullScreenVideo: {
+    width: '100%',
+    height: '80%',
+  },
+  // Media in messages
+  messageMedia: {
+    marginTop: 12,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  messageImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+  },
+  messageVideoContainer: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playButton: {
+    position: 'absolute',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 30,
+    padding: 12,
+  },
 });
