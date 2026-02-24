@@ -89,6 +89,8 @@ export interface Reply {
   user_cognome: string;
   user_profile_image?: string;
   content: string;
+  media_url?: string;
+  media_type?: 'image' | 'video';
   created_at: string;
 }
 
@@ -99,6 +101,8 @@ export interface Message {
   sender_cognome: string;
   sender_profile_image?: string;
   content: string;
+  media_url?: string;
+  media_type?: 'image' | 'video';
   created_at: string;
   replies: Reply[];
   is_admin_message: boolean;
@@ -110,6 +114,7 @@ export interface DailyStats {
   prenotazioni_per_lezione: { [key: string]: number };
   abbonamenti_scaduti: number;
   lezioni_scalate: number;
+  presenze_abbonamento_tempo: number;
 }
 
 // API functions
