@@ -69,6 +69,26 @@ export default function AbbonamentoScreen() {
       >
         <Text style={styles.title}>Il Mio Abbonamento</Text>
 
+        {/* Alert Abbonamento Scaduto */}
+        {activeSubscriptions.length === 0 && (
+          <View style={styles.expiredAlert}>
+            <Ionicons name="warning" size={28} color="#fff" />
+            <View style={styles.expiredAlertContent}>
+              <Text style={styles.expiredAlertTitle}>Abbonamento Scaduto!</Text>
+              <Text style={styles.expiredAlertText}>
+                Per continuare a prenotare le lezioni, contatta Daniele per rinnovare il tuo abbonamento.
+              </Text>
+              <TouchableOpacity 
+                style={styles.expiredAlertButton}
+                onPress={() => Linking.openURL('tel:+393395020625')}
+              >
+                <Ionicons name="call" size={20} color="#fff" />
+                <Text style={styles.expiredAlertButtonText}>Chiama 339 50 20 625</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
         {/* Active Subscriptions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Abbonamenti Attivi</Text>
