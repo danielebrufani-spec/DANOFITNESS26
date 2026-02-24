@@ -278,8 +278,9 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     color: COLORS.textSecondary,
-    fontSize: 14,
-    marginHorizontal: 16,
+    fontSize: 16,
+    marginHorizontal: 20,
+    fontWeight: '500',
   },
   registerButton: {
     flexDirection: 'row',
