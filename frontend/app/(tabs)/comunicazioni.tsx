@@ -900,6 +900,27 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '80%',
   },
+  videoFullScreenPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+  },
+  videoFullScreenText: {
+    color: COLORS.text,
+    fontSize: 18,
+  },
+  openVideoButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  openVideoButtonText: {
+    color: COLORS.text,
+    fontSize: 16,
+    fontWeight: '600',
+  },
   // Media in messages
   messageMedia: {
     marginTop: 12,
