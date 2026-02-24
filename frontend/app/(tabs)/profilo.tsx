@@ -141,18 +141,23 @@ export default function ProfiloScreen() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      // Use dismissAll to clear the navigation stack, then go to login
-      while (router.canGoBack()) {
-        router.back();
-      }
-      router.replace('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-      router.replace('/login');
-    }
+  const handleLogout = () => {
+    Alert.alert(
+      'Esci',
+      'Sei sicuro di voler uscire?',
+      [
+        { text: 'Annulla', style: 'cancel' },
+        {
+          text: 'Esci',
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+            router.dismissAll();
+            router.replace('/login');
+          }
+        }
+      ]
+    );
   };
 
   const pickImage = async () => {
