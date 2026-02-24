@@ -142,8 +142,17 @@ export default function ProfiloScreen() {
   };
 
   const handleLogout = async () => {
-    await logout();
-    router.replace('/');
+    try {
+      await logout();
+      // Use dismissAll to clear the navigation stack, then go to login
+      while (router.canGoBack()) {
+        router.back();
+      }
+      router.replace('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      router.replace('/login');
+    }
   };
 
   const pickImage = async () => {
