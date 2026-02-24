@@ -398,11 +398,6 @@ export default function AdminScreen() {
           <Text style={[styles.tabText, activeTab === 'abbonamenti' && styles.tabTextActive]}>
             Abbon.
           </Text>
-          {expiredSubscriptions.length > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{expiredSubscriptions.length}</Text>
-            </View>
-          )}
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'utenti' && styles.tabActive]}
@@ -411,6 +406,19 @@ export default function AdminScreen() {
           <Text style={[styles.tabText, activeTab === 'utenti' && styles.tabTextActive]}>
             Utenti
           </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'scaduti' && styles.tabActive]}
+          onPress={() => setActiveTab('scaduti')}
+        >
+          <Text style={[styles.tabText, activeTab === 'scaduti' && styles.tabTextActive]}>
+            Scaduti
+          </Text>
+          {expiredSubscriptions.length > 0 && (
+            <View style={[styles.badge, { backgroundColor: COLORS.error }]}>
+              <Text style={styles.badgeText}>{expiredSubscriptions.length}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
