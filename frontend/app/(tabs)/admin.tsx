@@ -1920,4 +1920,100 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.text,
   },
+  // Scaduti Tab Styles
+  scadutiTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: COLORS.error,
+    marginBottom: 4,
+  },
+  scadutiSubtitle: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginBottom: 20,
+  },
+  emptyScaduti: {
+    alignItems: 'center',
+    paddingVertical: 60,
+    gap: 12,
+  },
+  emptyScadutiText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.success,
+  },
+  emptyScadutiSubtext: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  scadutiCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.error,
+  },
+  scadutiCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  scadutiUserInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  scadutiUserName: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  scadutiTipo: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+  },
+  scadutiBadge: {
+    backgroundColor: COLORS.error + '20',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  scadutiBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.error,
+  },
+  scadutiDetails: {
+    gap: 8,
+    marginBottom: 12,
+  },
+  scadutiDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  scadutiDetailLabel: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  scadutiDetailValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  scadutiAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  scadutiActionText: {
+    fontSize: 13,
+    color: COLORS.primary,
+    fontWeight: '500',
+  },
 });
