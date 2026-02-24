@@ -114,17 +114,20 @@ export default function HomeScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
+        {/* Header con Logo */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>Ciao,</Text>
-            <Text style={styles.userName}>{user?.nome} {user?.cognome}</Text>
-          </View>
+          <View style={{ flex: 1 }} />
           <Image 
             source={require('../../assets/images/logo.jpg')} 
             style={styles.logoImage}
             resizeMode="contain"
           />
+        </View>
+
+        {/* Messaggio di Benvenuto Grande */}
+        <View style={styles.welcomeContainer}>
+          <Text style={styles.welcomeGreeting}>Ciao {user?.nome}!</Text>
+          <Text style={styles.welcomeQuote}>"Signore Pietà, Cristo pietà"</Text>
         </View>
 
         {/* Alert per Abbonamento Scaduto - Solo per clienti senza abbonamento */}
