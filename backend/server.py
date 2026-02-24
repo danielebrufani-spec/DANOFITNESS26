@@ -196,6 +196,8 @@ class MessageResponse(BaseModel):
     sender_cognome: str
     sender_profile_image: Optional[str] = None
     content: str
+    media_url: Optional[str] = None
+    media_type: Optional[str] = None
     created_at: datetime
     replies: List[ReplyResponse] = []
     is_admin_message: bool = True
