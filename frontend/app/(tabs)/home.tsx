@@ -360,23 +360,33 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    marginBottom: 24,
-  },
-  greeting: {
-    fontSize: 10,
-    color: COLORS.textSecondary,
-  },
-  userName: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: COLORS.text,
+    marginBottom: 8,
   },
   logoImage: {
     width: 50,
     height: 50,
     borderRadius: 25,
+  },
+  // Messaggio di Benvenuto Grande
+  welcomeContainer: {
+    alignItems: 'center',
+    marginBottom: 28,
+    paddingVertical: 16,
+  },
+  welcomeGreeting: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  welcomeQuote: {
+    fontSize: 18,
+    fontStyle: 'italic',
+    color: COLORS.textSecondary,
+    textAlign: 'center',
   },
   logoContainer: {
     width: 40,
