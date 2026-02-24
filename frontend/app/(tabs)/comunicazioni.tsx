@@ -383,27 +383,137 @@ export default function ComunicazioniScreen() {
         {/* New Message Input (Admin Only) */}
         {isAdmin && (
           <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Scrivi una comunicazione..."
-              placeholderTextColor={COLORS.textSecondary}
-              value={newMessage}
-              onChangeText={setNewMessage}
-              multiline
-            />
-            <TouchableOpacity 
-              style={[styles.sendButton, !newMessage.trim() && styles.sendButtonDisabled]}
-              onPress={handleSendMessage}
-              disabled={!newMessage.trim() || sending}
-            >
-              {sending ? (
-                <ActivityIndicator size="small" color={COLORS.text} />
-              ) : (
-                <Ionicons name="send" size={24} color={COLORS.text} />
-              )}
-            </TouchableOpacity>
+            {/* Attachment Preview */}
+            {attachment && (
+              <View style={styles.attachmentPreview}>
+                {attachment.type === 'image' ? (
+                  <Image source={{ uri: attachment.uri }} style={styles.attachmentImage} />
+                ) : (
+                  <View style={styles.videoPlaceholder}>
+                    <Ionicons name="videocam" size={24} color={COLORS.text} />
+                    <Text style={styles.videoText}>Video</Text>
+                  </View>
+                )}
+                <TouchableOpacity 
+                  style={styles.removeAttachment}
+                  onPress={() => removeAttachment(false)}
+                >
+                  <Ionicons name="close-circle" size={24} color={COLORS.error} />
+                </TouchableOpacity>
+              </View>
+            )}
+            
+            <View style={styles.inputRow}>
+              <TouchableOpacity 
+                style={styles.attachButton}
+                onPress={() => openMediaPicker(false)}
+              >
+                <Ionicons name="attach" size={26} color={COLORS.primary} />
+              </TouchableOpacity>
+              
+              <TextInput
+                style={styles.input}
+                placeholder="Scrivi una comunicazione..."
+                placeholderTextColor={COLORS.textSecondary}
+                value={newMessage}
+                onChangeText={setNewMessage}
+                multiline
+              />
+              <TouchableOpacity 
+                style={[styles.sendButton, (!newMessage.trim() && !attachment) && styles.sendButtonDisabled]}
+                onPress={handleSendMessage}
+                disabled={(!newMessage.trim() && !attachment) || sending}
+              >
+                {sending ? (
+                  <ActivityIndicator size="small" color={COLORS.text} />
+                ) : (
+                  <Ionicons name="send" size={24} color={COLORS.text} />
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         )}
+
+        {/* Media Picker Modal */}
+        <Modal
+          visible={showMediaPicker}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowMediaPicker(false)}
+        >
+          <TouchableOpacity 
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowMediaPicker(false)}
+          >
+            <View style={styles.mediaPickerModal}>
+              <Text style={styles.mediaPickerTitle}>Allega Media</Text>
+              
+              <TouchableOpacity 
+                style={styles.mediaOption}
+                onPress={() => takePhoto(isReplyMedia)}
+              >
+                <Ionicons name="camera" size={28} color={COLORS.primary} />
+                <Text style={styles.mediaOptionText}>Scatta Foto</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.mediaOption}
+                onPress={() => pickImage(isReplyMedia)}
+              >
+                <Ionicons name="image" size={28} color={COLORS.success} />
+                <Text style={styles.mediaOptionText}>Scegli dalla Galleria</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.mediaOption}
+                onPress={() => pickVideo(isReplyMedia)}
+              >
+                <Ionicons name="videocam" size={28} color={COLORS.warning} />
+                <Text style={styles.mediaOptionText}>Scegli Video</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.cancelMediaButton}
+                onPress={() => setShowMediaPicker(false)}
+              >
+                <Text style={styles.cancelMediaText}>Annulla</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+
+        {/* Full Screen Media Viewer */}
+        <Modal
+          visible={!!fullScreenMedia}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setFullScreenMedia(null)}
+        >
+          <View style={styles.fullScreenModal}>
+            <TouchableOpacity 
+              style={styles.closeFullScreen}
+              onPress={() => setFullScreenMedia(null)}
+            >
+              <Ionicons name="close" size={32} color={COLORS.text} />
+            </TouchableOpacity>
+            {fullScreenMedia?.type === 'image' ? (
+              <Image 
+                source={{ uri: fullScreenMedia.uri }} 
+                style={styles.fullScreenImage}
+                resizeMode="contain"
+              />
+            ) : fullScreenMedia?.type === 'video' ? (
+              <Video
+                source={{ uri: fullScreenMedia.uri }}
+                style={styles.fullScreenVideo}
+                useNativeControls
+                resizeMode={ResizeMode.CONTAIN}
+                shouldPlay
+              />
+            ) : null}
+          </View>
+        </Modal>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
