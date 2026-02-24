@@ -29,7 +29,7 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ.get('DB_NAME', 'danofitness')]
 
 # JWT Config
-SECRET_KEY = os.environ.get('JWT_SECRET', 'danofitness_secret_key_2025')
+SECRET_KEY = os.environ.get('JWT_SECRET', 'danofitness_secret_key_change_in_production_2025')
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS = 30
 
