@@ -92,27 +92,39 @@ export default function AdminScreen() {
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
 
   // Filtered users based on search
-  const filteredUsers = users.filter(user => {
-    if (!userSearchQuery.trim()) return true;
-    const searchLower = userSearchQuery.toLowerCase();
-    return (
-      user.nome?.toLowerCase().includes(searchLower) ||
-      user.cognome?.toLowerCase().includes(searchLower) ||
-      user.email?.toLowerCase().includes(searchLower) ||
-      user.telefono?.includes(searchLower)
-    );
-  });
+  const filteredUsers = users
+    .filter(user => {
+      if (!userSearchQuery.trim()) return true;
+      const searchLower = userSearchQuery.toLowerCase();
+      return (
+        user.nome?.toLowerCase().includes(searchLower) ||
+        user.cognome?.toLowerCase().includes(searchLower) ||
+        user.email?.toLowerCase().includes(searchLower) ||
+        user.telefono?.includes(searchLower)
+      );
+    })
+    .sort((a, b) => {
+      const nameA = `${a.cognome || ''} ${a.nome || ''}`.toLowerCase();
+      const nameB = `${b.cognome || ''} ${b.nome || ''}`.toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
 
   // Filtered users for subscription modal
-  const filteredUsersForSubscription = users.filter(u => {
-    if (u.role === 'admin') return false;
-    if (!subscriptionUserSearch.trim()) return true;
-    const searchLower = subscriptionUserSearch.toLowerCase();
-    return (
-      u.nome?.toLowerCase().includes(searchLower) ||
-      u.cognome?.toLowerCase().includes(searchLower)
-    );
-  });
+  const filteredUsersForSubscription = users
+    .filter(u => {
+      if (u.role === 'admin') return false;
+      if (!subscriptionUserSearch.trim()) return true;
+      const searchLower = subscriptionUserSearch.toLowerCase();
+      return (
+        u.nome?.toLowerCase().includes(searchLower) ||
+        u.cognome?.toLowerCase().includes(searchLower)
+      );
+    })
+    .sort((a, b) => {
+      const nameA = `${a.cognome || ''} ${a.nome || ''}`.toLowerCase();
+      const nameB = `${b.cognome || ''} ${b.nome || ''}`.toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
 
   const loadData = async () => {
     try {
