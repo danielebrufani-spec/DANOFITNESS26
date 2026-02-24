@@ -51,8 +51,8 @@ export const usePushNotifications = () => {
         checkWebSubscription();
       }
     } else {
-      // Mobile: Always supported on real devices
-      setIsSupported(Device.isDevice);
+      // Mobile: Always assume supported on Expo Go
+      setIsSupported(true);
       checkMobilePermission();
     }
 
