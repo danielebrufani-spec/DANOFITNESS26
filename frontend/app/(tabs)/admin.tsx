@@ -486,15 +486,16 @@ export default function AdminScreen() {
                 )}
 
                 {/* Riepilogo Abbonamenti */}
-                <Text style={styles.riepilogoSectionTitle}>Riepilogo Abbonamenti</Text>
+                <Text style={styles.riepilogoSectionTitle}>Lezioni Scalate</Text>
                 
                 <View style={styles.abbonamentoStatsContainer}>
-                  {/* Lezioni Scalate */}
+                  {/* Abbonamenti a Lezioni */}
                   <View style={[styles.abbonamentoStatCard, { backgroundColor: COLORS.warning + '20' }]}>
                     <Text style={[styles.abbonamentoStatNumber, { color: COLORS.warning }]}>
                       {dailyStats.lezioni_scalate}
                     </Text>
-                    <Text style={styles.abbonamentoStatLabel}>Abb. a Lezioni</Text>
+                    <Text style={styles.abbonamentoStatLabel}>A Lezione</Text>
+                    <Text style={styles.abbonamentoStatSubLabel}>(8/16 lezioni)</Text>
                   </View>
                   
                   {/* Abbonamenti a Tempo */}
@@ -502,7 +503,8 @@ export default function AdminScreen() {
                     <Text style={[styles.abbonamentoStatNumber, { color: COLORS.success }]}>
                       {dailyStats.presenze_abbonamento_tempo || 0}
                     </Text>
-                    <Text style={styles.abbonamentoStatLabel}>Abb. a Tempo</Text>
+                    <Text style={styles.abbonamentoStatLabel}>A Tempo</Text>
+                    <Text style={styles.abbonamentoStatSubLabel}>(mensile/trim.)</Text>
                   </View>
                 </View>
               </>
