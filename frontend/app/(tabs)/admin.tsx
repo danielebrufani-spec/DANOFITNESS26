@@ -1573,6 +1573,17 @@ const styles = StyleSheet.create({
   removeButton: {
     padding: 4,
   },
+  scadutoBadgeSmall: {
+    backgroundColor: COLORS.error,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  scadutoBadgeText: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
   noParticipants: {
     fontSize: 10,
     color: COLORS.textSecondary,
