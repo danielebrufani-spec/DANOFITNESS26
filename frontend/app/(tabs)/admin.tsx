@@ -1053,7 +1053,7 @@ export default function AdminScreen() {
         onRequestClose={() => setShowEditSubscription(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { maxHeight: '85%' }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Modifica Abbonamento</Text>
               <TouchableOpacity onPress={() => setShowEditSubscription(false)}>
@@ -1061,87 +1061,156 @@ export default function AdminScreen() {
               </TouchableOpacity>
             </View>
 
-            {editingSubscription && (
-              <>
-                <View style={styles.editUserInfo}>
-                  <Text style={styles.editUserName}>
-                    {editingSubscription.user_nome} {editingSubscription.user_cognome}
-                  </Text>
-                  <Text style={styles.editSubscriptionType}>
-                    {ABBONAMENTO_INFO[editingSubscription.tipo]?.nome || editingSubscription.tipo}
-                  </Text>
-                </View>
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              {editingSubscription && (
+                <>
+                  {/* Nome Cliente */}
+                  <View style={styles.editUserInfo}>
+                    <Text style={styles.editUserName}>
+                      {editingSubscription.user_nome} {editingSubscription.user_cognome}
+                    </Text>
+                  </View>
 
-                {editingSubscription.lezioni_rimanenti !== null && (
-                  <>
-                    <Text style={styles.modalLabel}>Lezioni Rimanenti</Text>
-                    <View style={styles.inputContainer}>
-                      <TextInput
-                        style={styles.modalInput}
-                        placeholder="Numero lezioni"
-                        placeholderTextColor={COLORS.textSecondary}
-                        value={editLessons}
-                        onChangeText={setEditLessons}
-                        keyboardType="number-pad"
-                      />
-                    </View>
-                    <View style={styles.quickButtons}>
-                      <TouchableOpacity 
-                        style={styles.quickButton}
-                        onPress={() => setEditLessons(Math.max(0, parseInt(editLessons || '0') - 1).toString())}
-                      >
-                        <Ionicons name="remove" size={20} color={COLORS.text} />
-                      </TouchableOpacity>
-                      <TouchableOpacity 
-                        style={styles.quickButton}
-                        onPress={() => setEditLessons((parseInt(editLessons || '0') + 1).toString())}
-                      >
-                        <Ionicons name="add" size={20} color={COLORS.text} />
-                      </TouchableOpacity>
-                    </View>
-                  </>
-                )}
+                  {/* Selezione Tipo Abbonamento */}
+                  <Text style={styles.modalLabel}>Tipo Abbonamento</Text>
+                  <View style={styles.typeSelector}>
+                    <TouchableOpacity
+                      style={[styles.typeOption, editType === 'lezioni_8' && styles.typeOptionSelected]}
+                      onPress={() => {
+                        setEditType('lezioni_8');
+                        if (!editLessons || editType !== 'lezioni_8') setEditLessons('8');
+                      }}
+                    >
+                      <Text style={[styles.typeOptionText, editType === 'lezioni_8' && styles.typeOptionTextSelected]}>8 Lezioni</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.typeOption, editType === 'lezioni_16' && styles.typeOptionSelected]}
+                      onPress={() => {
+                        setEditType('lezioni_16');
+                        if (!editLessons || editType !== 'lezioni_16') setEditLessons('16');
+                      }}
+                    >
+                      <Text style={[styles.typeOptionText, editType === 'lezioni_16' && styles.typeOptionTextSelected]}>16 Lezioni</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.typeOption, editType === 'mensile' && styles.typeOptionSelected]}
+                      onPress={() => setEditType('mensile')}
+                    >
+                      <Text style={[styles.typeOptionText, editType === 'mensile' && styles.typeOptionTextSelected]}>Mensile</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.typeOption, editType === 'trimestrale' && styles.typeOptionSelected]}
+                      onPress={() => setEditType('trimestrale')}
+                    >
+                      <Text style={[styles.typeOptionText, editType === 'trimestrale' && styles.typeOptionTextSelected]}>Trimestrale</Text>
+                    </TouchableOpacity>
+                  </View>
 
-                <Text style={styles.modalLabel}>Data Scadenza (AAAA-MM-GG)</Text>
-                <View style={styles.inputContainer}>
-                  <TextInput
-                    style={styles.modalInput}
-                    placeholder="2025-12-31"
-                    placeholderTextColor={COLORS.textSecondary}
-                    value={editExpiry}
-                    onChangeText={setEditExpiry}
-                  />
-                </View>
+                  {/* Lezioni Rimanenti - solo per abbonamenti a lezioni */}
+                  {(editType === 'lezioni_8' || editType === 'lezioni_16') && (
+                    <>
+                      <Text style={styles.modalLabel}>Lezioni Rimanenti</Text>
+                      <View style={styles.lessonsEditor}>
+                        <TouchableOpacity 
+                          style={styles.lessonBtn}
+                          onPress={() => setEditLessons(Math.max(0, parseInt(editLessons || '0') - 1).toString())}
+                        >
+                          <Ionicons name="remove" size={28} color={COLORS.text} />
+                        </TouchableOpacity>
+                        <TextInput
+                          style={styles.lessonsInput}
+                          value={editLessons}
+                          onChangeText={setEditLessons}
+                          keyboardType="number-pad"
+                          textAlign="center"
+                        />
+                        <TouchableOpacity 
+                          style={styles.lessonBtn}
+                          onPress={() => setEditLessons((parseInt(editLessons || '0') + 1).toString())}
+                        >
+                          <Ionicons name="add" size={28} color={COLORS.text} />
+                        </TouchableOpacity>
+                      </View>
+                    </>
+                  )}
 
-                <View style={styles.modalActions}>
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.deleteButton]}
-                    onPress={() => {
-                      setShowEditSubscription(false);
-                      handleDeleteSubscription(editingSubscription.id);
-                    }}
-                  >
-                    <Ionicons name="trash-outline" size={20} color={COLORS.text} />
-                    <Text style={styles.modalButtonText}>Elimina</Text>
-                  </TouchableOpacity>
+                  {/* Data Scadenza */}
+                  <Text style={styles.modalLabel}>Data Scadenza</Text>
+                  <View style={styles.inputContainer}>
+                    <TextInput
+                      style={styles.modalInput}
+                      placeholder="AAAA-MM-GG"
+                      placeholderTextColor={COLORS.textSecondary}
+                      value={editExpiry}
+                      onChangeText={setEditExpiry}
+                    />
+                  </View>
                   
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.saveButton, savingEdit && styles.modalButtonDisabled]}
-                    onPress={handleSaveEdit}
-                    disabled={savingEdit}
-                  >
-                    {savingEdit ? (
-                      <ActivityIndicator color={COLORS.text} />
-                    ) : (
-                      <>
-                        <Ionicons name="checkmark" size={20} color={COLORS.text} />
-                        <Text style={styles.modalButtonText}>Salva</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
+                  {/* Quick date buttons */}
+                  <View style={styles.quickDateButtons}>
+                    <TouchableOpacity 
+                      style={styles.quickDateBtn}
+                      onPress={() => {
+                        const d = new Date();
+                        d.setMonth(d.getMonth() + 1);
+                        setEditExpiry(d.toISOString().split('T')[0]);
+                      }}
+                    >
+                      <Text style={styles.quickDateBtnText}>+1 Mese</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={styles.quickDateBtn}
+                      onPress={() => {
+                        const d = new Date();
+                        d.setMonth(d.getMonth() + 3);
+                        setEditExpiry(d.toISOString().split('T')[0]);
+                      }}
+                    >
+                      <Text style={styles.quickDateBtnText}>+3 Mesi</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={styles.quickDateBtn}
+                      onPress={() => {
+                        const d = new Date();
+                        d.setFullYear(d.getFullYear() + 1);
+                        setEditExpiry(d.toISOString().split('T')[0]);
+                      }}
+                    >
+                      <Text style={styles.quickDateBtnText}>+1 Anno</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Pulsanti Azioni */}
+                  <View style={styles.modalActionsVertical}>
+                    <TouchableOpacity
+                      style={[styles.modalButtonLarge, styles.saveButtonLarge, savingEdit && styles.modalButtonDisabled]}
+                      onPress={handleSaveEdit}
+                      disabled={savingEdit}
+                    >
+                      {savingEdit ? (
+                        <ActivityIndicator color={COLORS.text} />
+                      ) : (
+                        <>
+                          <Ionicons name="checkmark-circle" size={24} color={COLORS.text} />
+                          <Text style={styles.modalButtonTextLarge}>Salva Modifiche</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity
+                      style={[styles.modalButtonLarge, styles.deleteButtonLarge]}
+                      onPress={() => {
+                        setShowEditSubscription(false);
+                        handleDeleteSubscription(editingSubscription.id);
+                      }}
+                    >
+                      <Ionicons name="trash-outline" size={24} color={COLORS.error} />
+                      <Text style={[styles.modalButtonTextLarge, { color: COLORS.error }]}>Elimina Abbonamento</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+            </ScrollView>
           </View>
         </View>
       </Modal>
