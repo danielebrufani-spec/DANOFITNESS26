@@ -96,6 +96,7 @@ class UserCreate(BaseModel):
     nome: str
     cognome: str
     telefono: Optional[str] = None
+    username: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -107,6 +108,7 @@ class UserResponse(BaseModel):
     nome: str
     cognome: str
     telefono: Optional[str] = None
+    username: Optional[str] = None
     role: str
     created_at: datetime
     push_token: Optional[str] = None
