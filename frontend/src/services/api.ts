@@ -116,6 +116,25 @@ export interface DailyStats {
   abbonamenti_scaduti: number;
   lezioni_scalate: number;
   presenze_abbonamento_tempo: number;
+  lezioni_da_scalare?: { nome: string; cognome: string; orario: string; tipo_attivita: string }[];
+  lezioni_gia_scalate?: { nome: string; cognome: string; orario: string; tipo_attivita: string }[];
+}
+
+export interface LezioneEffettuata {
+  data: string;
+  giorno: string;
+  orario: string;
+  tipo_attivita: string;
+}
+
+export interface StoricoLezioni {
+  tipo_abbonamento: string;
+  lezioni_totali?: number;
+  lezioni_residue?: number;
+  lezioni_effettuate: LezioneEffettuata[];
+  data_inizio?: string;
+  data_scadenza?: string;
+  totale_presenze: number;
 }
 
 // API functions
