@@ -271,7 +271,19 @@ export default function AdminScreen() {
     try {
       const updateData: any = {};
       
-      if (editLessons && editingSubscription.lezioni_rimanenti !== null) {
+      // Aggiorna il tipo se cambiato
+      if (editType && editType !== editingSubscription.tipo) {
+        updateData.tipo = editType;
+        // Se cambia a tipo con lezioni, imposta il numero di lezioni
+        if (editType === 'lezioni_8') {
+          updateData.lezioni_rimanenti = parseInt(editLessons) || 8;
+        } else if (editType === 'lezioni_16') {
+          updateData.lezioni_rimanenti = parseInt(editLessons) || 16;
+        } else {
+          // Per mensile/trimestrale, le lezioni sono null
+          updateData.lezioni_rimanenti = null;
+        }
+      } else if (editLessons && (editType === 'lezioni_8' || editType === 'lezioni_16')) {
         const newLessons = parseInt(editLessons);
         if (!isNaN(newLessons) && newLessons >= 0) {
           updateData.lezioni_rimanenti = newLessons;
