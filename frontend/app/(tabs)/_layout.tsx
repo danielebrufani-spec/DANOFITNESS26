@@ -1,67 +1,12 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React from 'react';
 import { Tabs } from 'expo-router';
-import { View, Text, StyleSheet, Platform, AppState } from 'react-native';
+import { Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
 import { COLORS } from '../../src/utils/constants';
-import { apiService } from '../../src/services/api';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const LAST_READ_KEY = 'chat_last_read_timestamp';
 
 export default function TabsLayout() {
-  const { isAdmin, user } = useAuth();
-  const [unreadCount, setUnreadCount] = useState(0);
-  const appState = useRef(AppState.currentState);
-
-  // Check for unread messages using the API
-  const checkUnread = useCallback(async () => {
-    if (!user) {
-      setUnreadCount(0);
-      return;
-    }
-    
-    try {
-      const lastReadStr = await AsyncStorage.getItem(LAST_READ_KEY);
-      const response = await apiService.getUnreadCount(lastReadStr || undefined);
-      const count = response.data?.unread_count || 0;
-      console.log('[Chat Badge] Unread count from API:', count);
-      setUnreadCount(count);
-    } catch (error) {
-      console.error('Error checking unread messages:', error);
-    }
-  }, [user]);
-
-  // Check messages when app comes to foreground
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', nextAppState => {
-      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-        console.log('[Chat Badge] App became active, checking messages...');
-        checkUnread();
-      }
-      appState.current = nextAppState;
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, [checkUnread]);
-
-  // Initial check and interval
-  useEffect(() => {
-    if (user) {
-      checkUnread();
-      const interval = setInterval(checkUnread, 5000);
-      return () => clearInterval(interval);
-    }
-  }, [user, checkUnread]);
-
-  // Mark messages as read - chiamato SOLO quando si apre la tab Chat
-  const markAsRead = useCallback(async () => {
-    console.log('[Chat Badge] Marking as read...');
-    await AsyncStorage.setItem(LAST_READ_KEY, new Date().toISOString());
-    setUnreadCount(0);
-  }, []);
+  const { isAdmin } = useAuth();
 
   // Calculate safe tab bar height for different platforms
   const tabBarHeight = Platform.select({
@@ -121,27 +66,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="comunicazioni"
         options={{
-          title: 'Chat',
-          tabBarIcon: ({ color, size }) => (
-            <View style={styles.iconContainer}>
-              <Ionicons name="chatbubbles-outline" size={size} color={color} />
-              {unreadCount > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </Text>
-                </View>
-              )}
-            </View>
-          ),
-        }}
-        listeners={{
-          tabPress: () => {
-            markAsRead();
-          },
-          focus: () => {
-            markAsRead();
-          },
+          href: null, // Nascosto
         }}
       />
       <Tabs.Screen
