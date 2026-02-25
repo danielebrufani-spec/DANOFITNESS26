@@ -382,6 +382,7 @@ async def login(login_data: UserLogin):
             nome=user["nome"],
             cognome=user["cognome"],
             telefono=user.get("telefono"),
+            username=user.get("username"),
             role=user["role"],
             created_at=user["created_at"],
             push_token=user.get("push_token")
@@ -396,6 +397,7 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         nome=current_user["nome"],
         cognome=current_user["cognome"],
         telefono=current_user.get("telefono"),
+        username=current_user.get("username"),
         role=current_user["role"],
         created_at=current_user["created_at"],
         push_token=current_user.get("push_token"),
