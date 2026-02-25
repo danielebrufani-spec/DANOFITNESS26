@@ -692,7 +692,7 @@ async def create_booking(data: BookingCreate, current_user: dict = Depends(get_c
         raise HTTPException(status_code=400, detail="Hai già prenotato questa lezione")
     
     # Check subscription status
-    now = datetime.utcnow()
+    now = now_italy()
     subscriptions = await db.subscriptions.find({
         "user_id": user_id,
         "attivo": True
@@ -700,7 +700,13 @@ async def create_booking(data: BookingCreate, current_user: dict = Depends(get_c
     
     abbonamento_scaduto = True
     for sub in subscriptions:
-        is_expired = sub["data_scadenza"] < now
+        # Confronta con data naive (rimuovi timezone per confronto)
+        scadenza = sub["data_scadenza"]
+        if scadenza.tzinfo is not None:
+            scadenza = scadenza.replace(tzinfo=None)
+        now_naive = now.replace(tzinfo=None)
+        
+        is_expired = scadenza < now_naive
         if sub["lezioni_rimanenti"] is not None and sub["lezioni_rimanenti"] <= 0:
             is_expired = True
         if not is_expired:
