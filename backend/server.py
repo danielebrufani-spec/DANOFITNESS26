@@ -582,7 +582,7 @@ async def get_expired_subscriptions(admin_user: dict = Depends(get_admin_user)):
 
 @api_router.put("/subscriptions/{subscription_id}", response_model=SubscriptionResponse)
 async def update_subscription(subscription_id: str, data: SubscriptionUpdate, admin_user: dict = Depends(get_admin_user)):
-    """Update subscription - admin only. Can modify remaining lessons, expiry date, or active status."""
+    """Update subscription - admin only. Can modify type, remaining lessons, expiry date, or active status."""
     try:
         sub = await db.subscriptions.find_one({"_id": ObjectId(subscription_id)})
     except:
@@ -593,6 +593,8 @@ async def update_subscription(subscription_id: str, data: SubscriptionUpdate, ad
     
     # Build update dict
     update_data = {}
+    if data.tipo is not None:
+        update_data["tipo"] = data.tipo
     if data.lezioni_rimanenti is not None:
         update_data["lezioni_rimanenti"] = data.lezioni_rimanenti
     if data.data_scadenza is not None:
