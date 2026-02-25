@@ -212,7 +212,7 @@ export default function AdminScreen() {
 
   const onRefresh = () => {
     setRefreshing(true);
-    loadData();
+    loadData(true); // Mantieni le tendine aperte durante il refresh
   };
 
   const toggleDay = (date: string) => {
