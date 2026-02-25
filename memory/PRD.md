@@ -28,18 +28,17 @@ Applicazione di prenotazione fitness per "DanoFitness23" con:
 - Tab "Scaduti" per admin
 - Ordinamento alfabetico utenti/abbonamenti
 
-### Session 2026-02-24 ✅
+### Session 2026-02-25 ✅
 - Aggiunto messaggio di benvenuto grande nella Home:
   - "Ciao [Nome]!" (32px bold)
   - "Signore Pietà, Cristo pietà" (citazione in corsivo)
 - **Corretto fuso orario**: Backend ora usa Europe/Rome invece di UTC
-  - Scalatura lezioni usa orario italiano
-  - Job automatici usano orario italiano
+- **Admin Presenze**: Aggiunto "Presenze Totali Settimanali" in alto
+- **Admin Abbonamenti**: Aggiunta barra di ricerca per cliente
 
 ## Known Issues (P0-P1)
 1. **P0 - Logout si blocca**: App si congela al logout
 2. **P1 - Allegati chat**: Funzione incompleta/rotta
-3. **P1 - UI Login**: Testo "oppure" possibilmente troncato
 
 ## Backlog
 - P2: Migrazione Expo SDK 54 → 55 (futuro)
