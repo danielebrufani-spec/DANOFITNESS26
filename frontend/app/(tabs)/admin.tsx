@@ -1652,6 +1652,30 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.cardLight,
     borderRadius: 8,
   },
+  // Legenda tipi abbonamento
+  legendContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 16,
+    marginBottom: 12,
+    paddingVertical: 8,
+    backgroundColor: COLORS.card,
+    borderRadius: 8,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  legendText: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+  },
   userCard: {
     backgroundColor: COLORS.card,
     borderRadius: 12,
@@ -1659,6 +1683,20 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
+    borderLeftWidth: 4,
+    borderLeftColor: 'transparent',
+  },
+  userCardLezioni: {
+    borderLeftColor: '#4CAF50',
+    backgroundColor: '#4CAF5010',
+  },
+  userCardTempo: {
+    borderLeftColor: '#2196F3',
+    backgroundColor: '#2196F310',
+  },
+  userCardNoSub: {
+    borderLeftColor: COLORS.textSecondary,
+    opacity: 0.7,
   },
   userAvatar: {
     width: 44,
@@ -1669,6 +1707,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
     overflow: 'hidden',
+  },
+  userAvatarLezioni: {
+    backgroundColor: '#4CAF50',
+  },
+  userAvatarTempo: {
+    backgroundColor: '#2196F3',
   },
   userAvatarImage: {
     width: 44,
@@ -1697,6 +1741,28 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: COLORS.textSecondary,
     marginTop: 2,
+  },
+  subTypeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+    backgroundColor: COLORS.cardLight,
+  },
+  subTypeBadgeLezioni: {
+    backgroundColor: '#4CAF5030',
+  },
+  subTypeBadgeTempo: {
+    backgroundColor: '#2196F330',
+  },
+  subTypeBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: COLORS.text,
   },
   adminBadge: {
     backgroundColor: COLORS.primary,
