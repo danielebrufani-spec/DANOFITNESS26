@@ -68,7 +68,11 @@
           "icon": "./assets/images/icon-192.png",
           "color": "#FF6B35"
         }
-      ]
+      ],
+      "expo-font",
+      "expo-image",
+      "expo-secure-store",
+      "expo-web-browser"
     ],
     "notification": {
       "icon": "./assets/images/icon-192.png",
