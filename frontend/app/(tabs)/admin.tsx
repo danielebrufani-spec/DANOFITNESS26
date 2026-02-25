@@ -73,6 +73,7 @@ export default function AdminScreen() {
   // Search
   const [userSearchQuery, setUserSearchQuery] = useState<string>('');
   const [subscriptionUserSearch, setSubscriptionUserSearch] = useState<string>('');
+  const [abbonamentoSearchQuery, setAbbonamentoSearchQuery] = useState<string>('');
   
   // Add subscription modal
   const [showAddSubscription, setShowAddSubscription] = useState(false);
