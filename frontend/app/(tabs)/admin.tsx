@@ -550,17 +550,10 @@ export default function AdminScreen() {
         {/* PRESENZE TAB - WEEKLY VIEW */}
         {activeTab === 'presenze' && weeklyBookings && (
           <>
-            {/* Summary Stats */}
-            <View style={styles.statsCard}>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{getTotalParticipants()}</Text>
-                <Text style={styles.statLabel}>Prenotazioni Totali</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{getTotalLessonsWithBookings()}</Text>
-                <Text style={styles.statLabel}>Lezioni con Iscritti</Text>
-              </View>
+            {/* Presenze Totali Settimanali - Grande in alto */}
+            <View style={styles.weeklyTotalCard}>
+              <Text style={styles.weeklyTotalLabel}>Presenze Totali Settimanali</Text>
+              <Text style={styles.weeklyTotalNumber}>{getTotalWeeklyPresenze()}</Text>
             </View>
 
             <View style={styles.autoProcessInfo}>
