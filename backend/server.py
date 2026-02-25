@@ -1040,12 +1040,32 @@ async def get_weekly_bookings(admin_user: dict = Depends(get_admin_user)):
                 try:
                     user = await db.users.find_one({"_id": ObjectId(booking["user_id"])})
                     if user:
+                        # Ricalcola abbonamento_scaduto in tempo reale
+                        user_subs = await db.subscriptions.find({
+                            "user_id": booking["user_id"],
+                            "attivo": True
+                        }).to_list(100)
+                        
+                        abbonamento_scaduto = True
+                        now = now_italy().replace(tzinfo=None)
+                        for sub in user_subs:
+                            scadenza = sub["data_scadenza"]
+                            if scadenza.tzinfo is not None:
+                                scadenza = scadenza.replace(tzinfo=None)
+                            
+                            is_expired = scadenza < now
+                            if sub["lezioni_rimanenti"] is not None and sub["lezioni_rimanenti"] <= 0:
+                                is_expired = True
+                            if not is_expired:
+                                abbonamento_scaduto = False
+                                break
+                        
                         participants.append({
                             "booking_id": str(booking["_id"]),
                             "user_id": booking["user_id"],
                             "nome": user["nome"],
                             "cognome": user["cognome"],
-                            "abbonamento_scaduto": booking.get("abbonamento_scaduto", False),
+                            "abbonamento_scaduto": abbonamento_scaduto,
                             "lezione_scalata": booking.get("lezione_scalata", False)
                         })
                 except:
