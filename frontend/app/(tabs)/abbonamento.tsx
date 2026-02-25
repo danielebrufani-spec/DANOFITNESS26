@@ -597,6 +597,137 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     marginTop: 8,
   },
+  // Storico Lezioni styles
+  storicoSection: {
+    marginTop: 16,
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  storicoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 14,
+    backgroundColor: COLORS.cardLight,
+  },
+  storicoHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  storicoHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  storicoTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  storicoBadge: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  storicoBadgeText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  storicoContent: {
+    padding: 14,
+  },
+  storicoSummary: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+  },
+  storicoSummaryItem: {
+    alignItems: 'center',
+  },
+  storicoSummaryNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+  },
+  storicoSummaryLabel: {
+    fontSize: 10,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  storicoSummaryDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: COLORS.border,
+  },
+  storicoTempoInfo: {
+    backgroundColor: COLORS.card,
+    borderRadius: 10,
+    padding: 16,
+    alignItems: 'center',
+  },
+  storicoTempoText: {
+    fontSize: 14,
+    color: COLORS.text,
+    textAlign: 'center',
+  },
+  storicoList: {
+    marginTop: 8,
+  },
+  storicoListTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  storicoItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 6,
+  },
+  storicoItemLeft: {
+    flex: 1,
+  },
+  storicoItemRight: {
+    alignItems: 'flex-end',
+  },
+  storicoItemData: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  storicoItemGiorno: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+  },
+  storicoItemOrario: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: COLORS.primary,
+  },
+  storicoItemAttivita: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+  },
+  storicoEmpty: {
+    textAlign: 'center',
+    color: COLORS.textSecondary,
+    fontStyle: 'italic',
+    paddingVertical: 16,
+  },
   pricingGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
