@@ -145,11 +145,13 @@ export const apiService = {
 
   // Subscriptions
   getMySubscriptions: () => api.get<Subscription[]>('/subscriptions/me'),
+  getMyStoricoLezioni: () => api.get<StoricoLezioni>('/subscriptions/me/storico'),
   getAllSubscriptions: () => api.get<Subscription[]>('/subscriptions'),
   getExpiredSubscriptions: () => api.get<Subscription[]>('/subscriptions/expired'),
+  getSubscriptionStorico: (subscriptionId: string) => api.get<StoricoLezioni>(`/admin/subscriptions/${subscriptionId}/storico`),
   createSubscription: (data: { user_id: string; tipo: string; data_inizio?: string; lezioni_rimanenti?: number }) =>
     api.post<Subscription>('/subscriptions', data),
-  updateSubscription: (id: string, data: { lezioni_rimanenti?: number; data_scadenza?: string; attivo?: boolean }) =>
+  updateSubscription: (id: string, data: { tipo?: string; lezioni_rimanenti?: number; data_scadenza?: string; attivo?: boolean }) =>
     api.put<Subscription>(`/subscriptions/${id}`, data),
   deleteSubscription: (id: string) => api.delete(`/subscriptions/${id}`),
 
