@@ -670,7 +670,24 @@ export default function AdminScreen() {
               <Text style={styles.addButtonText}>Nuovo Abbonamento</Text>
             </TouchableOpacity>
 
-            {expiredSubscriptions.length > 0 && (
+            {/* Barra di ricerca abbonamenti */}
+            <View style={styles.searchContainer}>
+              <Ionicons name="search" size={20} color={COLORS.textSecondary} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Cerca cliente..."
+                placeholderTextColor={COLORS.textSecondary}
+                value={abbonamentoSearchQuery}
+                onChangeText={setAbbonamentoSearchQuery}
+              />
+              {abbonamentoSearchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setAbbonamentoSearchQuery('')}>
+                  <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {expiredSubscriptions.length > 0 && !abbonamentoSearchQuery && (
               <>
                 <Text style={[styles.sectionTitle, styles.warningTitle]}>
                   Abbonamenti Scaduti ({expiredSubscriptions.length})
@@ -719,15 +736,9 @@ export default function AdminScreen() {
             )}
 
             <Text style={styles.sectionTitle}>
-              Tutti gli Abbonamenti ({subscriptions.length})
+              {abbonamentoSearchQuery ? `Risultati ricerca (${filteredSubscriptions.length})` : `Tutti gli Abbonamenti (${subscriptions.length})`}
             </Text>
-            {[...subscriptions]
-              .sort((a, b) => {
-                const nameA = `${a.user_cognome || ''} ${a.user_nome || ''}`.toLowerCase();
-                const nameB = `${b.user_cognome || ''} ${b.user_nome || ''}`.toLowerCase();
-                return nameA.localeCompare(nameB);
-              })
-              .map((sub) => {
+            {filteredSubscriptions.map((sub) => {
               const info = ABBONAMENTO_INFO[sub.tipo] || { nome: sub.tipo };
               return (
                 <View
