@@ -119,6 +119,7 @@ class SubscriptionCreate(BaseModel):
     lezioni_rimanenti: Optional[int] = None  # Allow setting initial lessons
 
 class SubscriptionUpdate(BaseModel):
+    tipo: Optional[str] = None
     lezioni_rimanenti: Optional[int] = None
     data_scadenza: Optional[datetime] = None
     attivo: Optional[bool] = None
