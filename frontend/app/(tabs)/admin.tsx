@@ -556,28 +556,64 @@ export default function AdminScreen() {
                   <Text style={styles.noDataText}>Nessuna prenotazione per oggi</Text>
                 )}
 
-                {/* Riepilogo Abbonamenti */}
-                <Text style={styles.riepilogoSectionTitle}>Lezioni Scalate</Text>
+                {/* Riepilogo Scalature - Solo abbonamenti a lezioni */}
+                <Text style={styles.riepilogoSectionTitle}>Scalature Lezioni (Solo Pacchetti)</Text>
                 
-                <View style={styles.abbonamentoStatsContainer}>
-                  {/* Abbonamenti a Lezioni */}
-                  <View style={[styles.abbonamentoStatCard, { backgroundColor: COLORS.warning + '20' }]}>
-                    <Text style={[styles.abbonamentoStatNumber, { color: COLORS.warning }]}>
-                      {dailyStats.lezioni_scalate}
-                    </Text>
-                    <Text style={styles.abbonamentoStatLabel}>A Lezione</Text>
-                    <Text style={styles.abbonamentoStatSubLabel}>(pacchetto)</Text>
+                {/* Da Scalare */}
+                <View style={styles.scalaturaCard}>
+                  <View style={styles.scalaturaHeader}>
+                    <Ionicons name="time-outline" size={20} color={COLORS.warning} />
+                    <Text style={styles.scalaturaTitle}>Da Scalare</Text>
+                    <View style={[styles.scalaturaBadge, { backgroundColor: COLORS.warning }]}>
+                      <Text style={styles.scalaturaBadgeText}>
+                        {dailyStats.lezioni_da_scalare?.length || 0}
+                      </Text>
+                    </View>
                   </View>
-                  
-                  {/* Abbonamenti a Tempo */}
-                  <View style={[styles.abbonamentoStatCard, { backgroundColor: COLORS.success + '20' }]}>
-                    <Text style={[styles.abbonamentoStatNumber, { color: COLORS.success }]}>
-                      {dailyStats.presenze_abbonamento_tempo || 0}
-                    </Text>
-                    <Text style={styles.abbonamentoStatLabel}>A Tempo</Text>
-                    <Text style={styles.abbonamentoStatSubLabel}>(mensile/trimestrale)</Text>
-                  </View>
+                  {dailyStats.lezioni_da_scalare && dailyStats.lezioni_da_scalare.length > 0 ? (
+                    dailyStats.lezioni_da_scalare.map((item, idx) => (
+                      <View key={idx} style={styles.scalaturaItem}>
+                        <Text style={styles.scalaturaItemName}>{item.nome} {item.cognome}</Text>
+                        <Text style={styles.scalaturaItemLesson}>{item.orario} - {item.tipo_attivita}</Text>
+                      </View>
+                    ))
+                  ) : (
+                    <Text style={styles.scalaturaEmpty}>Nessuna lezione da scalare</Text>
+                  )}
                 </View>
+
+                {/* Già Scalate */}
+                <View style={[styles.scalaturaCard, styles.scalaturaCardDone]}>
+                  <View style={styles.scalaturaHeader}>
+                    <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
+                    <Text style={styles.scalaturaTitle}>Già Scalate</Text>
+                    <View style={[styles.scalaturaBadge, { backgroundColor: COLORS.success }]}>
+                      <Text style={styles.scalaturaBadgeText}>
+                        {dailyStats.lezioni_gia_scalate?.length || 0}
+                      </Text>
+                    </View>
+                  </View>
+                  {dailyStats.lezioni_gia_scalate && dailyStats.lezioni_gia_scalate.length > 0 ? (
+                    dailyStats.lezioni_gia_scalate.map((item, idx) => (
+                      <View key={idx} style={styles.scalaturaItem}>
+                        <Text style={styles.scalaturaItemName}>{item.nome} {item.cognome}</Text>
+                        <Text style={styles.scalaturaItemLesson}>{item.orario} - {item.tipo_attivita}</Text>
+                      </View>
+                    ))
+                  ) : (
+                    <Text style={styles.scalaturaEmpty}>Nessuna lezione scalata ancora</Text>
+                  )}
+                </View>
+
+                {/* Info abbonamenti a tempo */}
+                {dailyStats.presenze_abbonamento_tempo > 0 && (
+                  <View style={styles.tempoInfoCard}>
+                    <Ionicons name="calendar" size={16} color={COLORS.textSecondary} />
+                    <Text style={styles.tempoInfoText}>
+                      {dailyStats.presenze_abbonamento_tempo} presenze con abbonamento a tempo (non scalate)
+                    </Text>
+                  </View>
+                )}
               </>
             ) : (
               <Text style={styles.noDataText}>Caricamento statistiche...</Text>
