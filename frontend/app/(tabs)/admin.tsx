@@ -586,27 +586,30 @@ export default function AdminScreen() {
               
               return (
                 <View key={day.data} style={[styles.dayCard, isPast && styles.dayCardPast]}>
-                  {/* Day Header */}
+                  {/* Day Header - Giorno in risalto */}
                   <TouchableOpacity 
-                    style={styles.dayHeader}
+                    style={[styles.dayHeader, isToday && styles.dayHeaderToday]}
                     onPress={() => toggleDay(day.data)}
+                    activeOpacity={0.7}
                   >
-                    <View style={styles.dayInfo}>
-                      <Text style={[styles.dayName, isToday && styles.dayNameToday]}>
-                        {GIORNI_DISPLAY[day.giorno]}
-                        {isToday && ' (Oggi)'}
+                    <View style={styles.dayInfoLarge}>
+                      <Text style={[styles.dayDateLarge, isToday && styles.dayDateToday]}>
+                        {formatDate(day.data)}
                       </Text>
-                      <Text style={styles.dayDate}>{formatDate(day.data)}</Text>
+                      <Text style={[styles.dayNameSmall, isToday && styles.dayNameTodaySmall]}>
+                        {GIORNI_DISPLAY[day.giorno]}
+                        {isToday && ' • OGGI'}
+                      </Text>
                     </View>
                     <View style={styles.dayStats}>
-                      <View style={styles.dayCountBadge}>
-                        <Ionicons name="people" size={14} color={COLORS.text} />
+                      <View style={[styles.dayCountBadge, isToday && styles.dayCountBadgeToday]}>
+                        <Ionicons name="people" size={16} color={COLORS.text} />
                         <Text style={styles.dayCountText}>{dayTotalBookings}</Text>
                       </View>
                       <Ionicons 
                         name={isExpanded ? 'chevron-up' : 'chevron-down'} 
-                        size={20} 
-                        color={COLORS.textSecondary} 
+                        size={24} 
+                        color={isToday ? COLORS.primary : COLORS.textSecondary} 
                       />
                     </View>
                   </TouchableOpacity>
