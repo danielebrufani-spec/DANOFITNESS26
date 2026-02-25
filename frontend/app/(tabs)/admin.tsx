@@ -1251,6 +1251,25 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.border,
     marginHorizontal: 16,
   },
+  // Presenze Totali Settimanali Card
+  weeklyTotalCard: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  weeklyTotalLabel: {
+    fontSize: 14,
+    color: COLORS.text,
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  weeklyTotalNumber: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
   autoProcessInfo: {
     flexDirection: 'row',
     alignItems: 'center',
