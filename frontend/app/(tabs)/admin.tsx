@@ -822,9 +822,41 @@ export default function AdminScreen() {
             <Text style={styles.sectionTitle}>
               Utenti Registrati ({filteredUsers.length}{userSearchQuery ? ` di ${users.length}` : ''})
             </Text>
-            {filteredUsers.map((user) => (
-              <View key={user.id} style={styles.userCard}>
-                <View style={styles.userAvatar}>
+            
+            {/* Legenda */}
+            <View style={styles.legendContainer}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#4CAF50' }]} />
+                <Text style={styles.legendText}>A Lezioni</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#2196F3' }]} />
+                <Text style={styles.legendText}>A Tempo</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: COLORS.textSecondary }]} />
+                <Text style={styles.legendText}>No Abb.</Text>
+              </View>
+            </View>
+
+            {filteredUsers.map((user) => {
+              // Trova l'abbonamento dell'utente
+              const userSubscription = subscriptions.find(s => s.user_id === user.id);
+              const isLezioniType = userSubscription && (userSubscription.tipo === 'lezioni_8' || userSubscription.tipo === 'lezioni_16');
+              const isTempoType = userSubscription && (userSubscription.tipo === 'mensile' || userSubscription.tipo === 'trimestrale');
+              
+              return (
+              <View key={user.id} style={[
+                styles.userCard,
+                isLezioniType && styles.userCardLezioni,
+                isTempoType && styles.userCardTempo,
+                !userSubscription && styles.userCardNoSub
+              ]}>
+                <View style={[
+                  styles.userAvatar,
+                  isLezioniType && styles.userAvatarLezioni,
+                  isTempoType && styles.userAvatarTempo
+                ]}>
                   {user.profile_image ? (
                     <Image source={{ uri: user.profile_image }} style={styles.userAvatarImage} />
                   ) : (
@@ -838,6 +870,23 @@ export default function AdminScreen() {
                   <Text style={styles.userEmail}>{user.email}</Text>
                   {user.telefono && (
                     <Text style={styles.userPhone}>{user.telefono}</Text>
+                  )}
+                  {/* Badge tipo abbonamento */}
+                  {userSubscription && (
+                    <View style={[
+                      styles.subTypeBadge,
+                      isLezioniType && styles.subTypeBadgeLezioni,
+                      isTempoType && styles.subTypeBadgeTempo
+                    ]}>
+                      <Ionicons 
+                        name={isLezioniType ? 'fitness' : 'calendar'} 
+                        size={12} 
+                        color={COLORS.text} 
+                      />
+                      <Text style={styles.subTypeBadgeText}>
+                        {isLezioniType ? `${userSubscription.lezioni_rimanenti} lez.` : ABBONAMENTO_INFO[userSubscription.tipo]?.nome}
+                      </Text>
+                    </View>
                   )}
                 </View>
                 {user.role === 'admin' ? (
@@ -853,7 +902,8 @@ export default function AdminScreen() {
                   </TouchableOpacity>
                 )}
               </View>
-            ))}
+              );
+            })}
             {filteredUsers.length === 0 && userSearchQuery && (
               <Text style={styles.noResults}>Nessun utente trovato per "{userSearchQuery}"</Text>
             )}
