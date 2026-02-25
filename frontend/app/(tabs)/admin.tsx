@@ -258,6 +258,7 @@ export default function AdminScreen() {
   const openEditModal = (subscription: Subscription) => {
     setEditingSubscription(subscription);
     setEditLessons(subscription.lezioni_rimanenti?.toString() || '');
+    setEditType(subscription.tipo);
     const expiryDate = new Date(subscription.data_scadenza);
     setEditExpiry(expiryDate.toISOString().split('T')[0]);
     setShowEditSubscription(true);
