@@ -166,11 +166,11 @@ export default function AdminScreen() {
       setExpiredSubscriptions(expiredRes.data);
       setUsers(usersRes.data);
       
-      // Auto-expand today
-      const today = getTodayDateString();
-      setExpandedDays(new Set([today]));
+      // Tendine sempre chiuse di default
+      setExpandedDays(new Set());
       
       // Carica le statistiche giornaliere
+      const today = getTodayDateString();
       loadDailyStats(today);
     } catch (error) {
       console.error('Error loading admin data:', error);
