@@ -2350,6 +2350,77 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 2,
   },
+  // Scalatura cards
+  scalaturaCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.warning,
+  },
+  scalaturaCardDone: {
+    borderLeftColor: COLORS.success,
+  },
+  scalaturaHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  scalaturaTitle: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  scalaturaBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  scalaturaBadgeText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  scalaturaItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  scalaturaItemName: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: COLORS.text,
+  },
+  scalaturaItemLesson: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+  },
+  scalaturaEmpty: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingVertical: 8,
+  },
+  tempoInfoCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: COLORS.cardLight,
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 4,
+  },
+  tempoInfoText: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+  },
   scalaLezioniButton: {
     backgroundColor: COLORS.success,
     borderRadius: 12,
