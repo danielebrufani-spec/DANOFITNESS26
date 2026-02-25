@@ -215,6 +215,12 @@ class MessageResponse(BaseModel):
     replies: List[ReplyResponse] = []
     is_admin_message: bool = True
 
+class LezioneScalataInfo(BaseModel):
+    nome: str
+    cognome: str
+    orario: str
+    tipo_attivita: str
+
 class DailyStats(BaseModel):
     data: str
     totale_prenotazioni: int
@@ -222,6 +228,8 @@ class DailyStats(BaseModel):
     abbonamenti_scaduti: int
     lezioni_scalate: int = 0
     presenze_abbonamento_tempo: int = 0
+    lezioni_da_scalare: List[LezioneScalataInfo] = []
+    lezioni_gia_scalate: List[LezioneScalataInfo] = []
 
 # ======================== HELPER FUNCTIONS ========================
 
