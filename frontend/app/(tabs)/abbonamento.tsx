@@ -170,6 +170,95 @@ export default function AbbonamentoScreen() {
                         </View>
                       </View>
                     </View>
+                    
+                    {/* Log Ingressi / Storico */}
+                    {storico && (
+                      <View style={styles.storicoSection}>
+                        <TouchableOpacity 
+                          style={styles.storicoHeader}
+                          onPress={() => setShowStorico(!showStorico)}
+                        >
+                          <View style={styles.storicoHeaderLeft}>
+                            <Ionicons name="list" size={20} color={COLORS.primary} />
+                            <Text style={styles.storicoTitle}>
+                              {isLezioniType ? 'Log Ingressi' : 'Presenze Effettuate'}
+                            </Text>
+                          </View>
+                          <View style={styles.storicoHeaderRight}>
+                            <View style={styles.storicoBadge}>
+                              <Text style={styles.storicoBadgeText}>{storico.totale_presenze}</Text>
+                            </View>
+                            <Ionicons 
+                              name={showStorico ? 'chevron-up' : 'chevron-down'} 
+                              size={20} 
+                              color={COLORS.textSecondary} 
+                            />
+                          </View>
+                        </TouchableOpacity>
+                        
+                        {showStorico && (
+                          <View style={styles.storicoContent}>
+                            {isLezioniType && (
+                              <View style={styles.storicoSummary}>
+                                <View style={styles.storicoSummaryItem}>
+                                  <Text style={styles.storicoSummaryNumber}>{storico.lezioni_totali}</Text>
+                                  <Text style={styles.storicoSummaryLabel}>Pacchetto</Text>
+                                </View>
+                                <View style={styles.storicoSummaryDivider} />
+                                <View style={styles.storicoSummaryItem}>
+                                  <Text style={styles.storicoSummaryNumber}>{storico.totale_presenze}</Text>
+                                  <Text style={styles.storicoSummaryLabel}>Effettuate</Text>
+                                </View>
+                                <View style={styles.storicoSummaryDivider} />
+                                <View style={styles.storicoSummaryItem}>
+                                  <Text style={[styles.storicoSummaryNumber, { color: COLORS.success }]}>
+                                    {storico.lezioni_residue}
+                                  </Text>
+                                  <Text style={styles.storicoSummaryLabel}>Residue</Text>
+                                </View>
+                              </View>
+                            )}
+                            
+                            {isTempoType && (
+                              <View style={styles.storicoTempoInfo}>
+                                <Text style={styles.storicoTempoText}>
+                                  Hai frequentato {storico.totale_presenze} lezioni durante questo abbonamento
+                                </Text>
+                              </View>
+                            )}
+                            
+                            {/* Lista lezioni effettuate - solo per abbonamenti a lezioni */}
+                            {isLezioniType && storico.lezioni_effettuate.length > 0 && (
+                              <View style={styles.storicoList}>
+                                <Text style={styles.storicoListTitle}>Dettaglio Lezioni</Text>
+                                {storico.lezioni_effettuate.map((lezione, idx) => (
+                                  <View key={idx} style={styles.storicoItem}>
+                                    <View style={styles.storicoItemLeft}>
+                                      <Text style={styles.storicoItemData}>
+                                        {formatDate(lezione.data)}
+                                      </Text>
+                                      <Text style={styles.storicoItemGiorno}>
+                                        {lezione.giorno}
+                                      </Text>
+                                    </View>
+                                    <View style={styles.storicoItemRight}>
+                                      <Text style={styles.storicoItemOrario}>{lezione.orario}</Text>
+                                      <Text style={styles.storicoItemAttivita}>{lezione.tipo_attivita}</Text>
+                                    </View>
+                                  </View>
+                                ))}
+                              </View>
+                            )}
+                            
+                            {storico.lezioni_effettuate.length === 0 && (
+                              <Text style={styles.storicoEmpty}>
+                                Nessuna lezione effettuata ancora
+                              </Text>
+                            )}
+                          </View>
+                        )}
+                      </View>
+                    )}
                   </View>
                 </View>
               );
