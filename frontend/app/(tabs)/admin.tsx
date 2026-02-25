@@ -152,7 +152,7 @@ export default function AdminScreen() {
     }, 0);
   };
 
-  const loadData = async () => {
+  const loadData = async (keepExpandedDays = false) => {
     try {
       const [weeklyRes, subsRes, expiredRes, usersRes] = await Promise.all([
         apiService.getWeeklyBookings(),
@@ -166,8 +166,10 @@ export default function AdminScreen() {
       setExpiredSubscriptions(expiredRes.data);
       setUsers(usersRes.data);
       
-      // Tendine sempre chiuse di default
-      setExpandedDays(new Set());
+      // Non resettare le tendine se l'utente le ha già aperte
+      if (!keepExpandedDays) {
+        setExpandedDays(new Set());
+      }
       
       // Carica le statistiche giornaliere
       const today = getTodayDateString();
