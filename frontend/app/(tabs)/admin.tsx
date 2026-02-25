@@ -87,6 +87,7 @@ export default function AdminScreen() {
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
   const [editLessons, setEditLessons] = useState<string>('');
   const [editExpiry, setEditExpiry] = useState<string>('');
+  const [editType, setEditType] = useState<string>('');
   const [savingEdit, setSavingEdit] = useState(false);
 
   // Expanded days
