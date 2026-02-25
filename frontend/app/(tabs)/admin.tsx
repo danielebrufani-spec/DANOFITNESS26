@@ -276,14 +276,35 @@ export default function AdminScreen() {
       // Aggiorna il tipo se cambiato
       if (editType && editType !== editingSubscription.tipo) {
         updateData.tipo = editType;
-        // Se cambia a tipo con lezioni, imposta il numero di lezioni
+        // Se cambia a tipo con lezioni, imposta il numero di lezioni e scadenza 1 anno
         if (editType === 'lezioni_8') {
           updateData.lezioni_rimanenti = parseInt(editLessons) || 8;
+          // Scadenza automatica 1 anno da oggi per abbonamenti a lezioni
+          const oneYearFromNow = new Date();
+          oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+          updateData.data_scadenza = oneYearFromNow.toISOString();
+          setEditExpiry(oneYearFromNow.toISOString().split('T')[0]);
         } else if (editType === 'lezioni_16') {
           updateData.lezioni_rimanenti = parseInt(editLessons) || 16;
-        } else {
-          // Per mensile/trimestrale, le lezioni sono null
+          // Scadenza automatica 1 anno da oggi per abbonamenti a lezioni
+          const oneYearFromNow = new Date();
+          oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+          updateData.data_scadenza = oneYearFromNow.toISOString();
+          setEditExpiry(oneYearFromNow.toISOString().split('T')[0]);
+        } else if (editType === 'mensile') {
+          // Per mensile, le lezioni sono null e scadenza 1 mese
           updateData.lezioni_rimanenti = null;
+          const oneMonthFromNow = new Date();
+          oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
+          updateData.data_scadenza = oneMonthFromNow.toISOString();
+          setEditExpiry(oneMonthFromNow.toISOString().split('T')[0]);
+        } else if (editType === 'trimestrale') {
+          // Per trimestrale, le lezioni sono null e scadenza 3 mesi
+          updateData.lezioni_rimanenti = null;
+          const threeMonthsFromNow = new Date();
+          threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
+          updateData.data_scadenza = threeMonthsFromNow.toISOString();
+          setEditExpiry(threeMonthsFromNow.toISOString().split('T')[0]);
         }
       } else if (editLessons && (editType === 'lezioni_8' || editType === 'lezioni_16')) {
         const newLessons = parseInt(editLessons);
@@ -292,7 +313,8 @@ export default function AdminScreen() {
         }
       }
       
-      if (editExpiry) {
+      // Se l'utente ha modificato manualmente la data, usa quella
+      if (editExpiry && !updateData.data_scadenza) {
         updateData.data_scadenza = new Date(editExpiry).toISOString();
       }
       
