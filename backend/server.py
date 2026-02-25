@@ -539,6 +539,137 @@ async def get_my_subscriptions(current_user: dict = Depends(get_current_user)):
     
     return result
 
+@api_router.get("/subscriptions/me/storico", response_model=StoricoLezioniResponse)
+async def get_my_storico_lezioni(current_user: dict = Depends(get_current_user)):
+    """Get storico lezioni per il cliente corrente"""
+    user_id = str(current_user["_id"])
+    
+    # Trova l'abbonamento attivo
+    sub = await db.subscriptions.find_one({
+        "user_id": user_id,
+        "attivo": True
+    })
+    
+    if not sub:
+        raise HTTPException(status_code=404, detail="Nessun abbonamento attivo trovato")
+    
+    tipo = sub["tipo"]
+    is_lezioni = tipo in ["lezioni_8", "lezioni_16"]
+    
+    # Trova tutte le prenotazioni scalate (confermate) dell'utente
+    bookings = await db.bookings.find({
+        "user_id": user_id,
+        "lezione_scalata": True
+    }).sort("data_lezione", -1).to_list(1000)
+    
+    # Anche prenotazioni confermate non ancora scalate (per abbonamenti a tempo)
+    if not is_lezioni:
+        bookings_confermate = await db.bookings.find({
+            "user_id": user_id,
+            "confermata": True
+        }).sort("data_lezione", -1).to_list(1000)
+        bookings = bookings_confermate
+    
+    # Mappa giorni italiani
+    GIORNI_IT = {
+        "lunedi": "Lunedì", "martedi": "Martedì", "mercoledi": "Mercoledì",
+        "giovedi": "Giovedì", "venerdi": "Venerdì", "sabato": "Sabato"
+    }
+    
+    lezioni_effettuate = []
+    for b in bookings:
+        lesson_data = b.get("lesson_data", {})
+        giorno_raw = lesson_data.get("giorno", "")
+        lezioni_effettuate.append(LezioneEffettuata(
+            data=b["data_lezione"],
+            giorno=GIORNI_IT.get(giorno_raw, giorno_raw.capitalize()),
+            orario=lesson_data.get("orario", "?"),
+            tipo_attivita=lesson_data.get("tipo_attivita", "?").capitalize()
+        ))
+    
+    if is_lezioni:
+        # Abbonamento a lezioni
+        lezioni_totali = 8 if tipo == "lezioni_8" else 16
+        return StoricoLezioniResponse(
+            tipo_abbonamento=tipo,
+            lezioni_totali=lezioni_totali,
+            lezioni_residue=sub.get("lezioni_rimanenti", 0),
+            lezioni_effettuate=lezioni_effettuate,
+            totale_presenze=len(lezioni_effettuate)
+        )
+    else:
+        # Abbonamento a tempo
+        return StoricoLezioniResponse(
+            tipo_abbonamento=tipo,
+            data_inizio=sub["data_inizio"].strftime("%Y-%m-%d") if sub.get("data_inizio") else None,
+            data_scadenza=sub["data_scadenza"].strftime("%Y-%m-%d") if sub.get("data_scadenza") else None,
+            totale_presenze=len(lezioni_effettuate)
+        )
+
+@api_router.get("/admin/subscriptions/{subscription_id}/storico", response_model=StoricoLezioniResponse)
+async def get_admin_storico_lezioni(subscription_id: str, admin_user: dict = Depends(get_admin_user)):
+    """Get storico lezioni per un abbonamento specifico (admin)"""
+    try:
+        sub = await db.subscriptions.find_one({"_id": ObjectId(subscription_id)})
+    except:
+        raise HTTPException(status_code=404, detail="Abbonamento non trovato")
+    
+    if not sub:
+        raise HTTPException(status_code=404, detail="Abbonamento non trovato")
+    
+    user_id = sub["user_id"]
+    tipo = sub["tipo"]
+    is_lezioni = tipo in ["lezioni_8", "lezioni_16"]
+    
+    # Trova tutte le prenotazioni scalate (confermate) dell'utente
+    if is_lezioni:
+        bookings = await db.bookings.find({
+            "user_id": user_id,
+            "lezione_scalata": True
+        }).sort("data_lezione", -1).to_list(1000)
+    else:
+        # Per abbonamenti a tempo, tutte le prenotazioni confermate
+        bookings = await db.bookings.find({
+            "user_id": user_id,
+            "confermata": True
+        }).sort("data_lezione", -1).to_list(1000)
+    
+    # Mappa giorni italiani
+    GIORNI_IT = {
+        "lunedi": "Lunedì", "martedi": "Martedì", "mercoledi": "Mercoledì",
+        "giovedi": "Giovedì", "venerdi": "Venerdì", "sabato": "Sabato"
+    }
+    
+    lezioni_effettuate = []
+    for b in bookings:
+        lesson_data = b.get("lesson_data", {})
+        giorno_raw = lesson_data.get("giorno", "")
+        lezioni_effettuate.append(LezioneEffettuata(
+            data=b["data_lezione"],
+            giorno=GIORNI_IT.get(giorno_raw, giorno_raw.capitalize()),
+            orario=lesson_data.get("orario", "?"),
+            tipo_attivita=lesson_data.get("tipo_attivita", "?").capitalize()
+        ))
+    
+    if is_lezioni:
+        # Abbonamento a lezioni
+        lezioni_totali = 8 if tipo == "lezioni_8" else 16
+        return StoricoLezioniResponse(
+            tipo_abbonamento=tipo,
+            lezioni_totali=lezioni_totali,
+            lezioni_residue=sub.get("lezioni_rimanenti", 0),
+            lezioni_effettuate=lezioni_effettuate,
+            totale_presenze=len(lezioni_effettuate)
+        )
+    else:
+        # Abbonamento a tempo
+        return StoricoLezioniResponse(
+            tipo_abbonamento=tipo,
+            data_inizio=sub["data_inizio"].strftime("%Y-%m-%d") if sub.get("data_inizio") else None,
+            data_scadenza=sub["data_scadenza"].strftime("%Y-%m-%d") if sub.get("data_scadenza") else None,
+            totale_presenze=len(lezioni_effettuate)
+        )
+
 @api_router.get("/subscriptions", response_model=List[SubscriptionResponse])
 async def get_all_subscriptions(admin_user: dict = Depends(get_admin_user)):
     subscriptions = await db.subscriptions.find().to_list(1000)
