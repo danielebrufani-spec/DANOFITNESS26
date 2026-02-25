@@ -645,7 +645,9 @@ export default function AdminScreen() {
                                         {p.nome} {p.cognome}
                                       </Text>
                                       {p.abbonamento_scaduto && (
-                                        <Ionicons name="warning" size={14} color={COLORS.warning} />
+                                        <View style={styles.scadutoBadgeSmall}>
+                                          <Text style={styles.scadutoBadgeText}>SCADUTO</Text>
+                                        </View>
                                       )}
                                       {p.lezione_scalata && (
                                         <Ionicons name="checkmark-circle" size={14} color={COLORS.success} />
