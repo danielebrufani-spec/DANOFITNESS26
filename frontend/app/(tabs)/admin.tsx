@@ -127,6 +127,30 @@ export default function AdminScreen() {
       return nameA.localeCompare(nameB);
     });
 
+  // Filtered subscriptions based on search
+  const filteredSubscriptions = subscriptions
+    .filter(sub => {
+      if (!abbonamentoSearchQuery.trim()) return true;
+      const searchLower = abbonamentoSearchQuery.toLowerCase();
+      return (
+        sub.user_nome?.toLowerCase().includes(searchLower) ||
+        sub.user_cognome?.toLowerCase().includes(searchLower)
+      );
+    })
+    .sort((a, b) => {
+      const nameA = `${a.user_cognome || ''} ${a.user_nome || ''}`.toLowerCase();
+      const nameB = `${b.user_cognome || ''} ${b.user_nome || ''}`.toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
+
+  // Calcola presenze totali settimanali
+  const getTotalWeeklyPresenze = () => {
+    if (!weeklyBookings) return 0;
+    return weeklyBookings.giorni.reduce((total, day) => {
+      return total + day.lezioni.reduce((dayTotal, lesson) => dayTotal + lesson.totale_iscritti, 0);
+    }, 0);
+  };
+
   const loadData = async () => {
     try {
       const [weeklyRes, subsRes, expiredRes, usersRes] = await Promise.all([
