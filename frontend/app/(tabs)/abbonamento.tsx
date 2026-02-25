@@ -12,18 +12,26 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
-import { apiService, Subscription } from '../../src/services/api';
+import { apiService, Subscription, StoricoLezioni } from '../../src/services/api';
 import { COLORS, ABBONAMENTO_INFO, formatDate } from '../../src/utils/constants';
 
 export default function AbbonamentoScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [storico, setStorico] = useState<StoricoLezioni | null>(null);
+  const [showStorico, setShowStorico] = useState(false);
 
   const loadData = async () => {
     try {
-      const response = await apiService.getMySubscriptions();
-      setSubscriptions(response.data);
+      const [subsRes, storicoRes] = await Promise.all([
+        apiService.getMySubscriptions(),
+        apiService.getMyStoricoLezioni().catch(() => null)
+      ]);
+      setSubscriptions(subsRes.data);
+      if (storicoRes) {
+        setStorico(storicoRes.data);
+      }
     } catch (error) {
       console.error('Error loading subscriptions:', error);
     } finally {
