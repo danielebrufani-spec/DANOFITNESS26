@@ -873,9 +873,16 @@ async def get_daily_stats(date: str, admin_user: dict = Depends(get_admin_user))
     prenotazioni_per_lezione = {}
     lezioni_scalate = 0
     presenze_abbonamento_tempo = 0
+    lezioni_da_scalare = []
+    lezioni_gia_scalate = []
     
     for booking in bookings:
         user_id = booking["user_id"]
+        
+        # Recupera info utente
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        user_nome = user["nome"] if user else "?"
+        user_cognome = user["cognome"] if user else "?"
         
         # Usa lesson_data salvato nella prenotazione o recupera dalla collection
         lesson_data = booking.get("lesson_data")
@@ -897,11 +904,29 @@ async def get_daily_stats(date: str, admin_user: dict = Depends(get_admin_user))
                 prenotazioni_per_lezione[key] = 0
             prenotazioni_per_lezione[key] += 1
         
-        # Conta lezioni scalate (abbonamenti a pacchetto lezioni)
-        if booking.get("lezione_scalata", False):
-            lezioni_scalate += 1
+        # Verifica il tipo di abbonamento dell'utente - solo abbonamenti a lezioni
+        sub_lezioni = await db.subscriptions.find_one({
+            "user_id": user_id,
+            "attivo": True,
+            "tipo": {"$in": ["lezioni_8", "lezioni_16"]}
+        })
         
-        # Verifica il tipo di abbonamento dell'utente
+        # Se ha abbonamento a lezioni, traccia scalatura
+        if sub_lezioni:
+            info = LezioneScalataInfo(
+                nome=user_nome,
+                cognome=user_cognome,
+                orario=lesson_data["orario"] if lesson_data else "?",
+                tipo_attivita=lesson_data["tipo_attivita"] if lesson_data else "?"
+            )
+            
+            if booking.get("lezione_scalata", False):
+                lezioni_scalate += 1
+                lezioni_gia_scalate.append(info)
+            else:
+                lezioni_da_scalare.append(info)
+        
+        # Verifica il tipo di abbonamento dell'utente per conteggio tempo
         sub_tempo = await db.subscriptions.find_one({
             "user_id": user_id,
             "attivo": True,
@@ -911,11 +936,14 @@ async def get_daily_stats(date: str, admin_user: dict = Depends(get_admin_user))
             presenze_abbonamento_tempo += 1
     
     # Count expired subscriptions
-    now = datetime.utcnow()
+    now = now_italy().replace(tzinfo=None)
     all_subs = await db.subscriptions.find({"attivo": True}).to_list(1000)
     abbonamenti_scaduti = 0
     for sub in all_subs:
-        is_expired = sub["data_scadenza"] < now
+        scadenza = sub["data_scadenza"]
+        if scadenza.tzinfo is not None:
+            scadenza = scadenza.replace(tzinfo=None)
+        is_expired = scadenza < now
         if sub["lezioni_rimanenti"] is not None and sub["lezioni_rimanenti"] <= 0:
             is_expired = True
         if is_expired:
@@ -927,7 +955,9 @@ async def get_daily_stats(date: str, admin_user: dict = Depends(get_admin_user))
         prenotazioni_per_lezione=prenotazioni_per_lezione,
         abbonamenti_scaduti=abbonamenti_scaduti,
         lezioni_scalate=lezioni_scalate,
-        presenze_abbonamento_tempo=presenze_abbonamento_tempo
+        presenze_abbonamento_tempo=presenze_abbonamento_tempo,
+        lezioni_da_scalare=lezioni_da_scalare,
+        lezioni_gia_scalate=lezioni_gia_scalate
     )
 
 @api_router.post("/admin/process-day/{date}")
