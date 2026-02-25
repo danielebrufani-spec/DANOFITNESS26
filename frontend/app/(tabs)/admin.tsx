@@ -1377,13 +1377,41 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   dayCardPast: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
   dayHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 12,
+    padding: 16,
+  },
+  dayHeaderToday: {
+    backgroundColor: COLORS.primary + '15',
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.primary,
+  },
+  dayInfoLarge: {
+    flex: 1,
+  },
+  dayDateLarge: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  dayDateToday: {
+    color: COLORS.primary,
+    fontSize: 20,
+  },
+  dayNameSmall: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  dayNameTodaySmall: {
+    color: COLORS.primary,
+    fontWeight: '600',
   },
   dayInfo: {
     flex: 1,
@@ -1410,13 +1438,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.primary,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 6,
+  },
+  dayCountBadgeToday: {
+    backgroundColor: COLORS.primary,
+    transform: [{ scale: 1.1 }],
   },
   dayCountText: {
-    fontSize: 10,
+    fontSize: 14,
     fontWeight: 'bold',
     color: COLORS.text,
   },
