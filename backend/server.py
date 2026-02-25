@@ -338,6 +338,7 @@ async def register(user_data: UserCreate):
         "nome": user_data.nome,
         "cognome": user_data.cognome,
         "telefono": user_data.telefono,
+        "username": user_data.username,
         "role": UserRole.CLIENT,
         "push_token": None,
         "created_at": datetime.utcnow()
@@ -357,6 +358,7 @@ async def register(user_data: UserCreate):
             nome=user["nome"],
             cognome=user["cognome"],
             telefono=user["telefono"],
+            username=user["username"],
             role=user["role"],
             created_at=user["created_at"],
             push_token=user["push_token"]
