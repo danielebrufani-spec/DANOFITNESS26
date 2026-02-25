@@ -221,6 +221,23 @@ class LezioneScalataInfo(BaseModel):
     orario: str
     tipo_attivita: str
 
+class LezioneEffettuata(BaseModel):
+    data: str
+    giorno: str
+    orario: str
+    tipo_attivita: str
+
+class StoricoLezioniResponse(BaseModel):
+    tipo_abbonamento: str
+    # Per abbonamenti a lezioni
+    lezioni_totali: Optional[int] = None
+    lezioni_residue: Optional[int] = None
+    lezioni_effettuate: List[LezioneEffettuata] = []
+    # Per abbonamenti a tempo
+    data_inizio: Optional[str] = None
+    data_scadenza: Optional[str] = None
+    totale_presenze: int = 0
+
 class DailyStats(BaseModel):
     data: str
     totale_prenotazioni: int
