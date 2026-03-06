@@ -35,14 +35,14 @@ const VEGAS_COLORS = {
 
 // Premi della ruota
 const WHEEL_PRIZES = [
-  { id: 0, testo: "Ritenta!", emoji: "💨", color: "#666" },
-  { id: 1, testo: "+1 Biglietto!", emoji: "🎟️", color: "#22c55e" },
-  { id: 2, testo: "10 Flessioni!", emoji: "💪", color: "#f97316" },
-  { id: 3, testo: "+2 Biglietti!", emoji: "🎟️", color: "#22c55e" },
-  { id: 4, testo: "JACKPOT +5!", emoji: "🌟", color: "#FFD700" },
-  { id: 5, testo: "BESTIA!", emoji: "😂", color: "#ec4899" },
-  { id: 6, testo: "-1 Biglietto!", emoji: "💀", color: "#dc2626" },
-  { id: 7, testo: "Coccodè!", emoji: "🐔", color: "#f59e0b" },
+  { id: 0, testo: "Ritenta!", emoji: "💨", color: "#666", biglietti: 0, tipo: "comune" },
+  { id: 1, testo: "+1 Biglietto!", emoji: "🎟️", color: "#22c55e", biglietti: 1, tipo: "comune" },
+  { id: 2, testo: "10 Flessioni!", emoji: "💪", color: "#f97316", biglietti: 0, tipo: "comune" },
+  { id: 3, testo: "+2 Biglietti!", emoji: "🎟️", color: "#22c55e", biglietti: 2, tipo: "media" },
+  { id: 4, testo: "JACKPOT +5!", emoji: "🌟", color: "#FFD700", biglietti: 5, tipo: "raro" },
+  { id: 5, testo: "BESTIA!", emoji: "😂", color: "#ec4899", biglietti: 0, tipo: "comune" },
+  { id: 6, testo: "-1 Biglietto!", emoji: "💀", color: "#dc2626", biglietti: -1, tipo: "comune" },
+  { id: 7, testo: "Il Maestro ti ruba 3!", emoji: "😈", color: "#7f1d1d", biglietti: -3, tipo: "rarissimo" },
 ];
 
 interface WheelStatus {
@@ -383,7 +383,7 @@ export default function PremiScreen() {
           </Animated.View>
         )}
 
-        {/* ===== RUOTA DELLA FORTUNA ===== */}
+        {/* ===== RUOTA DELLA FORTUNA - STILE ROULETTE ===== */}
         {!isAdmin && (
           <View style={styles.wheelSection}>
             <View style={styles.wheelHeader}>
@@ -395,11 +395,26 @@ export default function PremiScreen() {
               </Text>
             </View>
 
-            {/* Ruota */}
-            <View style={styles.wheelContainer}>
+            {/* Ruota Roulette */}
+            <View style={styles.rouletteContainer}>
+              {/* Bordo esterno decorativo */}
+              <View style={styles.rouletteOuterRing}>
+                {/* Tacche decorative */}
+                {[...Array(32)].map((_, i) => (
+                  <View 
+                    key={i} 
+                    style={[
+                      styles.rouletteTick,
+                      { transform: [{ rotate: `${i * 11.25}deg` }] }
+                    ]} 
+                  />
+                ))}
+              </View>
+              
+              {/* Ruota principale */}
               <Animated.View 
                 style={[
-                  styles.wheel,
+                  styles.rouletteWheel,
                   { 
                     transform: [{ 
                       rotate: wheelRotation.interpolate({
@@ -414,21 +429,45 @@ export default function PremiScreen() {
                   <View 
                     key={prize.id} 
                     style={[
-                      styles.wheelSlice,
+                      styles.rouletteSlice,
                       { 
                         transform: [{ rotate: `${index * 45}deg` }],
-                        backgroundColor: prize.color + '40',
+                        backgroundColor: index % 2 === 0 ? '#1a1a1a' : prize.color,
                       }
                     ]}
                   >
-                    <Text style={styles.wheelSliceEmoji}>{prize.emoji}</Text>
+                    <View style={styles.sliceContent}>
+                      <Text style={styles.sliceEmoji}>{prize.emoji}</Text>
+                      <Text style={styles.sliceNumber}>{index}</Text>
+                    </View>
                   </View>
                 ))}
+                {/* Centro della ruota */}
+                <View style={styles.rouletteCenter}>
+                  <Text style={styles.rouletteCenterText}>GIRA</Text>
+                </View>
+              </Animated.View>
+              
+              {/* Pallina */}
+              <Animated.View 
+                style={[
+                  styles.rouletteBall,
+                  {
+                    transform: [{
+                      rotate: wheelRotation.interpolate({
+                        inputRange: [0, 360],
+                        outputRange: ['0deg', '-360deg']
+                      })
+                    }]
+                  }
+                ]}
+              >
+                <View style={styles.ballInner} />
               </Animated.View>
               
               {/* Freccia indicatore */}
-              <View style={styles.wheelPointer}>
-                <Text style={styles.wheelPointerArrow}>▼</Text>
+              <View style={styles.roulettePointer}>
+                <View style={styles.pointerTriangle} />
               </View>
             </View>
 
@@ -453,13 +492,34 @@ export default function PremiScreen() {
               )}
             </TouchableOpacity>
 
-            {/* Premi disponibili */}
-            <View style={styles.prizesPreview}>
-              {WHEEL_PRIZES.map((p) => (
-                <View key={p.id} style={styles.prizePreviewItem}>
-                  <Text style={styles.prizePreviewEmoji}>{p.emoji}</Text>
-                </View>
-              ))}
+            {/* ELENCO PREMI POSSIBILI */}
+            <View style={styles.prizesListContainer}>
+              <Text style={styles.prizesListTitle}>🎁 PREMI POSSIBILI 🎁</Text>
+              <View style={styles.prizesList}>
+                {WHEEL_PRIZES.map((p) => (
+                  <View 
+                    key={p.id} 
+                    style={[
+                      styles.prizeListItem,
+                      p.tipo === 'raro' && styles.prizeListItemRaro,
+                      p.tipo === 'rarissimo' && styles.prizeListItemRarissimo,
+                    ]}
+                  >
+                    <Text style={styles.prizeListEmoji}>{p.emoji}</Text>
+                    <View style={styles.prizeListInfo}>
+                      <Text style={styles.prizeListText}>{p.testo}</Text>
+                      {p.tipo === 'raro' && <Text style={styles.prizeListRarity}>⭐ RARO</Text>}
+                      {p.tipo === 'rarissimo' && <Text style={styles.prizeListRarityRarissimo}>💎 RARISSIMO</Text>}
+                    </View>
+                    <Text style={[
+                      styles.prizeListBiglietti,
+                      { color: p.biglietti > 0 ? '#22c55e' : p.biglietti < 0 ? '#dc2626' : '#888' }
+                    ]}>
+                      {p.biglietti > 0 ? `+${p.biglietti}` : p.biglietti < 0 ? p.biglietti : '-'}
+                    </Text>
+                  </View>
+                ))}
+              </View>
             </View>
           </View>
         )}
@@ -1430,7 +1490,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
-  // ===== RUOTA DELLA FORTUNA =====
+  // ===== RUOTA DELLA FORTUNA - STILE ROULETTE =====
   wheelSection: {
     backgroundColor: VEGAS_COLORS.card,
     borderRadius: 24,
@@ -1456,25 +1516,57 @@ const styles = StyleSheet.create({
     marginTop: 6,
     textAlign: 'center',
   },
-  wheelContainer: {
-    width: 260,
-    height: 260,
+  
+  // Roulette Container
+  rouletteContainer: {
+    width: 280,
+    height: 280,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
   },
-  wheel: {
+  rouletteOuterRing: {
+    position: 'absolute',
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    borderWidth: 12,
+    borderColor: '#8B4513',
+    backgroundColor: '#654321',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 15,
+  },
+  rouletteTick: {
+    position: 'absolute',
+    width: 3,
+    height: 10,
+    backgroundColor: VEGAS_COLORS.gold,
+    top: 2,
+    left: '50%',
+    marginLeft: -1.5,
+    transformOrigin: 'center 138px',
+  },
+  rouletteWheel: {
     width: 240,
     height: 240,
     borderRadius: 120,
-    backgroundColor: VEGAS_COLORS.darkRed,
-    borderWidth: 8,
+    backgroundColor: '#1a1a1a',
+    borderWidth: 6,
     borderColor: VEGAS_COLORS.gold,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
+    shadowColor: VEGAS_COLORS.gold,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
   },
-  wheelSlice: {
+  rouletteSlice: {
     position: 'absolute',
     width: 120,
     height: 120,
@@ -1483,23 +1575,85 @@ const styles = StyleSheet.create({
     transformOrigin: 'bottom center',
     justifyContent: 'flex-start',
     alignItems: 'center',
-    paddingTop: 15,
+    paddingTop: 8,
+    borderRightWidth: 1,
+    borderLeftWidth: 1,
+    borderColor: VEGAS_COLORS.gold,
   },
-  wheelSliceEmoji: {
-    fontSize: 28,
+  sliceContent: {
+    alignItems: 'center',
   },
-  wheelPointer: {
+  sliceEmoji: {
+    fontSize: 24,
+  },
+  sliceNumber: {
+    fontSize: 10,
+    color: VEGAS_COLORS.gold,
+    fontWeight: 'bold',
+    marginTop: 2,
+  },
+  rouletteCenter: {
     position: 'absolute',
-    top: -5,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: VEGAS_COLORS.darkRed,
+    borderWidth: 4,
+    borderColor: VEGAS_COLORS.gold,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
     zIndex: 10,
   },
-  wheelPointerArrow: {
-    fontSize: 36,
+  rouletteCenterText: {
+    fontSize: 10,
+    fontWeight: 'bold',
     color: VEGAS_COLORS.gold,
-    textShadowColor: '#000',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    letterSpacing: 1,
   },
+  rouletteBall: {
+    position: 'absolute',
+    width: 240,
+    height: 240,
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    paddingTop: 8,
+  },
+  ballInner: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#E8E8E8',
+    borderWidth: 2,
+    borderColor: '#CCC',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 3,
+  },
+  roulettePointer: {
+    position: 'absolute',
+    top: -2,
+    zIndex: 20,
+  },
+  pointerTriangle: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 14,
+    borderRightWidth: 14,
+    borderTopWidth: 24,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: VEGAS_COLORS.gold,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 3,
+  },
+  
   spinButton: {
     flexDirection: 'row',
     backgroundColor: VEGAS_COLORS.gold,
@@ -1523,28 +1677,77 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
   spinButtonText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#000',
     letterSpacing: 1,
   },
-  prizesPreview: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    marginTop: 16,
+  
+  // Lista Premi
+  prizesListContainer: {
+    width: '100%',
+    marginTop: 24,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: 16,
+    padding: 16,
+  },
+  prizesListTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: VEGAS_COLORS.gold,
+    textAlign: 'center',
+    marginBottom: 12,
+    letterSpacing: 1,
+  },
+  prizesList: {
     gap: 8,
   },
-  prizePreviewItem: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center',
+  prizeListItem: {
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 10,
+    padding: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: '#444',
   },
-  prizePreviewEmoji: {
-    fontSize: 18,
+  prizeListItemRaro: {
+    borderLeftColor: VEGAS_COLORS.gold,
+    backgroundColor: 'rgba(255,215,0,0.1)',
+  },
+  prizeListItemRarissimo: {
+    borderLeftColor: '#7f1d1d',
+    backgroundColor: 'rgba(127,29,29,0.2)',
+  },
+  prizeListEmoji: {
+    fontSize: 22,
+    marginRight: 10,
+  },
+  prizeListInfo: {
+    flex: 1,
+  },
+  prizeListText: {
+    fontSize: 13,
+    color: VEGAS_COLORS.text,
+    fontWeight: '500',
+  },
+  prizeListRarity: {
+    fontSize: 10,
+    color: VEGAS_COLORS.gold,
+    fontWeight: 'bold',
+    marginTop: 2,
+  },
+  prizeListRarityRarissimo: {
+    fontSize: 10,
+    color: '#dc2626',
+    fontWeight: 'bold',
+    marginTop: 2,
+  },
+  prizeListBiglietti: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    minWidth: 40,
+    textAlign: 'right',
   },
 
   // Modal Risultato Ruota

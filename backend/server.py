@@ -3481,11 +3481,11 @@ RUOTA_PREMI = [
     {"id": 4, "premio": "jackpot", "testo": "+5 Biglietti! JACKPOT!", "emoji": "🌟", "biglietti": 5, "tipo": "raro"},
     {"id": 5, "premio": "bestia", "testo": "Urla 'SONO UNA BESTIA!'", "emoji": "😂", "biglietti": 0, "tipo": "comune"},
     {"id": 6, "premio": "-1", "testo": "-1 Biglietto! Sfigato!", "emoji": "💀", "biglietti": -1, "tipo": "comune"},
-    {"id": 7, "premio": "gallina", "testo": "Fai il verso della gallina!", "emoji": "🐔", "biglietti": 0, "tipo": "comune"},
+    {"id": 7, "premio": "maestro", "testo": "Il Maestro ti ruba 3 biglietti!", "emoji": "😈", "biglietti": -3, "tipo": "rarissimo"},
 ]
 
 # Pesi per probabilità (più alto = più probabile)
-RUOTA_PESI = [20, 20, 15, 10, 2, 15, 10, 15]  # jackpot è raro (peso 2)
+RUOTA_PESI = [20, 20, 15, 10, 2, 15, 10, 1]  # jackpot raro (2), maestro rarissimo (1)
 
 
 @api_router.get("/wheel/status")
