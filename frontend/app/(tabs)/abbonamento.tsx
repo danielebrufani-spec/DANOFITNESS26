@@ -338,10 +338,7 @@ export default function AbbonamentoScreen() {
                   Fuori di qui ti guarderebbero strano... ma noi? Noi ti capiamo! 
                   Siamo quella banda di disagiati che suda insieme e si prende in giro.{'\n\n'}
                   La tua sedia è ancora calda (più o meno)... e il gruppo ti aspetta! 
-                  Non farci venire a prenderti eh! 😏{'\n\n'}
-                  <Text style={{fontWeight: 'bold', color: COLORS.primary}}>
-                    Per riattivare il tuo abbonamento, contattami!
-                  </Text>
+                  Non farci venire a prenderti eh! 😏
                 </Text>
               </View>
 
