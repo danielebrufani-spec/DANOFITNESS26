@@ -419,8 +419,8 @@ export default function HomeScreen() {
       }
 
       // 3. Controlla se è il giorno dell'estrazione (1° del mese)
-      const oggi = new Date();
-      if (oggi.getDate() === 1) {
+      const todayDate = new Date();
+      if (todayDate.getDate() === 1) {
         notifs.push({
           id: 'lottery_day',
           type: 'info',
