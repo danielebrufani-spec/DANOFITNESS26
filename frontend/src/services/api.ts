@@ -1,0 +1,255 @@
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://diobestia.onrender.com';
+
+const api = axios.create({
+  baseURL: `${API_URL}/api`,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add auth token to requests
+api.interceptors.request.use(async (config) => {
+  const token = await AsyncStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Types
+export interface Lesson {
+  id: string;
+  giorno: string;
+  orario: string;
+  tipo_attivita: string;
+  descrizione?: string;
+}
+
+export interface Subscription {
+  id: string;
+  user_id: string;
+  user_nome?: string;
+  user_cognome?: string;
+  tipo: string;
+  lezioni_rimanenti?: number;
+  lezioni_fatte?: number;
+  data_inizio: string;
+  data_scadenza: string;
+  attivo: boolean;
+  scaduto: boolean;
+  created_at: string;
+}
+
+export interface Booking {
+  id: string;
+  user_id: string;
+  user_nome?: string;
+  user_cognome?: string;
+  lesson_id: string;
+  lesson_info?: {
+    giorno: string;
+    orario: string;
+    tipo_attivita: string;
+  };
+  data_lezione: string;
+  abbonamento_scaduto: boolean;
+  confermata: boolean;
+  lezione_scalata: boolean;
+  created_at: string;
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  user_nome?: string;
+  user_cognome?: string;
+  tipo: string;
+  messaggio: string;
+  letta: boolean;
+  created_at: string;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  nome: string;
+  cognome: string;
+  telefono?: string;
+  soprannome?: string;
+  role: string;
+  push_token?: string;
+  profile_image?: string;
+  must_reset_password?: boolean;
+  archived?: boolean;  // Cliente archiviato (non attivo)
+}
+
+export interface Reply {
+  id: string;
+  user_id: string;
+  user_nome: string;
+  user_cognome: string;
+  user_profile_image?: string;
+  content: string;
+  created_at: string;
+}
+
+export interface Message {
+  id: string;
+  sender_id: string;
+  sender_nome: string;
+  sender_cognome: string;
+  sender_profile_image?: string;
+  content: string;
+  created_at: string;
+  replies: Reply[];
+  is_admin_message: boolean;
+}
+
+export interface DailyStats {
+  data: string;
+  totale_prenotazioni: number;
+  prenotazioni_per_lezione: { [key: string]: number };
+  abbonamenti_scaduti: number;
+  lezioni_scalate: number;
+}
+
+// API functions
+export const apiService = {
+  // Lessons
+  getLessons: () => api.get<Lesson[]>('/lessons'),
+  getLessonsByDay: (giorno: string) => api.get<Lesson[]>(`/lessons/day/${giorno}`),
+
+  // Subscriptions
+  getMySubscriptions: () => api.get<Subscription[]>('/subscriptions/me'),
+  getAllSubscriptions: () => api.get<Subscription[]>('/subscriptions'),
+  getExpiredSubscriptions: () => api.get<Subscription[]>('/subscriptions/expired'),
+  createSubscription: (data: { user_id: string; tipo: string; data_inizio?: string; lezioni_rimanenti?: number; data_scadenza?: string }) =>
+    api.post<Subscription>('/subscriptions', data),
+  updateSubscription: (id: string, data: { lezioni_rimanenti?: number; data_scadenza?: string; attivo?: boolean }) =>
+    api.put<Subscription>(`/subscriptions/${id}`, data),
+  deleteSubscription: (id: string) => api.delete(`/subscriptions/${id}`),
+
+  // Bookings
+  getMyBookings: () => api.get<Booking[]>('/bookings/me'),
+  getBookingsByDate: (date: string) => api.get<Booking[]>(`/bookings/day/${date}`),
+  createBooking: (data: { lesson_id: string; data_lezione: string }) =>
+    api.post<Booking>('/bookings', data),
+  cancelBooking: (id: string) => api.delete(`/bookings/${id}`),
+  getBookingHistory: () => api.get<{id: string; data: string; orario: string; tipo_attivita: string; coach: string}[]>('/bookings/history'),
+  getLessonParticipants: (lessonId: string, date: string) => 
+    api.get<{lesson_id: string; date: string; participants: {nome: string}[]; count: number}>(`/lessons/${lessonId}/participants/${date}`),
+
+  // Livello Settimanale
+  getUserLivello: () => api.get<{
+    livello: number;
+    nome: string;
+    icona: string;
+    descrizione: string;
+    allenamenti_settimana_precedente: number;
+    settimana_precedente: string;
+    prossimo_livello: {livello: number; nome: string; icona: string; descrizione: string} | null;
+    tutti_livelli: {livello: number; nome: string; icona: string; descrizione: string}[];
+    settimana_corrente: string;
+    allenamenti_fatti: number;
+    allenamenti_prenotati: number;
+    max_allenamenti: number;
+  }>('/user/livello'),
+
+  // Subscriptions - extra
+  getSubscriptionLessonsCount: (subId: string) => api.get<{lessons_count: number; data_inizio: string; data_scadenza: string}>(`/subscriptions/${subId}/lessons-count`),
+  getSubscriptionLogIngressi: (subId: string) => api.get<{log_ingressi: {numero: number; giorno: string; data: string; orario: string; tipo_attivita: string; coach: string}[]; totale: number}>(`/subscriptions/${subId}/log-ingressi`),
+
+  // Admin
+  getAllUsers: () => api.get<User[]>('/admin/users'),
+  getArchivedUsers: () => api.get<User[]>('/admin/users/archived'),
+  archiveUser: (userId: string) => api.post(`/admin/users/${userId}/archive`),
+  restoreUser: (userId: string) => api.post(`/admin/users/${userId}/restore`),
+  deleteUser: (userId: string) => api.delete(`/admin/users/${userId}`),
+  updateUser: (userId: string, data: {nome?: string; cognome?: string; soprannome?: string; telefono?: string}) => 
+    api.put(`/admin/users/${userId}`, data),
+  getDailyStats: (date: string) => api.get<DailyStats>(`/admin/daily-stats/${date}`),
+  getWeeklyStats: () => api.get<{presenze: number; lezioni_scalate: number; settimana: string}>('/admin/weekly-stats'),
+  processEndOfDay: (date: string) => api.post(`/admin/process-day/${date}`),
+  processStartedLessons: () => api.post<{
+    message: string;
+    data: string;
+    processed_pacchetto: number;
+    processed_tempo: number;
+    skipped: number;
+    totale_processate: number;
+  }>('/admin/process-started-lessons'),
+  confirmPresence: (bookingId: string) => api.post<{
+    message: string;
+    tipo_abbonamento: string;
+    lezioni_rimanenti: number | null;
+    already_processed?: boolean;
+  }>(`/admin/bookings/${bookingId}/confirm-presence`),
+  getWeeklyBookings: () => api.get('/admin/weekly-bookings'),
+  setUserRole: (userId: string, role: string) => api.post(`/admin/users/${userId}/set-role?role=${role}`),
+  resetUserPassword: (userId: string, newPassword: string) => api.post(`/admin/users/${userId}/reset-password`, { new_password: newPassword }),
+  changePassword: (newPassword: string, confirmPassword: string) => api.post('/auth/change-password', { new_password: newPassword, confirm_password: confirmPassword }),
+
+  // Lottery
+  getLotteryStatus: () => api.get('/lottery/status'),
+  getLotteryWinners: () => api.get('/lottery/winners'),
+  getCurrentPrize: () => api.get('/lottery/current-prize'),
+  setMonthlyPrize: (premio: string, descrizione?: string) => api.post('/admin/lottery/set-prize', { premio, descrizione }),
+
+  // Ruota della Fortuna
+  getWheelStatus: () => api.get('/wheel/status'),
+  spinWheel: () => api.post('/wheel/spin'),
+
+  getAdminDashboard: () => api.get<{
+    stats: {total_users: number; active_subscriptions: number; bookings_today: number};
+    today_lessons: {id: string; orario: string; tipo_attivita: string; coach: string; partecipanti: number}[];
+    expiring_subscriptions: {user_nome: string; user_cognome: string; tipo: string; data_scadenza: string; lezioni_rimanenti: number | null}[];
+    recent_users: {nome: string; cognome: string; created_at: string}[];
+  }>('/admin/dashboard'),
+
+  // Istruttore
+  getIstruttoreLezioni: () => api.get<{
+    settimana: string;
+    giorni: {
+      data: string;
+      giorno: string;
+      lezioni: {
+        id: string;
+        orario: string;
+        tipo_attivita: string;
+        coach: string;
+        partecipanti: {nome: string; soprannome: string; lezione_scalata: boolean}[];
+        totale_iscritti: number;
+      }[];
+    }[];
+  }>('/istruttore/lezioni'),
+
+  // Notifications
+  getMyNotifications: () => api.get<Notification[]>('/notifications/me'),
+  getAllNotifications: () => api.get<Notification[]>('/admin/notifications'),
+  markNotificationRead: (id: string) => api.put(`/notifications/${id}/read`),
+
+  // Chat/Messages
+  getMessages: () => api.get<Message[]>('/messages'),
+  getUnreadCount: (lastRead?: string) => api.get<{ unread_count: number }>(`/messages/unread-count${lastRead ? `?last_read=${lastRead}` : ''}`),
+  createMessage: (content: string) => api.post<Message>('/messages', { content }),
+  replyToMessage: (messageId: string, content: string) => api.post<Reply>(`/messages/${messageId}/reply`, { content }),
+  deleteMessage: (messageId: string) => api.delete(`/messages/${messageId}`),
+
+  // Consigli del Maestro
+  getConsigli: () => api.get<{id: string; testo?: string; immagine_url?: string; immagine_base64?: string; spotify_url?: string; created_at: string}[]>('/consigli'),
+  createConsiglio: (data: {testo?: string; immagine_url?: string; immagine_base64?: string; spotify_url?: string}) => api.post('/consigli', data),
+  deleteConsiglio: (id: string) => api.delete(`/consigli/${id}`),
+
+  // Consigli Musicali
+  getConsigliMusicali: () => api.get<{id: string; titolo?: string; spotify_url: string; created_at: string}[]>('/consigli-musicali'),
+  createConsiglioMusicale: (data: {titolo?: string; spotify_url: string}) => api.post('/consigli-musicali', data),
+  deleteConsiglioMusicale: (id: string) => api.delete(`/consigli-musicali/${id}`),
+
+  // Init
+  initAdmin: () => api.post('/init/admin'),
+};
+
+export default api;
