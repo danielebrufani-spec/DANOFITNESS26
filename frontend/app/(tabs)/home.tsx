@@ -353,6 +353,8 @@ export default function HomeScreen() {
   
   // Client state
   const [currentQuote, setCurrentQuote] = useState(0);
+  const [notifications, setNotifications] = useState<{id: string; type: string; message: string; icon: string; color: string}[]>([]);
+  const [dismissedNotifications, setDismissedNotifications] = useState<string[]>([]);
   
   // Admin state
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
@@ -360,6 +362,108 @@ export default function HomeScreen() {
   const [selectedUser, setSelectedUser] = useState<ExpiredSub | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [weeklyStats, setWeeklyStats] = useState({ presenze: 0, lezioni_scalate: 0, settimana: '' });
+
+  // Funzione per caricare notifiche cliente
+  const loadClientNotifications = async () => {
+    const notifs: {id: string; type: string; message: string; icon: string; color: string}[] = [];
+    
+    try {
+      // 1. Controlla abbonamento
+      const subRes = await apiService.getMySubscriptions();
+      const activeSub = subRes.data.find((s: any) => s.attivo && !s.scaduto);
+      
+      if (activeSub) {
+        const isLezioni = activeSub.tipo?.includes('lezioni');
+        
+        if (isLezioni && activeSub.lezioni_rimanenti !== null && activeSub.lezioni_rimanenti <= 2) {
+          notifs.push({
+            id: 'sub_expiring_lessons',
+            type: 'warning',
+            message: `⚠️ Solo ${activeSub.lezioni_rimanenti} ${activeSub.lezioni_rimanenti === 1 ? 'lezione' : 'lezioni'} rimaste! Contatta Daniele per rinnovare.`,
+            icon: 'alert-circle',
+            color: '#f59e0b'
+          });
+        } else if (!isLezioni && activeSub.data_scadenza) {
+          const scadenza = new Date(activeSub.data_scadenza);
+          const oggi = new Date();
+          const diffDays = Math.ceil((scadenza.getTime() - oggi.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (diffDays <= 3 && diffDays > 0) {
+            notifs.push({
+              id: 'sub_expiring_days',
+              type: 'warning',
+              message: `⚠️ Abbonamento in scadenza tra ${diffDays} ${diffDays === 1 ? 'giorno' : 'giorni'}! Contatta Daniele.`,
+              icon: 'alert-circle',
+              color: '#f59e0b'
+            });
+          }
+        }
+      }
+
+      // 2. Controlla prenotazioni di domani
+      const bookingsRes = await apiService.getMyBookings();
+      const domani = new Date();
+      domani.setDate(domani.getDate() + 1);
+      const domaniStr = domani.toISOString().split('T')[0];
+      
+      const bookingsDomani = bookingsRes.data.filter((b: any) => b.data_lezione === domaniStr);
+      if (bookingsDomani.length > 0) {
+        const lezione = bookingsDomani[0].lesson_info;
+        notifs.push({
+          id: 'booking_tomorrow',
+          type: 'info',
+          message: `💪 Domani hai ${lezione?.tipo_attivita || 'allenamento'} alle ${lezione?.orario || ''}!`,
+          icon: 'fitness',
+          color: '#22c55e'
+        });
+      }
+
+      // 3. Controlla se è il giorno dell'estrazione (1° del mese)
+      const oggi = new Date();
+      if (oggi.getDate() === 1) {
+        notifs.push({
+          id: 'lottery_day',
+          type: 'info',
+          message: `🎰 OGGI estrazione lotteria alle 12:00! Controlla se hai vinto!`,
+          icon: 'gift',
+          color: '#FFD700'
+        });
+      }
+
+      // 4. Controlla se hai vinto la lotteria
+      try {
+        const lotteryRes = await apiService.getLotteryStatus();
+        if (lotteryRes.data.vincitore?.is_me) {
+          notifs.push({
+            id: 'lottery_winner',
+            type: 'success',
+            message: `🏆 SEI IL VINCITORE DELLA LOTTERIA! Ritira il premio dal Maestro!`,
+            icon: 'trophy',
+            color: '#FFD700'
+          });
+        }
+      } catch (e) {}
+
+      // 5. Controlla se puoi girare la ruota
+      try {
+        const wheelRes = await apiService.getWheelStatus();
+        if (wheelRes.data.can_spin) {
+          notifs.push({
+            id: 'wheel_available',
+            type: 'info',
+            message: `🎡 Hai un giro alla Ruota della Fortuna! Vai nella sezione Premi!`,
+            icon: 'sync',
+            color: '#ec4899'
+          });
+        }
+      } catch (e) {}
+      
+    } catch (error) {
+      console.log('Error loading notifications:', error);
+    }
+    
+    setNotifications(notifs);
+  };
 
   const loadData = async (showLoading = true) => {
     try {
@@ -378,6 +482,9 @@ export default function HomeScreen() {
           const weeklyRes = await apiService.getWeeklyStats();
           setWeeklyStats(weeklyRes.data);
         } catch (e) {}
+      } else {
+        // Carica notifiche per cliente
+        await loadClientNotifications();
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -465,6 +572,12 @@ export default function HomeScreen() {
     setRefreshing(true);
     loadData();
   };
+
+  const dismissNotification = (id: string) => {
+    setDismissedNotifications(prev => [...prev, id]);
+  };
+
+  const visibleNotifications = notifications.filter(n => !dismissedNotifications.includes(n.id));
 
   if (loading) {
     return (
@@ -672,6 +785,27 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {/* NOTIFICHE IN-APP */}
+        {visibleNotifications.length > 0 && (
+          <View style={styles.notificationsContainer}>
+            {visibleNotifications.map((notif) => (
+              <View 
+                key={notif.id} 
+                style={[styles.notificationBanner, { borderLeftColor: notif.color }]}
+              >
+                <Ionicons name={notif.icon as any} size={22} color={notif.color} />
+                <Text style={styles.notificationText}>{notif.message}</Text>
+                <TouchableOpacity 
+                  onPress={() => dismissNotification(notif.id)}
+                  style={styles.notificationClose}
+                >
+                  <Ionicons name="close" size={18} color={COLORS.textSecondary} />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        )}
+
         {/* Frase Divertente */}
         <View style={styles.quoteContainer}>
           <View style={styles.quoteCard}>
@@ -741,6 +875,35 @@ const styles = StyleSheet.create({
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingLogo: { width: 120, height: 120, borderRadius: 60 },
   scrollContent: { padding: 16, paddingBottom: 32 },
+  
+  // Notifiche In-App
+  notificationsContainer: {
+    marginBottom: 16,
+    gap: 10,
+  },
+  notificationBanner: {
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderLeftWidth: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  notificationText: {
+    flex: 1,
+    fontSize: 13,
+    color: COLORS.text,
+    lineHeight: 18,
+  },
+  notificationClose: {
+    padding: 4,
+  },
   
   // Star Wars Card
   starWarsCard: {
