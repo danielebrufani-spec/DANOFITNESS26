@@ -158,6 +158,21 @@ export const apiService = {
     max_allenamenti: number;
   }>('/user/livello'),
 
+  // Bacheca Medaglie
+  getMyMedals: () => api.get<{
+    totale: number;
+    oro: number;
+    argento: number;
+    bronzo: number;
+    medaglie: {
+      settimana: string;
+      posizione: number;
+      medaglia: string;
+      allenamenti: number;
+      pari_merito: boolean;
+    }[];
+  }>('/medals/me'),
+
   // Subscriptions - extra
   getSubscriptionLessonsCount: (subId: string) => api.get<{lessons_count: number; data_inizio: string; data_scadenza: string}>(`/subscriptions/${subId}/lessons-count`),
   getSubscriptionLogIngressi: (subId: string) => api.get<{log_ingressi: {numero: number; giorno: string; data: string; orario: string; tipo_attivita: string; coach: string}[]; totale: number}>(`/subscriptions/${subId}/log-ingressi`),

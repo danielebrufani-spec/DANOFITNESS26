@@ -1973,6 +1973,7 @@ async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user))
     # Assegna posizioni basate sul numero di allenamenti
     # 1° = chi ha il numero più alto, 2° = chi ha il secondo più alto, ecc.
     leaderboard = []
+    settimana_key = f"{monday.strftime('%Y-%m-%d')}"
     
     for position, count in enumerate(unique_counts, 1):
         # Trova tutti con questo numero di allenamenti
@@ -1996,6 +1997,25 @@ async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user))
                 "is_me": entry["user_id"] == str(current_user["_id"]),
                 "pari_merito": is_pari
             })
+            
+            # SALVA MEDAGLIA nel database (se non già salvata)
+            medal_type = {1: "oro", 2: "argento", 3: "bronzo"}.get(position)
+            if medal_type:
+                existing_medal = await db.medals.find_one({
+                    "user_id": entry["user_id"],
+                    "settimana": settimana_key
+                })
+                if not existing_medal:
+                    await db.medals.insert_one({
+                        "user_id": entry["user_id"],
+                        "settimana": settimana_key,
+                        "settimana_display": f"{monday.strftime('%d/%m')} - {saturday.strftime('%d/%m')}",
+                        "posizione": position,
+                        "medaglia": medal_type,
+                        "allenamenti": entry["allenamenti"],
+                        "pari_merito": is_pari,
+                        "created_at": now_rome()
+                    })
     
     return {
         "leaderboard": leaderboard,
@@ -2003,6 +2023,41 @@ async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user))
         "total_participants": len(leaderboard),
         "status": "ready"
     }
+
+
+# ======================== BACHECA MEDAGLIE ========================
+
+@api_router.get("/medals/me")
+async def get_my_medals(current_user: dict = Depends(get_current_user)):
+    """Ritorna tutte le medaglie vinte dall'utente"""
+    user_id = str(current_user["_id"])
+    
+    medals = await db.medals.find(
+        {"user_id": user_id}
+    ).sort("created_at", -1).to_list(100)
+    
+    # Conta medaglie per tipo
+    oro = sum(1 for m in medals if m["medaglia"] == "oro")
+    argento = sum(1 for m in medals if m["medaglia"] == "argento")
+    bronzo = sum(1 for m in medals if m["medaglia"] == "bronzo")
+    
+    return {
+        "totale": len(medals),
+        "oro": oro,
+        "argento": argento,
+        "bronzo": bronzo,
+        "medaglie": [
+            {
+                "settimana": m["settimana_display"],
+                "posizione": m["posizione"],
+                "medaglia": m["medaglia"],
+                "allenamenti": m["allenamenti"],
+                "pari_merito": m.get("pari_merito", False)
+            }
+            for m in medals
+        ]
+    }
+
 
 
 # ======================== WEEKLY BOOKINGS VIEW (ADMIN ONLY) ========================

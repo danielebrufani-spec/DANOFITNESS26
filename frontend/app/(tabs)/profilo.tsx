@@ -74,9 +74,26 @@ export default function ProfiloScreen() {
   } | null>(null);
   const [showLivelloInfo, setShowLivelloInfo] = useState(false);
 
+  // Medaglie state
+  const [medaglieData, setMedaglieData] = useState<{
+    totale: number;
+    oro: number;
+    argento: number;
+    bronzo: number;
+    medaglie: {
+      settimana: string;
+      posizione: number;
+      medaglia: string;
+      allenamenti: number;
+      pari_merito: boolean;
+    }[];
+  } | null>(null);
+  const [showMedaglieModal, setShowMedaglieModal] = useState(false);
+
   useEffect(() => {
     if (showLivello) {
       loadLivello();
+      loadMedaglie();
     }
   }, [showLivello]);
 
@@ -86,6 +103,15 @@ export default function ProfiloScreen() {
       setLivelloData(response.data);
     } catch (error) {
       console.error('Error loading livello:', error);
+    }
+  };
+
+  const loadMedaglie = async () => {
+    try {
+      const response = await apiService.getMyMedals();
+      setMedaglieData(response.data);
+    } catch (error) {
+      console.error('Error loading medaglie:', error);
     }
   };
 
@@ -176,6 +202,37 @@ export default function ProfiloScreen() {
                 <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
               </View>
             </TouchableOpacity>
+
+            {/* CARD 3: BACHECA MEDAGLIE */}
+            {medaglieData && medaglieData.totale > 0 && (
+              <TouchableOpacity 
+                style={styles.medaglieCard} 
+                onPress={() => setShowMedaglieModal(true)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.medaglieHeader}>
+                  <Text style={styles.medaglieTitle}>🏅 Bacheca Medaglie</Text>
+                  <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+                </View>
+                <View style={styles.medaglieContent}>
+                  <View style={styles.medaglieRow}>
+                    <View style={styles.medagliaItem}>
+                      <Text style={styles.medagliaEmoji}>🥇</Text>
+                      <Text style={styles.medagliaCount}>{medaglieData.oro}</Text>
+                    </View>
+                    <View style={styles.medagliaItem}>
+                      <Text style={styles.medagliaEmoji}>🥈</Text>
+                      <Text style={styles.medagliaCount}>{medaglieData.argento}</Text>
+                    </View>
+                    <View style={styles.medagliaItem}>
+                      <Text style={styles.medagliaEmoji}>🥉</Text>
+                      <Text style={styles.medagliaCount}>{medaglieData.bronzo}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.medaglieTotale}>Totale: {medaglieData.totale} medaglie</Text>
+                </View>
+              </TouchableOpacity>
+            )}
           </>
         )}
         
@@ -324,6 +381,76 @@ export default function ProfiloScreen() {
                 onPress={() => setShowLivelloInfo(false)}
               >
                 <Text style={styles.modalButtonText}>Ho capito!</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* Modal Bacheca Medaglie */}
+      {showLivello && medaglieData && (
+        <Modal
+          visible={showMedaglieModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowMedaglieModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>🏅 Bacheca Medaglie</Text>
+                <TouchableOpacity onPress={() => setShowMedaglieModal(false)}>
+                  <Ionicons name="close" size={24} color={COLORS.text} />
+                </TouchableOpacity>
+              </View>
+              
+              {/* Riepilogo Medaglie */}
+              <View style={styles.medaglieSummary}>
+                <View style={styles.medagliaSummaryItem}>
+                  <Text style={styles.medagliaSummaryEmoji}>🥇</Text>
+                  <Text style={styles.medagliaSummaryCount}>{medaglieData.oro}</Text>
+                  <Text style={styles.medagliaSummaryLabel}>Oro</Text>
+                </View>
+                <View style={styles.medagliaSummaryItem}>
+                  <Text style={styles.medagliaSummaryEmoji}>🥈</Text>
+                  <Text style={styles.medagliaSummaryCount}>{medaglieData.argento}</Text>
+                  <Text style={styles.medagliaSummaryLabel}>Argento</Text>
+                </View>
+                <View style={styles.medagliaSummaryItem}>
+                  <Text style={styles.medagliaSummaryEmoji}>🥉</Text>
+                  <Text style={styles.medagliaSummaryCount}>{medaglieData.bronzo}</Text>
+                  <Text style={styles.medagliaSummaryLabel}>Bronzo</Text>
+                </View>
+              </View>
+
+              <Text style={styles.medaglieListTitle}>Storico Vittorie</Text>
+              
+              <ScrollView style={styles.medaglieScrollList} showsVerticalScrollIndicator={false}>
+                {medaglieData.medaglie.length > 0 ? (
+                  medaglieData.medaglie.map((m, index) => (
+                    <View key={index} style={styles.medagliaHistoryRow}>
+                      <Text style={styles.medagliaHistoryEmoji}>
+                        {m.medaglia === 'oro' ? '🥇' : m.medaglia === 'argento' ? '🥈' : '🥉'}
+                      </Text>
+                      <View style={styles.medagliaHistoryInfo}>
+                        <Text style={styles.medagliaHistoryWeek}>{m.settimana}</Text>
+                        <Text style={styles.medagliaHistoryDetail}>
+                          {m.posizione}° posto • {m.allenamenti} allenamenti
+                          {m.pari_merito && ' • Pari merito'}
+                        </Text>
+                      </View>
+                    </View>
+                  ))
+                ) : (
+                  <Text style={styles.noMedaglieText}>Nessuna medaglia ancora. Allenati per vincerne!</Text>
+                )}
+              </ScrollView>
+
+              <TouchableOpacity 
+                style={styles.modalButton}
+                onPress={() => setShowMedaglieModal(false)}
+              >
+                <Text style={styles.modalButtonText}>Chiudi</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -699,11 +826,6 @@ const styles = StyleSheet.create({
   progressSegmentPrenotato: {
     backgroundColor: COLORS.warning,
   },
-  divider: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginVertical: 16,
-  },
   progressTitle: {
     fontSize: 11,
     fontWeight: '600',
@@ -798,5 +920,117 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#FFF',
+  },
+  // Bacheca Medaglie Styles
+  medaglieCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: '#FFD700',
+  },
+  medaglieHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  medaglieTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  medaglieContent: {
+    alignItems: 'center',
+  },
+  medaglieRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 32,
+    marginBottom: 8,
+  },
+  medagliaItem: {
+    alignItems: 'center',
+  },
+  medagliaEmoji: {
+    fontSize: 32,
+  },
+  medagliaCount: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginTop: 4,
+  },
+  medaglieTotale: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 8,
+  },
+  // Modal Medaglie
+  medaglieSummary: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  medagliaSummaryItem: {
+    alignItems: 'center',
+  },
+  medagliaSummaryEmoji: {
+    fontSize: 36,
+  },
+  medagliaSummaryCount: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginTop: 4,
+  },
+  medagliaSummaryLabel: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  medaglieListTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 12,
+  },
+  medaglieScrollList: {
+    maxHeight: 300,
+  },
+  medagliaHistoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 8,
+  },
+  medagliaHistoryEmoji: {
+    fontSize: 28,
+    marginRight: 12,
+  },
+  medagliaHistoryInfo: {
+    flex: 1,
+  },
+  medagliaHistoryWeek: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  medagliaHistoryDetail: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  noMedaglieText: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    paddingVertical: 20,
   },
 });
