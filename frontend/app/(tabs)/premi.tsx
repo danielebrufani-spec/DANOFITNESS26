@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { apiService } from '../../src/services/api';
+import { Audio } from 'expo-av';
 
 // Colori Las Vegas
 const VEGAS_COLORS = {
@@ -119,6 +120,90 @@ export default function PremiScreen() {
   const glowAnim = useRef(new Animated.Value(0)).current;
   const ticketBounce = useRef(new Animated.Value(0)).current;
 
+  // Suoni ruota
+  const spinSound = useRef<Audio.Sound | null>(null);
+  const winSound = useRef<Audio.Sound | null>(null);
+  const loseSound = useRef<Audio.Sound | null>(null);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  // Carica suoni
+  useEffect(() => {
+    const loadSounds = async () => {
+      try {
+        // Configura audio
+        await Audio.setAudioModeAsync({
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+        });
+
+        // Suono spin (tick tick) - usiamo un suono web gratuito
+        const { sound: spin } = await Audio.Sound.createAsync(
+          { uri: 'https://www.soundjay.com/misc/sounds/slot-machine-wheel-spin-1.mp3' },
+          { shouldPlay: false, isLooping: true }
+        );
+        spinSound.current = spin;
+
+        // Suono vittoria
+        const { sound: win } = await Audio.Sound.createAsync(
+          { uri: 'https://www.soundjay.com/misc/sounds/slot-machine-win-1.mp3' },
+          { shouldPlay: false }
+        );
+        winSound.current = win;
+
+        // Suono perdita/neutro
+        const { sound: lose } = await Audio.Sound.createAsync(
+          { uri: 'https://www.soundjay.com/button/sounds/button-10.mp3' },
+          { shouldPlay: false }
+        );
+        loseSound.current = lose;
+      } catch (error) {
+        console.log('Errore caricamento suoni:', error);
+      }
+    };
+
+    loadSounds();
+
+    // Cleanup
+    return () => {
+      spinSound.current?.unloadAsync();
+      winSound.current?.unloadAsync();
+      loseSound.current?.unloadAsync();
+    };
+  }, []);
+
+  // Funzioni per suoni
+  const playSpinSound = async () => {
+    if (!soundEnabled || !spinSound.current) return;
+    try {
+      await spinSound.current.setPositionAsync(0);
+      await spinSound.current.playAsync();
+    } catch (e) {
+      console.log('Errore play spin:', e);
+    }
+  };
+
+  const stopSpinSound = async () => {
+    if (!spinSound.current) return;
+    try {
+      await spinSound.current.stopAsync();
+    } catch (e) {
+      console.log('Errore stop spin:', e);
+    }
+  };
+
+  const playResultSound = async (isWin: boolean) => {
+    if (!soundEnabled) return;
+    try {
+      const sound = isWin ? winSound.current : loseSound.current;
+      if (sound) {
+        await sound.setPositionAsync(0);
+        await sound.playAsync();
+      }
+    } catch (e) {
+      console.log('Errore play result:', e);
+    }
+  };
+
   useEffect(() => {
     // Pulse animation per il jackpot
     Animated.loop(
@@ -215,6 +300,9 @@ export default function PremiScreen() {
     setShowWheelResult(false);
     wheelRotation.setValue(0);
     
+    // Avvia suono spin
+    playSpinSound();
+    
     try {
       // Chiamata API per ottenere il risultato
       const response = await apiService.spinWheel();
@@ -231,7 +319,14 @@ export default function PremiScreen() {
         duration: 5000,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
-      }).start(() => {
+      }).start(async () => {
+        // Ferma suono spin
+        await stopSpinSound();
+        
+        // Suono risultato
+        const isWin = result.premio.biglietti > 0;
+        playResultSound(isWin);
+        
         // Mostra risultato con animazione
         setWheelResult(result.premio);
         setShowWheelResult(true);
@@ -251,6 +346,7 @@ export default function PremiScreen() {
       });
       
     } catch (error: any) {
+      await stopSpinSound();
       Alert.alert('Errore', error.response?.data?.detail || 'Impossibile girare la ruota');
       setIsSpinning(false);
     }
@@ -393,6 +489,20 @@ export default function PremiScreen() {
                   ? "Gira e tenta la fortuna!" 
                   : wheelStatus?.message || "Allenati per sbloccare!"}
               </Text>
+              {/* Toggle Suoni */}
+              <TouchableOpacity 
+                style={styles.soundToggle} 
+                onPress={() => setSoundEnabled(!soundEnabled)}
+              >
+                <Ionicons 
+                  name={soundEnabled ? "volume-high" : "volume-mute"} 
+                  size={20} 
+                  color={soundEnabled ? VEGAS_COLORS.gold : VEGAS_COLORS.textSecondary} 
+                />
+                <Text style={[styles.soundToggleText, !soundEnabled && styles.soundToggleTextOff]}>
+                  {soundEnabled ? "ON" : "OFF"}
+                </Text>
+              </TouchableOpacity>
             </View>
 
             {/* Ruota Roulette con Spicchi */}
@@ -1490,6 +1600,24 @@ const styles = StyleSheet.create({
     color: VEGAS_COLORS.textSecondary,
     marginTop: 6,
     textAlign: 'center',
+  },
+  soundToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginTop: 10,
+    gap: 6,
+  },
+  soundToggleText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: VEGAS_COLORS.gold,
+  },
+  soundToggleTextOff: {
+    color: VEGAS_COLORS.textSecondary,
   },
   
   // Roulette Container

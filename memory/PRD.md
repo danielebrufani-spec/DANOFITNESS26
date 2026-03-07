@@ -31,18 +31,19 @@ App fitness completa per gestione palestra con sistema di abbonamenti, prenotazi
 - **Sistema Livelli:** 7 livelli da "Divano Vivente" a "Dio della Palestra"
 - **Classifica Settimanale:** TOP 3 (podio) con gestione pari merito
 - **Bacheca Medaglie:** Collezione medaglie vinte (oro, argento, bronzo) nel profilo utente
-- **Ruota della Fortuna:** Premi settimanali
+- **Ruota della Fortuna:** Premi settimanali con suoni
 
 ## Task Completati (7 Marzo 2025)
 - [x] Implementazione UI Bacheca Medaglie nel profilo utente
 - [x] Card preview con conteggio medaglie (oro/argento/bronzo)
 - [x] Modal dettagliato con storico vittorie
 - [x] Modifica classifica da TOP 5 a TOP 3 (solo podio)
-- [x] Aggiornamento testi e commenti per riflettere TOP 3
+- [x] Medaglie del podio piu grandi e visibili
+- [x] Aggiunta suoni alla Ruota della Fortuna (spin + vittoria/perdita)
+- [x] Toggle ON/OFF per i suoni
 
 ## Prossimi Task
-- [ ] Suoni e animazioni per la Ruota della Fortuna
-- [ ] Aggiornamento dipendenze npm obsolete
+- [ ] Aggiornamento dipendenze npm obsolete (warning Vercel)
 
 ## Future Tasks (Backlog)
 - [ ] Sfide settimanali
@@ -74,8 +75,10 @@ App fitness completa per gestione palestra con sistema di abbonamenti, prenotazi
 - `GET /api/user/livello` - Livello settimanale utente
 - `POST /api/bookings` - Crea prenotazione
 - `GET /api/subscriptions/me` - Abbonamenti utente
+- `POST /api/wheel/spin` - Gira la ruota della fortuna
 
 ## Note Tecniche
 - L'app e un progetto React Native/Expo, non funziona nel browser tradizionale
 - Test vanno fatti nell'app Expo Go o build nativa
 - Backend endpoint testabile con curl
+- Suoni ruota usano expo-av con URL audio esterni
