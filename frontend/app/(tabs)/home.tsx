@@ -906,12 +906,6 @@ const styles = StyleSheet.create({
   },
   
   // Star Wars Card
-    fontSize: 13,
-    marginTop: 16,
-    fontStyle: 'italic',
-  },
-  
-  // Star Wars Card
   starWarsCard: {
     backgroundColor: '#0a0a1a',
     borderRadius: 16,
