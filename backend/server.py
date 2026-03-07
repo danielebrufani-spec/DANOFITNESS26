@@ -1863,10 +1863,13 @@ LEADERBOARD_EXCLUDED_USERS = ["daniele brufani"]
 
 @api_router.get("/leaderboard/weekly")
 async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user)):
-    """Get top 5 users by workouts - mostra la settimana CORRENTE.
-    La classifica viene pubblicata SOLO dopo che le lezioni yoga del sabato sono state scalate.
-    PARI MERITO: se raggiungono lo stesso numero nella STESSA lezione, sono pari.
-    Vale per TUTTE le posizioni (1°, 2°, 3°, 4°, 5°).
+    """Get top 5 positions by workouts - mostra la settimana CORRENTE.
+    TUTTE le posizioni sono sempre presenti (1°, 2°, 3°, 4°, 5°).
+    Le posizioni sono basate sul NUMERO di allenamenti:
+    - 1° = chi ha fatto più allenamenti
+    - 2° = chi ha fatto il secondo numero più alto
+    - ecc.
+    Più persone possono essere nella stessa posizione (pari merito).
     """
     today = now_rome()
     current_day = today.weekday()
@@ -1895,7 +1898,7 @@ async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user))
     # Get date strings for the week (Mon-Sat)
     week_dates = [(monday + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(6)]
     
-    # Query: per ogni utente, prendi l'ultima lezione fatta (data + orario)
+    # Query: per ogni utente, conta allenamenti e prendi ultima lezione
     pipeline = [
         {
             "$match": {
@@ -1924,10 +1927,10 @@ async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user))
             }
         },
         {"$sort": {"allenamenti": -1, "ultimo_data": 1, "ultimo_orario": 1}},
-        {"$limit": 20}  # Prendi più utenti per gestire i pari merito
+        {"$limit": 30}
     ]
     
-    top_users = await db.bookings.aggregate(pipeline).to_list(length=20)
+    top_users = await db.bookings.aggregate(pipeline).to_list(length=30)
     
     if not top_users:
         return {
@@ -1948,7 +1951,7 @@ async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user))
         async for u in users_cursor:
             users_map[str(u["_id"])] = u
     
-    # Prima passa: costruisci lista con info complete (filtrata)
+    # Filtra utenti esclusi e costruisci lista
     filtered_entries = []
     for entry in top_users:
         user = users_map.get(entry["_id"])
@@ -1956,7 +1959,6 @@ async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user))
             full_name = f"{user.get('nome', '')} {user.get('cognome', '')}".strip().lower()
             if full_name in [name.lower() for name in LEADERBOARD_EXCLUDED_USERS]:
                 continue
-            
             filtered_entries.append({
                 "user_id": entry["_id"],
                 "user": user,
@@ -1965,47 +1967,35 @@ async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user))
                 "ultimo_orario": entry.get("ultimo_orario")
             })
     
-    # Seconda passa: assegna posizioni con pari merito
-    leaderboard = []
-    current_position = 1
-    i = 0
+    # Trova i TOP 5 numeri DISTINTI di allenamenti
+    unique_counts = sorted(set(e["allenamenti"] for e in filtered_entries), reverse=True)[:5]
     
-    while i < len(filtered_entries) and current_position <= 5:
-        entry = filtered_entries[i]
-        user = entry["user"]
-        display_name = user.get("soprannome") or user.get("nome", "Utente")
+    # Assegna posizioni basate sul numero di allenamenti
+    # 1° = chi ha il numero più alto, 2° = chi ha il secondo più alto, ecc.
+    leaderboard = []
+    
+    for position, count in enumerate(unique_counts, 1):
+        # Trova tutti con questo numero di allenamenti
+        entries_with_count = [e for e in filtered_entries if e["allenamenti"] == count]
         
-        # Trova tutti quelli a pari merito con questa entry
-        tied_entries = [entry]
-        j = i + 1
-        while j < len(filtered_entries):
-            next_entry = filtered_entries[j]
-            # Pari merito: stesso numero E stessa lezione (data + orario)
-            if (next_entry["allenamenti"] == entry["allenamenti"] and
-                next_entry["ultimo_data"] == entry["ultimo_data"] and
-                next_entry["ultimo_orario"] == entry["ultimo_orario"]):
-                tied_entries.append(next_entry)
-                j += 1
-            else:
-                break
+        # Ordina per chi ha finito prima (pari merito se stessa lezione finale)
+        entries_with_count.sort(key=lambda x: (x["ultimo_data"] or "", x["ultimo_orario"] or ""))
         
-        # Aggiungi tutti i pari merito
-        for idx, tied in enumerate(tied_entries):
-            tied_user = tied["user"]
-            tied_display_name = tied_user.get("soprannome") or tied_user.get("nome", "Utente")
+        for entry in entries_with_count:
+            user = entry["user"]
+            display_name = user.get("soprannome") or user.get("nome", "Utente")
+            
+            # Controlla pari merito: stessa posizione E più di una persona
+            is_pari = len(entries_with_count) > 1
             
             leaderboard.append({
-                "posizione": current_position,
-                "nome": tied_display_name,
-                "nome_completo": f"{tied_user.get('nome', '')} {tied_user.get('cognome', '')}".strip(),
-                "allenamenti": tied["allenamenti"],
-                "is_me": tied["user_id"] == str(current_user["_id"]),
-                "pari_merito": len(tied_entries) > 1
+                "posizione": position,
+                "nome": display_name,
+                "nome_completo": f"{user.get('nome', '')} {user.get('cognome', '')}".strip(),
+                "allenamenti": entry["allenamenti"],
+                "is_me": entry["user_id"] == str(current_user["_id"]),
+                "pari_merito": is_pari
             })
-        
-        # Avanza posizione (salta le posizioni occupate dai pari merito)
-        i = j
-        current_position += len(tied_entries)
     
     return {
         "leaderboard": leaderboard,
