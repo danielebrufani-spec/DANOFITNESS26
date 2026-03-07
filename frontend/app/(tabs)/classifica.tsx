@@ -294,7 +294,7 @@ export default function ClassificaScreen() {
         <View style={styles.infoBox}>
           <Ionicons name="information-circle" size={18} color={COLORS.textSecondary} />
           <Text style={styles.infoText}>
-            La classifica si aggiorna ogni domenica alle 9:00 con l'apertura delle nuove prenotazioni
+            La classifica si aggiorna sabato alle 12:30 dopo l'ultima lezione di yoga
           </Text>
         </View>
       </ScrollView>

@@ -1804,27 +1804,40 @@ async def get_weekly_stats(admin_user: dict = Depends(get_admin_user)):
 
 # ======================== TOP 5 SETTIMANALE ========================
 
+# Utenti da escludere dalla classifica (utenti di test)
+LEADERBOARD_EXCLUDED_USERS = ["daniele brufani"]
+
 @api_router.get("/leaderboard/weekly")
 async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user)):
-    """Get top 5 users by workouts this week - visible to all authenticated users"""
+    """Get top 5 users by workouts this week - visible to all authenticated users.
+    La classifica si aggiorna dopo l'ultima lezione di yoga del sabato (ore 12:30).
+    """
     today = now_rome()
-    current_day = today.weekday()
+    current_day = today.weekday()  # 0=Monday, 5=Saturday, 6=Sunday
     current_hour = today.hour
+    current_minute = today.minute
     
-    # Stessa logica di get_weekly_stats per determinare la settimana
-    if current_day == 6 and current_hour >= 9:
+    # La settimana si resetta SABATO dopo le 12:30 (fine ultima lezione yoga)
+    # Sabato dopo le 12:30 -> mostra settimana PROSSIMA
+    # Domenica -> mostra settimana PROSSIMA (inizia domani/lunedì)
+    # Lunedì-Sabato prima delle 12:30 -> mostra settimana corrente
+    
+    if current_day == 5 and (current_hour > 12 or (current_hour == 12 and current_minute >= 30)):
+        # Sabato dopo le 12:30 -> nuova settimana (inizia lunedì prossimo)
+        monday = today + timedelta(days=2)
+    elif current_day == 6:
+        # Domenica -> nuova settimana (inizia domani/lunedì)
         monday = today + timedelta(days=1)
-    elif current_day == 6 and current_hour < 9:
-        monday = today - timedelta(days=6)
     else:
+        # Lunedì-Sabato mattina -> settimana corrente
         monday = today - timedelta(days=current_day)
     
     monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
-    sunday = monday + timedelta(days=6)
+    saturday = monday + timedelta(days=5)
     
-    # Get date strings for the week
+    # Get date strings for the week (Mon-Sat, domenica non conta)
     week_dates = []
-    for i in range(7):
+    for i in range(6):  # Solo Lun-Sab
         d = monday + timedelta(days=i)
         week_dates.append(d.strftime("%Y-%m-%d"))
     
@@ -1846,35 +1859,44 @@ async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user))
             "$sort": {"allenamenti": -1}
         },
         {
-            "$limit": 5
+            "$limit": 10  # Prendi più utenti per filtrare quelli esclusi
         }
     ]
     
-    top_users = await db.bookings.aggregate(pipeline).to_list(length=5)
+    top_users = await db.bookings.aggregate(pipeline).to_list(length=10)
     
-    # Arricchisci con info utente
+    # Arricchisci con info utente e filtra utenti esclusi
     leaderboard = []
-    for i, entry in enumerate(top_users):
+    position = 1
+    for entry in top_users:
+        if position > 5:
+            break
         user = await db.users.find_one({"_id": ObjectId(entry["_id"])})
         if user:
+            # Controlla se l'utente è nella lista degli esclusi
+            full_name = f"{user.get('nome', '')} {user.get('cognome', '')}".strip().lower()
+            if full_name in [name.lower() for name in LEADERBOARD_EXCLUDED_USERS]:
+                continue  # Salta utente escluso
+            
             # Usa soprannome se disponibile, altrimenti nome
             display_name = user.get("soprannome") or user.get("nome", "Utente")
             leaderboard.append({
-                "posizione": i + 1,
+                "posizione": position,
                 "nome": display_name,
                 "nome_completo": f"{user.get('nome', '')} {user.get('cognome', '')}".strip(),
                 "allenamenti": entry["allenamenti"],
                 "is_me": str(user["_id"]) == str(current_user["_id"])
             })
+            position += 1
     
     # Format dates for display
     monday_display = monday.strftime("%d/%m")
-    sunday_display = sunday.strftime("%d/%m")
+    saturday_display = saturday.strftime("%d/%m")
     
     return {
         "leaderboard": leaderboard,
-        "settimana": f"{monday_display} - {sunday_display}",
-        "total_participants": len(top_users)
+        "settimana": f"{monday_display} - {saturday_display}",
+        "total_participants": len(leaderboard)
     }
 
 
