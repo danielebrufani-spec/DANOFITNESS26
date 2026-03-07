@@ -1256,7 +1256,7 @@ const styles = StyleSheet.create({
   ricettaTipBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.primary + '15',
+    backgroundColor: 'rgba(0, 230, 118, 0.15)',
     padding: 12,
     borderRadius: 10,
     marginTop: 14,
