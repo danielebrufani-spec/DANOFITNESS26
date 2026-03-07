@@ -1810,32 +1810,50 @@ LEADERBOARD_EXCLUDED_USERS = ["daniele brufani"]
 @api_router.get("/leaderboard/weekly")
 async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user)):
     """Get top 5 users by workouts this week - visible to all authenticated users.
-    La classifica si aggiorna dopo l'ultima lezione di yoga del sabato (ore 12:30).
+    La classifica viene pubblicata sabato dopo che vengono scalate le lezioni di yoga.
+    Rimane visibile fino alla settimana successiva.
+    In caso di pari merito, vince chi ha raggiunto quel numero di allenamenti PRIMA.
     """
     today = now_rome()
     current_day = today.weekday()  # 0=Monday, 5=Saturday, 6=Sunday
-    current_hour = today.hour
-    current_minute = today.minute
     
-    # La settimana si resetta SABATO dopo le 12:30 (fine ultima lezione yoga)
-    # Sabato dopo le 12:30 -> mostra settimana PROSSIMA
-    # Domenica -> mostra settimana PROSSIMA (inizia domani/lunedì)
-    # Lunedì-Sabato prima delle 12:30 -> mostra settimana corrente
+    # Calcola il lunedì della settimana CORRENTE da mostrare
+    # La settimana mostrata cambia SOLO quando il sabato le lezioni yoga sono state scalate
+    # Per semplicità: sabato dopo le 13:00 (tempo per scalare) -> mostra settimana corrente completata
+    # Prima di sabato 13:00 -> mostra settimana precedente (se esiste) o corrente in corso
     
-    if current_day == 5 and (current_hour > 12 or (current_hour == 12 and current_minute >= 30)):
-        # Sabato dopo le 12:30 -> nuova settimana (inizia lunedì prossimo)
-        monday = today + timedelta(days=2)
-    elif current_day == 6:
-        # Domenica -> nuova settimana (inizia domani/lunedì)
-        monday = today + timedelta(days=1)
+    # Calcola lunedì della settimana corrente
+    monday_this_week = today - timedelta(days=current_day)
+    monday_this_week = monday_this_week.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    # Determina quale settimana mostrare
+    saturday_this_week = monday_this_week + timedelta(days=5)
+    saturday_str = saturday_this_week.strftime("%Y-%m-%d")
+    
+    # Controlla se le lezioni di yoga del sabato sono già state scalate
+    yoga_scalate = await db.bookings.count_documents({
+        "data_lezione": saturday_str,
+        "confermata": True,
+        "lezione_scalata": True
+    })
+    
+    # Se è sabato e le lezioni yoga sono state scalate, O se siamo oltre sabato
+    # -> mostra la settimana corrente (completata)
+    # Altrimenti -> mostra la settimana precedente
+    
+    if current_day > 5 or (current_day == 5 and yoga_scalate > 0):
+        # Mostra settimana corrente (completata)
+        monday = monday_this_week
+    elif current_day == 5 and yoga_scalate == 0:
+        # Sabato ma yoga non ancora scalato -> mostra settimana precedente
+        monday = monday_this_week - timedelta(days=7)
     else:
-        # Lunedì-Sabato mattina -> settimana corrente
-        monday = today - timedelta(days=current_day)
+        # Lun-Ven -> mostra settimana precedente (quella conclusa sabato scorso)
+        monday = monday_this_week - timedelta(days=7)
     
-    monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
     saturday = monday + timedelta(days=5)
     
-    # Get date strings for the week (Mon-Sat, domenica non conta)
+    # Get date strings for the week (Mon-Sat)
     week_dates = []
     for i in range(6):  # Solo Lun-Sab
         d = monday + timedelta(days=i)
@@ -1852,18 +1870,23 @@ async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user))
         {
             "$group": {
                 "_id": "$user_id",
-                "allenamenti": {"$sum": 1}
+                "allenamenti": {"$sum": 1},
+                # Prendi la data più recente per determinare chi ha raggiunto il count prima
+                "ultimo_allenamento": {"$max": "$data_lezione"}
             }
         },
         {
-            "$sort": {"allenamenti": -1}
+            "$sort": {
+                "allenamenti": -1,  # Prima per numero allenamenti (decrescente)
+                "ultimo_allenamento": 1  # Poi per data ultimo allenamento (chi ha finito prima vince)
+            }
         },
         {
-            "$limit": 10  # Prendi più utenti per filtrare quelli esclusi
+            "$limit": 15  # Prendi più utenti per filtrare quelli esclusi
         }
     ]
     
-    top_users = await db.bookings.aggregate(pipeline).to_list(length=10)
+    top_users = await db.bookings.aggregate(pipeline).to_list(length=15)
     
     # Arricchisci con info utente e filtra utenti esclusi
     leaderboard = []

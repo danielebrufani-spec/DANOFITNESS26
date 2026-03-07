@@ -294,7 +294,7 @@ export default function ClassificaScreen() {
         <View style={styles.infoBox}>
           <Ionicons name="information-circle" size={18} color={COLORS.textSecondary} />
           <Text style={styles.infoText}>
-            La classifica si aggiorna sabato alle 12:30 dopo l'ultima lezione di yoga
+            La classifica viene pubblicata sabato dopo le lezioni di yoga. In caso di parità, vince chi ha raggiunto quel numero di allenamenti per primo!
           </Text>
         </View>
       </ScrollView>
