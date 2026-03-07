@@ -209,6 +209,11 @@ export const apiService = {
     total_participants: number;
   }>('/leaderboard/weekly'),
 
+  // Date bloccate
+  getBlockedDates: () => api.get<{data: string; motivo: string}[]>('/blocked-dates'),
+  blockDate: (data: string, motivo: string) => api.post('/admin/block-date', { data, motivo }),
+  unblockDate: (data: string) => api.delete(`/admin/unblock-date/${data}`),
+
   getAdminDashboard: () => api.get<{
     stats: {total_users: number; active_subscriptions: number; bookings_today: number};
     today_lessons: {id: string; orario: string; tipo_attivita: string; coach: string; partecipanti: number}[];

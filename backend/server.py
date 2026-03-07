@@ -474,6 +474,51 @@ async def update_push_token(data: PushTokenUpdate, current_user: dict = Depends(
     )
     return {"message": "Token push aggiornato"}
 
+# ======================== DATE BLOCCATE ========================
+
+class BlockedDateCreate(BaseModel):
+    data: str  # formato YYYY-MM-DD
+    motivo: str
+
+@api_router.get("/blocked-dates")
+async def get_blocked_dates(current_user: dict = Depends(get_current_user)):
+    """Ritorna tutte le date bloccate future"""
+    today = now_rome().strftime("%Y-%m-%d")
+    blocked = await db.blocked_dates.find({"data": {"$gte": today}}).to_list(100)
+    return [{"data": b["data"], "motivo": b["motivo"]} for b in blocked]
+
+@api_router.post("/admin/block-date")
+async def block_date(blocked: BlockedDateCreate, admin_user: dict = Depends(get_admin_user)):
+    """Blocca una data per le prenotazioni"""
+    # Controlla se già bloccata
+    existing = await db.blocked_dates.find_one({"data": blocked.data})
+    if existing:
+        return {"message": f"Data {blocked.data} già bloccata"}
+    
+    await db.blocked_dates.insert_one({
+        "data": blocked.data,
+        "motivo": blocked.motivo,
+        "created_at": now_rome(),
+        "created_by": str(admin_user["_id"])
+    })
+    
+    # Cancella eventuali prenotazioni esistenti per quella data
+    result = await db.bookings.delete_many({"data_lezione": blocked.data})
+    
+    return {
+        "message": f"Data {blocked.data} bloccata",
+        "motivo": blocked.motivo,
+        "prenotazioni_cancellate": result.deleted_count
+    }
+
+@api_router.delete("/admin/unblock-date/{data}")
+async def unblock_date(data: str, admin_user: dict = Depends(get_admin_user)):
+    """Sblocca una data"""
+    result = await db.blocked_dates.delete_one({"data": data})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Data non trovata")
+    return {"message": f"Data {data} sbloccata"}
+
 # ======================== LESSONS ROUTES ========================
 
 @api_router.get("/lessons", response_model=List[LessonResponse])
@@ -812,6 +857,14 @@ async def create_booking(data: BookingCreate, current_user: dict = Depends(get_c
     
     if not lesson:
         raise HTTPException(status_code=404, detail="Lezione non trovata")
+    
+    # CHECK DATA BLOCCATA
+    blocked = await db.blocked_dates.find_one({"data": data.data_lezione})
+    if blocked:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"⚠️ Prenotazioni chiuse per questa data: {blocked.get('motivo', 'Lezione sospesa')}"
+        )
     
     # Check booking week limit: can only book current week, unlocks next week on SUNDAY at 9:00 AM Rome time
     now = now_rome()

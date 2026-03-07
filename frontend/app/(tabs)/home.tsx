@@ -457,6 +457,28 @@ export default function HomeScreen() {
           });
         }
       } catch (e) {}
+
+      // 6. Controlla date bloccate (lezioni sospese)
+      try {
+        const blockedRes = await apiService.getBlockedDates();
+        if (blockedRes.data && blockedRes.data.length > 0) {
+          for (const blocked of blockedRes.data) {
+            const blockedDate = new Date(blocked.data);
+            const oggi = new Date();
+            const diffDays = Math.ceil((blockedDate.getTime() - oggi.getTime()) / (1000 * 60 * 60 * 24));
+            if (diffDays >= 0 && diffDays <= 7) {
+              const giornoSettimana = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'][blockedDate.getDay()];
+              notifs.push({
+                id: `blocked_${blocked.data}`,
+                type: 'warning',
+                message: `⚠️ ${giornoSettimana} ${blockedDate.getDate()}/${blockedDate.getMonth() + 1}: ${blocked.motivo}`,
+                icon: 'alert-circle',
+                color: '#f59e0b'
+              });
+            }
+          }
+        }
+      } catch (e) {}
       
     } catch (error) {
       console.log('Error loading notifications:', error);
