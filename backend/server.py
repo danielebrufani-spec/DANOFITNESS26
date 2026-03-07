@@ -1809,38 +1809,37 @@ LEADERBOARD_EXCLUDED_USERS = ["daniele brufani"]
 
 @api_router.get("/leaderboard/weekly")
 async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user)):
-    """Get top 5 users by workouts - mostra la settimana PRECEDENTE solo se completata.
+    """Get top 5 users by workouts - mostra la settimana CORRENTE.
     La classifica viene pubblicata SOLO dopo che le lezioni yoga del sabato sono state scalate.
+    Prima di sabato mostra "in arrivo".
     """
     today = now_rome()
-    current_day = today.weekday()
+    current_day = today.weekday()  # 0=Mon, 5=Sat, 6=Sun
     
-    # Calcola lunedì della settimana PRECEDENTE
-    monday_this_week = today - timedelta(days=current_day)
-    monday_this_week = monday_this_week.replace(hour=0, minute=0, second=0, microsecond=0)
-    monday_prev_week = monday_this_week - timedelta(days=7)
-    saturday_prev_week = monday_prev_week + timedelta(days=5)
-    saturday_prev_str = saturday_prev_week.strftime("%Y-%m-%d")
+    # Calcola lunedì della settimana CORRENTE
+    monday = today - timedelta(days=current_day)
+    monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
+    saturday = monday + timedelta(days=5)
+    saturday_str = saturday.strftime("%Y-%m-%d")
     
-    # IMPORTANTE: Controlla se le lezioni del sabato della settimana precedente sono state scalate
-    # Se NO -> la classifica non è ancora pronta, ritorna vuota
+    # Controlla se le lezioni del sabato di QUESTA settimana sono state scalate
     yoga_sabato_scalate = await db.bookings.count_documents({
-        "data_lezione": saturday_prev_str,
+        "data_lezione": saturday_str,
         "confermata": True,
         "lezione_scalata": True
     })
     
     if yoga_sabato_scalate == 0:
-        # Nessuna lezione scalata sabato scorso -> classifica non pronta
+        # Yoga del sabato non ancora fatto -> classifica non pronta
         return {
             "leaderboard": [],
-            "settimana": f"{monday_prev_week.strftime('%d/%m')} - {saturday_prev_week.strftime('%d/%m')}",
+            "settimana": f"{monday.strftime('%d/%m')} - {saturday.strftime('%d/%m')}",
             "total_participants": 0,
             "status": "pending"
         }
     
     # Get date strings for the week (Mon-Sat)
-    week_dates = [(monday_prev_week + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(6)]
+    week_dates = [(monday + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(6)]
     
     # Query ottimizzata
     pipeline = [
@@ -1867,7 +1866,7 @@ async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user))
     if not top_users:
         return {
             "leaderboard": [],
-            "settimana": f"{monday_prev_week.strftime('%d/%m')} - {saturday_prev_week.strftime('%d/%m')}",
+            "settimana": f"{monday.strftime('%d/%m')} - {saturday.strftime('%d/%m')}",
             "total_participants": 0,
             "status": "no_data"
         }
@@ -1907,7 +1906,7 @@ async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user))
     
     return {
         "leaderboard": leaderboard,
-        "settimana": f"{monday_prev_week.strftime('%d/%m')} - {saturday_prev_week.strftime('%d/%m')}",
+        "settimana": f"{monday.strftime('%d/%m')} - {saturday.strftime('%d/%m')}",
         "total_participants": len(leaderboard),
         "status": "ready"
     }
