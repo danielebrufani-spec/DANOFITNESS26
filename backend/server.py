@@ -1801,6 +1801,83 @@ async def get_weekly_stats(admin_user: dict = Depends(get_admin_user)):
         "settimana": f"{monday_display} - {sunday_display}"
     }
 
+
+# ======================== TOP 5 SETTIMANALE ========================
+
+@api_router.get("/leaderboard/weekly")
+async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user)):
+    """Get top 5 users by workouts this week - visible to all authenticated users"""
+    today = now_rome()
+    current_day = today.weekday()
+    current_hour = today.hour
+    
+    # Stessa logica di get_weekly_stats per determinare la settimana
+    if current_day == 6 and current_hour >= 9:
+        monday = today + timedelta(days=1)
+    elif current_day == 6 and current_hour < 9:
+        monday = today - timedelta(days=6)
+    else:
+        monday = today - timedelta(days=current_day)
+    
+    monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
+    sunday = monday + timedelta(days=6)
+    
+    # Get date strings for the week
+    week_dates = []
+    for i in range(7):
+        d = monday + timedelta(days=i)
+        week_dates.append(d.strftime("%Y-%m-%d"))
+    
+    # Aggregation: conta prenotazioni confermate per utente
+    pipeline = [
+        {
+            "$match": {
+                "data_lezione": {"$in": week_dates},
+                "confermata": True
+            }
+        },
+        {
+            "$group": {
+                "_id": "$user_id",
+                "allenamenti": {"$sum": 1}
+            }
+        },
+        {
+            "$sort": {"allenamenti": -1}
+        },
+        {
+            "$limit": 5
+        }
+    ]
+    
+    top_users = await db.bookings.aggregate(pipeline).to_list(length=5)
+    
+    # Arricchisci con info utente
+    leaderboard = []
+    for i, entry in enumerate(top_users):
+        user = await db.users.find_one({"_id": ObjectId(entry["_id"])})
+        if user:
+            # Usa soprannome se disponibile, altrimenti nome
+            display_name = user.get("soprannome") or user.get("nome", "Utente")
+            leaderboard.append({
+                "posizione": i + 1,
+                "nome": display_name,
+                "nome_completo": f"{user.get('nome', '')} {user.get('cognome', '')}".strip(),
+                "allenamenti": entry["allenamenti"],
+                "is_me": str(user["_id"]) == str(current_user["_id"])
+            })
+    
+    # Format dates for display
+    monday_display = monday.strftime("%d/%m")
+    sunday_display = sunday.strftime("%d/%m")
+    
+    return {
+        "leaderboard": leaderboard,
+        "settimana": f"{monday_display} - {sunday_display}",
+        "total_participants": len(top_users)
+    }
+
+
 # ======================== WEEKLY BOOKINGS VIEW (ADMIN ONLY) ========================
 
 @api_router.get("/admin/weekly-bookings")

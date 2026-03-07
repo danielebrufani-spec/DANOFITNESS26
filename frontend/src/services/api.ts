@@ -202,6 +202,13 @@ export const apiService = {
   getWheelStatus: () => api.get('/wheel/status'),
   spinWheel: () => api.post('/wheel/spin'),
 
+  // Leaderboard settimanale
+  getWeeklyLeaderboard: () => api.get<{
+    leaderboard: {posizione: number; nome: string; nome_completo: string; allenamenti: number; is_me: boolean}[];
+    settimana: string;
+    total_participants: number;
+  }>('/leaderboard/weekly'),
+
   getAdminDashboard: () => api.get<{
     stats: {total_users: number; active_subscriptions: number; bookings_today: number};
     today_lessons: {id: string; orario: string; tipo_attivita: string; coach: string; partecipanti: number}[];
