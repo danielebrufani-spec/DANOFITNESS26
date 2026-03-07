@@ -223,9 +223,10 @@ export default function ClassificaScreen() {
                   if (secondi.length === 0) return null;
                   return (
                     <View style={styles.podiumSpot}>
+                      <Text style={styles.podiumMedalBig}>🥈</Text>
                       <View style={[styles.podiumBar, styles.podiumSecond]}>
-                        <Text style={styles.podiumMedal}>🥈</Text>
                         <Text style={styles.podiumCount}>{secondi[0].allenamenti}</Text>
+                        <Text style={styles.podiumCountLabel}>allenam.</Text>
                       </View>
                       <View style={styles.podiumNames}>
                         {secondi.map((s, i) => (
@@ -244,9 +245,10 @@ export default function ClassificaScreen() {
                   const primi = leaderboard.filter(e => e.posizione === 1);
                   return (
                     <View style={styles.podiumSpot}>
+                      <Text style={[styles.podiumMedalBig, styles.podiumMedalFirst]}>🥇</Text>
                       <View style={[styles.podiumBar, styles.podiumFirst]}>
-                        <Text style={styles.podiumMedal}>🥇</Text>
                         <Text style={styles.podiumCount}>{primi[0].allenamenti}</Text>
+                        <Text style={styles.podiumCountLabel}>allenam.</Text>
                       </View>
                       <View style={styles.podiumNames}>
                         {primi.map((p, i) => (
@@ -266,9 +268,10 @@ export default function ClassificaScreen() {
                   if (terzi.length === 0) return null;
                   return (
                     <View style={styles.podiumSpot}>
+                      <Text style={styles.podiumMedalBig}>🥉</Text>
                       <View style={[styles.podiumBar, styles.podiumThird]}>
-                        <Text style={styles.podiumMedal}>🥉</Text>
                         <Text style={styles.podiumCount}>{terzi[0].allenamenti}</Text>
+                        <Text style={styles.podiumCountLabel}>allenam.</Text>
                       </View>
                       <View style={styles.podiumNames}>
                         {terzi.map((t, i) => (
@@ -562,18 +565,28 @@ const styles = StyleSheet.create({
   podiumSpot: {
     alignItems: 'center',
     flex: 1,
-    maxWidth: 100,
+    maxWidth: 110,
+  },
+  podiumMedalBig: {
+    fontSize: 48,
+    marginBottom: 8,
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
+  },
+  podiumMedalFirst: {
+    fontSize: 56,
   },
   podiumBar: {
     width: '100%',
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
   podiumFirst: {
     backgroundColor: COLORS.gold,
-    height: 120,
+    height: 90,
     shadowColor: COLORS.gold,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
@@ -581,20 +594,25 @@ const styles = StyleSheet.create({
   },
   podiumSecond: {
     backgroundColor: COLORS.silver,
-    height: 90,
+    height: 70,
   },
   podiumThird: {
     backgroundColor: COLORS.bronze,
-    height: 70,
+    height: 60,
   },
   podiumMedal: {
     fontSize: 28,
   },
   podiumCount: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 28,
+    fontWeight: '900',
     color: COLORS.background,
-    marginTop: 4,
+  },
+  podiumCountLabel: {
+    fontSize: 10,
+    color: COLORS.background,
+    opacity: 0.8,
+    marginTop: 2,
   },
   podiumName: {
     fontSize: 12,
