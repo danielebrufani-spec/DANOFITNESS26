@@ -1865,10 +1865,11 @@ LEADERBOARD_EXCLUDED_USERS = ["daniele brufani"]
 async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user)):
     """Get top 5 users by workouts - mostra la settimana CORRENTE.
     La classifica viene pubblicata SOLO dopo che le lezioni yoga del sabato sono state scalate.
-    Prima di sabato mostra "in arrivo".
+    PARI MERITO: se raggiungono lo stesso numero nella STESSA lezione, sono pari.
+    Altrimenti vince chi ha completato prima.
     """
     today = now_rome()
-    current_day = today.weekday()  # 0=Mon, 5=Sat, 6=Sun
+    current_day = today.weekday()
     
     # Calcola lunedì della settimana CORRENTE
     monday = today - timedelta(days=current_day)
@@ -1884,7 +1885,6 @@ async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user))
     })
     
     if yoga_sabato_scalate == 0:
-        # Yoga del sabato non ancora fatto -> classifica non pronta
         return {
             "leaderboard": [],
             "settimana": f"{monday.strftime('%d/%m')} - {saturday.strftime('%d/%m')}",
@@ -1895,7 +1895,7 @@ async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user))
     # Get date strings for the week (Mon-Sat)
     week_dates = [(monday + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(6)]
     
-    # Query ottimizzata
+    # Query: per ogni utente, prendi l'ultima lezione fatta (data + orario)
     pipeline = [
         {
             "$match": {
@@ -1905,13 +1905,26 @@ async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user))
             }
         },
         {
+            "$lookup": {
+                "from": "lessons",
+                "localField": "lesson_id",
+                "foreignField": "_id",
+                "as": "lesson_info"
+            }
+        },
+        {
+            "$unwind": {"path": "$lesson_info", "preserveNullAndEmptyArrays": True}
+        },
+        {
             "$group": {
                 "_id": "$user_id",
                 "allenamenti": {"$sum": 1},
-                "ultimo_allenamento": {"$max": "$data_lezione"}
+                "ultimo_data": {"$max": "$data_lezione"},
+                "ultimo_orario": {"$max": "$lesson_info.orario"},
+                "ultimo_lesson_id": {"$last": "$lesson_id"}
             }
         },
-        {"$sort": {"allenamenti": -1, "ultimo_allenamento": 1}},
+        {"$sort": {"allenamenti": -1, "ultimo_data": 1, "ultimo_orario": 1}},
         {"$limit": 15}
     ]
     
@@ -1936,11 +1949,13 @@ async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user))
         async for u in users_cursor:
             users_map[str(u["_id"])] = u
     
-    # Build leaderboard
+    # Build leaderboard con gestione pari merito
     leaderboard = []
     position = 1
+    prev_entry = None
+    
     for entry in top_users:
-        if position > 5:
+        if len(leaderboard) >= 5:
             break
         user = users_map.get(entry["_id"])
         if user:
@@ -1949,14 +1964,37 @@ async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user))
                 continue
             
             display_name = user.get("soprannome") or user.get("nome", "Utente")
+            
+            # Controlla pari merito: stesso numero E stessa lezione (data + orario)
+            is_tied = False
+            if prev_entry and prev_entry["allenamenti"] == entry["allenamenti"]:
+                # Stesso numero di allenamenti
+                if (prev_entry["ultimo_data"] == entry["ultimo_data"] and 
+                    prev_entry["ultimo_orario"] == entry["ultimo_orario"]):
+                    # Stessa lezione -> PARI MERITO
+                    is_tied = True
+                    position = prev_entry["position"]  # Usa stessa posizione
+            
+            current_position = position
+            
             leaderboard.append({
-                "posizione": position,
+                "posizione": current_position,
                 "nome": display_name,
                 "nome_completo": f"{user.get('nome', '')} {user.get('cognome', '')}".strip(),
                 "allenamenti": entry["allenamenti"],
-                "is_me": entry["_id"] == str(current_user["_id"])
+                "is_me": entry["_id"] == str(current_user["_id"]),
+                "pari_merito": is_tied
             })
-            position += 1
+            
+            prev_entry = {
+                "allenamenti": entry["allenamenti"],
+                "ultimo_data": entry.get("ultimo_data"),
+                "ultimo_orario": entry.get("ultimo_orario"),
+                "position": current_position
+            }
+            
+            if not is_tied:
+                position = len(leaderboard) + 1
     
     return {
         "leaderboard": leaderboard,

@@ -56,6 +56,7 @@ interface LeaderboardEntry {
   nome_completo: string;
   allenamenti: number;
   is_me: boolean;
+  pari_merito?: boolean;
 }
 
 export default function ClassificaScreen() {
@@ -252,9 +253,14 @@ export default function ClassificaScreen() {
                       {entry.posizione === 1 ? '🥇' : entry.posizione === 2 ? '🥈' : entry.posizione === 3 ? '🥉' : `${entry.posizione}°`}
                     </Text>
                     <View>
-                      <Text style={[styles.leaderboardName, entry.is_me && styles.leaderboardNameMe]}>
-                        {entry.nome} {entry.is_me && '(Tu)'}
-                      </Text>
+                      <View style={{flexDirection: 'row', alignItems: 'center', gap: 6}}>
+                        <Text style={[styles.leaderboardName, entry.is_me && styles.leaderboardNameMe]}>
+                          {entry.nome} {entry.is_me && '(Tu)'}
+                        </Text>
+                        {entry.pari_merito && (
+                          <Text style={styles.pariMeritoBadge}>PARI</Text>
+                        )}
+                      </View>
                       {entry.nome !== entry.nome_completo && (
                         <Text style={styles.leaderboardFullName}>{entry.nome_completo}</Text>
                       )}
@@ -589,6 +595,16 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: COLORS.textSecondary,
     marginTop: 2,
+  },
+  pariMeritoBadge: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: '#FFD700',
+    backgroundColor: 'rgba(255,215,0,0.2)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    overflow: 'hidden',
   },
   leaderboardRight: {
     flexDirection: 'row',

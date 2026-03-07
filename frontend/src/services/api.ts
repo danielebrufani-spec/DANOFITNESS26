@@ -204,7 +204,7 @@ export const apiService = {
 
   // Leaderboard settimanale
   getWeeklyLeaderboard: () => api.get<{
-    leaderboard: {posizione: number; nome: string; nome_completo: string; allenamenti: number; is_me: boolean}[];
+    leaderboard: {posizione: number; nome: string; nome_completo: string; allenamenti: number; is_me: boolean; pari_merito?: boolean}[];
     settimana: string;
     total_participants: number;
   }>('/leaderboard/weekly'),
