@@ -298,6 +298,31 @@ export default function ClassificaScreen() {
             La classifica viene pubblicata sabato dopo le lezioni di yoga. In caso di parità, vince chi ha raggiunto quel numero di allenamenti per primo!
           </Text>
         </View>
+
+        {/* Spiegazione regole */}
+        <View style={styles.rulesBox}>
+          <Text style={styles.rulesTitle}>📜 COME FUNZIONA</Text>
+          <View style={styles.ruleItem}>
+            <Text style={styles.ruleBullet}>🗓️</Text>
+            <Text style={styles.ruleText}>La classifica conta gli allenamenti da Lunedì a Sabato</Text>
+          </View>
+          <View style={styles.ruleItem}>
+            <Text style={styles.ruleBullet}>✅</Text>
+            <Text style={styles.ruleText}>Vengono contate SOLO le lezioni effettivamente svolte</Text>
+          </View>
+          <View style={styles.ruleItem}>
+            <Text style={styles.ruleBullet}>🏆</Text>
+            <Text style={styles.ruleText}>La classifica viene pubblicata sabato dopo lo yoga</Text>
+          </View>
+          <View style={styles.ruleItem}>
+            <Text style={styles.ruleBullet}>⚖️</Text>
+            <Text style={styles.ruleText}>In caso di parità, vince chi ha raggiunto quel numero di allenamenti PRIMA</Text>
+          </View>
+          <View style={styles.ruleItem}>
+            <Text style={styles.ruleBullet}>📊</Text>
+            <Text style={styles.ruleText}>Rimane visibile fino al sabato successivo</Text>
+          </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -631,6 +656,37 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   infoText: {
+    flex: 1,
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    lineHeight: 18,
+  },
+
+  // Regole
+  rulesBox: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 16,
+  },
+  rulesTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.gold,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  ruleItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+    gap: 10,
+  },
+  ruleBullet: {
+    fontSize: 14,
+    width: 24,
+  },
+  ruleText: {
     flex: 1,
     fontSize: 12,
     color: COLORS.textSecondary,
