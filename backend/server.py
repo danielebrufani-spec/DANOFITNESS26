@@ -1810,47 +1810,20 @@ LEADERBOARD_EXCLUDED_USERS = ["daniele brufani"]
 @api_router.get("/leaderboard/weekly")
 async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user)):
     """Get top 5 users by workouts this week - visible to all authenticated users.
-    La classifica viene pubblicata sabato dopo che vengono scalate le lezioni di yoga.
-    Rimane visibile fino alla settimana successiva.
+    Mostra SEMPRE la settimana PRECEDENTE (quella già conclusa con yoga del sabato).
+    La classifica si aggiorna solo quando le lezioni yoga del sabato vengono scalate.
     In caso di pari merito, vince chi ha raggiunto quel numero di allenamenti PRIMA.
     """
     today = now_rome()
     current_day = today.weekday()  # 0=Monday, 5=Saturday, 6=Sunday
     
-    # Calcola il lunedì della settimana CORRENTE da mostrare
-    # La settimana mostrata cambia SOLO quando il sabato le lezioni yoga sono state scalate
-    # Per semplicità: sabato dopo le 13:00 (tempo per scalare) -> mostra settimana corrente completata
-    # Prima di sabato 13:00 -> mostra settimana precedente (se esiste) o corrente in corso
-    
-    # Calcola lunedì della settimana corrente
+    # Calcola lunedì della settimana CORRENTE
     monday_this_week = today - timedelta(days=current_day)
     monday_this_week = monday_this_week.replace(hour=0, minute=0, second=0, microsecond=0)
     
-    # Determina quale settimana mostrare
-    saturday_this_week = monday_this_week + timedelta(days=5)
-    saturday_str = saturday_this_week.strftime("%Y-%m-%d")
-    
-    # Controlla se le lezioni di yoga del sabato sono già state scalate
-    yoga_scalate = await db.bookings.count_documents({
-        "data_lezione": saturday_str,
-        "confermata": True,
-        "lezione_scalata": True
-    })
-    
-    # Se è sabato e le lezioni yoga sono state scalate, O se siamo oltre sabato
-    # -> mostra la settimana corrente (completata)
-    # Altrimenti -> mostra la settimana precedente
-    
-    if current_day > 5 or (current_day == 5 and yoga_scalate > 0):
-        # Mostra settimana corrente (completata)
-        monday = monday_this_week
-    elif current_day == 5 and yoga_scalate == 0:
-        # Sabato ma yoga non ancora scalato -> mostra settimana precedente
-        monday = monday_this_week - timedelta(days=7)
-    else:
-        # Lun-Ven -> mostra settimana precedente (quella conclusa sabato scorso)
-        monday = monday_this_week - timedelta(days=7)
-    
+    # La classifica mostra SEMPRE la settimana PRECEDENTE
+    # (quella già conclusa, con tutte le lezioni scalate incluso yoga del sabato)
+    monday = monday_this_week - timedelta(days=7)
     saturday = monday + timedelta(days=5)
     
     # Get date strings for the week (Mon-Sat)
@@ -1859,26 +1832,28 @@ async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user))
         d = monday + timedelta(days=i)
         week_dates.append(d.strftime("%Y-%m-%d"))
     
-    # Aggregation: conta prenotazioni confermate per utente
+    # Aggregation: conta prenotazioni confermate E SCALATE per utente
+    # (lezione_scalata = true significa che l'utente ha effettivamente fatto la lezione)
     pipeline = [
         {
             "$match": {
                 "data_lezione": {"$in": week_dates},
-                "confermata": True
+                "confermata": True,
+                "lezione_scalata": True  # Solo lezioni effettivamente fatte
             }
         },
         {
             "$group": {
                 "_id": "$user_id",
                 "allenamenti": {"$sum": 1},
-                # Prendi la data più recente per determinare chi ha raggiunto il count prima
+                # Data dell'ultimo allenamento per gestire pari merito
                 "ultimo_allenamento": {"$max": "$data_lezione"}
             }
         },
         {
             "$sort": {
                 "allenamenti": -1,  # Prima per numero allenamenti (decrescente)
-                "ultimo_allenamento": 1  # Poi per data ultimo allenamento (chi ha finito prima vince)
+                "ultimo_allenamento": 1  # A parità, chi ha finito prima vince
             }
         },
         {

@@ -282,10 +282,11 @@ export default function ClassificaScreen() {
           </>
         ) : (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>🏃‍♂️</Text>
-            <Text style={styles.emptyTitle}>Nessun allenamento questa settimana</Text>
+            <Text style={styles.emptyIcon}>⏳</Text>
+            <Text style={styles.emptyTitle}>Classifica in arrivo!</Text>
             <Text style={styles.emptyText}>
-              La classifica si popolerà quando inizieranno gli allenamenti!
+              La classifica della settimana {settimana} verrà pubblicata sabato dopo le lezioni di yoga.
+              {'\n\n'}Allenati e conquista il podio! 💪
             </Text>
           </View>
         )}
