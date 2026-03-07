@@ -161,117 +161,158 @@ export default function ClassificaScreen() {
 
         {leaderboard.length > 0 ? (
           <>
-            {/* Vincitore della settimana */}
-            <Animated.View style={[
-              styles.winnerCard,
-              { opacity: goldGlow.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }
-            ]}>
-              <Animated.Text style={[styles.winnerCrown, { transform: [{ translateY: crownBounce }] }]}>
-                👑
-              </Animated.Text>
-              <Text style={styles.winnerLabel}>CAMPIONE DELLA SETTIMANA</Text>
-              <Text style={styles.winnerName}>{winner.nome}</Text>
-              <View style={styles.winnerStats}>
-                <Text style={styles.winnerCount}>{winner.allenamenti}</Text>
-                <Text style={styles.winnerCountLabel}>ALLENAMENTI</Text>
-              </View>
-              
-              {/* Dedica divertente */}
-              <View style={styles.dedicaBox}>
-                <Text style={styles.dedicaText}>
-                  {DEDICHE_VINCITORE[dedicaIndex](winner.nome, winner.allenamenti)}
-                </Text>
-              </View>
-              
-              {winner.is_me && (
-                <View style={styles.youWinBadge}>
-                  <Text style={styles.youWinText}>🎉 SEI TU! 🎉</Text>
-                </View>
-              )}
-            </Animated.View>
+            {/* Vincitori della settimana (tutti i primi) */}
+            {(() => {
+              const primi = leaderboard.filter(e => e.posizione === 1);
+              const primoNome = primi.length === 1 ? primi[0].nome : primi.map(p => p.nome).join(' & ');
+              return (
+                <Animated.View style={[
+                  styles.winnerCard,
+                  { opacity: goldGlow.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }
+                ]}>
+                  <Animated.Text style={[styles.winnerCrown, { transform: [{ translateY: crownBounce }] }]}>
+                    👑
+                  </Animated.Text>
+                  <Text style={styles.winnerLabel}>
+                    {primi.length > 1 ? 'CAMPIONI DELLA SETTIMANA' : 'CAMPIONE DELLA SETTIMANA'}
+                  </Text>
+                  <Text style={styles.winnerName}>{primoNome}</Text>
+                  <View style={styles.winnerStats}>
+                    <Text style={styles.winnerCount}>{primi[0].allenamenti}</Text>
+                    <Text style={styles.winnerCountLabel}>ALLENAMENTI</Text>
+                  </View>
+                  
+                  {/* Dedica divertente */}
+                  <View style={styles.dedicaBox}>
+                    <Text style={styles.dedicaText}>
+                      {DEDICHE_VINCITORE[dedicaIndex](primoNome, primi[0].allenamenti)}
+                    </Text>
+                  </View>
+                  
+                  {primi.some(p => p.is_me) && (
+                    <View style={styles.youWinBadge}>
+                      <Text style={styles.youWinText}>🎉 SEI TU! 🎉</Text>
+                    </View>
+                  )}
+                </Animated.View>
+              );
+            })()}
 
-            {/* Podio */}
+            {/* Podio con tutti i nomi per posizione */}
             <View style={styles.podiumSection}>
               <Text style={styles.podiumTitle}>🏆 PODIO 🏆</Text>
               <View style={styles.podiumContainer}>
-                {/* 2° posto */}
-                {leaderboard.length >= 2 && (
-                  <View style={styles.podiumSpot}>
-                    <View style={[styles.podiumBar, styles.podiumSecond]}>
-                      <Text style={styles.podiumMedal}>🥈</Text>
-                      <Text style={styles.podiumCount}>{leaderboard[1].allenamenti}</Text>
+                {/* 2° posto - tutti i secondi */}
+                {(() => {
+                  const secondi = leaderboard.filter(e => e.posizione === 2);
+                  if (secondi.length === 0) return null;
+                  return (
+                    <View style={styles.podiumSpot}>
+                      <View style={[styles.podiumBar, styles.podiumSecond]}>
+                        <Text style={styles.podiumMedal}>🥈</Text>
+                        <Text style={styles.podiumCount}>{secondi[0].allenamenti}</Text>
+                      </View>
+                      <View style={styles.podiumNames}>
+                        {secondi.map((s, i) => (
+                          <Text key={i} style={[styles.podiumName, s.is_me && styles.podiumNameMe]} numberOfLines={1}>
+                            {s.nome}
+                          </Text>
+                        ))}
+                      </View>
+                      <Text style={styles.podiumPos}>2°</Text>
                     </View>
-                    <Text style={[styles.podiumName, leaderboard[1].is_me && styles.podiumNameMe]} numberOfLines={1}>
-                      {leaderboard[1].nome}
-                    </Text>
-                    <Text style={styles.podiumPos}>2°</Text>
-                  </View>
-                )}
+                  );
+                })()}
                 
-                {/* 1° posto */}
-                <View style={styles.podiumSpot}>
-                  <View style={[styles.podiumBar, styles.podiumFirst]}>
-                    <Text style={styles.podiumMedal}>🥇</Text>
-                    <Text style={styles.podiumCount}>{leaderboard[0].allenamenti}</Text>
-                  </View>
-                  <Text style={[styles.podiumName, leaderboard[0].is_me && styles.podiumNameMe]} numberOfLines={1}>
-                    {leaderboard[0].nome}
-                  </Text>
-                  <Text style={styles.podiumPos}>1°</Text>
-                </View>
-                
-                {/* 3° posto */}
-                {leaderboard.length >= 3 && (
-                  <View style={styles.podiumSpot}>
-                    <View style={[styles.podiumBar, styles.podiumThird]}>
-                      <Text style={styles.podiumMedal}>🥉</Text>
-                      <Text style={styles.podiumCount}>{leaderboard[2].allenamenti}</Text>
+                {/* 1° posto - tutti i primi */}
+                {(() => {
+                  const primi = leaderboard.filter(e => e.posizione === 1);
+                  return (
+                    <View style={styles.podiumSpot}>
+                      <View style={[styles.podiumBar, styles.podiumFirst]}>
+                        <Text style={styles.podiumMedal}>🥇</Text>
+                        <Text style={styles.podiumCount}>{primi[0].allenamenti}</Text>
+                      </View>
+                      <View style={styles.podiumNames}>
+                        {primi.map((p, i) => (
+                          <Text key={i} style={[styles.podiumName, p.is_me && styles.podiumNameMe]} numberOfLines={1}>
+                            {p.nome}
+                          </Text>
+                        ))}
+                      </View>
+                      <Text style={styles.podiumPos}>1°</Text>
                     </View>
-                    <Text style={[styles.podiumName, leaderboard[2].is_me && styles.podiumNameMe]} numberOfLines={1}>
-                      {leaderboard[2].nome}
-                    </Text>
-                    <Text style={styles.podiumPos}>3°</Text>
-                  </View>
-                )}
+                  );
+                })()}
+                
+                {/* 3° posto - tutti i terzi */}
+                {(() => {
+                  const terzi = leaderboard.filter(e => e.posizione === 3);
+                  if (terzi.length === 0) return null;
+                  return (
+                    <View style={styles.podiumSpot}>
+                      <View style={[styles.podiumBar, styles.podiumThird]}>
+                        <Text style={styles.podiumMedal}>🥉</Text>
+                        <Text style={styles.podiumCount}>{terzi[0].allenamenti}</Text>
+                      </View>
+                      <View style={styles.podiumNames}>
+                        {terzi.map((t, i) => (
+                          <Text key={i} style={[styles.podiumName, t.is_me && styles.podiumNameMe]} numberOfLines={1}>
+                            {t.nome}
+                          </Text>
+                        ))}
+                      </View>
+                      <Text style={styles.podiumPos}>3°</Text>
+                    </View>
+                  );
+                })()}
               </View>
             </View>
 
-            {/* Classifica completa */}
+            {/* Classifica completa - raggruppata per posizione */}
             <View style={styles.fullLeaderboard}>
               <Text style={styles.fullLeaderboardTitle}>📊 CLASSIFICA COMPLETA</Text>
-              {leaderboard.map((entry, index) => (
-                <View 
-                  key={entry.posizione}
-                  style={[
-                    styles.leaderboardRow,
-                    entry.is_me && styles.leaderboardRowMe,
-                    index === 0 && styles.leaderboardRowFirst,
-                  ]}
-                >
-                  <View style={styles.leaderboardLeft}>
-                    <Text style={[styles.leaderboardPos, index === 0 && styles.leaderboardPosFirst]}>
-                      {entry.posizione === 1 ? '🥇' : entry.posizione === 2 ? '🥈' : entry.posizione === 3 ? '🥉' : `${entry.posizione}°`}
-                    </Text>
-                    <View>
-                      <View style={{flexDirection: 'row', alignItems: 'center', gap: 6}}>
-                        <Text style={[styles.leaderboardName, entry.is_me && styles.leaderboardNameMe]}>
-                          {entry.nome} {entry.is_me && '(Tu)'}
-                        </Text>
-                        {entry.pari_merito && (
-                          <Text style={styles.pariMeritoBadge}>PARI</Text>
-                        )}
+              {[1, 2, 3, 4, 5].map((pos) => {
+                const entriesAtPos = leaderboard.filter(e => e.posizione === pos);
+                if (entriesAtPos.length === 0) return null;
+                return (
+                  <View key={pos} style={styles.positionGroup}>
+                    {entriesAtPos.map((entry, idx) => (
+                      <View 
+                        key={`${pos}-${idx}`}
+                        style={[
+                          styles.leaderboardRow,
+                          entry.is_me && styles.leaderboardRowMe,
+                          pos === 1 && styles.leaderboardRowFirst,
+                        ]}
+                      >
+                        <View style={styles.leaderboardLeft}>
+                          <Text style={[styles.leaderboardPos, pos <= 3 && styles.leaderboardPosMedal]}>
+                            {pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : `${pos}°`}
+                          </Text>
+                          <View>
+                            <View style={{flexDirection: 'row', alignItems: 'center', gap: 6}}>
+                              <Text style={[styles.leaderboardName, entry.is_me && styles.leaderboardNameMe]}>
+                                {entry.nome} {entry.is_me && '(Tu)'}
+                              </Text>
+                              {entry.pari_merito && (
+                                <Text style={styles.pariMeritoBadge}>PARI</Text>
+                              )}
+                            </View>
+                            {entry.nome !== entry.nome_completo && (
+                              <Text style={styles.leaderboardFullName}>{entry.nome_completo}</Text>
+                            )}
+                          </View>
+                        </View>
+                        <View style={styles.leaderboardRight}>
+                          <Text style={styles.leaderboardCount}>{entry.allenamenti}</Text>
+                          <Text style={styles.leaderboardCountLabel}>💪</Text>
+                        </View>
                       </View>
-                      {entry.nome !== entry.nome_completo && (
-                        <Text style={styles.leaderboardFullName}>{entry.nome_completo}</Text>
-                      )}
-                    </View>
+                    ))}
                   </View>
-                  <View style={styles.leaderboardRight}>
-                    <Text style={styles.leaderboardCount}>{entry.allenamenti}</Text>
-                    <Text style={styles.leaderboardCountLabel}>💪</Text>
-                  </View>
-                </View>
-              ))}
+                );
+              })}
             </View>
 
             {/* Messaggio motivazionale */}
@@ -522,8 +563,11 @@ const styles = StyleSheet.create({
   podiumName: {
     fontSize: 12,
     color: COLORS.text,
-    marginTop: 8,
     textAlign: 'center',
+  },
+  podiumNames: {
+    marginTop: 8,
+    alignItems: 'center',
   },
   podiumNameMe: {
     color: COLORS.gold,
@@ -548,6 +592,9 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     textAlign: 'center',
     marginBottom: 16,
+  },
+  positionGroup: {
+    marginBottom: 4,
   },
   leaderboardRow: {
     flexDirection: 'row',
@@ -581,6 +628,9 @@ const styles = StyleSheet.create({
   },
   leaderboardPosFirst: {
     fontSize: 22,
+  },
+  leaderboardPosMedal: {
+    fontSize: 20,
   },
   leaderboardName: {
     fontSize: 15,
