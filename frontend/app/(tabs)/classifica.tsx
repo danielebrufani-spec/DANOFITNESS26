@@ -284,10 +284,10 @@ export default function ClassificaScreen() {
               </View>
             </View>
 
-            {/* Classifica completa - raggruppata per posizione */}
+            {/* Classifica completa - solo podio (1°, 2°, 3°) */}
             <View style={styles.fullLeaderboard}>
               <Text style={styles.fullLeaderboardTitle}>📊 CLASSIFICA COMPLETA</Text>
-              {[1, 2, 3, 4, 5].map((pos) => {
+              {[1, 2, 3].map((pos) => {
                 const entriesAtPos = leaderboard.filter(e => e.posizione === pos);
                 if (entriesAtPos.length === 0) return null;
                 return (
@@ -303,7 +303,7 @@ export default function ClassificaScreen() {
                       >
                         <View style={styles.leaderboardLeft}>
                           <Text style={[styles.leaderboardPos, pos <= 3 && styles.leaderboardPosMedal]}>
-                            {pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : `${pos}°`}
+                            {pos === 1 ? '🥇' : pos === 2 ? '🥈' : '🥉'}
                           </Text>
                           <View>
                             <View style={{flexDirection: 'row', alignItems: 'center', gap: 6}}>

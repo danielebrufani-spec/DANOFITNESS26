@@ -1967,8 +1967,8 @@ async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user))
                 "ultimo_orario": entry.get("ultimo_orario")
             })
     
-    # Trova i TOP 5 numeri DISTINTI di allenamenti
-    unique_counts = sorted(set(e["allenamenti"] for e in filtered_entries), reverse=True)[:5]
+    # Trova i TOP 3 numeri DISTINTI di allenamenti (solo podio)
+    unique_counts = sorted(set(e["allenamenti"] for e in filtered_entries), reverse=True)[:3]
     
     # Assegna posizioni basate sul numero di allenamenti
     # 1° = chi ha il numero più alto, 2° = chi ha il secondo più alto, ecc.
