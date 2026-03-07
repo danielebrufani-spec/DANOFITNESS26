@@ -3790,9 +3790,25 @@ async def startup_event():
         await db.bookings.create_index("data_lezione")
         await db.lessons.create_index("giorno")
         await db.log_ingressi.create_index([("user_id", 1), ("data_lezione", 1)])
+        await db.blocked_dates.create_index("data", unique=True)
         logger.info("[DB] MongoDB indexes created successfully")
     except Exception as e:
         logger.warning(f"[DB] Index creation warning: {e}")
+    
+    # Blocca date specifiche (lezioni sospese)
+    blocked_dates_to_add = [
+        {"data": "2026-03-14", "motivo": "Costanza ha un corso di aggiornamento, scusate per il disagio! 🙏"},
+    ]
+    for bd in blocked_dates_to_add:
+        existing = await db.blocked_dates.find_one({"data": bd["data"]})
+        if not existing:
+            await db.blocked_dates.insert_one({
+                "data": bd["data"],
+                "motivo": bd["motivo"],
+                "created_at": now_rome(),
+                "created_by": "system"
+            })
+            logger.info(f"[BLOCKED] Data {bd['data']} bloccata: {bd['motivo']}")
     
     # Avvia il background task per processare le lezioni automaticamente
     asyncio.create_task(auto_process_lessons_task())
