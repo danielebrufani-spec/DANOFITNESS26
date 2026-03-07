@@ -1863,12 +1863,12 @@ LEADERBOARD_EXCLUDED_USERS = ["daniele brufani"]
 
 @api_router.get("/leaderboard/weekly")
 async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user)):
-    """Get top 5 positions by workouts - mostra la settimana CORRENTE.
-    TUTTE le posizioni sono sempre presenti (1°, 2°, 3°, 4°, 5°).
+    """Get top 3 positions by workouts - mostra la settimana CORRENTE.
+    Solo podio: 1°, 2°, 3° posto.
     Le posizioni sono basate sul NUMERO di allenamenti:
     - 1° = chi ha fatto più allenamenti
     - 2° = chi ha fatto il secondo numero più alto
-    - ecc.
+    - 3° = chi ha fatto il terzo numero più alto
     Più persone possono essere nella stessa posizione (pari merito).
     """
     today = now_rome()

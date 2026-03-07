@@ -29,15 +29,16 @@ App fitness completa per gestione palestra con sistema di abbonamenti, prenotazi
 
 ### Gamification
 - **Sistema Livelli:** 7 livelli da "Divano Vivente" a "Dio della Palestra"
-- **Classifica Settimanale:** Top 3 con gestione pari merito
-- **Bacheca Medaglie:** Collezione medaglie vinte (oro, argento, bronzo)
+- **Classifica Settimanale:** TOP 3 (podio) con gestione pari merito
+- **Bacheca Medaglie:** Collezione medaglie vinte (oro, argento, bronzo) nel profilo utente
 - **Ruota della Fortuna:** Premi settimanali
 
 ## Task Completati (7 Marzo 2025)
 - [x] Implementazione UI Bacheca Medaglie nel profilo utente
 - [x] Card preview con conteggio medaglie (oro/argento/bronzo)
 - [x] Modal dettagliato con storico vittorie
-- [x] Aggiunta endpoint `getMyMedals` in apiService
+- [x] Modifica classifica da TOP 5 a TOP 3 (solo podio)
+- [x] Aggiornamento testi e commenti per riflettere TOP 3
 
 ## Prossimi Task
 - [ ] Suoni e animazioni per la Ruota della Fortuna
@@ -69,7 +70,7 @@ App fitness completa per gestione palestra con sistema di abbonamenti, prenotazi
 
 ## API Endpoints Principali
 - `GET /api/medals/me` - Medaglie utente corrente
-- `GET /api/leaderboard/weekly` - Classifica settimanale
+- `GET /api/leaderboard/weekly` - Classifica settimanale (TOP 3)
 - `GET /api/user/livello` - Livello settimanale utente
 - `POST /api/bookings` - Crea prenotazione
 - `GET /api/subscriptions/me` - Abbonamenti utente

@@ -44,7 +44,7 @@ const DEDICHE_VINCITORE = [
 // Frasi motivazionali per chi non è in classifica
 const FRASI_MOTIVAZIONE = [
   "La classifica si aggiorna ogni settimana... il tuo momento sta arrivando! 💪",
-  "Non sei ancora in Top 5? Perfetto, hai tutto da guadagnare! 🚀",
+  "Non sei ancora sul podio? Perfetto, hai tutto da guadagnare! 🚀",
   "I campioni di domani si allenano oggi! Cosa aspetti? 🏆",
   "La gloria è a un allenamento di distanza! 🔥",
   "Anche Rocky ha iniziato da zero... e guardalo ora! 🥊",
@@ -156,7 +156,7 @@ export default function ClassificaScreen() {
           <Text style={styles.title}>CLASSIFICA</Text>
           <Animated.Text style={[styles.fireEmoji, { transform: [{ scale: fireScale }] }]}>🔥</Animated.Text>
         </View>
-        <Text style={styles.subtitle}>TOP 5 SETTIMANALE</Text>
+        <Text style={styles.subtitle}>TOP 3 SETTIMANALE</Text>
         <Text style={styles.weekText}>📅 {settimana}</Text>
 
         {leaderboard.length > 0 ? (
