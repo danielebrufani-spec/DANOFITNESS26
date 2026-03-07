@@ -165,6 +165,22 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="classifica"
+        options={{
+          title: 'Classifica',
+          // Visibile a TUTTI: clienti, admin, istruttori
+          href: '/classifica',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons 
+              name={focused ? "trophy" : "trophy-outline"} 
+              size={size} 
+              color={focused ? '#FFD700' : color} 
+            />
+          ),
+          tabBarActiveTintColor: '#FFD700',
+        }}
+      />
+      <Tabs.Screen
         name="profilo"
         options={{
           title: 'Profilo',

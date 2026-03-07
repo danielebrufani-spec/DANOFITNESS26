@@ -355,8 +355,6 @@ export default function HomeScreen() {
   const [currentQuote, setCurrentQuote] = useState(0);
   const [notifications, setNotifications] = useState<{id: string; type: string; message: string; icon: string; color: string}[]>([]);
   const [dismissedNotifications, setDismissedNotifications] = useState<string[]>([]);
-  const [leaderboard, setLeaderboard] = useState<{posizione: number; nome: string; nome_completo: string; allenamenti: number; is_me: boolean}[]>([]);
-  const [leaderboardWeek, setLeaderboardWeek] = useState('');
   
   // Admin state
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
@@ -487,14 +485,6 @@ export default function HomeScreen() {
       } else {
         // Carica notifiche per cliente
         await loadClientNotifications();
-        // Carica leaderboard settimanale
-        try {
-          const leaderboardRes = await apiService.getWeeklyLeaderboard();
-          setLeaderboard(leaderboardRes.data.leaderboard);
-          setLeaderboardWeek(leaderboardRes.data.settimana);
-        } catch (e) {
-          console.log('Leaderboard not available');
-        }
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -816,83 +806,6 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* TOP 5 SETTIMANALE - LEADERBOARD */}
-        {leaderboard.length > 0 && (
-          <View style={styles.leaderboardSection}>
-            <View style={styles.leaderboardHeader}>
-              <Text style={styles.leaderboardTitle}>🏆 TOP 5 SETTIMANALE 🏆</Text>
-              <Text style={styles.leaderboardWeek}>{leaderboardWeek}</Text>
-            </View>
-            
-            <View style={styles.leaderboardPodium}>
-              {/* Podio: 2° - 1° - 3° posto */}
-              {leaderboard.length >= 2 && (
-                <View style={styles.podiumSpot}>
-                  <View style={[styles.podiumBar, styles.podiumSecond]}>
-                    <Text style={styles.podiumEmoji}>🥈</Text>
-                    <Text style={styles.podiumCount}>{leaderboard[1].allenamenti}</Text>
-                  </View>
-                  <Text style={[styles.podiumName, leaderboard[1].is_me && styles.podiumNameMe]} numberOfLines={1}>
-                    {leaderboard[1].nome}
-                  </Text>
-                </View>
-              )}
-              
-              {leaderboard.length >= 1 && (
-                <View style={styles.podiumSpot}>
-                  <View style={[styles.podiumBar, styles.podiumFirst]}>
-                    <Text style={styles.podiumCrown}>👑</Text>
-                    <Text style={styles.podiumEmoji}>🥇</Text>
-                    <Text style={styles.podiumCount}>{leaderboard[0].allenamenti}</Text>
-                  </View>
-                  <Text style={[styles.podiumName, leaderboard[0].is_me && styles.podiumNameMe]} numberOfLines={1}>
-                    {leaderboard[0].nome}
-                  </Text>
-                </View>
-              )}
-              
-              {leaderboard.length >= 3 && (
-                <View style={styles.podiumSpot}>
-                  <View style={[styles.podiumBar, styles.podiumThird]}>
-                    <Text style={styles.podiumEmoji}>🥉</Text>
-                    <Text style={styles.podiumCount}>{leaderboard[2].allenamenti}</Text>
-                  </View>
-                  <Text style={[styles.podiumName, leaderboard[2].is_me && styles.podiumNameMe]} numberOfLines={1}>
-                    {leaderboard[2].nome}
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            {/* 4° e 5° posto */}
-            {leaderboard.length > 3 && (
-              <View style={styles.leaderboardRest}>
-                {leaderboard.slice(3).map((entry) => (
-                  <View 
-                    key={entry.posizione} 
-                    style={[styles.leaderboardRow, entry.is_me && styles.leaderboardRowMe]}
-                  >
-                    <Text style={styles.leaderboardPos}>{entry.posizione}°</Text>
-                    <Text style={[styles.leaderboardName, entry.is_me && styles.leaderboardNameMe]} numberOfLines={1}>
-                      {entry.nome}
-                    </Text>
-                    <View style={styles.leaderboardCountBadge}>
-                      <Text style={styles.leaderboardCount}>{entry.allenamenti}</Text>
-                      <Text style={styles.leaderboardCountLabel}>💪</Text>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            )}
-
-            <Text style={styles.leaderboardMotivation}>
-              {leaderboard.some(e => e.is_me) 
-                ? "🔥 Sei in classifica! Continua così!" 
-                : "💪 Allenati per entrare in classifica!"}
-            </Text>
-          </View>
-        )}
-
         {/* Frase Divertente */}
         <View style={styles.quoteContainer}>
           <View style={styles.quoteCard}>
@@ -991,150 +904,8 @@ const styles = StyleSheet.create({
   notificationClose: {
     padding: 4,
   },
-
-  // Leaderboard Section
-  leaderboardSection: {
-    backgroundColor: '#1a1a2e',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 20,
-    borderWidth: 2,
-    borderColor: '#FFD700',
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  leaderboardHeader: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  leaderboardTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFD700',
-    letterSpacing: 2,
-    textShadowColor: '#FFD700',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 10,
-  },
-  leaderboardWeek: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 4,
-  },
-  leaderboardPodium: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'flex-end',
-    marginBottom: 16,
-    gap: 8,
-  },
-  podiumSpot: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  podiumBar: {
-    width: '100%',
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-  },
-  podiumFirst: {
-    backgroundColor: '#FFD700',
-    height: 100,
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 15,
-  },
-  podiumSecond: {
-    backgroundColor: '#C0C0C0',
-    height: 75,
-  },
-  podiumThird: {
-    backgroundColor: '#CD7F32',
-    height: 60,
-  },
-  podiumCrown: {
-    fontSize: 20,
-    position: 'absolute',
-    top: -20,
-  },
-  podiumEmoji: {
-    fontSize: 24,
-  },
-  podiumCount: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1a1a2e',
-    marginTop: 4,
-  },
-  podiumName: {
-    fontSize: 12,
-    color: '#fff',
-    marginTop: 6,
-    textAlign: 'center',
-    maxWidth: 80,
-  },
-  podiumNameMe: {
-    color: '#FFD700',
-    fontWeight: 'bold',
-  },
-  leaderboardRest: {
-    gap: 8,
-    marginTop: 8,
-  },
-  leaderboardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 10,
-    padding: 12,
-  },
-  leaderboardRowMe: {
-    backgroundColor: 'rgba(255,215,0,0.15)',
-    borderWidth: 1,
-    borderColor: '#FFD700',
-  },
-  leaderboardPos: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#888',
-    width: 30,
-  },
-  leaderboardName: {
-    flex: 1,
-    fontSize: 14,
-    color: '#fff',
-  },
-  leaderboardNameMe: {
-    color: '#FFD700',
-    fontWeight: 'bold',
-  },
-  leaderboardCountBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
-  },
-  leaderboardCount: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  leaderboardCountLabel: {
-    fontSize: 12,
-  },
-  leaderboardMotivation: {
-    textAlign: 'center',
-    color: '#888',
+  
+  // Star Wars Card
     fontSize: 13,
     marginTop: 16,
     fontStyle: 'italic',
