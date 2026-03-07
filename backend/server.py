@@ -1748,20 +1748,26 @@ async def process_started_lessons(admin_user: dict = Depends(get_admin_user)):
 
 @api_router.get("/admin/weekly-stats")
 async def get_weekly_stats(admin_user: dict = Depends(get_admin_user)):
-    """Get weekly statistics: total presences and lessons already deducted"""
+    """Get weekly statistics: total presences and lessons already deducted.
+    La settimana si resetta domenica alle 9:00 (quando si aprono le prenotazioni della settimana successiva)
+    """
     today = now_rome()
-    current_day = today.weekday()
+    current_day = today.weekday()  # 0=Monday, 6=Sunday
+    current_hour = today.hour
     
-    # Calculate Monday of current week
-    if current_day == 5:  # Saturday
-        days_until_monday = 2
-        monday = today + timedelta(days=days_until_monday)
-    elif current_day == 6:  # Sunday
-        days_until_monday = 1
-        monday = today + timedelta(days=days_until_monday)
+    # Determina se siamo nella "nuova settimana" (domenica dopo le 9:00)
+    # In quel caso, mostriamo la settimana che INIZIA domani (lunedì)
+    # Altrimenti mostriamo la settimana corrente
+    
+    if current_day == 6 and current_hour >= 9:
+        # Domenica dopo le 9:00 -> mostra settimana PROSSIMA (inizia domani)
+        monday = today + timedelta(days=1)
+    elif current_day == 6 and current_hour < 9:
+        # Domenica prima delle 9:00 -> mostra settimana corrente
+        monday = today - timedelta(days=6)
     else:
-        days_from_monday = current_day
-        monday = today - timedelta(days=days_from_monday)
+        # Lunedì-Sabato -> mostra settimana corrente
+        monday = today - timedelta(days=current_day)
     
     monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
     sunday = monday + timedelta(days=6)
