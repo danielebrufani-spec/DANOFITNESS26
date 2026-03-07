@@ -15,6 +15,17 @@ import { useAuth } from '../../src/context/AuthContext';
 import { COLORS } from '../../src/utils/constants';
 import { apiService } from '../../src/services/api';
 
+// Livelli per riferimento nel frontend
+const LIVELLI_NOMI = [
+  { livello: 0, nome: "Divano Vivente", icona: "🛋️" },
+  { livello: 1, nome: "Schiappa in Ripresa", icona: "🐌" },
+  { livello: 2, nome: "Scaldapanca", icona: "💦" },
+  { livello: 3, nome: "Guerriero", icona: "⚔️" },
+  { livello: 4, nome: "Bestia", icona: "🦁" },
+  { livello: 5, nome: "Leggenda", icona: "🔥" },
+  { livello: 6, nome: "Dio della Palestra", icona: "👑" },
+];
+
 export default function ProfiloScreen() {
   const { user, logout, isAdmin, isIstruttore, refreshUser } = useAuth();
   const router = useRouter();
@@ -92,60 +103,86 @@ export default function ProfiloScreen() {
         <Text style={styles.title}>Profilo</Text>
 
         {/* Livello Settimanale Card - Solo per utenti normali */}
-        {showLivello && (
-          <TouchableOpacity 
-            style={styles.livelloCard} 
-            onPress={() => setShowLivelloInfo(true)}
-            activeOpacity={0.8}
-          >
-            {livelloData ? (
-              <>
-                {/* Livello Raggiunto - Settimana Precedente */}
-                <Text style={styles.livelloTitolo}>🏆 Livello raggiunto ({livelloData.settimana_precedente})</Text>
-                <View style={styles.livelloHeader}>
-                  <Text style={styles.livelloIcona}>{livelloData.icona}</Text>
-                  <View style={styles.livelloInfo}>
-                    <Text style={styles.livelloNome}>{livelloData.nome}</Text>
-                    <Text style={styles.livelloDescrizione}>{livelloData.descrizione}</Text>
-                  </View>
-                  <TouchableOpacity onPress={() => setShowLivelloInfo(true)}>
-                    <Ionicons name="information-circle-outline" size={24} color={COLORS.textSecondary} />
-                  </TouchableOpacity>
+        {showLivello && livelloData && (
+          <>
+            {/* CARD 1: SETTIMANA IN CORSO - PIÙ IN EVIDENZA */}
+            <View style={styles.currentWeekCard}>
+              <View style={styles.currentWeekHeader}>
+                <Text style={styles.currentWeekBadge}>⚡ IN CORSO</Text>
+                <Text style={styles.currentWeekDates}>{livelloData.settimana_corrente}</Text>
+              </View>
+              
+              <View style={styles.currentWeekContent}>
+                <View style={styles.currentWeekStats}>
+                  <Text style={styles.currentWeekNumber}>{livelloData.allenamenti_fatti}</Text>
+                  <Text style={styles.currentWeekLabel}>allenamenti</Text>
                 </View>
                 
-                {/* Divider */}
-                <View style={styles.divider} />
-                
-                {/* Progresso Settimana Corrente */}
-                <Text style={styles.progressTitle}>📈 Questa settimana ({livelloData.settimana_corrente})</Text>
-                <View style={styles.progressContainer}>
-                  <View style={styles.progressBar}>
+                <View style={styles.currentWeekProgress}>
+                  <View style={styles.progressBarLarge}>
                     {[0, 1, 2, 3, 4, 5].map((i) => (
                       <View
                         key={i}
                         style={[
-                          styles.progressSegment,
-                          i < livelloData.allenamenti_fatti && styles.progressSegmentFilled,
-                          i >= livelloData.allenamenti_fatti && i < (livelloData.allenamenti_fatti + livelloData.allenamenti_prenotati) && styles.progressSegmentPrenotato
+                          styles.progressSegmentLarge,
+                          i < livelloData.allenamenti_fatti && styles.progressSegmentLargeFilled,
+                          i >= livelloData.allenamenti_fatti && i < (livelloData.allenamenti_fatti + livelloData.allenamenti_prenotati) && styles.progressSegmentLargePrenotato
                         ]}
-                      />
+                      >
+                        <Text style={styles.progressSegmentNumber}>{i + 1}</Text>
+                      </View>
                     ))}
                   </View>
-                  <Text style={styles.progressText}>
-                    {livelloData.allenamenti_fatti} fatti {livelloData.allenamenti_prenotati > 0 ? `+ ${livelloData.allenamenti_prenotati} prenotati` : ''} / 6
+                  {livelloData.allenamenti_prenotati > 0 && (
+                    <Text style={styles.prenotatiText}>+ {livelloData.allenamenti_prenotati} prenotati</Text>
+                  )}
+                </View>
+              </View>
+              
+              {/* Prossimo livello */}
+              {livelloData.allenamenti_fatti < 6 && (
+                <View style={styles.nextLevelBox}>
+                  <Text style={styles.nextLevelText}>
+                    {livelloData.allenamenti_fatti === 5 
+                      ? "🔥 Ancora 1 per diventare DIO DELLA PALESTRA! 👑" 
+                      : `Prossimo: ${LIVELLI_NOMI[livelloData.allenamenti_fatti + 1]?.icona || '🎯'} ${LIVELLI_NOMI[livelloData.allenamenti_fatti + 1]?.nome || ''}`
+                    }
                   </Text>
                 </View>
+              )}
+              {livelloData.allenamenti_fatti >= 6 && (
+                <View style={styles.godModeBox}>
+                  <Text style={styles.godModeText}>👑 SEI UN DIO! 6 SU 6! 👑</Text>
+                </View>
+              )}
+            </View>
 
-                {livelloData.prossimo_livello && livelloData.allenamenti_fatti < 6 && (
-                  <Text style={styles.prossimoLivello}>
-                    Per salire: raggiungi {livelloData.prossimo_livello.icona} {livelloData.prossimo_livello.nome}
-                  </Text>
-                )}
-              </>
-            ) : (
-              <ActivityIndicator color={COLORS.primary} />
-            )}
-          </TouchableOpacity>
+            {/* CARD 2: SETTIMANA PRECEDENTE - LIVELLO RAGGIUNTO */}
+            <TouchableOpacity 
+              style={styles.prevWeekCard} 
+              onPress={() => setShowLivelloInfo(true)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.prevWeekHeader}>
+                <Text style={styles.prevWeekTitle}>🏆 Livello Raggiunto</Text>
+                <Text style={styles.prevWeekDates}>{livelloData.settimana_precedente}</Text>
+              </View>
+              <View style={styles.prevWeekContent}>
+                <Text style={styles.prevWeekIcona}>{livelloData.icona}</Text>
+                <View style={styles.prevWeekInfo}>
+                  <Text style={styles.prevWeekNome}>{livelloData.nome}</Text>
+                  <Text style={styles.prevWeekDescrizione}>{livelloData.descrizione}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+              </View>
+            </TouchableOpacity>
+          </>
+        )}
+        
+        {showLivello && !livelloData && (
+          <View style={styles.livelloLoading}>
+            <ActivityIndicator color={COLORS.primary} />
+          </View>
         )}
 
         {/* User Info Card */}
@@ -443,6 +480,174 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: COLORS.primary,
   },
+  
+  // CARD SETTIMANA IN CORSO
+  currentWeekCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 12,
+    borderWidth: 3,
+    borderColor: COLORS.primary,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  currentWeekHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  currentWeekBadge: {
+    backgroundColor: COLORS.primary,
+    color: '#000',
+    fontSize: 12,
+    fontWeight: 'bold',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  currentWeekDates: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+  },
+  currentWeekContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 20,
+  },
+  currentWeekStats: {
+    alignItems: 'center',
+  },
+  currentWeekNumber: {
+    fontSize: 48,
+    fontWeight: '900',
+    color: COLORS.primary,
+  },
+  currentWeekLabel: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: -4,
+  },
+  currentWeekProgress: {
+    flex: 1,
+  },
+  progressBarLarge: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  progressSegmentLarge: {
+    flex: 1,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: COLORS.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  progressSegmentLargeFilled: {
+    backgroundColor: COLORS.primary,
+  },
+  progressSegmentLargePrenotato: {
+    backgroundColor: COLORS.primary + '50',
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    borderStyle: 'dashed',
+  },
+  progressSegmentNumber: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.textSecondary,
+  },
+  prenotatiText: {
+    fontSize: 11,
+    color: COLORS.primary,
+    textAlign: 'center',
+    marginTop: 6,
+  },
+  nextLevelBox: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 16,
+  },
+  nextLevelText: {
+    fontSize: 13,
+    color: COLORS.text,
+    textAlign: 'center',
+  },
+  godModeBox: {
+    backgroundColor: '#FFD700',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 16,
+  },
+  godModeText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000',
+    textAlign: 'center',
+  },
+
+  // CARD SETTIMANA PRECEDENTE
+  prevWeekCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  prevWeekHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  prevWeekTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  prevWeekDates: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+  },
+  prevWeekContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  prevWeekIcona: {
+    fontSize: 32,
+    marginRight: 12,
+  },
+  prevWeekInfo: {
+    flex: 1,
+  },
+  prevWeekNome: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  prevWeekDescrizione: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  livelloLoading: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 40,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+
+  // Stili vecchi mantenuti per compatibilità
   livelloTitolo: {
     fontSize: 12,
     fontWeight: '600',
