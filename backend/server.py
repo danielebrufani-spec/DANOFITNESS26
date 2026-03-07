@@ -1807,46 +1807,42 @@ async def get_weekly_stats(admin_user: dict = Depends(get_admin_user)):
 # Utenti da escludere dalla classifica (utenti di test)
 LEADERBOARD_EXCLUDED_USERS = ["daniele brufani"]
 
-# Cache per la leaderboard (evita query ripetute)
-_leaderboard_cache = {"data": None, "timestamp": None, "settimana": None}
-
 @api_router.get("/leaderboard/weekly")
 async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user)):
-    """Get top 5 users by workouts this week - OTTIMIZZATO con cache.
-    Mostra SEMPRE la settimana PRECEDENTE (quella già conclusa con yoga del sabato).
+    """Get top 5 users by workouts - mostra la settimana PRECEDENTE solo se completata.
+    La classifica viene pubblicata SOLO dopo che le lezioni yoga del sabato sono state scalate.
     """
-    global _leaderboard_cache
-    
     today = now_rome()
     current_day = today.weekday()
     
     # Calcola lunedì della settimana PRECEDENTE
     monday_this_week = today - timedelta(days=current_day)
     monday_this_week = monday_this_week.replace(hour=0, minute=0, second=0, microsecond=0)
-    monday = monday_this_week - timedelta(days=7)
-    saturday = monday + timedelta(days=5)
+    monday_prev_week = monday_this_week - timedelta(days=7)
+    saturday_prev_week = monday_prev_week + timedelta(days=5)
+    saturday_prev_str = saturday_prev_week.strftime("%Y-%m-%d")
     
-    settimana_key = f"{monday.strftime('%Y%m%d')}"
+    # IMPORTANTE: Controlla se le lezioni del sabato della settimana precedente sono state scalate
+    # Se NO -> la classifica non è ancora pronta, ritorna vuota
+    yoga_sabato_scalate = await db.bookings.count_documents({
+        "data_lezione": saturday_prev_str,
+        "confermata": True,
+        "lezione_scalata": True
+    })
     
-    # Usa cache se disponibile e recente (max 5 minuti)
-    cache_valid = (
-        _leaderboard_cache["data"] is not None and
-        _leaderboard_cache["settimana"] == settimana_key and
-        _leaderboard_cache["timestamp"] and
-        (today - _leaderboard_cache["timestamp"]).total_seconds() < 300
-    )
-    
-    if cache_valid:
-        # Aggiorna solo is_me per l'utente corrente
-        cached = _leaderboard_cache["data"].copy()
-        for entry in cached["leaderboard"]:
-            entry["is_me"] = entry.get("user_id") == str(current_user["_id"])
-        return cached
+    if yoga_sabato_scalate == 0:
+        # Nessuna lezione scalata sabato scorso -> classifica non pronta
+        return {
+            "leaderboard": [],
+            "settimana": f"{monday_prev_week.strftime('%d/%m')} - {saturday_prev_week.strftime('%d/%m')}",
+            "total_participants": 0,
+            "status": "pending"
+        }
     
     # Get date strings for the week (Mon-Sat)
-    week_dates = [(monday + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(6)]
+    week_dates = [(monday_prev_week + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(6)]
     
-    # Query ottimizzata con lookup utente inline
+    # Query ottimizzata
     pipeline = [
         {
             "$match": {
@@ -1867,6 +1863,14 @@ async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user))
     ]
     
     top_users = await db.bookings.aggregate(pipeline).to_list(length=15)
+    
+    if not top_users:
+        return {
+            "leaderboard": [],
+            "settimana": f"{monday_prev_week.strftime('%d/%m')} - {saturday_prev_week.strftime('%d/%m')}",
+            "total_participants": 0,
+            "status": "no_data"
+        }
     
     # Fetch tutti gli utenti in una sola query
     user_ids = [ObjectId(entry["_id"]) for entry in top_users if entry["_id"]]
@@ -1897,25 +1901,16 @@ async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user))
                 "nome": display_name,
                 "nome_completo": f"{user.get('nome', '')} {user.get('cognome', '')}".strip(),
                 "allenamenti": entry["allenamenti"],
-                "user_id": entry["_id"],
                 "is_me": entry["_id"] == str(current_user["_id"])
             })
             position += 1
     
-    result = {
+    return {
         "leaderboard": leaderboard,
-        "settimana": f"{monday.strftime('%d/%m')} - {saturday.strftime('%d/%m')}",
-        "total_participants": len(leaderboard)
+        "settimana": f"{monday_prev_week.strftime('%d/%m')} - {saturday_prev_week.strftime('%d/%m')}",
+        "total_participants": len(leaderboard),
+        "status": "ready"
     }
-    
-    # Salva in cache
-    _leaderboard_cache = {
-        "data": result,
-        "timestamp": today,
-        "settimana": settimana_key
-    }
-    
-    return result
 
 
 # ======================== WEEKLY BOOKINGS VIEW (ADMIN ONLY) ========================
