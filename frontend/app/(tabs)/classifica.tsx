@@ -164,19 +164,31 @@ export default function ClassificaScreen() {
             {/* Vincitori della settimana (tutti i primi) */}
             {(() => {
               const primi = leaderboard.filter(e => e.posizione === 1);
-              const primoNome = primi.length === 1 ? primi[0].nome : primi.map(p => p.nome).join(' & ');
               return (
                 <Animated.View style={[
                   styles.winnerCard,
                   { opacity: goldGlow.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }
                 ]}>
                   <Animated.Text style={[styles.winnerCrown, { transform: [{ translateY: crownBounce }] }]}>
-                    👑
+                    {primi.length > 1 ? '👑👑' : '👑'}
                   </Animated.Text>
                   <Text style={styles.winnerLabel}>
-                    {primi.length > 1 ? 'CAMPIONI DELLA SETTIMANA' : 'CAMPIONE DELLA SETTIMANA'}
+                    {primi.length > 1 ? `🎉 ${primi.length} CAMPIONI DELLA SETTIMANA! 🎉` : 'CAMPIONE DELLA SETTIMANA'}
                   </Text>
-                  <Text style={styles.winnerName}>{primoNome}</Text>
+                  
+                  {/* Nomi dei vincitori */}
+                  <View style={styles.winnersNames}>
+                    {primi.map((p, idx) => (
+                      <View key={idx} style={styles.winnerNameRow}>
+                        <Text style={styles.winnerNameStar}>⭐</Text>
+                        <Text style={[styles.winnerName, p.is_me && styles.winnerNameMe]}>
+                          {p.nome}
+                        </Text>
+                        {p.is_me && <Text style={styles.winnerYouTag}>(Tu!)</Text>}
+                      </View>
+                    ))}
+                  </View>
+                  
                   <View style={styles.winnerStats}>
                     <Text style={styles.winnerCount}>{primi[0].allenamenti}</Text>
                     <Text style={styles.winnerCountLabel}>ALLENAMENTI</Text>
@@ -185,13 +197,16 @@ export default function ClassificaScreen() {
                   {/* Dedica divertente */}
                   <View style={styles.dedicaBox}>
                     <Text style={styles.dedicaText}>
-                      {DEDICHE_VINCITORE[dedicaIndex](primoNome, primi[0].allenamenti)}
+                      {primi.length > 1 
+                        ? `${primi.map(p => p.nome).join(' e ')} sono INARRESTABILI! ${primi[0].allenamenti} allenamenti a testa... LEGGENDARI! 🔥💪`
+                        : DEDICHE_VINCITORE[dedicaIndex](primi[0].nome, primi[0].allenamenti)
+                      }
                     </Text>
                   </View>
                   
                   {primi.some(p => p.is_me) && (
                     <View style={styles.youWinBadge}>
-                      <Text style={styles.youWinText}>🎉 SEI TU! 🎉</Text>
+                      <Text style={styles.youWinText}>🎉 HAI VINTO! 🎉</Text>
                     </View>
                   )}
                 </Animated.View>
@@ -456,13 +471,34 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   winnerName: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '900',
     color: COLORS.text,
-    marginTop: 8,
     textShadowColor: COLORS.gold,
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 10,
+  },
+  winnerNameMe: {
+    color: COLORS.gold,
+  },
+  winnersNames: {
+    marginTop: 12,
+    marginBottom: 8,
+    alignItems: 'center',
+  },
+  winnerNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 4,
+    gap: 8,
+  },
+  winnerNameStar: {
+    fontSize: 20,
+  },
+  winnerYouTag: {
+    fontSize: 14,
+    color: COLORS.gold,
+    fontWeight: 'bold',
   },
   winnerStats: {
     alignItems: 'center',
