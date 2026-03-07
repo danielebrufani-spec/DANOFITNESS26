@@ -312,15 +312,16 @@ def get_initial_lessons(tipo: SubscriptionType) -> Optional[int]:
 LIVELLI_FITNESS = [
     {"livello": 0, "nome": "Divano Vivente", "icona": "🛋️", "descrizione": "Il divano ti chiama..."},
     {"livello": 1, "nome": "Schiappa in Ripresa", "icona": "🐌", "descrizione": "Almeno ti sei mosso!"},
-    {"livello": 2, "nome": "Scaldapanca", "icona": "💦", "descrizione": "Piano piano..."},
+    {"livello": 2, "nome": "Scaldapanca", "icona": "💦", "descrizione": "Stai ingranando..."},
     {"livello": 3, "nome": "Guerriero", "icona": "⚔️", "descrizione": "Ora si fa sul serio!"},
     {"livello": 4, "nome": "Bestia", "icona": "🦁", "descrizione": "Inarrestabile!"},
-    {"livello": 5, "nome": "Dio della Palestra", "icona": "👑", "descrizione": "Leggenda! 5 su 5!"},
+    {"livello": 5, "nome": "Leggenda", "icona": "🔥", "descrizione": "Quasi al top!"},
+    {"livello": 6, "nome": "Dio della Palestra", "icona": "👑", "descrizione": "6 su 6! SEI UN DIO!"},
 ]
 
 def get_livello_info(allenamenti_settimana: int) -> dict:
     """Restituisce le info del livello basato sugli allenamenti settimanali"""
-    livello = min(allenamenti_settimana, 5)  # Max 5
+    livello = min(allenamenti_settimana, 6)  # Max 6
     return LIVELLI_FITNESS[livello]
 
 def get_previous_week_dates() -> tuple:
@@ -1073,7 +1074,7 @@ async def get_user_livello(current_user: dict = Depends(get_current_user)):
         "settimana_corrente": f"{format_date_short(curr_monday)} - {format_date_short(curr_saturday)}",
         "allenamenti_fatti": allenamenti_curr_fatti,
         "allenamenti_prenotati": allenamenti_curr_prenotati,
-        "max_allenamenti": 5
+        "max_allenamenti": 6
     }
 
 # Conta lezioni effettuate nel periodo dell'abbonamento

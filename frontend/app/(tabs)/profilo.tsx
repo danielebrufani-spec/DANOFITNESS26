@@ -120,7 +120,7 @@ export default function ProfiloScreen() {
                 <Text style={styles.progressTitle}>📈 Questa settimana ({livelloData.settimana_corrente})</Text>
                 <View style={styles.progressContainer}>
                   <View style={styles.progressBar}>
-                    {[0, 1, 2, 3, 4].map((i) => (
+                    {[0, 1, 2, 3, 4, 5].map((i) => (
                       <View
                         key={i}
                         style={[
@@ -132,11 +132,11 @@ export default function ProfiloScreen() {
                     ))}
                   </View>
                   <Text style={styles.progressText}>
-                    {livelloData.allenamenti_fatti} fatti {livelloData.allenamenti_prenotati > 0 ? `+ ${livelloData.allenamenti_prenotati} prenotati` : ''} / {livelloData.max_allenamenti}
+                    {livelloData.allenamenti_fatti} fatti {livelloData.allenamenti_prenotati > 0 ? `+ ${livelloData.allenamenti_prenotati} prenotati` : ''} / 6
                   </Text>
                 </View>
 
-                {livelloData.prossimo_livello && livelloData.allenamenti_fatti < 5 && (
+                {livelloData.prossimo_livello && livelloData.allenamenti_fatti < 6 && (
                   <Text style={styles.prossimoLivello}>
                     Per salire: raggiungi {livelloData.prossimo_livello.icona} {livelloData.prossimo_livello.nome}
                   </Text>
