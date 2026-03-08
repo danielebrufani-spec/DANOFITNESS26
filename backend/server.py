@@ -2064,16 +2064,23 @@ async def get_my_medals(current_user: dict = Depends(get_current_user)):
 
 @api_router.get("/admin/weekly-bookings")
 async def get_weekly_bookings(admin_user: dict = Depends(get_admin_user)):
-    """Get all bookings for the current week grouped by lesson - OPTIMIZED"""
+    """Get all bookings for the current week grouped by lesson - OPTIMIZED
+    
+    Logica settimana:
+    - Lun-Ven: mostra settimana corrente
+    - Sabato fino alle 14:00: mostra settimana corrente
+    - Sabato dopo le 14:00: mostra settimana prossima
+    - Domenica: mostra SEMPRE settimana prossima
+    """
     # Calculate current week (Mon-Sat)
     today = now_rome()
     current_day = today.weekday()  # 0 = Monday
     
-    # If it's Saturday after 7 AM or Sunday, show next week
-    if current_day == 5 and today.hour >= 7:  # Saturday after 7 AM
+    # Se è Sabato dopo le 14:00 o Domenica, mostra la settimana PROSSIMA
+    if current_day == 5 and today.hour >= 14:  # Saturday after 2 PM
         days_until_monday = 2
         monday = today + timedelta(days=days_until_monday)
-    elif current_day == 6:  # Sunday
+    elif current_day == 6:  # Sunday - SEMPRE settimana prossima
         days_until_monday = 1
         monday = today + timedelta(days=days_until_monday)
     else:
