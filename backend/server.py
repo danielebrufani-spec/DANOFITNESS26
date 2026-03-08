@@ -2591,6 +2591,11 @@ async def get_istruttore_lezioni(current_user: dict = Depends(get_current_user))
     """
     Vista per istruttori: mostra tutte le lezioni della settimana con i partecipanti.
     OTTIMIZZATO per velocità.
+    
+    Logica settimana (allineata con admin):
+    - Lun-Sab (prima delle 14): settimana corrente
+    - Sabato dopo le 14: settimana prossima
+    - Domenica: SEMPRE settimana prossima
     """
     # Verifica che sia un istruttore o admin
     if current_user.get("role") not in [UserRole.ISTRUTTORE, UserRole.ADMIN]:
@@ -2598,7 +2603,17 @@ async def get_istruttore_lezioni(current_user: dict = Depends(get_current_user))
     
     today = now_rome()
     current_day = today.weekday()
-    monday = today - timedelta(days=current_day)
+    current_hour = today.hour
+    
+    # Calcola il lunedì della settimana da mostrare
+    if current_day == 5 and current_hour >= 14:  # Sabato dopo le 14
+        monday = today + timedelta(days=2)
+    elif current_day == 6:  # Domenica -> settimana PROSSIMA
+        monday = today + timedelta(days=1)
+    else:
+        monday = today - timedelta(days=current_day)
+    
+    monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
     
     # Genera date della settimana (lun-sab)
     week_dates = [(monday + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(6)]
