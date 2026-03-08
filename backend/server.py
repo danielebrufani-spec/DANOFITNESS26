@@ -325,12 +325,18 @@ def get_livello_info(allenamenti_settimana: int) -> dict:
     return LIVELLI_FITNESS[livello]
 
 def get_previous_week_dates() -> tuple:
-    """Restituisce le date di inizio (lunedì) e fine (sabato) della SETTIMANA PRECEDENTE"""
+    """Restituisce le date di inizio (lunedì) e fine (sabato) della SETTIMANA PRECEDENTE
+    
+    La domenica, la "settimana precedente" è quella appena conclusa (Lun-Sab passati)
+    """
     today = datetime.now(ROME_TZ)
     current_day = today.weekday()  # 0=Lunedì, 6=Domenica
+    current_hour = today.hour
     
-    # Calcola il lunedì della settimana corrente
-    if current_day == 6:  # Domenica
+    # Calcola il lunedì della settimana "corrente" (che la domenica diventa la prossima)
+    if current_day == 5 and current_hour >= 14:  # Sabato dopo le 14
+        this_monday = today + timedelta(days=2)
+    elif current_day == 6:  # Domenica -> settimana corrente = prossima settimana
         this_monday = today + timedelta(days=1)
     else:
         this_monday = today - timedelta(days=current_day)
@@ -343,12 +349,18 @@ def get_previous_week_dates() -> tuple:
     return prev_monday.strftime("%Y-%m-%d"), prev_saturday.strftime("%Y-%m-%d")
 
 def get_current_week_dates() -> tuple:
-    """Restituisce le date di inizio (lunedì) e fine (sabato) della SETTIMANA CORRENTE"""
+    """Restituisce le date di inizio (lunedì) e fine (sabato) della SETTIMANA CORRENTE
+    
+    La domenica, la "settimana corrente" è quella che inizia domani (Lun-Sab prossimi)
+    """
     today = datetime.now(ROME_TZ)
     current_day = today.weekday()  # 0=Lunedì, 6=Domenica
+    current_hour = today.hour
     
     # Calcola il lunedì della settimana corrente
-    if current_day == 6:  # Domenica
+    if current_day == 5 and current_hour >= 14:  # Sabato dopo le 14
+        this_monday = today + timedelta(days=2)
+    elif current_day == 6:  # Domenica -> settimana corrente = prossima settimana
         this_monday = today + timedelta(days=1)
     else:
         this_monday = today - timedelta(days=current_day)
@@ -1803,24 +1815,24 @@ async def process_started_lessons(admin_user: dict = Depends(get_admin_user)):
 @api_router.get("/admin/weekly-stats")
 async def get_weekly_stats(admin_user: dict = Depends(get_admin_user)):
     """Get weekly statistics: total presences and lessons already deducted.
-    La settimana si resetta domenica alle 9:00 (quando si aprono le prenotazioni della settimana successiva)
+    
+    Logica settimana:
+    - Lun-Ven: mostra settimana corrente
+    - Sabato fino alle 14:00: mostra settimana corrente
+    - Sabato dopo le 14:00: mostra settimana prossima
+    - Domenica: mostra SEMPRE settimana prossima
     """
     today = now_rome()
     current_day = today.weekday()  # 0=Monday, 6=Sunday
     current_hour = today.hour
     
-    # Determina se siamo nella "nuova settimana" (domenica dopo le 9:00)
-    # In quel caso, mostriamo la settimana che INIZIA domani (lunedì)
-    # Altrimenti mostriamo la settimana corrente
-    
-    if current_day == 6 and current_hour >= 9:
-        # Domenica dopo le 9:00 -> mostra settimana PROSSIMA (inizia domani)
+    # Se è Sabato dopo le 14:00 o Domenica, mostra la settimana PROSSIMA
+    if current_day == 5 and current_hour >= 14:  # Saturday after 2 PM
+        monday = today + timedelta(days=2)
+    elif current_day == 6:  # Sunday - SEMPRE settimana prossima
         monday = today + timedelta(days=1)
-    elif current_day == 6 and current_hour < 9:
-        # Domenica prima delle 9:00 -> mostra settimana corrente
-        monday = today - timedelta(days=6)
     else:
-        # Lunedì-Sabato -> mostra settimana corrente
+        # Lunedì-Sabato (prima delle 14) -> mostra settimana corrente
         monday = today - timedelta(days=current_day)
     
     monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
