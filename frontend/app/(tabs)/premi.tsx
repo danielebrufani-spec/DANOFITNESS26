@@ -53,24 +53,27 @@ interface WheelStatus {
   last_result?: string;
 }
 
+interface Vincitore {
+  posizione: number;
+  nome: string;
+  cognome: string;
+  soprannome?: string;
+  biglietti: number;
+  is_me: boolean;
+}
+
 interface LotteryStatus {
   biglietti_utente: number;
   mese_corrente: string;
   ha_abbonamento_attivo: boolean;
-  vincitore: {
-    nome: string;
-    cognome: string;
-    soprannome?: string;
-    biglietti: number;
-    mese_riferimento: string;
-    totale_partecipanti: number;
-    totale_biglietti?: number;
-    data_estrazione?: string;
-    premio?: string;
-    premio_descrizione?: string;
-    premio_ritirato?: boolean;
-    is_me: boolean;
-  } | null;
+  vincitori: Vincitore[];
+  mese_riferimento?: string;
+  totale_partecipanti: number;
+  totale_biglietti?: number;
+  data_estrazione?: string;
+  premio?: string;
+  premio_descrizione?: string;
+  is_me_winner: boolean;
   prossima_estrazione: string;
   secondi_a_estrazione: number;
   estrazione_fatta: boolean;
@@ -666,72 +669,90 @@ export default function PremiScreen() {
           <Text style={styles.countdownInfo}>1° del mese • ore 12:00 • Solo abbonati attivi</Text>
         </View>
 
-        {/* ===== SEZIONE VINCITORE DEL MESE - VISIBILE A TUTTI ===== */}
-        {status?.vincitore && (
+        {/* ===== SEZIONE 3 VINCITORI DEL MESE - VISIBILE A TUTTI ===== */}
+        {status?.vincitori && status.vincitori.length > 0 && (
           <Animated.View style={[styles.winnerSection, { transform: [{ scale: pulseAnim }] }]}>
             {/* Cornice luminosa */}
             <View style={styles.winnerGlowBorder}>
               <View style={styles.winnerInner}>
-                {/* Header vincitore */}
+                {/* Header vincitori */}
                 <View style={styles.winnerHeader}>
                   <Text style={styles.trophyBig}>🏆</Text>
                   <Text style={styles.winnerMainLabel}>
-                    {status.vincitore.is_me ? '🎉 SEI TU IL VINCITORE! 🎉' : 'VINCITORE DEL MESE'}
+                    {status.is_me_winner ? '🎉 SEI TRA I VINCITORI! 🎉' : 'VINCITORI DEL MESE'}
                   </Text>
                   <Text style={styles.trophyBig}>🏆</Text>
                 </View>
 
-                {/* Nome vincitore grande */}
-                <Text style={styles.winnerBigName}>
-                  {status.vincitore.soprannome || `${status.vincitore.nome} ${status.vincitore.cognome}`}
-                </Text>
-                
-                {/* Se c'è soprannome mostra anche nome completo */}
-                {status.vincitore.soprannome && (
-                  <Text style={styles.winnerFullName}>
-                    ({status.vincitore.nome} {status.vincitore.cognome})
+                {/* Messaggio del Maestro */}
+                <View style={styles.maestroMessage}>
+                  <Text style={styles.maestroText}>
+                    Il Maestro è buono e vi vuole bene! 💪{'\n'}
+                    3 magliette/canotte in palio!
                   </Text>
-                )}
+                </View>
+
+                {/* Lista 3 vincitori */}
+                {status.vincitori.map((vincitore, index) => (
+                  <View key={index} style={[
+                    styles.vincitoreCard,
+                    vincitore.is_me && styles.vincitoreCardMe,
+                    index === 0 && styles.vincitoreCardFirst
+                  ]}>
+                    <View style={styles.vincitorePosition}>
+                      <Text style={styles.vincitoreMedal}>
+                        {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+                      </Text>
+                      <Text style={styles.vincitorePos}>{vincitore.posizione}°</Text>
+                    </View>
+                    <View style={styles.vincitoreInfo}>
+                      <Text style={[styles.vincitoreNome, vincitore.is_me && styles.vincitoreNomeMe]}>
+                        {vincitore.soprannome || `${vincitore.nome} ${vincitore.cognome}`}
+                        {vincitore.is_me && ' (TU!)'}
+                      </Text>
+                      <Text style={styles.vincitoreBiglietti}>
+                        {vincitore.biglietti} biglietti
+                      </Text>
+                    </View>
+                    {vincitore.is_me && (
+                      <View style={styles.vincitoreWinBadge}>
+                        <Text style={styles.vincitoreWinText}>🎉</Text>
+                      </View>
+                    )}
+                  </View>
+                ))}
 
                 {/* Mese di riferimento */}
                 <Text style={styles.winnerPeriod}>
-                  Estrazione: {formatMese(status.vincitore.mese_riferimento)}
+                  Estrazione: {formatMese(status.mese_riferimento || '')}
                 </Text>
 
                 {/* Statistiche estrazione */}
                 <View style={styles.winnerStatsRow}>
                   <View style={styles.winnerStatItem}>
-                    <Text style={styles.statNumber}>{status.vincitore.biglietti}</Text>
-                    <Text style={styles.statLabel}>biglietti</Text>
-                  </View>
-                  <View style={styles.winnerStatDivider} />
-                  <View style={styles.winnerStatItem}>
-                    <Text style={styles.statNumber}>{status.vincitore.totale_partecipanti}</Text>
+                    <Text style={styles.statNumber}>{status.totale_partecipanti}</Text>
                     <Text style={styles.statLabel}>partecipanti</Text>
                   </View>
                   <View style={styles.winnerStatDivider} />
                   <View style={styles.winnerStatItem}>
-                    <Text style={styles.statNumber}>{status.vincitore.totale_biglietti || '-'}</Text>
+                    <Text style={styles.statNumber}>{status.totale_biglietti || '-'}</Text>
                     <Text style={styles.statLabel}>biglietti totali</Text>
                   </View>
                 </View>
 
                 {/* Premio vinto */}
-                {status.vincitore.premio && (
+                {status.premio && (
                   <View style={styles.prizeBadge}>
                     <Text style={styles.prizeBadgeLabel}>🎁 PREMIO</Text>
-                    <Text style={styles.prizeBadgeText}>{status.vincitore.premio}</Text>
-                    {status.vincitore.premio_descrizione && (
-                      <Text style={styles.prizeBadgeDesc}>{status.vincitore.premio_descrizione}</Text>
-                    )}
-                    {status.vincitore.premio_ritirato && (
-                      <Text style={styles.prizeCollected}>✅ Premio ritirato</Text>
+                    <Text style={styles.prizeBadgeText}>{status.premio}</Text>
+                    {status.premio_descrizione && (
+                      <Text style={styles.prizeBadgeDesc}>{status.premio_descrizione}</Text>
                     )}
                   </View>
                 )}
 
                 {/* Messaggio per il vincitore */}
-                {status.vincitore.is_me && !status.vincitore.premio_ritirato && (
+                {status.is_me_winner && (
                   <View style={styles.winnerMessageBox}>
                     <Text style={styles.winnerMessage}>🎁 Congratulazioni! Ritira il tuo premio dal Maestro! 🎁</Text>
                   </View>
@@ -747,7 +768,7 @@ export default function PremiScreen() {
         )}
 
         {/* Nessun vincitore ancora */}
-        {!status?.vincitore && (
+        {(!status?.vincitori || status.vincitori.length === 0) && (
           <View style={styles.noWinnerCard}>
             <Text style={styles.noWinnerIcon}>🎰</Text>
             <Text style={styles.noWinnerTitle}>In attesa dell'estrazione</Text>
@@ -842,7 +863,8 @@ export default function PremiScreen() {
 
               <Text style={styles.ruleTitle}>🏆 COSA SI VINCE?</Text>
               <Text style={styles.ruleText}>
-                Ogni mese il Maestro mette in palio un gadget della palestra: magliette, borracce, asciugamani e altro!
+                Il Maestro è buono e vi vuole bene! 💪{'\n'}
+                Ogni mese ci sono 3 VINCITORI che riceveranno ciascuno una maglietta o canotta DanoFitness!
               </Text>
 
               <Text style={styles.ruleTitle}>📢 COME SAPRÒ SE HO VINTO?</Text>
@@ -1869,5 +1891,78 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#000',
+  },
+  // Stili per 3 vincitori
+  maestroMessage: {
+    backgroundColor: 'rgba(255,215,0,0.15)',
+    borderRadius: 12,
+    padding: 12,
+    marginVertical: 12,
+    borderWidth: 1,
+    borderColor: VEGAS_COLORS.gold,
+  },
+  maestroText: {
+    fontSize: 14,
+    color: VEGAS_COLORS.gold,
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  vincitoreCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+    padding: 12,
+    marginVertical: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  vincitoreCardMe: {
+    backgroundColor: 'rgba(255,215,0,0.15)',
+    borderColor: VEGAS_COLORS.gold,
+    borderWidth: 2,
+  },
+  vincitoreCardFirst: {
+    backgroundColor: 'rgba(255,215,0,0.1)',
+  },
+  vincitorePosition: {
+    alignItems: 'center',
+    marginRight: 12,
+    width: 50,
+  },
+  vincitoreMedal: {
+    fontSize: 32,
+  },
+  vincitorePos: {
+    fontSize: 12,
+    color: VEGAS_COLORS.textSecondary,
+    marginTop: 2,
+  },
+  vincitoreInfo: {
+    flex: 1,
+  },
+  vincitoreNome: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: VEGAS_COLORS.text,
+  },
+  vincitoreNomeMe: {
+    color: VEGAS_COLORS.gold,
+  },
+  vincitoreBiglietti: {
+    fontSize: 12,
+    color: VEGAS_COLORS.textSecondary,
+    marginTop: 2,
+  },
+  vincitoreWinBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: VEGAS_COLORS.gold,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  vincitoreWinText: {
+    fontSize: 18,
   },
 });

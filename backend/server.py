@@ -3357,7 +3357,7 @@ async def get_users_with_active_subscription() -> set:
 
 
 async def run_lottery_extraction():
-    """Esegue l'estrazione della lotteria - SOLO per utenti con abbonamento attivo"""
+    """Esegue l'estrazione della lotteria - 3 VINCITORI - SOLO per utenti con abbonamento attivo"""
     now = datetime.now(ROME_TZ)
     current_month = now.strftime("%Y-%m")
     
@@ -3429,34 +3429,55 @@ async def run_lottery_extraction():
     for p in partecipanti:
         pool.extend([p["_id"]] * p["biglietti"])
     
-    # ESTRAZIONE CASUALE - random.choice seleziona a caso dalla pool
-    winner_id = random.choice(pool)
-    winner = await db.users.find_one({"_id": ObjectId(winner_id)})
+    # ESTRAZIONE 3 VINCITORI - Il Maestro è buono!
+    num_vincitori = min(3, len(partecipanti))  # Massimo 3, o meno se non ci sono abbastanza partecipanti
+    vincitori_ids = []
+    vincitori_data = []
+    pool_copy = pool.copy()
     
-    if winner:
-        winner_biglietti = next((p["biglietti"] for p in partecipanti if p["_id"] == winner_id), 0)
+    for i in range(num_vincitori):
+        if not pool_copy:
+            break
         
+        # Estrai vincitore
+        winner_id = random.choice(pool_copy)
+        
+        # Evita duplicati: rimuovi TUTTI i biglietti di questo vincitore dalla pool
+        pool_copy = [uid for uid in pool_copy if uid != winner_id]
+        
+        vincitori_ids.append(winner_id)
+        
+        winner = await db.users.find_one({"_id": ObjectId(winner_id)})
+        if winner:
+            winner_biglietti = next((p["biglietti"] for p in partecipanti if p["_id"] == winner_id), 0)
+            vincitori_data.append({
+                "posizione": i + 1,
+                "user_id": winner_id,
+                "nome": winner.get("nome"),
+                "cognome": winner.get("cognome"),
+                "soprannome": winner.get("soprannome"),
+                "biglietti": winner_biglietti
+            })
+            logger.info(f"[LOTTERY] VINCITORE {i+1}: {winner.get('nome')} {winner.get('cognome')} con {winner_biglietti} biglietti")
+    
+    if vincitori_data:
         # Ottieni premio del mese se impostato
         prize = await db.lottery_prizes.find_one({"mese": current_month})
         
         winner_data = {
             "mese": current_month,
             "mese_riferimento": prev_month_str,
-            "user_id": winner_id,
-            "nome": winner.get("nome"),
-            "cognome": winner.get("cognome"),
-            "soprannome": winner.get("soprannome"),
-            "biglietti": winner_biglietti,
+            "vincitori": vincitori_data,
             "totale_partecipanti": len(partecipanti),
             "totale_biglietti": len(pool),
             "data_estrazione": now_rome(),
-            "premio": prize.get("premio") if prize else None,
-            "premio_descrizione": prize.get("descrizione") if prize else None,
-            "premio_ritirato": False,
+            "premio": prize.get("premio") if prize else "Maglietta o Canotta DanoFitness",
+            "premio_descrizione": prize.get("descrizione") if prize else "Il Maestro è buono e vi vuole bene! 3 vincitori questo mese!",
+            "premi_ritirati": [False, False, False],
             "estrazione_automatica": True
         }
         await db.lottery_winners.insert_one(winner_data)
-        logger.info(f"[LOTTERY] VINCITORE ESTRATTO AUTOMATICAMENTE: {winner.get('nome')} {winner.get('cognome')} con {winner_biglietti} biglietti su {len(pool)} totali")
+        logger.info(f"[LOTTERY] ESTRAZIONE COMPLETATA: {len(vincitori_data)} vincitori su {len(pool)} biglietti totali")
         return winner_data
     
     return None
@@ -3475,7 +3496,7 @@ async def check_and_run_lottery():
 
 @api_router.get("/lottery/status")
 async def get_lottery_status(current_user: dict = Depends(get_current_user)):
-    """Ottieni stato lotteria: biglietti utente, vincitore"""
+    """Ottieni stato lotteria: biglietti utente, 3 vincitori"""
     now = datetime.now(ROME_TZ)
     current_month = now.strftime("%Y-%m")
     
@@ -3508,8 +3529,8 @@ async def get_lottery_status(current_user: dict = Depends(get_current_user)):
     active_users = await get_users_with_active_subscription()
     ha_abbonamento_attivo = user_id in active_users
     
-    # Ottieni vincitore corrente (estratto questo mese, riferito al mese scorso)
-    winner = await db.lottery_winners.find_one({"mese": current_month})
+    # Ottieni vincitori correnti (estratti questo mese, riferiti al mese scorso)
+    winner_data = await db.lottery_winners.find_one({"mese": current_month})
     
     # Calcola prossima estrazione (1° del prossimo mese alle 12:00)
     if now.month == 12:
@@ -3519,27 +3540,54 @@ async def get_lottery_status(current_user: dict = Depends(get_current_user)):
     
     seconds_to_extraction = int((next_extraction - now).total_seconds())
     
+    # Prepara lista vincitori (supporta sia vecchio formato singolo che nuovo formato 3 vincitori)
+    vincitori = []
+    is_me_winner = False
+    
+    if winner_data:
+        # Nuovo formato: array vincitori
+        if "vincitori" in winner_data:
+            for v in winner_data["vincitori"]:
+                is_me = v.get("user_id") == user_id
+                if is_me:
+                    is_me_winner = True
+                vincitori.append({
+                    "posizione": v.get("posizione"),
+                    "nome": v.get("nome"),
+                    "cognome": v.get("cognome"),
+                    "soprannome": v.get("soprannome"),
+                    "biglietti": v.get("biglietti"),
+                    "is_me": is_me
+                })
+        # Vecchio formato: singolo vincitore (retrocompatibilità)
+        else:
+            is_me = winner_data.get("user_id") == user_id
+            if is_me:
+                is_me_winner = True
+            vincitori.append({
+                "posizione": 1,
+                "nome": winner_data.get("nome"),
+                "cognome": winner_data.get("cognome"),
+                "soprannome": winner_data.get("soprannome"),
+                "biglietti": winner_data.get("biglietti"),
+                "is_me": is_me
+            })
+    
     return {
         "biglietti_utente": biglietti,
         "mese_corrente": current_month,
         "ha_abbonamento_attivo": ha_abbonamento_attivo,
-        "vincitore": {
-            "nome": winner.get("nome"),
-            "cognome": winner.get("cognome"),
-            "soprannome": winner.get("soprannome"),
-            "biglietti": winner.get("biglietti"),
-            "mese_riferimento": winner.get("mese_riferimento"),
-            "totale_partecipanti": winner.get("totale_partecipanti"),
-            "totale_biglietti": winner.get("totale_biglietti"),
-            "data_estrazione": winner.get("data_estrazione").isoformat() if winner.get("data_estrazione") else None,
-            "premio": winner.get("premio"),
-            "premio_descrizione": winner.get("premio_descrizione"),
-            "premio_ritirato": winner.get("premio_ritirato", False),
-            "is_me": winner.get("user_id") == user_id
-        } if winner else None,
+        "vincitori": vincitori,
+        "mese_riferimento": winner_data.get("mese_riferimento") if winner_data else None,
+        "totale_partecipanti": winner_data.get("totale_partecipanti") if winner_data else 0,
+        "totale_biglietti": winner_data.get("totale_biglietti") if winner_data else 0,
+        "data_estrazione": winner_data.get("data_estrazione").isoformat() if winner_data and winner_data.get("data_estrazione") else None,
+        "premio": winner_data.get("premio", "Maglietta o Canotta DanoFitness") if winner_data else "Maglietta o Canotta DanoFitness",
+        "premio_descrizione": winner_data.get("premio_descrizione", "Il Maestro è buono e vi vuole bene!") if winner_data else None,
+        "is_me_winner": is_me_winner,
         "prossima_estrazione": next_extraction.isoformat(),
         "secondi_a_estrazione": max(0, seconds_to_extraction),
-        "estrazione_fatta": winner is not None
+        "estrazione_fatta": winner_data is not None
     }
 
 
