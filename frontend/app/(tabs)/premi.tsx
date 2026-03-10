@@ -644,6 +644,13 @@ export default function PremiScreen() {
 
         {/* Countdown */}
         <View style={styles.countdownCard}>
+          {/* Premio in palio - sempre visibile */}
+          <View style={styles.premioHeaderBanner}>
+            <Text style={styles.premioHeaderText}>🎁 PREMIO IN PALIO 🎁</Text>
+            <Text style={styles.premioHeaderPrize}>3 Magliette o Canotte</Text>
+            <Text style={styles.premioHeaderWinners}>3 VINCITORI! Il Maestro è buono e vi vuole bene! 💪</Text>
+          </View>
+          
           <Text style={styles.countdownLabel}>⏰ PROSSIMA ESTRAZIONE AUTOMATICA ⏰</Text>
           <View style={styles.countdownRow}>
             <View style={styles.countdownSlot}>
@@ -2010,6 +2017,33 @@ const styles = StyleSheet.create({
   premioInPalioSub: {
     fontSize: 14,
     color: VEGAS_COLORS.text,
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  // Banner premio in header countdown
+  premioHeaderBanner: {
+    backgroundColor: VEGAS_COLORS.darkRed,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: VEGAS_COLORS.gold,
+    alignItems: 'center',
+  },
+  premioHeaderText: {
+    fontSize: 14,
+    color: VEGAS_COLORS.gold,
+    fontWeight: 'bold',
+  },
+  premioHeaderPrize: {
+    fontSize: 20,
+    color: VEGAS_COLORS.text,
+    fontWeight: 'bold',
+    marginTop: 6,
+  },
+  premioHeaderWinners: {
+    fontSize: 13,
+    color: VEGAS_COLORS.gold,
     marginTop: 6,
     textAlign: 'center',
   },
