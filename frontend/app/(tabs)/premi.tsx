@@ -767,11 +767,25 @@ export default function PremiScreen() {
           </Animated.View>
         )}
 
-        {/* Nessun vincitore ancora */}
+        {/* Nessun vincitore ancora - Mostra premio in palio */}
         {(!status?.vincitori || status.vincitori.length === 0) && (
           <View style={styles.noWinnerCard}>
-            <Text style={styles.noWinnerIcon}>🎰</Text>
-            <Text style={styles.noWinnerTitle}>In attesa dell'estrazione</Text>
+            <Text style={styles.noWinnerIcon}>🎁</Text>
+            <Text style={styles.noWinnerTitle}>PREMIO IN PALIO</Text>
+            
+            {/* Messaggio del Maestro */}
+            <View style={styles.maestroMessagePreview}>
+              <Text style={styles.maestroTextPreview}>
+                Il Maestro è buono e vi vuole bene! 💪
+              </Text>
+            </View>
+            
+            {/* Premio */}
+            <View style={styles.premioInPalio}>
+              <Text style={styles.premioInPalioText}>🏆 3 Magliette o Canotte 🏆</Text>
+              <Text style={styles.premioInPalioSub}>3 VINCITORI questo mese!</Text>
+            </View>
+            
             <Text style={styles.noWinnerText}>
               L'estrazione automatica avverrà il 1° del mese alle 12:00.{'\n'}
               Solo gli abbonati attivi partecipano!
@@ -1964,5 +1978,39 @@ const styles = StyleSheet.create({
   },
   vincitoreWinText: {
     fontSize: 18,
+  },
+  // Stili per premio in palio (prima dell'estrazione)
+  maestroMessagePreview: {
+    backgroundColor: 'rgba(255,215,0,0.2)',
+    borderRadius: 12,
+    padding: 14,
+    marginVertical: 12,
+    borderWidth: 2,
+    borderColor: VEGAS_COLORS.gold,
+  },
+  maestroTextPreview: {
+    fontSize: 16,
+    color: VEGAS_COLORS.gold,
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  premioInPalio: {
+    backgroundColor: VEGAS_COLORS.darkRed,
+    borderRadius: 12,
+    padding: 16,
+    marginVertical: 12,
+    alignItems: 'center',
+  },
+  premioInPalioText: {
+    fontSize: 20,
+    color: VEGAS_COLORS.gold,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  premioInPalioSub: {
+    fontSize: 14,
+    color: VEGAS_COLORS.text,
+    marginTop: 6,
+    textAlign: 'center',
   },
 });
