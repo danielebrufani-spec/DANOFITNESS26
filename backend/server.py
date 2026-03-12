@@ -1175,8 +1175,9 @@ async def get_subscription_lessons_count(sub_id: str, current_user: dict = Depen
 @api_router.get("/subscriptions/{sub_id}/log-ingressi")
 async def get_subscription_log_ingressi(sub_id: str, current_user: dict = Depends(get_current_user)):
     """
-    Restituisce il log degli ingressi PROGRESSIVO per un abbonamento.
+    Restituisce il log degli ingressi SOLO per l'abbonamento specificato.
     Mostra: numero progressivo, giorno della settimana, data, orario, tipo lezione.
+    Il log si azzera quando l'abbonamento scade/cambia.
     """
     user_id = str(current_user["_id"])
     
@@ -1213,27 +1214,23 @@ async def get_subscription_log_ingressi(sub_id: str, current_user: dict = Depend
     
     logger.info(f"[LOG-INGRESSI] sub_id={sub_id}, user_id={sub_user_id}, inizio={data_inizio}, scadenza={data_scadenza}")
     
-    # Query base: tutte le prenotazioni confermate o scalate dell'utente
-    base_query = {
-        "user_id": sub_user_id,
-        "$or": [
-            {"lezione_scalata": True},
-            {"confermata": True}
-        ]
-    }
-    
-    # Prova prima con filtro date
+    # Query: SOLO lezioni nel periodo dell'abbonamento
     bookings = []
     if data_inizio and data_scadenza:
-        query_with_dates = {**base_query, "data_lezione": {"$gte": data_inizio, "$lte": data_scadenza}}
-        bookings = await db.bookings.find(query_with_dates).sort("data_lezione", 1).to_list(200)
-        logger.info(f"[LOG-INGRESSI] Con filtro date: {len(bookings)} risultati")
-    
-    # Se non trova nulla con filtro date, mostra TUTTE le prenotazioni dell'utente
-    if len(bookings) == 0:
-        logger.warning(f"[LOG-INGRESSI] Nessun risultato con filtro date, mostro tutto")
-        bookings = await db.bookings.find(base_query).sort("data_lezione", 1).to_list(200)
-        logger.info(f"[LOG-INGRESSI] Senza filtro date: {len(bookings)} risultati")
+        query = {
+            "user_id": sub_user_id,
+            "data_lezione": {"$gte": data_inizio, "$lte": data_scadenza},
+            "$or": [
+                {"lezione_scalata": True},
+                {"confermata": True}
+            ]
+        }
+        bookings = await db.bookings.find(query).sort("data_lezione", 1).to_list(200)
+        logger.info(f"[LOG-INGRESSI] Lezioni nel periodo abbonamento: {len(bookings)}")
+    else:
+        # Se mancano le date, non mostrare nulla (abbonamento non valido)
+        logger.warning(f"[LOG-INGRESSI] Date abbonamento mancanti, log vuoto")
+        bookings = []
     
     # Mappa giorni
     giorni_map = {
