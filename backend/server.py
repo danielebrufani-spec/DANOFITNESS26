@@ -3363,8 +3363,13 @@ async def health_check():
 
 import random
 
+# Utenti di test esclusi dalla lotteria (nome, cognome in minuscolo)
+UTENTI_TEST_ESCLUSI = [
+    ("daniele", "brufani"),
+]
+
 async def get_users_with_active_subscription() -> set:
-    """Restituisce gli user_id degli utenti con abbonamento attivo"""
+    """Restituisce gli user_id degli utenti con abbonamento attivo (esclude utenti test)"""
     now = now_rome()
     active_user_ids = set()
     
@@ -3378,7 +3383,17 @@ async def get_users_with_active_subscription() -> set:
             is_expired = True
         
         if not is_expired:
-            active_user_ids.add(sub["user_id"])
+            # Verifica se è un utente test da escludere
+            user = await db.users.find_one({"_id": ObjectId(sub["user_id"])})
+            if user:
+                nome = (user.get("nome") or "").lower().strip()
+                cognome = (user.get("cognome") or "").lower().strip()
+                is_test_user = (nome, cognome) in UTENTI_TEST_ESCLUSI
+                
+                if not is_test_user:
+                    active_user_ids.add(sub["user_id"])
+                else:
+                    logger.info(f"[LOTTERY] Utente test escluso: {user.get('nome')} {user.get('cognome')}")
     
     return active_user_ids
 
