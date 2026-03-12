@@ -3691,14 +3691,9 @@ QUIZ_DOMANDE = [
 
 @api_router.get("/quiz/today")
 async def get_quiz_today(current_user: dict = Depends(get_current_user)):
-    """Ottieni la domanda del quiz del giorno"""
+    """Ottieni la domanda del quiz del giorno - SBLOCCATO dopo allenamento!"""
     user_id = str(current_user["_id"])
     today = now_rome().strftime("%Y-%m-%d")
-    
-    # Seleziona domanda basata sul giorno (ciclica)
-    day_of_year = now_rome().timetuple().tm_yday
-    quiz_index = day_of_year % len(QUIZ_DOMANDE)
-    domanda = QUIZ_DOMANDE[quiz_index]
     
     # Controlla se ha già risposto oggi
     existing = await db.quiz_answers.find_one({
@@ -3706,14 +3701,60 @@ async def get_quiz_today(current_user: dict = Depends(get_current_user)):
         "data": today
     })
     
+    if existing:
+        # Ha già risposto - mostra risultato
+        day_of_year = now_rome().timetuple().tm_yday
+        quiz_index = day_of_year % len(QUIZ_DOMANDE)
+        domanda = QUIZ_DOMANDE[quiz_index]
+        return {
+            "can_play": False,
+            "reason": "already_answered",
+            "domanda_id": domanda["id"],
+            "domanda": domanda["domanda"],
+            "risposte": domanda["risposte"],
+            "gia_risposto": True,
+            "risposta_corretta": existing.get("corretta"),
+            "biglietti_vinti": existing.get("biglietti_vinti", 0),
+            "risposta_data": existing.get("risposta_index"),
+            "message": "Hai già risposto! Torna dopo il prossimo allenamento 🧠"
+        }
+    
+    # Controlla se ha fatto almeno un allenamento oggi (confermato e scalato)
+    allenamento_oggi = await db.bookings.find_one({
+        "user_id": user_id,
+        "data_lezione": today,
+        "lezione_scalata": True
+    })
+    
+    if not allenamento_oggi:
+        return {
+            "can_play": False,
+            "reason": "no_workout",
+            "domanda_id": None,
+            "domanda": None,
+            "risposte": [],
+            "gia_risposto": False,
+            "risposta_corretta": None,
+            "biglietti_vinti": 0,
+            "risposta_data": None,
+            "message": "Completa un allenamento oggi per sbloccare il quiz! 💪"
+        }
+    
+    # Seleziona domanda basata sul giorno (ciclica)
+    day_of_year = now_rome().timetuple().tm_yday
+    quiz_index = day_of_year % len(QUIZ_DOMANDE)
+    domanda = QUIZ_DOMANDE[quiz_index]
+    
     return {
+        "can_play": True,
         "domanda_id": domanda["id"],
         "domanda": domanda["domanda"],
         "risposte": domanda["risposte"],
-        "gia_risposto": existing is not None,
-        "risposta_corretta": existing.get("corretta") if existing else None,
-        "biglietti_vinti": existing.get("biglietti_vinti", 0) if existing else 0,
-        "risposta_data": existing.get("risposta_index") if existing else None
+        "gia_risposto": False,
+        "risposta_corretta": None,
+        "biglietti_vinti": 0,
+        "risposta_data": None,
+        "message": "Quiz sbloccato! Rispondi e vinci +1 biglietto! 🎯"
     }
 
 @api_router.post("/quiz/answer")
@@ -3734,6 +3775,20 @@ async def submit_quiz_answer(risposta_index: int, current_user: dict = Depends(g
             "success": False,
             "message": "Hai già risposto al quiz di oggi!",
             "gia_risposto": True
+        }
+    
+    # Controlla se ha fatto un allenamento oggi
+    allenamento_oggi = await db.bookings.find_one({
+        "user_id": user_id,
+        "data_lezione": today,
+        "lezione_scalata": True
+    })
+    
+    if not allenamento_oggi:
+        return {
+            "success": False,
+            "message": "Devi completare un allenamento per rispondere al quiz!",
+            "gia_risposto": False
         }
     
     # Ottieni domanda del giorno

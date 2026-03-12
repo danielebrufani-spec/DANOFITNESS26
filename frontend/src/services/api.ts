@@ -278,13 +278,16 @@ export const apiService = {
 
   // Quiz Fitness
   getQuizToday: () => api.get<{
-    domanda_id: number;
-    domanda: string;
+    can_play: boolean;
+    reason?: string;
+    domanda_id: number | null;
+    domanda: string | null;
     risposte: string[];
     gia_risposto: boolean;
     risposta_corretta: boolean | null;
     biglietti_vinti: number;
     risposta_data: number | null;
+    message: string;
   }>('/quiz/today'),
   submitQuizAnswer: (risposta_index: number) => api.post<{
     success: boolean;

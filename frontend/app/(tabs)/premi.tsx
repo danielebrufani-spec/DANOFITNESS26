@@ -131,13 +131,16 @@ export default function PremiScreen() {
 
   // Quiz Fitness
   const [quiz, setQuiz] = useState<{
-    domanda_id: number;
-    domanda: string;
+    can_play: boolean;
+    reason?: string;
+    domanda_id: number | null;
+    domanda: string | null;
     risposte: string[];
     gia_risposto: boolean;
     risposta_corretta: boolean | null;
     biglietti_vinti: number;
     risposta_data: number | null;
+    message: string;
   } | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [quizResult, setQuizResult] = useState<{
@@ -743,89 +746,113 @@ export default function PremiScreen() {
             </View>
             
             <Text style={styles.quizSubtitle}>
-              Rispondi correttamente e vinci +1 biglietto!
+              {quiz.can_play 
+                ? 'Rispondi correttamente e vinci +1 biglietto!'
+                : quiz.reason === 'no_workout'
+                  ? '🔒 Completa un allenamento per sbloccare!'
+                  : quiz.gia_risposto 
+                    ? '✅ Hai già risposto oggi!'
+                    : quiz.message}
             </Text>
             
-            <View style={styles.quizCard}>
-              <Text style={styles.quizQuestion}>{quiz.domanda}</Text>
-              
-              <View style={styles.quizOptions}>
-                {quiz.risposte.map((risposta, index) => {
-                  const isSelected = selectedAnswer === index;
-                  const isCorrect = quizResult?.risposta_corretta_index === index;
-                  const isWrong = quiz.gia_risposto && isSelected && !isCorrect;
-                  
-                  return (
-                    <TouchableOpacity
-                      key={index}
-                      style={[
-                        styles.quizOption,
-                        isSelected && !quiz.gia_risposto && styles.quizOptionSelected,
-                        quiz.gia_risposto && isCorrect && styles.quizOptionCorrect,
-                        isWrong && styles.quizOptionWrong,
-                      ]}
-                      onPress={() => !quiz.gia_risposto && setSelectedAnswer(index)}
-                      disabled={quiz.gia_risposto}
-                    >
-                      <Text style={styles.quizOptionLetter}>
-                        {String.fromCharCode(65 + index)}
-                      </Text>
-                      <Text style={[
-                        styles.quizOptionText,
-                        (isSelected || (quiz.gia_risposto && isCorrect)) && styles.quizOptionTextSelected
-                      ]}>
-                        {risposta}
-                      </Text>
-                      {quiz.gia_risposto && isCorrect && (
-                        <Text style={styles.quizOptionIcon}>✓</Text>
-                      )}
-                      {isWrong && (
-                        <Text style={styles.quizOptionIcon}>✗</Text>
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
+            {/* Quiz Bloccato - Nessun allenamento */}
+            {!quiz.can_play && quiz.reason === 'no_workout' && (
+              <View style={styles.quizLockedCard}>
+                <Text style={styles.quizLockedIcon}>🔒</Text>
+                <Text style={styles.quizLockedTitle}>Quiz Bloccato</Text>
+                <Text style={styles.quizLockedMessage}>
+                  Fai un allenamento oggi e torna qui per sfidare il quiz!
+                </Text>
+                <Text style={styles.quizLockedMotivation}>
+                  Ogni allenamento sblocca una nuova domanda! 💪
+                </Text>
               </View>
-              
-              {!quiz.gia_risposto ? (
-                <TouchableOpacity
-                  style={[
-                    styles.quizSubmitButton,
-                    selectedAnswer === null && styles.quizSubmitButtonDisabled
-                  ]}
-                  onPress={handleQuizSubmit}
-                  disabled={selectedAnswer === null || submittingQuiz}
-                >
-                  {submittingQuiz ? (
-                    <ActivityIndicator color="#FFF" />
-                  ) : (
-                    <Text style={styles.quizSubmitText}>CONFERMA RISPOSTA</Text>
-                  )}
-                </TouchableOpacity>
-              ) : (
-                <View style={[
-                  styles.quizResultBox,
-                  quiz.risposta_corretta ? styles.quizResultCorrect : styles.quizResultWrong
-                ]}>
-                  <Text style={styles.quizResultEmoji}>
-                    {quiz.risposta_corretta ? '🎉' : '💪'}
-                  </Text>
-                  <Text style={styles.quizResultText}>
-                    {quiz.risposta_corretta 
-                      ? `Risposta esatta! +${quiz.biglietti_vinti} biglietto!` 
-                      : 'Risposta sbagliata...'}
-                  </Text>
-                  <Text style={styles.quizMotivation}>
-                    {quiz.risposta_corretta 
-                      ? 'Grande! Sei un vero esperto di fitness! 🧠💪' 
-                      : 'Non mollare! Ogni errore è un\'opportunità per imparare. Torna domani e spacca tutto! 🔥'}
-                  </Text>
+            )}
+            
+            {/* Quiz Disponibile o Già Risposto */}
+            {(quiz.can_play || quiz.gia_risposto) && quiz.domanda && (
+              <View style={styles.quizCard}>
+                <Text style={styles.quizQuestion}>{quiz.domanda}</Text>
+                
+                <View style={styles.quizOptions}>
+                  {quiz.risposte.map((risposta, index) => {
+                    const isSelected = selectedAnswer === index;
+                    const isCorrect = quizResult?.risposta_corretta_index === index || (quiz.gia_risposto && quiz.risposta_data === index && quiz.risposta_corretta);
+                    const isWrong = quiz.gia_risposto && quiz.risposta_data === index && !quiz.risposta_corretta;
+                    const showCorrect = quiz.gia_risposto && quizResult?.risposta_corretta_index === index;
+                    
+                    return (
+                      <TouchableOpacity
+                        key={index}
+                        style={[
+                          styles.quizOption,
+                          isSelected && !quiz.gia_risposto && styles.quizOptionSelected,
+                          (isCorrect || showCorrect) && styles.quizOptionCorrect,
+                          isWrong && styles.quizOptionWrong,
+                        ]}
+                        onPress={() => !quiz.gia_risposto && quiz.can_play && setSelectedAnswer(index)}
+                        disabled={quiz.gia_risposto || !quiz.can_play}
+                      >
+                        <Text style={styles.quizOptionLetter}>
+                          {String.fromCharCode(65 + index)}
+                        </Text>
+                        <Text style={[
+                          styles.quizOptionText,
+                          (isSelected || isCorrect || showCorrect) && styles.quizOptionTextSelected
+                        ]}>
+                          {risposta}
+                        </Text>
+                        {(isCorrect || showCorrect) && (
+                          <Text style={styles.quizOptionIcon}>✓</Text>
+                        )}
+                        {isWrong && (
+                          <Text style={styles.quizOptionIcon}>✗</Text>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
-              )}
-            </View>
+                
+                {!quiz.gia_risposto && quiz.can_play ? (
+                  <TouchableOpacity
+                    style={[
+                      styles.quizSubmitButton,
+                      selectedAnswer === null && styles.quizSubmitButtonDisabled
+                    ]}
+                    onPress={handleQuizSubmit}
+                    disabled={selectedAnswer === null || submittingQuiz}
+                  >
+                    {submittingQuiz ? (
+                      <ActivityIndicator color="#FFF" />
+                    ) : (
+                      <Text style={styles.quizSubmitText}>CONFERMA RISPOSTA</Text>
+                    )}
+                  </TouchableOpacity>
+                ) : quiz.gia_risposto && (
+                  <View style={[
+                    styles.quizResultBox,
+                    quiz.risposta_corretta ? styles.quizResultCorrect : styles.quizResultWrong
+                  ]}>
+                    <Text style={styles.quizResultEmoji}>
+                      {quiz.risposta_corretta ? '🎉' : '💪'}
+                    </Text>
+                    <Text style={styles.quizResultText}>
+                      {quiz.risposta_corretta 
+                        ? `Risposta esatta! +${quiz.biglietti_vinti} biglietto!` 
+                        : 'Risposta sbagliata...'}
+                    </Text>
+                    <Text style={styles.quizMotivation}>
+                      {quiz.risposta_corretta 
+                        ? 'Grande! Sei un vero esperto di fitness! 🧠💪' 
+                        : 'Non mollare! Ogni errore è un\'opportunità per imparare. Torna al prossimo allenamento! 🔥'}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
             
             <Text style={styles.quizInfo}>
-              Una domanda al giorno • Si resetta a mezzanotte
+              Si sblocca dopo ogni allenamento • Una risposta per allenamento
             </Text>
           </View>
         )}
@@ -2348,5 +2375,37 @@ const styles = StyleSheet.create({
     color: VEGAS_COLORS.textSecondary,
     textAlign: 'center',
     marginTop: 12,
+  },
+  // Quiz Locked Styles
+  quizLockedCard: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(78,205,196,0.3)',
+    borderStyle: 'dashed',
+  },
+  quizLockedIcon: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  quizLockedTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: VEGAS_COLORS.textSecondary,
+    marginBottom: 8,
+  },
+  quizLockedMessage: {
+    fontSize: 14,
+    color: VEGAS_COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  quizLockedMotivation: {
+    fontSize: 13,
+    color: '#4ECDC4',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });
