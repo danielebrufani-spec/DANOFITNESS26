@@ -147,39 +147,59 @@ export default function PrenotaScreen() {
   const [participants, setParticipants] = useState<{[key: string]: {nome: string}[]}>({});
   const [loadingParticipants, setLoadingParticipants] = useState<string | null>(null);
   
-  // Animazione fly-away
-  const [flyingLesson, setFlyingLesson] = useState<string | null>(null);
-  const flyAnim = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
-  const flyScale = useRef(new Animated.Value(1)).current;
-  const flyOpacity = useRef(new Animated.Value(1)).current;
+  // Animazioni
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [showSadModal, setShowSadModal] = useState(false);
+  const confettiPieces = useRef<Animated.Value[]>([]);
+  const sadScale = useRef(new Animated.Value(0)).current;
+  const screenHeight = Dimensions.get('window').height;
   const screenWidth = Dimensions.get('window').width;
 
-  // Funzione per animazione fly-away
-  const triggerFlyAnimation = (lessonId: string) => {
-    setFlyingLesson(lessonId);
-    flyAnim.setValue({ x: 0, y: 0 });
-    flyScale.setValue(1);
-    flyOpacity.setValue(1);
+  // Inizializza confetti pieces
+  useEffect(() => {
+    confettiPieces.current = Array(30).fill(0).map(() => new Animated.Value(0));
+  }, []);
+
+  // Funzione per confetti explosion 🎉
+  const triggerConfetti = () => {
+    setShowConfetti(true);
     
-    Animated.parallel([
-      Animated.timing(flyAnim, {
-        toValue: { x: screenWidth * 0.3, y: -150 },
-        duration: 600,
+    const animations = confettiPieces.current.map((anim, index) => {
+      anim.setValue(0);
+      return Animated.timing(anim, {
+        toValue: 1,
+        duration: 1500 + Math.random() * 500,
         useNativeDriver: true,
-      }),
-      Animated.timing(flyScale, {
-        toValue: 0.3,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.timing(flyOpacity, {
-        toValue: 0,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setFlyingLesson(null);
+      });
     });
+    
+    Animated.parallel(animations).start(() => {
+      setShowConfetti(false);
+    });
+  };
+
+  // Funzione per mostrare modal triste 😢
+  const triggerSadModal = () => {
+    setShowSadModal(true);
+    sadScale.setValue(0);
+    
+    Animated.spring(sadScale, {
+      toValue: 1,
+      friction: 4,
+      tension: 100,
+      useNativeDriver: true,
+    }).start();
+    
+    // Auto-chiudi dopo 2.5 secondi
+    setTimeout(() => {
+      Animated.timing(sadScale, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        setShowSadModal(false);
+      });
+    }, 2500);
   };
 
   // Redirect admin to home
@@ -373,8 +393,8 @@ export default function PrenotaScreen() {
         data_lezione: dateString,
       });
       
-      // Triggera animazione fly-away! 🚀
-      triggerFlyAnimation(lessonId);
+      // Triggera confetti! 🎉
+      triggerConfetti();
       
       await loadData();
       
@@ -425,7 +445,8 @@ export default function PrenotaScreen() {
         try {
           await apiService.cancelBooking(bookingId);
           await loadData();
-          alert('Prenotazione cancellata!');
+          // Mostra modal triste 😢
+          triggerSadModal();
         } catch (error: any) {
           alert(error.response?.data?.detail || 'Errore durante la cancellazione');
         } finally {
@@ -446,6 +467,8 @@ export default function PrenotaScreen() {
               try {
                 await apiService.cancelBooking(bookingId);
                 await loadData();
+                // Mostra modal triste 😢
+                triggerSadModal();
               } catch (error: any) {
                 Alert.alert('Errore', error.response?.data?.detail || 'Errore durante la cancellazione');
               } finally {
@@ -466,7 +489,8 @@ export default function PrenotaScreen() {
         try {
           await apiService.cancelBooking(bookingId);
           await loadData();
-          alert('Prenotazione cancellata!');
+          // Mostra modal triste 😢
+          triggerSadModal();
         } catch (error: any) {
           alert(error.response?.data?.detail || 'Errore durante la cancellazione');
         } finally {
@@ -487,6 +511,8 @@ export default function PrenotaScreen() {
               try {
                 await apiService.cancelBooking(bookingId);
                 await loadData();
+                // Mostra modal triste 😢
+                triggerSadModal();
               } catch (error: any) {
                 Alert.alert('Errore', error.response?.data?.detail || 'Errore durante la cancellazione');
               } finally {
@@ -641,24 +667,9 @@ export default function PrenotaScreen() {
             // Use new isLessonPassed function that considers time + 1 hour buffer
             const isPassed = dateString ? isLessonPassed(dateString, lesson.orario) : false;
             const canBook = bookingStatus.open && !isPassed;
-            const isFlying = flyingLesson === lesson.id;
 
             return (
-              <Animated.View 
-                key={lesson.id} 
-                style={[
-                  styles.lessonCard, 
-                  isPassed && styles.lessonCardPassed,
-                  isFlying && {
-                    transform: [
-                      { translateX: flyAnim.x },
-                      { translateY: flyAnim.y },
-                      { scale: flyScale },
-                    ],
-                    opacity: flyOpacity,
-                  }
-                ]}
-              >
+              <View key={lesson.id} style={[styles.lessonCard, isPassed && styles.lessonCardPassed]}>
                 <View
                   style={[
                     styles.lessonColorBar,
@@ -748,7 +759,7 @@ export default function PrenotaScreen() {
                     )}
                   </View>
                 )}
-              </Animated.View>
+              </View>
             );
           })
         ) : selectedDate ? (
@@ -817,6 +828,81 @@ export default function PrenotaScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* Confetti Explosion 🎉 */}
+      {showConfetti && (
+        <View style={styles.confettiContainer} pointerEvents="none">
+          {confettiPieces.current.map((anim, index) => {
+            const randomX = (Math.random() - 0.5) * screenWidth * 1.5;
+            const randomRotation = Math.random() * 720 - 360;
+            const colors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'];
+            const color = colors[index % colors.length];
+            const size = 8 + Math.random() * 12;
+            
+            return (
+              <Animated.View
+                key={index}
+                style={[
+                  styles.confettiPiece,
+                  {
+                    backgroundColor: color,
+                    width: size,
+                    height: size * 0.6,
+                    left: screenWidth / 2,
+                    top: screenHeight * 0.4,
+                    transform: [
+                      {
+                        translateX: anim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0, randomX],
+                        }),
+                      },
+                      {
+                        translateY: anim.interpolate({
+                          inputRange: [0, 0.3, 1],
+                          outputRange: [0, -150, screenHeight * 0.5],
+                        }),
+                      },
+                      {
+                        rotate: anim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ['0deg', `${randomRotation}deg`],
+                        }),
+                      },
+                      {
+                        scale: anim.interpolate({
+                          inputRange: [0, 0.5, 1],
+                          outputRange: [0, 1.2, 0.8],
+                        }),
+                      },
+                    ],
+                    opacity: anim.interpolate({
+                      inputRange: [0, 0.1, 0.8, 1],
+                      outputRange: [0, 1, 1, 0],
+                    }),
+                  },
+                ]}
+              />
+            );
+          })}
+          {/* Testo centrale "PRENOTATO!" */}
+          <Animated.Text style={styles.confettiText}>
+            🎉 PRENOTATO! 🎉
+          </Animated.Text>
+        </View>
+      )}
+
+      {/* Modal Triste per Cancellazione 😢 */}
+      {showSadModal && (
+        <View style={styles.sadModalOverlay}>
+          <Animated.View style={[styles.sadModalContent, { transform: [{ scale: sadScale }] }]}>
+            <Text style={styles.sadEmoji}>😢</Text>
+            <Text style={styles.sadTitle}>Il Maestro è deluso...</Text>
+            <Text style={styles.sadMessage}>Hai cancellato la lezione!</Text>
+            <Text style={styles.sadSubtext}>Torna presto ad allenarti! 💪</Text>
+          </Animated.View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -1203,5 +1289,68 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: 'center',
     paddingVertical: 16,
+  },
+  // Confetti styles
+  confettiContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  confettiPiece: {
+    position: 'absolute',
+    borderRadius: 2,
+  },
+  confettiText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  // Sad modal styles
+  sadModalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  sadModalContent: {
+    backgroundColor: COLORS.card,
+    borderRadius: 24,
+    padding: 32,
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#FF6B6B',
+    maxWidth: 300,
+  },
+  sadEmoji: {
+    fontSize: 80,
+    marginBottom: 16,
+  },
+  sadTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#FF6B6B',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  sadMessage: {
+    fontSize: 16,
+    color: COLORS.text,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  sadSubtext: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
   },
 });
