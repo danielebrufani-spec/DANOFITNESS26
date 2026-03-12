@@ -155,6 +155,9 @@ export default function PremiScreen() {
     message: string;
   } | null>(null);
   const [submittingQuiz, setSubmittingQuiz] = useState(false);
+  const [quizTimer, setQuizTimer] = useState(10);
+  const [quizTimerActive, setQuizTimerActive] = useState(false);
+  const [quizTimerExpired, setQuizTimerExpired] = useState(false);
 
   // Carica suoni
   useEffect(() => {
@@ -328,6 +331,33 @@ export default function PremiScreen() {
     return () => clearInterval(interval);
   }, [status?.prossima_estrazione]);
 
+  // Quiz countdown timer (10 secondi)
+  useEffect(() => {
+    if (!quiz || !quiz.can_play || quiz.gia_risposto || !quiz.domanda) {
+      setQuizTimerActive(false);
+      return;
+    }
+    // Avvia il timer solo se non è già scaduto
+    if (quizTimerExpired) return;
+    
+    setQuizTimer(10);
+    setQuizTimerActive(true);
+
+    const interval = setInterval(() => {
+      setQuizTimer(prev => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setQuizTimerActive(false);
+          setQuizTimerExpired(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [quiz?.can_play, quiz?.gia_risposto, quiz?.domanda_id]);
+
   const onRefresh = () => {
     setRefreshing(true);
     loadData();
@@ -428,8 +458,9 @@ export default function PremiScreen() {
 
   // Quiz Fitness - invia risposta
   const handleQuizSubmit = async () => {
-    if (selectedAnswer === null || !quiz || quiz.gia_risposto) return;
+    if (selectedAnswer === null || !quiz || quiz.gia_risposto || quizTimerExpired) return;
     
+    setQuizTimerActive(false); // Ferma il timer quando si conferma
     setSubmittingQuiz(true);
     try {
       const response = await apiService.submitQuizAnswer(selectedAnswer);
@@ -795,6 +826,25 @@ export default function PremiScreen() {
               <View style={styles.quizCard}>
                 <Text style={styles.quizQuestion}>{quiz.domanda}</Text>
                 
+                {/* Timer countdown */}
+                {quiz.can_play && !quiz.gia_risposto && (
+                  <View style={styles.quizTimerContainer}>
+                    <View style={styles.quizTimerBarBg}>
+                      <View style={[
+                        styles.quizTimerBarFill,
+                        { width: `${(quizTimer / 10) * 100}%` },
+                        quizTimer <= 3 && styles.quizTimerBarDanger,
+                      ]} />
+                    </View>
+                    <Text style={[
+                      styles.quizTimerText,
+                      quizTimer <= 3 && styles.quizTimerTextDanger,
+                    ]}>
+                      {quizTimerExpired ? 'TEMPO SCADUTO!' : `${quizTimer}s`}
+                    </Text>
+                  </View>
+                )}
+                
                 <View style={styles.quizOptions}>
                   {quiz.risposte.map((risposta, index) => {
                     const isSelected = selectedAnswer === index;
@@ -810,9 +860,10 @@ export default function PremiScreen() {
                           isSelected && !quiz.gia_risposto && styles.quizOptionSelected,
                           (isCorrect || showCorrect) && styles.quizOptionCorrect,
                           isWrong && styles.quizOptionWrong,
+                          quizTimerExpired && !quiz.gia_risposto && styles.quizOptionDisabled,
                         ]}
-                        onPress={() => !quiz.gia_risposto && quiz.can_play && setSelectedAnswer(index)}
-                        disabled={quiz.gia_risposto || !quiz.can_play}
+                        onPress={() => !quiz.gia_risposto && quiz.can_play && !quizTimerExpired && setSelectedAnswer(index)}
+                        disabled={quiz.gia_risposto || !quiz.can_play || quizTimerExpired}
                       >
                         <Text style={styles.quizOptionLetter}>
                           {String.fromCharCode(65 + index)}
@@ -834,7 +885,7 @@ export default function PremiScreen() {
                   })}
                 </View>
                 
-                {!quiz.gia_risposto && quiz.can_play ? (
+                {!quiz.gia_risposto && quiz.can_play && !quizTimerExpired ? (
                   <TouchableOpacity
                     style={[
                       styles.quizSubmitButton,
@@ -853,6 +904,14 @@ export default function PremiScreen() {
                       </Text>
                     )}
                   </TouchableOpacity>
+                ) : !quiz.gia_risposto && quizTimerExpired ? (
+                  <View style={[styles.quizResultBox, styles.quizResultWrong]}>
+                    <Text style={styles.quizResultEmoji}>⏰</Text>
+                    <Text style={styles.quizResultText}>Tempo scaduto!</Text>
+                    <Text style={styles.quizMotivation}>
+                      Troppo lento! Domani sarai piu veloce! 💪
+                    </Text>
+                  </View>
                 ) : quiz.gia_risposto && (
                   <View style={[
                     styles.quizResultBox,
@@ -2305,6 +2364,37 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 16,
     lineHeight: 22,
+  },
+  quizTimerContainer: {
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  quizTimerBarBg: {
+    width: '100%',
+    height: 8,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  quizTimerBarFill: {
+    height: '100%',
+    backgroundColor: '#4ECDC4',
+    borderRadius: 4,
+  },
+  quizTimerBarDanger: {
+    backgroundColor: '#FF6B6B',
+  },
+  quizTimerText: {
+    marginTop: 6,
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#4ECDC4',
+  },
+  quizTimerTextDanger: {
+    color: '#FF6B6B',
+  },
+  quizOptionDisabled: {
+    opacity: 0.4,
   },
   quizOptions: {
     gap: 10,

@@ -54,7 +54,8 @@ App fitness completa per gestione palestra con sistema di abbonamenti, prenotazi
 - [x] Esclusione utente test "Daniele Brufani" dalla lotteria
 
 ## Bug Fix Completati (Feb 2026)
-- [x] Fix banner "Abbonamento Scaduto" - separata la logica di verifica abbonamento (`check_user_has_active_subscription`) dalla logica lotteria (`get_users_with_active_subscription`). Il banner ora si mostra correttamente solo per utenti senza abbonamento attivo, incluso l'utente test.
+- [x] Fix banner "Abbonamento Scaduto" - separata la logica di verifica abbonamento (`check_user_has_active_subscription`) dalla logica lotteria (`get_users_with_active_subscription`)
+- [x] Timer 10 secondi sul Quiz Bonus - barra visuale con countdown, blocco risposte e messaggio "Tempo scaduto!" quando scade
 
 ## Prossimi Task (P1)
 - [ ] Streak Bonus: +1 biglietto per 3 giorni consecutivi di allenamento
