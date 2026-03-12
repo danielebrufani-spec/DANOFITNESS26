@@ -3750,7 +3750,7 @@ async def get_quiz_today(current_user: dict = Depends(get_current_user)):
         }
     
     # Ha girato la ruota - quiz disponibile!
-    wheel_biglietti = spin_today.get("premio", {}).get("biglietti", 0)
+    wheel_biglietti = spin_today.get("biglietti", 0)
     
     # Determina il tipo di bonus
     if wheel_biglietti > 0:
@@ -3817,7 +3817,7 @@ async def submit_quiz_answer(risposta_index: int, current_user: dict = Depends(g
         }
     
     # Ottieni risultato ruota
-    wheel_biglietti = spin_today.get("premio", {}).get("biglietti", 0)
+    wheel_biglietti = spin_today.get("biglietti", 0)
     
     # Determina bonus type e quantità
     if wheel_biglietti > 0:
