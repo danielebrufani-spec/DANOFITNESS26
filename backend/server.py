@@ -3368,8 +3368,28 @@ UTENTI_TEST_ESCLUSI = [
     ("daniele", "brufani"),
 ]
 
+async def check_user_has_active_subscription(user_id: str) -> bool:
+    """Verifica se un singolo utente ha abbonamento attivo (per UI)"""
+    now = now_rome()
+    
+    # Cerca abbonamento attivo dell'utente
+    subscription = await db.subscriptions.find_one({
+        "user_id": user_id,
+        "attivo": True
+    })
+    
+    if not subscription:
+        return False
+    
+    is_expired = subscription["data_scadenza"] < now
+    # Per abbonamenti a pacchetto, controlla anche le lezioni rimanenti
+    if subscription.get("lezioni_rimanenti") is not None and subscription["lezioni_rimanenti"] <= 0:
+        is_expired = True
+    
+    return not is_expired
+
 async def get_users_with_active_subscription() -> set:
-    """Restituisce gli user_id degli utenti con abbonamento attivo (esclude utenti test)"""
+    """Restituisce gli user_id degli utenti con abbonamento attivo per la LOTTERIA (esclude utenti test)"""
     now = now_rome()
     active_user_ids = set()
     
@@ -3567,9 +3587,8 @@ async def get_lottery_status(current_user: dict = Depends(get_current_user)):
     # Totale biglietti = allenamenti + bonus ruota
     biglietti = biglietti_allenamenti + biglietti_ruota
     
-    # Verifica se l'utente ha abbonamento attivo (per partecipare alla lotteria)
-    active_users = await get_users_with_active_subscription()
-    ha_abbonamento_attivo = user_id in active_users
+    # Verifica se l'utente ha abbonamento attivo (per mostrare avviso UI)
+    ha_abbonamento_attivo = await check_user_has_active_subscription(user_id)
     
     # Ottieni vincitori correnti (estratti questo mese, riferiti al mese scorso)
     winner_data = await db.lottery_winners.find_one({"mese": current_month})

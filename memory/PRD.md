@@ -33,7 +33,7 @@ App fitness completa per gestione palestra con sistema di abbonamenti, prenotazi
 - **Bacheca Medaglie:** Collezione medaglie vinte (oro, argento, bronzo) nel profilo utente
 - **Ruota della Fortuna:** Premi settimanali con suoni
 
-## Task Completati (7 Marzo 2025)
+## Task Completati (7 Marzo 2025 - sessioni iniziali)
 - [x] Implementazione UI Bacheca Medaglie nel profilo utente
 - [x] Card preview con conteggio medaglie (oro/argento/bronzo)
 - [x] Modal dettagliato con storico vittorie
@@ -42,15 +42,36 @@ App fitness completa per gestione palestra con sistema di abbonamenti, prenotazi
 - [x] Aggiunta suoni alla Ruota della Fortuna (spin + vittoria/perdita)
 - [x] Toggle ON/OFF per i suoni
 
-## Prossimi Task
-- [ ] Aggiornamento dipendenze npm obsolete (warning Vercel)
+## Task Completati (12 Marzo 2025 - sessione precedente)
+- [x] Sistema lotteria mensile con 3 vincitori
+- [x] Quiz bonus dopo la Ruota della Fortuna (65+ domande)
+- [x] Bonus domenicale (2 biglietti al primo che prenota)
+- [x] Suoni Ruota della Fortuna con toggle
+- [x] Animazioni prenotazioni (confetti + modal cancellazione)
+- [x] Bacheca Medaglie nel profilo
+- [x] Correzione reset dati settimanali per admin/istruttori (domenica)
+- [x] Log ingressi solo per abbonamento corrente
+- [x] Esclusione utente test "Daniele Brufani" dalla lotteria
 
-## Future Tasks (Backlog)
+## Bug Fix Completati (Feb 2026)
+- [x] Fix banner "Abbonamento Scaduto" - separata la logica di verifica abbonamento (`check_user_has_active_subscription`) dalla logica lotteria (`get_users_with_active_subscription`). Il banner ora si mostra correttamente solo per utenti senza abbonamento attivo, incluso l'utente test.
+
+## Prossimi Task (P1)
+- [ ] Streak Bonus: +1 biglietto per 3 giorni consecutivi di allenamento
+- [ ] Milestone Bonus: +5 biglietti per 50 lezioni totali
+- [ ] Porta un Amico (Referral): bonus biglietti per chi invita e chi viene invitato
+
+## Task Futuri (P2)
+- [ ] Integrazione Instagram per bonus (codice segreto o upload screenshot)
+- [ ] Dark/Light mode toggle
+- [ ] Vista calendario prenotazioni
+- [ ] Pagina statistiche personali con grafici
+
+## Backlog (P3)
+- [ ] Aggiornamento dipendenze npm obsolete (warning Vercel)
 - [ ] Sfide settimanali
 - [ ] Badge collezionabili per milestone
 - [ ] Sistema XP
-- [ ] Dark/Light mode toggle
-- [ ] Vista calendario prenotazioni
 - [ ] Funzionalita social ("Chi viene?")
 
 ## Schema Database

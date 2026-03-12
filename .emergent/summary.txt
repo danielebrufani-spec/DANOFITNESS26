@@ -1,0 +1,191 @@
+<analysis>**original_problem_statement:**
+The user wants to make several modifications to an existing fitness application named DANOFITNESS26. The project is a full-stack application with a React Native (Expo) frontend and a FastAPI backend.
+
+The key requests during this session were:
+- Implement a Medal Showcase in the user profile.
+- Change the weekly leaderboard to show only the Top 3.
+- Enlarge the medal icons on the leaderboard podium.
+- Add sounds to the Wheel of Fortune.
+- Fix an issue where admin/instructor views showed the previous week's data on Sundays. The system should reset and show the upcoming week on Sunday morning.
+- Change the monthly lottery from 1 winner to 3 winners.
+- Add booking animations: a confetti explosion for success and a guilt-trip modal for cancellation.
+- Ensure the subscription entry log only shows entries for the current subscription period.
+- Add new ways to earn lottery tickets: a bonus for the first person to book on a Sunday and a fitness quiz.
+- The fitness quiz logic evolved to become a bonus round after the Wheel of Fortune, allowing users to double winnings, cancel losses, or gain a ticket.
+- Exclude the test user Daniele Brufani from the lottery draw.
+- Fix a bug where the expired subscription message was showing incorrectly.
+
+**User's preferred language**: The user's primary language is **Italian**. The next agent MUST respond in Italian only.
+
+**what currently exists?**
+The application is a complete React Native (Expo) fitness app with a FastAPI backend. It features user authentication, class bookings, a weekly leaderboard, a user leveling system, and gamification elements like a Wheel of Fortune lottery, and a post-spin Bonus Quiz. Most of the core features requested by the user in this session have been implemented. The code has been modified extensively on both the frontend and backend.
+
+**Last working item**:
+- **Last item agent was working:** The agent was fixing a bug where the abbonamento scaduto (expired subscription) banner was incorrectly displayed in the  (Prizes) tab, even for users with an active subscription. The agent deduced this was because the logic for the lottery draw, which excludes the test user Daniele Brufani, was being reused to check for active subscriptions, causing the check to fail for the test user.
+- **Status:** IN PROGRESS
+- **Agent Testing Done:** N
+- **Which testing method agent to use?** backend testing agent. The agent should use  to test the  endpoint and verify that the  flag is  for a user with an active subscription (including the test user) and  for a user without one.
+- **User Testing Done:** N
+
+**All Pending/In progress Issue list**:
+- **Issue 1: Incorrect Expired Subscription Banner (P0)**
+    - **Attempted fixes:** The agent identified that the function , which is used for the lottery draw and excludes the test user, was also being used to determine if the warning banner should be shown. The agent created a new, separate helper function  that only checks for a valid subscription without excluding any users.
+    - **Next debug checklist:**
+        1.  In , locate the  endpoint.
+        2.  Modify the endpoint to use the newly created  function to set the value of the  boolean in the response.
+        3.  The original function  should continue to be used only for the actual lottery draw logic.
+        4.  Restart the backend service.
+        5.  Test the endpoint with  for both a regular user and the test user Daniele Brufani to confirm the flag is now correct in all cases.
+    - **Why fix this issue and what will be achieved with the fix?** To prevent showing a confusing and incorrect warning message to users who have a valid, active subscription.
+    - **Status:** IN PROGRESS
+    - **Is recurring issue?** N
+    - **Should Test frontend/backend/both after fix?** Backend.
+
+**In progress Task List**:
+There are no other in-progress tasks. The priority is to fix the pending issue above.
+
+**Upcoming and Future Tasks**
+- **Upcoming Tasks:**
+  - (P1) **Implement More Gamification**: The user expressed interest in adding **Streak Bonuses** (e.g., +1 ticket for 3 consecutive training days) and **Milestone Bonuses** (e.g., +5 tickets for 50 total lessons).
+  - (P1) **Implement Porta un Amico (Refer a Friend)**: Add a referral system where both the referrer and the new user get bonus lottery tickets.
+- **Future Tasks:**
+  - (P2) **Instagram Integration for Bonuses**: The user wants to reward users for mentioning the gym on Instagram. Since direct API integration is not feasible, the agent proposed alternatives like a secret weekly code from stories or a manual screenshot upload system. This requires further discussion with the user.
+  - (P2) **UI/UX Graphic Enhancements**: Further graphical improvements like a Dark/Light mode, a visual calendar for bookings, and a personal statistics page with graphs remain as potential enhancements.
+  - (P3) **Update Outdated Dependencies**: The  file has outdated dependencies that trigger warnings during Vercel builds. These should be updated to ensure security and stability.
+
+**Completed work in this session**
+- **Gamification Overhaul**:
+    - **Lottery System Rework**: Modified the monthly lottery to have **3 winners** instead of one. The backend logic () and frontend UI () were updated accordingly. The test user Daniele Brufani is now excluded from the draw.
+    - **Bonus Quiz System**: Implemented a fitness quiz that unlocks after a user spins the Wheel of Fortune. The quiz acts as a bonus: a correct answer can double a ticket win, cancel a ticket loss, or award +1 ticket on a neutral spin. Implemented with a bank of 65+ questions in  and UI in .
+    - **Sunday Booking Bonus**: Implemented a feature that automatically awards 2 bonus lottery tickets to the first user who books a class on Sunday morning. Includes a congratulatory modal in .
+    - **Wheel of Fortune Sounds**: Added spin and win sound effects to the wheel using , including a UI toggle to mute them ().
+- **UI/UX and Animations**:
+    - **Medal Showcase (Bacheca Medaglie)**: Fully implemented the feature for users to see a collection of their past leaderboard medals in their profile ().
+    - **Booking Animations**: Replaced a fly-away animation with a more engaging **confetti explosion** for successful bookings and a guilt-trip modal with a sad emoji for cancellations ().
+    - **Leaderboard UI Update**: Updated the  UI to make the podium medal icons larger and more prominent.
+- **Bug Fixes and Logic Correction**:
+    - **Weekly Data Reset**: Fixed a critical bug across multiple endpoints (, ) where admin and instructor views would show the past week's data on Sunday. The logic is now corrected to show the upcoming week's data every Sunday.
+    - **Subscription Entry Log**: Corrected the logic for the  endpoint to ensure it only shows entries related to the currently active subscription period.
+    - **Quiz Functionality Bug**: Fixed a bug where the quiz was not triggering after a wheel spin due to a mismatch in how the prize data was being read in the backend.
+
+**Earlier issues found/mentioned but not fixed**
+- **Issue 1: Outdated Dependencies**
+    - The Vercel build logs show numerous warnings about outdated npm packages.
+    - **Debug checklist:** Run yarn outdated v1.22.22
+Done in 0.10s. to see a list of packages that can be updated. Use yarn upgrade v1.22.22
+[1/4] Resolving packages...
+info Visit https://yarnpkg.com/en/docs/cli/upgrade for documentation about this command. to update them carefully.
+    - **Why to solve this issue and what will be achieved with this?** Updating dependencies resolves potential security vulnerabilities and ensures long-term stability of the application.
+    - **Should Test frontend/backend/both after fix:** Frontend. A full regression test is recommended after updating.
+    - **Is recurring issue?** N
+
+**Code Architecture**
+
+
+**Key Technical Concepts**
+- **Frontend:** React Native (with Expo), TypeScript.
+- **Backend:** Python, FastAPI.
+- **Database:** MongoDB (via  async driver).
+- **Audio:**  library for sound effects.
+- **State Management:** React hooks (, ).
+
+**key DB schema**
+- **users:** Stores user information, including .
+- **bookings:** Stores class reservations.
+- **blocked_dates:** Stores dates when bookings are disabled.
+- **medals:** Stores medals awarded to users from the leaderboard.
+- **wheel_spins:** 
+- **quiz_answers:** 
+
+**All files of reference**
+- : Contains all backend logic. Has been heavily modified for the lottery, quiz, weekly resets, booking bonuses, and bug fixes.
+- : The main hub for new gamification features. Contains UI and logic for the Wheel of Fortune, Lottery, and the new Bonus Quiz.
+- : Modified to add new booking/cancellation animations and the Sunday booking bonus logic.
+- : Modified to add the Medal Showcase.
+- : Modified for UI tweaks and changing the logic from Top 5 to Top 3.
+-  & : Modified to fix the weekly data view.
+- : Modified to add API service calls for the new quiz feature.
+- : Modified to add the  dependency.
+
+**key api endpoints**
+- **New Endpoints:**
+    - : Fetches the daily quiz question, now unlocked only after a wheel spin.
+    - : Submits a quiz answer and applies the appropriate bonus based on the last wheel spin.
+- **Modified Endpoints:**
+    - : Logic added to award a bonus for the first booking on a Sunday.
+    - : Logic fixed to show the next week's data on Sundays.
+    - : Logic fixed to show the next week's data on Sundays.
+    - : Logic updated to draw 3 winners and exclude the test user.
+    - : Logic updated to reflect 3 winners. **(PENDING FIX)**
+    - : Logic fixed to show entries for the current subscription only.
+
+**Critical Info for New Agent**
+- **Language:** All user communication MUST be in **Italian**.
+- **Test User:** The user Daniele Brufani is a test account. Logic has been added to exclude this user from the final lottery draw. Be mindful of this when implementing new features or debugging.
+- **Deployment Environment:** The user tests on their live/production environment (Vercel/Render). Changes made in the preview environment will not be visible to them until you remind them to use the Save to Github feature, which triggers deployment.
+- **React Native Project:** This is an Expo/React Native project. Frontend testing with the screenshot tool on a web URL will likely result in a blank page. Testing must be done by verifying code logic, checking logs, and using  for backend endpoints.
+
+**Last 10 User Messages and any pending HUMAN messages**
+1.  **User:** The quiz isn't working after they spin the wheel. (Bug report)
+2.  **Agent:** Fixes the bug in the quiz logic.
+3.  **User:** Give Daniele Brufani a test spin. And remember, he's a test user and shouldn't win prizes. (Request)
+4.  **Agent:** Explains the test spin must be done in the app, but offers to exclude Daniele Brufani from the lottery.
+5.  **User:** Yes, exclude him by name and surname. (Confirmation)
+6.  **Agent:** Implements the exclusion logic.
+7.  **User:** The expired subscription notice in the prizes tab should only appear if the subscription is actually expired. (New bug report)
+8.  **Agent:** Investigates and finds the logic is flawed because it reuses the lottery exclusion function.
+9.  **Agent:** Implements a new, dedicated function to check for active subscriptions.
+10. **Agent:** Is in the process of applying this new function to the  endpoint. **(Current state)**
+
+**Project Health Check:**
+- **Functional:** Most of the application is functional.
+- **Broken:** The logic for displaying the expired subscription banner in the prizes tab is broken.
+- **Mocked:** No mocked data is being used.
+
+**3rd Party Integrations**
+- **Vercel**: For frontend deployment.
+- **Render**: For backend deployment.
+- **expo-av**: For handling audio playback in the React Native app.
+
+**Testing status**
+- **Testing agent used after significant changes:** NO
+- **Troubleshoot agent used after agent stuck in loop:** NO
+- **Test files created:** None.
+- **Known regressions:** None.
+
+**What agent forgot to execute**
+- The agent has not yet completed the fix for the expired subscription banner issue. They created the helper function but have not yet used it in the final endpoint.
+- The issue of outdated npm <command>
+
+Usage:
+
+npm install        install all the dependencies in your project
+npm install <foo>  add the <foo> dependency to your project
+npm test           run this project's tests
+npm run <foo>      run the script named <foo>
+npm <command> -h   quick help on <command>
+npm -l             display usage info for all commands
+npm help <term>    search for help on <term>
+npm help npm       more involved overview
+
+All commands:
+
+    access, adduser, audit, bugs, cache, ci, completion,
+    config, dedupe, deprecate, diff, dist-tag, docs, doctor,
+    edit, exec, explain, explore, find-dupes, fund, get, help,
+    help-search, hook, init, install, install-ci-test,
+    install-test, link, ll, login, logout, ls, org, outdated,
+    owner, pack, ping, pkg, prefix, profile, prune, publish,
+    query, rebuild, repo, restart, root, run-script, sbom,
+    search, set, shrinkwrap, star, stars, start, stop, team,
+    test, token, uninstall, unpublish, unstar, update, version,
+    view, whoami
+
+Specify configs in the ini-formatted file:
+    /root/.npmrc
+or on the command line via: npm <command> --key=value
+
+More configuration info: npm help config
+Configuration fields: npm help 7 config
+
+npm@10.8.2 /usr/lib/node_modules/npm packages, carried over from the previous session, has not been addressed.</analysis>
