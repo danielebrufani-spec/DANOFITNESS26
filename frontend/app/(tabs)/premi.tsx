@@ -129,6 +129,25 @@ export default function PremiScreen() {
   const loseSound = useRef<Audio.Sound | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
+  // Quiz Fitness
+  const [quiz, setQuiz] = useState<{
+    domanda_id: number;
+    domanda: string;
+    risposte: string[];
+    gia_risposto: boolean;
+    risposta_corretta: boolean | null;
+    biglietti_vinti: number;
+    risposta_data: number | null;
+  } | null>(null);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [quizResult, setQuizResult] = useState<{
+    corretta: boolean;
+    risposta_corretta_index: number;
+    biglietti_vinti: number;
+    message: string;
+  } | null>(null);
+  const [submittingQuiz, setSubmittingQuiz] = useState(false);
+
   // Carica suoni
   useEffect(() => {
     const loadSounds = async () => {
@@ -252,6 +271,17 @@ export default function PremiScreen() {
           setWheelStatus(wheelRes.data);
         } catch (e) {
           console.log('Wheel status not available');
+        }
+        
+        // Carica quiz del giorno
+        try {
+          const quizRes = await apiService.getQuizToday();
+          setQuiz(quizRes.data);
+          if (quizRes.data.gia_risposto && quizRes.data.risposta_data !== null) {
+            setSelectedAnswer(quizRes.data.risposta_data);
+          }
+        } catch (e) {
+          console.log('Quiz not available');
         }
       }
     } catch (error) {
@@ -385,6 +415,33 @@ export default function PremiScreen() {
       Alert.alert('Errore', error.response?.data?.detail || 'Errore');
     } finally {
       setSavingPrize(false);
+    }
+  };
+
+  // Quiz Fitness - invia risposta
+  const handleQuizSubmit = async () => {
+    if (selectedAnswer === null || !quiz || quiz.gia_risposto) return;
+    
+    setSubmittingQuiz(true);
+    try {
+      const response = await apiService.submitQuizAnswer(selectedAnswer);
+      setQuizResult(response.data);
+      
+      // Aggiorna lo stato del quiz
+      setQuiz({
+        ...quiz,
+        gia_risposto: true,
+        risposta_corretta: response.data.corretta,
+        biglietti_vinti: response.data.biglietti_vinti,
+        risposta_data: selectedAnswer
+      });
+      
+      // Ricarica dati per aggiornare biglietti
+      loadData();
+    } catch (error: any) {
+      Alert.alert('Errore', error.response?.data?.detail || 'Errore nel quiz');
+    } finally {
+      setSubmittingQuiz(false);
     }
   };
 
@@ -675,6 +732,98 @@ export default function PremiScreen() {
           </View>
           <Text style={styles.countdownInfo}>1° del mese • ore 12:00 • Solo abbonati attivi</Text>
         </View>
+
+        {/* ===== QUIZ FITNESS DEL GIORNO ===== */}
+        {!isAdmin && quiz && (
+          <View style={styles.quizSection}>
+            <View style={styles.quizHeader}>
+              <Text style={styles.quizIcon}>🧠</Text>
+              <Text style={styles.quizTitle}>QUIZ FITNESS DEL GIORNO</Text>
+              <Text style={styles.quizIcon}>💪</Text>
+            </View>
+            
+            <Text style={styles.quizSubtitle}>
+              Rispondi correttamente e vinci +1 biglietto!
+            </Text>
+            
+            <View style={styles.quizCard}>
+              <Text style={styles.quizQuestion}>{quiz.domanda}</Text>
+              
+              <View style={styles.quizOptions}>
+                {quiz.risposte.map((risposta, index) => {
+                  const isSelected = selectedAnswer === index;
+                  const isCorrect = quizResult?.risposta_corretta_index === index;
+                  const isWrong = quiz.gia_risposto && isSelected && !isCorrect;
+                  
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      style={[
+                        styles.quizOption,
+                        isSelected && !quiz.gia_risposto && styles.quizOptionSelected,
+                        quiz.gia_risposto && isCorrect && styles.quizOptionCorrect,
+                        isWrong && styles.quizOptionWrong,
+                      ]}
+                      onPress={() => !quiz.gia_risposto && setSelectedAnswer(index)}
+                      disabled={quiz.gia_risposto}
+                    >
+                      <Text style={styles.quizOptionLetter}>
+                        {String.fromCharCode(65 + index)}
+                      </Text>
+                      <Text style={[
+                        styles.quizOptionText,
+                        (isSelected || (quiz.gia_risposto && isCorrect)) && styles.quizOptionTextSelected
+                      ]}>
+                        {risposta}
+                      </Text>
+                      {quiz.gia_risposto && isCorrect && (
+                        <Text style={styles.quizOptionIcon}>✓</Text>
+                      )}
+                      {isWrong && (
+                        <Text style={styles.quizOptionIcon}>✗</Text>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              
+              {!quiz.gia_risposto ? (
+                <TouchableOpacity
+                  style={[
+                    styles.quizSubmitButton,
+                    selectedAnswer === null && styles.quizSubmitButtonDisabled
+                  ]}
+                  onPress={handleQuizSubmit}
+                  disabled={selectedAnswer === null || submittingQuiz}
+                >
+                  {submittingQuiz ? (
+                    <ActivityIndicator color="#FFF" />
+                  ) : (
+                    <Text style={styles.quizSubmitText}>CONFERMA RISPOSTA</Text>
+                  )}
+                </TouchableOpacity>
+              ) : (
+                <View style={[
+                  styles.quizResultBox,
+                  quiz.risposta_corretta ? styles.quizResultCorrect : styles.quizResultWrong
+                ]}>
+                  <Text style={styles.quizResultEmoji}>
+                    {quiz.risposta_corretta ? '🎉' : '😢'}
+                  </Text>
+                  <Text style={styles.quizResultText}>
+                    {quiz.risposta_corretta 
+                      ? `Risposta esatta! +${quiz.biglietti_vinti} biglietto!` 
+                      : 'Risposta sbagliata... Riprova domani!'}
+                  </Text>
+                </View>
+              )}
+            </View>
+            
+            <Text style={styles.quizInfo}>
+              Una domanda al giorno • Si resetta a mezzanotte
+            </Text>
+          </View>
+        )}
 
         {/* ===== SEZIONE 3 VINCITORI DEL MESE - VISIBILE A TUTTI ===== */}
         {status?.vincitori && status.vincitori.length > 0 && (
@@ -2046,5 +2195,145 @@ const styles = StyleSheet.create({
     color: VEGAS_COLORS.gold,
     marginTop: 6,
     textAlign: 'center',
+  },
+  // Quiz Fitness Styles
+  quizSection: {
+    backgroundColor: VEGAS_COLORS.card,
+    marginHorizontal: 16,
+    marginVertical: 12,
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: '#4ECDC4',
+  },
+  quizHeader: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 8,
+  },
+  quizIcon: {
+    fontSize: 24,
+  },
+  quizTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#4ECDC4',
+    textAlign: 'center',
+  },
+  quizSubtitle: {
+    fontSize: 13,
+    color: VEGAS_COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  quizCard: {
+    backgroundColor: 'rgba(78,205,196,0.1)',
+    borderRadius: 16,
+    padding: 16,
+  },
+  quizQuestion: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: VEGAS_COLORS.text,
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 22,
+  },
+  quizOptions: {
+    gap: 10,
+  },
+  quizOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  quizOptionSelected: {
+    borderColor: '#4ECDC4',
+    backgroundColor: 'rgba(78,205,196,0.2)',
+  },
+  quizOptionCorrect: {
+    borderColor: '#4CAF50',
+    backgroundColor: 'rgba(76,175,80,0.2)',
+  },
+  quizOptionWrong: {
+    borderColor: '#FF6B6B',
+    backgroundColor: 'rgba(255,107,107,0.2)',
+  },
+  quizOptionLetter: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    textAlign: 'center',
+    lineHeight: 28,
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: VEGAS_COLORS.textSecondary,
+    marginRight: 12,
+  },
+  quizOptionText: {
+    flex: 1,
+    fontSize: 14,
+    color: VEGAS_COLORS.text,
+  },
+  quizOptionTextSelected: {
+    fontWeight: '600',
+  },
+  quizOptionIcon: {
+    fontSize: 18,
+    marginLeft: 8,
+  },
+  quizSubmitButton: {
+    backgroundColor: '#4ECDC4',
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  quizSubmitButtonDisabled: {
+    backgroundColor: 'rgba(78,205,196,0.3)',
+  },
+  quizSubmitText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  quizResultBox: {
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  quizResultCorrect: {
+    backgroundColor: 'rgba(76,175,80,0.2)',
+    borderWidth: 2,
+    borderColor: '#4CAF50',
+  },
+  quizResultWrong: {
+    backgroundColor: 'rgba(255,107,107,0.2)',
+    borderWidth: 2,
+    borderColor: '#FF6B6B',
+  },
+  quizResultEmoji: {
+    fontSize: 36,
+    marginBottom: 8,
+  },
+  quizResultText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: VEGAS_COLORS.text,
+    textAlign: 'center',
+  },
+  quizInfo: {
+    fontSize: 11,
+    color: VEGAS_COLORS.textSecondary,
+    textAlign: 'center',
+    marginTop: 12,
   },
 });

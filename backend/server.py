@@ -167,6 +167,7 @@ class BookingResponse(BaseModel):
     confermata: bool
     lezione_scalata: bool
     created_at: datetime
+    bonus_biglietti: Optional[int] = 0  # Bonus biglietti lotteria assegnati
 
 class NotificationResponse(BaseModel):
     id: str
@@ -975,6 +976,34 @@ async def create_booking(data: BookingCreate, current_user: dict = Depends(get_c
     
     result = await db.bookings.insert_one(booking)
     
+    # BONUS: Prima prenotazione della domenica = +2 biglietti! 🎟️
+    bonus_biglietti = 0
+    if today_weekday == 6 and current_hour >= 9:  # Domenica dopo le 9
+        # Controlla se è la PRIMA prenotazione della settimana prossima
+        # Calcola lunedì della prossima settimana
+        next_monday = (now + timedelta(days=1)).strftime("%Y-%m-%d")
+        next_saturday = (now + timedelta(days=6)).strftime("%Y-%m-%d")
+        
+        # Conta prenotazioni già fatte oggi per la prossima settimana (esclusa questa)
+        count_today = await db.bookings.count_documents({
+            "data_lezione": {"$gte": next_monday, "$lte": next_saturday},
+            "created_at": {"$gte": now.replace(hour=9, minute=0, second=0, microsecond=0)},
+            "_id": {"$ne": result.inserted_id}
+        })
+        
+        if count_today == 0:
+            # È la PRIMA prenotazione! Assegna bonus
+            bonus_biglietti = 2
+            current_month = now.strftime("%Y-%m")
+            
+            # Aggiungi biglietti bonus
+            await db.wheel_tickets.update_one(
+                {"user_id": user_id, "mese": current_month},
+                {"$inc": {"biglietti": bonus_biglietti}},
+                upsert=True
+            )
+            logger.info(f"[BONUS] Prima prenotazione domenica! +{bonus_biglietti} biglietti a {current_user['nome']}")
+    
     return BookingResponse(
         id=str(result.inserted_id),
         user_id=user_id,
@@ -986,7 +1015,8 @@ async def create_booking(data: BookingCreate, current_user: dict = Depends(get_c
         abbonamento_scaduto=False,
         confermata=True,
         lezione_scalata=False,
-        created_at=booking["created_at"]
+        created_at=booking["created_at"],
+        bonus_biglietti=bonus_biglietti  # Nuovo campo per notificare il bonus
     )
 
 @api_router.get("/bookings/me", response_model=List[BookingResponse])
@@ -3585,6 +3615,216 @@ async def get_lottery_status(current_user: dict = Depends(get_current_user)):
         "prossima_estrazione": next_extraction.isoformat(),
         "secondi_a_estrazione": max(0, seconds_to_extraction),
         "estrazione_fatta": winner_data is not None
+    }
+
+
+# ==================== QUIZ FITNESS ====================
+# Database di domande fitness
+QUIZ_DOMANDE = [
+    {
+        "id": 1,
+        "domanda": "Quanti litri d'acqua si consiglia di bere al giorno?",
+        "risposte": ["1 litro", "2 litri", "3 litri", "4 litri"],
+        "corretta": 1  # indice 0-based
+    },
+    {
+        "id": 2,
+        "domanda": "Qual è il muscolo più grande del corpo umano?",
+        "risposte": ["Bicipite", "Quadricipite", "Grande gluteo", "Dorsali"],
+        "corretta": 2
+    },
+    {
+        "id": 3,
+        "domanda": "Quanto tempo di recupero serve tra una serie e l'altra per l'ipertrofia?",
+        "risposte": ["30 secondi", "60-90 secondi", "3-5 minuti", "10 minuti"],
+        "corretta": 1
+    },
+    {
+        "id": 4,
+        "domanda": "Qual è la frequenza cardiaca massima teorica per una persona di 30 anni?",
+        "risposte": ["170 bpm", "180 bpm", "190 bpm", "200 bpm"],
+        "corretta": 2
+    },
+    {
+        "id": 5,
+        "domanda": "Quante calorie brucia in media 1 kg di muscolo a riposo al giorno?",
+        "risposte": ["5-10 kcal", "13-15 kcal", "30-50 kcal", "100 kcal"],
+        "corretta": 1
+    },
+    {
+        "id": 6,
+        "domanda": "Quale macronutriente è più importante per la crescita muscolare?",
+        "risposte": ["Carboidrati", "Grassi", "Proteine", "Fibre"],
+        "corretta": 2
+    },
+    {
+        "id": 7,
+        "domanda": "Quante ore di sonno sono raccomandate per un buon recupero muscolare?",
+        "risposte": ["4-5 ore", "6 ore", "7-9 ore", "10-12 ore"],
+        "corretta": 2
+    },
+    {
+        "id": 8,
+        "domanda": "Qual è l'esercizio migliore per gli addominali secondo gli studi?",
+        "risposte": ["Crunch classico", "Plank", "Bicycle crunch", "Sit-up"],
+        "corretta": 2
+    },
+    {
+        "id": 9,
+        "domanda": "Quanti grammi di proteine per kg di peso corporeo servono per la massa?",
+        "risposte": ["0.5g/kg", "1g/kg", "1.6-2.2g/kg", "4g/kg"],
+        "corretta": 2
+    },
+    {
+        "id": 10,
+        "domanda": "Quale tipo di stretching è consigliato PRIMA dell'allenamento?",
+        "risposte": ["Statico", "Dinamico", "PNF", "Balistico"],
+        "corretta": 1
+    },
+    {
+        "id": 11,
+        "domanda": "Quanto tempo ci vuole per perdere i progressi muscolari se non ci si allena?",
+        "risposte": ["1 settimana", "2-3 settimane", "1 mese", "2 mesi"],
+        "corretta": 1
+    },
+    {
+        "id": 12,
+        "domanda": "Qual è la percentuale ideale di grasso corporeo per un uomo in forma?",
+        "risposte": ["5-8%", "10-15%", "20-25%", "30%"],
+        "corretta": 1
+    },
+    {
+        "id": 13,
+        "domanda": "Quante volte a settimana si può allenare lo stesso gruppo muscolare?",
+        "risposte": ["1 volta", "2-3 volte", "Tutti i giorni", "Mai più di 1"],
+        "corretta": 1
+    },
+    {
+        "id": 14,
+        "domanda": "Cosa significa DOMS?",
+        "risposte": ["Dolore muscolare", "Delayed Onset Muscle Soreness", "Danno muscolare", "Distensione muscolare"],
+        "corretta": 1
+    },
+    {
+        "id": 15,
+        "domanda": "Qual è il miglior momento per assumere proteine dopo l'allenamento?",
+        "risposte": ["Subito", "Entro 30 min", "Entro 2 ore", "Non importa"],
+        "corretta": 3
+    },
+    {
+        "id": 16,
+        "domanda": "Quanti passi al giorno sono raccomandati per la salute?",
+        "risposte": ["5.000", "7.500", "10.000", "15.000"],
+        "corretta": 2
+    },
+    {
+        "id": 17,
+        "domanda": "Quale esercizio coinvolge più muscoli in assoluto?",
+        "risposte": ["Squat", "Stacco da terra", "Panca piana", "Military press"],
+        "corretta": 1
+    },
+    {
+        "id": 18,
+        "domanda": "Cosa succede ai muscoli durante il sonno?",
+        "risposte": ["Niente", "Si riparano e crescono", "Si riducono", "Consumano grassi"],
+        "corretta": 1
+    },
+    {
+        "id": 19,
+        "domanda": "Qual è il principale carburante per esercizi ad alta intensità?",
+        "risposte": ["Grassi", "Proteine", "Carboidrati/Glicogeno", "Acqua"],
+        "corretta": 2
+    },
+    {
+        "id": 20,
+        "domanda": "Quanti secondi dura in media la fase eccentrica ottimale?",
+        "risposte": ["1 secondo", "2-3 secondi", "5 secondi", "10 secondi"],
+        "corretta": 1
+    },
+]
+
+@api_router.get("/quiz/today")
+async def get_quiz_today(current_user: dict = Depends(get_current_user)):
+    """Ottieni la domanda del quiz del giorno"""
+    user_id = str(current_user["_id"])
+    today = now_rome().strftime("%Y-%m-%d")
+    
+    # Seleziona domanda basata sul giorno (ciclica)
+    day_of_year = now_rome().timetuple().tm_yday
+    quiz_index = day_of_year % len(QUIZ_DOMANDE)
+    domanda = QUIZ_DOMANDE[quiz_index]
+    
+    # Controlla se ha già risposto oggi
+    existing = await db.quiz_answers.find_one({
+        "user_id": user_id,
+        "data": today
+    })
+    
+    return {
+        "domanda_id": domanda["id"],
+        "domanda": domanda["domanda"],
+        "risposte": domanda["risposte"],
+        "gia_risposto": existing is not None,
+        "risposta_corretta": existing.get("corretta") if existing else None,
+        "biglietti_vinti": existing.get("biglietti_vinti", 0) if existing else 0,
+        "risposta_data": existing.get("risposta_index") if existing else None
+    }
+
+@api_router.post("/quiz/answer")
+async def submit_quiz_answer(risposta_index: int, current_user: dict = Depends(get_current_user)):
+    """Rispondi al quiz del giorno - +1 biglietto se corretto!"""
+    user_id = str(current_user["_id"])
+    today = now_rome().strftime("%Y-%m-%d")
+    current_month = now_rome().strftime("%Y-%m")
+    
+    # Controlla se ha già risposto oggi
+    existing = await db.quiz_answers.find_one({
+        "user_id": user_id,
+        "data": today
+    })
+    
+    if existing:
+        return {
+            "success": False,
+            "message": "Hai già risposto al quiz di oggi!",
+            "gia_risposto": True
+        }
+    
+    # Ottieni domanda del giorno
+    day_of_year = now_rome().timetuple().tm_yday
+    quiz_index = day_of_year % len(QUIZ_DOMANDE)
+    domanda = QUIZ_DOMANDE[quiz_index]
+    
+    # Verifica risposta
+    is_correct = risposta_index == domanda["corretta"]
+    biglietti_vinti = 1 if is_correct else 0
+    
+    # Salva risposta
+    await db.quiz_answers.insert_one({
+        "user_id": user_id,
+        "data": today,
+        "domanda_id": domanda["id"],
+        "risposta_index": risposta_index,
+        "corretta": is_correct,
+        "biglietti_vinti": biglietti_vinti,
+        "created_at": now_rome()
+    })
+    
+    # Se corretto, assegna biglietto
+    if is_correct:
+        await db.wheel_tickets.update_one(
+            {"user_id": user_id, "mese": current_month},
+            {"$inc": {"biglietti": biglietti_vinti}},
+            upsert=True
+        )
+        logger.info(f"[QUIZ] {current_user['nome']} ha risposto correttamente! +1 biglietto")
+    
+    return {
+        "success": True,
+        "corretta": is_correct,
+        "risposta_corretta_index": domanda["corretta"],
+        "biglietti_vinti": biglietti_vinti,
+        "message": "Risposta esatta! +1 biglietto! 🎉" if is_correct else "Risposta sbagliata... Riprova domani!"
     }
 
 

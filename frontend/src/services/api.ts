@@ -275,6 +275,24 @@ export const apiService = {
   createConsiglioMusicale: (data: {titolo?: string; spotify_url: string}) => api.post('/consigli-musicali', data),
   deleteConsiglioMusicale: (id: string) => api.delete(`/consigli-musicali/${id}`),
 
+  // Quiz Fitness
+  getQuizToday: () => api.get<{
+    domanda_id: number;
+    domanda: string;
+    risposte: string[];
+    gia_risposto: boolean;
+    risposta_corretta: boolean | null;
+    biglietti_vinti: number;
+    risposta_data: number | null;
+  }>('/quiz/today'),
+  submitQuizAnswer: (risposta_index: number) => api.post<{
+    success: boolean;
+    corretta: boolean;
+    risposta_corretta_index: number;
+    biglietti_vinti: number;
+    message: string;
+  }>(`/quiz/answer?risposta_index=${risposta_index}`),
+
   // Init
   initAdmin: () => api.post('/init/admin'),
 };
