@@ -3691,17 +3691,28 @@ QUIZ_DOMANDE = [
 
 @api_router.get("/quiz/today")
 async def get_quiz_today(current_user: dict = Depends(get_current_user)):
-    """Ottieni la domanda del quiz del giorno - SBLOCCATO dopo allenamento!"""
+    """
+    Quiz BONUS collegato alla ruota della fortuna!
+    - Vinci biglietti alla ruota → Quiz corretto = RADDOPPIA
+    - Perdi biglietti alla ruota → Quiz corretto = ANNULLA perdita
+    - Vinci 0 alla ruota → Quiz corretto = +1 biglietto
+    """
     user_id = str(current_user["_id"])
     today = now_rome().strftime("%Y-%m-%d")
     
     # Controlla se ha già risposto oggi
-    existing = await db.quiz_answers.find_one({
+    existing_answer = await db.quiz_answers.find_one({
         "user_id": user_id,
         "data": today
     })
     
-    if existing:
+    # Controlla se ha girato la ruota oggi
+    spin_today = await db.wheel_spins.find_one({
+        "user_id": user_id,
+        "data": today
+    })
+    
+    if existing_answer:
         # Ha già risposto - mostra risultato
         day_of_year = now_rome().timetuple().tm_yday
         quiz_index = day_of_year % len(QUIZ_DOMANDE)
@@ -3713,23 +3724,19 @@ async def get_quiz_today(current_user: dict = Depends(get_current_user)):
             "domanda": domanda["domanda"],
             "risposte": domanda["risposte"],
             "gia_risposto": True,
-            "risposta_corretta": existing.get("corretta"),
-            "biglietti_vinti": existing.get("biglietti_vinti", 0),
-            "risposta_data": existing.get("risposta_index"),
-            "message": "Hai già risposto! Torna dopo il prossimo allenamento 🧠"
+            "risposta_corretta": existing_answer.get("corretta"),
+            "biglietti_vinti": existing_answer.get("biglietti_vinti", 0),
+            "risposta_data": existing_answer.get("risposta_index"),
+            "wheel_result": existing_answer.get("wheel_biglietti", 0),
+            "bonus_type": existing_answer.get("bonus_type", "standard"),
+            "message": "Hai già risposto! Torna dopo il prossimo giro di ruota 🧠"
         }
     
-    # Controlla se ha fatto almeno un allenamento oggi (confermato e scalato)
-    allenamento_oggi = await db.bookings.find_one({
-        "user_id": user_id,
-        "data_lezione": today,
-        "lezione_scalata": True
-    })
-    
-    if not allenamento_oggi:
+    if not spin_today:
+        # Non ha girato la ruota - quiz bloccato
         return {
             "can_play": False,
-            "reason": "no_workout",
+            "reason": "no_spin",
             "domanda_id": None,
             "domanda": None,
             "risposte": [],
@@ -3737,8 +3744,24 @@ async def get_quiz_today(current_user: dict = Depends(get_current_user)):
             "risposta_corretta": None,
             "biglietti_vinti": 0,
             "risposta_data": None,
-            "message": "Completa un allenamento oggi per sbloccare il quiz! 💪"
+            "wheel_result": 0,
+            "bonus_type": None,
+            "message": "🎰 Gira prima la ruota per sbloccare il Quiz Bonus!"
         }
+    
+    # Ha girato la ruota - quiz disponibile!
+    wheel_biglietti = spin_today.get("premio", {}).get("biglietti", 0)
+    
+    # Determina il tipo di bonus
+    if wheel_biglietti > 0:
+        bonus_type = "raddoppia"  # Può raddoppiare la vincita
+        potential_bonus = wheel_biglietti  # Raddoppia = stessa quantità in più
+    elif wheel_biglietti < 0:
+        bonus_type = "annulla"  # Può annullare la perdita
+        potential_bonus = abs(wheel_biglietti)  # Recupera ciò che ha perso
+    else:
+        bonus_type = "standard"  # Bonus standard +1
+        potential_bonus = 1
     
     # Seleziona domanda basata sul giorno (ciclica)
     day_of_year = now_rome().timetuple().tm_yday
@@ -3754,12 +3777,15 @@ async def get_quiz_today(current_user: dict = Depends(get_current_user)):
         "risposta_corretta": None,
         "biglietti_vinti": 0,
         "risposta_data": None,
-        "message": "Quiz sbloccato! Rispondi e vinci +1 biglietto! 🎯"
+        "wheel_result": wheel_biglietti,
+        "bonus_type": bonus_type,
+        "potential_bonus": potential_bonus,
+        "message": f"Quiz Bonus sbloccato! {'Raddoppia la vincita!' if bonus_type == 'raddoppia' else 'Annulla la perdita!' if bonus_type == 'annulla' else 'Vinci +1 biglietto!'} 🎯"
     }
 
 @api_router.post("/quiz/answer")
 async def submit_quiz_answer(risposta_index: int, current_user: dict = Depends(get_current_user)):
-    """Rispondi al quiz del giorno - +1 biglietto se corretto!"""
+    """Rispondi al quiz bonus - effetto dipende dal risultato della ruota!"""
     user_id = str(current_user["_id"])
     today = now_rome().strftime("%Y-%m-%d")
     current_month = now_rome().strftime("%Y-%m")
@@ -3777,19 +3803,32 @@ async def submit_quiz_answer(risposta_index: int, current_user: dict = Depends(g
             "gia_risposto": True
         }
     
-    # Controlla se ha fatto un allenamento oggi
-    allenamento_oggi = await db.bookings.find_one({
+    # Controlla se ha girato la ruota oggi
+    spin_today = await db.wheel_spins.find_one({
         "user_id": user_id,
-        "data_lezione": today,
-        "lezione_scalata": True
+        "data": today
     })
     
-    if not allenamento_oggi:
+    if not spin_today:
         return {
             "success": False,
-            "message": "Devi completare un allenamento per rispondere al quiz!",
+            "message": "Devi prima girare la ruota per rispondere al quiz!",
             "gia_risposto": False
         }
+    
+    # Ottieni risultato ruota
+    wheel_biglietti = spin_today.get("premio", {}).get("biglietti", 0)
+    
+    # Determina bonus type e quantità
+    if wheel_biglietti > 0:
+        bonus_type = "raddoppia"
+        potential_bonus = wheel_biglietti
+    elif wheel_biglietti < 0:
+        bonus_type = "annulla"
+        potential_bonus = abs(wheel_biglietti)
+    else:
+        bonus_type = "standard"
+        potential_bonus = 1
     
     # Ottieni domanda del giorno
     day_of_year = now_rome().timetuple().tm_yday
@@ -3798,7 +3837,24 @@ async def submit_quiz_answer(risposta_index: int, current_user: dict = Depends(g
     
     # Verifica risposta
     is_correct = risposta_index == domanda["corretta"]
-    biglietti_vinti = 1 if is_correct else 0
+    
+    # Calcola biglietti in base al bonus type
+    if is_correct:
+        biglietti_vinti = potential_bonus
+        if bonus_type == "raddoppia":
+            message = f"🎉 RADDOPPIO! +{biglietti_vinti} biglietti extra! Totale dal giro: {wheel_biglietti * 2}!"
+        elif bonus_type == "annulla":
+            message = f"💪 SALVATO! Hai recuperato {biglietti_vinti} biglietti! La perdita è annullata!"
+        else:
+            message = f"✅ Corretto! +{biglietti_vinti} biglietto!"
+    else:
+        biglietti_vinti = 0
+        if bonus_type == "raddoppia":
+            message = f"😅 Peccato! Non hai raddoppiato... ma hai comunque vinto {wheel_biglietti} alla ruota!"
+        elif bonus_type == "annulla":
+            message = f"😢 Risposta sbagliata... la perdita di {abs(wheel_biglietti)} biglietti resta. Riprova domani!"
+        else:
+            message = "❌ Sbagliato! Nessun biglietto bonus questa volta..."
     
     # Salva risposta
     await db.quiz_answers.insert_one({
@@ -3808,24 +3864,28 @@ async def submit_quiz_answer(risposta_index: int, current_user: dict = Depends(g
         "risposta_index": risposta_index,
         "corretta": is_correct,
         "biglietti_vinti": biglietti_vinti,
+        "bonus_type": bonus_type,
+        "wheel_biglietti": wheel_biglietti,
         "created_at": now_rome()
     })
     
-    # Se corretto, assegna biglietto
-    if is_correct:
+    # Se corretto, assegna biglietti bonus
+    if is_correct and biglietti_vinti > 0:
         await db.wheel_tickets.update_one(
             {"user_id": user_id, "mese": current_month},
             {"$inc": {"biglietti": biglietti_vinti}},
             upsert=True
         )
-        logger.info(f"[QUIZ] {current_user['nome']} ha risposto correttamente! +1 biglietto")
+        logger.info(f"[QUIZ BONUS] {current_user['nome']} - {bonus_type}: +{biglietti_vinti} biglietti")
     
     return {
         "success": True,
         "corretta": is_correct,
         "risposta_corretta_index": domanda["corretta"],
         "biglietti_vinti": biglietti_vinti,
-        "message": "Risposta esatta! +1 biglietto! 🎉" if is_correct else "Risposta sbagliata... Riprova domani!"
+        "bonus_type": bonus_type,
+        "wheel_result": wheel_biglietti,
+        "message": message
     }
 
 

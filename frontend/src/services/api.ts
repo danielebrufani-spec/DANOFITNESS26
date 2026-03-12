@@ -276,7 +276,7 @@ export const apiService = {
   createConsiglioMusicale: (data: {titolo?: string; spotify_url: string}) => api.post('/consigli-musicali', data),
   deleteConsiglioMusicale: (id: string) => api.delete(`/consigli-musicali/${id}`),
 
-  // Quiz Fitness
+  // Quiz Fitness BONUS
   getQuizToday: () => api.get<{
     can_play: boolean;
     reason?: string;
@@ -287,6 +287,9 @@ export const apiService = {
     risposta_corretta: boolean | null;
     biglietti_vinti: number;
     risposta_data: number | null;
+    wheel_result: number;
+    bonus_type: 'raddoppia' | 'annulla' | 'standard' | null;
+    potential_bonus?: number;
     message: string;
   }>('/quiz/today'),
   submitQuizAnswer: (risposta_index: number) => api.post<{
@@ -294,6 +297,8 @@ export const apiService = {
     corretta: boolean;
     risposta_corretta_index: number;
     biglietti_vinti: number;
+    bonus_type: string;
+    wheel_result: number;
     message: string;
   }>(`/quiz/answer?risposta_index=${risposta_index}`),
 

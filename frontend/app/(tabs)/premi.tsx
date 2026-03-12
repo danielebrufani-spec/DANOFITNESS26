@@ -140,6 +140,9 @@ export default function PremiScreen() {
     risposta_corretta: boolean | null;
     biglietti_vinti: number;
     risposta_data: number | null;
+    wheel_result: number;
+    bonus_type: 'raddoppia' | 'annulla' | 'standard' | null;
+    potential_bonus?: number;
     message: string;
   } | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -147,6 +150,8 @@ export default function PremiScreen() {
     corretta: boolean;
     risposta_corretta_index: number;
     biglietti_vinti: number;
+    bonus_type: string;
+    wheel_result: number;
     message: string;
   } | null>(null);
   const [submittingQuiz, setSubmittingQuiz] = useState(false);
@@ -736,35 +741,51 @@ export default function PremiScreen() {
           <Text style={styles.countdownInfo}>1° del mese • ore 12:00 • Solo abbonati attivi</Text>
         </View>
 
-        {/* ===== QUIZ FITNESS DEL GIORNO ===== */}
+        {/* ===== QUIZ BONUS - Collegato alla Ruota! ===== */}
         {!isAdmin && quiz && (
           <View style={styles.quizSection}>
             <View style={styles.quizHeader}>
               <Text style={styles.quizIcon}>🧠</Text>
-              <Text style={styles.quizTitle}>QUIZ FITNESS DEL GIORNO</Text>
-              <Text style={styles.quizIcon}>💪</Text>
+              <Text style={styles.quizTitle}>QUIZ BONUS</Text>
+              <Text style={styles.quizIcon}>🎯</Text>
             </View>
+            
+            {/* Badge tipo bonus */}
+            {quiz.bonus_type && quiz.can_play && (
+              <View style={[
+                styles.quizBonusBadge,
+                quiz.bonus_type === 'raddoppia' && styles.quizBonusBadgeGold,
+                quiz.bonus_type === 'annulla' && styles.quizBonusBadgeRed,
+                quiz.bonus_type === 'standard' && styles.quizBonusBadgeGreen,
+              ]}>
+                <Text style={styles.quizBonusBadgeText}>
+                  {quiz.bonus_type === 'raddoppia' && `🎰 Hai vinto +${quiz.wheel_result}! Rispondi per RADDOPPIARE!`}
+                  {quiz.bonus_type === 'annulla' && `😱 Hai perso ${Math.abs(quiz.wheel_result)}... Rispondi per ANNULLARE!`}
+                  {quiz.bonus_type === 'standard' && '🎰 Vinci 0 alla ruota → Rispondi per +1 biglietto!'}
+                </Text>
+              </View>
+            )}
             
             <Text style={styles.quizSubtitle}>
               {quiz.can_play 
-                ? 'Rispondi correttamente e vinci +1 biglietto!'
-                : quiz.reason === 'no_workout'
-                  ? '🔒 Completa un allenamento per sbloccare!'
+                ? quiz.message
+                : quiz.reason === 'no_spin'
+                  ? '🎰 Gira prima la ruota per sbloccare!'
                   : quiz.gia_risposto 
                     ? '✅ Hai già risposto oggi!'
                     : quiz.message}
             </Text>
             
-            {/* Quiz Bloccato - Nessun allenamento */}
-            {!quiz.can_play && quiz.reason === 'no_workout' && (
+            {/* Quiz Bloccato - Non ha girato la ruota */}
+            {!quiz.can_play && quiz.reason === 'no_spin' && (
               <View style={styles.quizLockedCard}>
-                <Text style={styles.quizLockedIcon}>🔒</Text>
-                <Text style={styles.quizLockedTitle}>Quiz Bloccato</Text>
+                <Text style={styles.quizLockedIcon}>🎰</Text>
+                <Text style={styles.quizLockedTitle}>Prima gira la Ruota!</Text>
                 <Text style={styles.quizLockedMessage}>
-                  Fai un allenamento oggi e torna qui per sfidare il quiz!
+                  Il Quiz Bonus si sblocca dopo aver girato la ruota della fortuna
                 </Text>
                 <Text style={styles.quizLockedMotivation}>
-                  Ogni allenamento sblocca una nuova domanda! 💪
+                  Il bonus dipende dal risultato della ruota! 🎯
                 </Text>
               </View>
             )}
@@ -825,7 +846,11 @@ export default function PremiScreen() {
                     {submittingQuiz ? (
                       <ActivityIndicator color="#FFF" />
                     ) : (
-                      <Text style={styles.quizSubmitText}>CONFERMA RISPOSTA</Text>
+                      <Text style={styles.quizSubmitText}>
+                        {quiz.bonus_type === 'raddoppia' ? '🎰 RADDOPPIA!' : 
+                         quiz.bonus_type === 'annulla' ? '💪 SALVA!' : 
+                         'CONFERMA'}
+                      </Text>
                     )}
                   </TouchableOpacity>
                 ) : quiz.gia_risposto && (
@@ -834,17 +859,25 @@ export default function PremiScreen() {
                     quiz.risposta_corretta ? styles.quizResultCorrect : styles.quizResultWrong
                   ]}>
                     <Text style={styles.quizResultEmoji}>
-                      {quiz.risposta_corretta ? '🎉' : '💪'}
+                      {quiz.risposta_corretta 
+                        ? (quiz.bonus_type === 'raddoppia' ? '🎉🎰' : quiz.bonus_type === 'annulla' ? '💪✅' : '🎉')
+                        : '😢'}
                     </Text>
                     <Text style={styles.quizResultText}>
                       {quiz.risposta_corretta 
-                        ? `Risposta esatta! +${quiz.biglietti_vinti} biglietto!` 
+                        ? `+${quiz.biglietti_vinti} biglietti!` 
                         : 'Risposta sbagliata...'}
                     </Text>
                     <Text style={styles.quizMotivation}>
                       {quiz.risposta_corretta 
-                        ? 'Grande! Sei un vero esperto di fitness! 🧠💪' 
-                        : 'Non mollare! Ogni errore è un\'opportunità per imparare. Torna al prossimo allenamento! 🔥'}
+                        ? (quiz.bonus_type === 'raddoppia' 
+                            ? 'HAI RADDOPPIATO! Sei un campione! 🏆' 
+                            : quiz.bonus_type === 'annulla'
+                              ? 'SALVATO! La perdita è annullata! 💪'
+                              : 'Ottimo! +1 biglietto conquistato! 🎯')
+                        : (quiz.bonus_type === 'annulla'
+                            ? 'La perdita resta... ma non mollare! 💪'
+                            : 'Peccato! Riprova al prossimo giro! 🔄')}
                     </Text>
                   </View>
                 )}
@@ -852,7 +885,7 @@ export default function PremiScreen() {
             )}
             
             <Text style={styles.quizInfo}>
-              Si sblocca dopo ogni allenamento • Una risposta per allenamento
+              Si sblocca dopo la ruota • Bonus dipende dal risultato! 🎰
             </Text>
           </View>
         )}
@@ -2407,5 +2440,33 @@ const styles = StyleSheet.create({
     color: '#4ECDC4',
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  // Quiz Bonus Badge styles
+  quizBonusBadge: {
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  quizBonusBadgeGold: {
+    backgroundColor: 'rgba(255,215,0,0.2)',
+    borderWidth: 2,
+    borderColor: '#FFD700',
+  },
+  quizBonusBadgeRed: {
+    backgroundColor: 'rgba(255,107,107,0.2)',
+    borderWidth: 2,
+    borderColor: '#FF6B6B',
+  },
+  quizBonusBadgeGreen: {
+    backgroundColor: 'rgba(78,205,196,0.2)',
+    borderWidth: 2,
+    borderColor: '#4ECDC4',
+  },
+  quizBonusBadgeText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: VEGAS_COLORS.text,
+    textAlign: 'center',
   },
 });
