@@ -158,6 +158,7 @@ export default function PremiScreen() {
   const [quizTimer, setQuizTimer] = useState(10);
   const [quizTimerActive, setQuizTimerActive] = useState(false);
   const [quizTimerExpired, setQuizTimerExpired] = useState(false);
+  const [quizStarted, setQuizStarted] = useState(false);
 
   // Carica suoni
   useEffect(() => {
@@ -331,13 +332,11 @@ export default function PremiScreen() {
     return () => clearInterval(interval);
   }, [status?.prossima_estrazione]);
 
-  // Quiz countdown timer (10 secondi)
+  // Quiz countdown timer (10 secondi) - parte SOLO quando il cliente clicca "Inizia"
   useEffect(() => {
-    if (!quiz || !quiz.can_play || quiz.gia_risposto || !quiz.domanda) {
-      setQuizTimerActive(false);
+    if (!quizStarted || !quiz || !quiz.can_play || quiz.gia_risposto) {
       return;
     }
-    // Avvia il timer solo se non è già scaduto
     if (quizTimerExpired) return;
     
     setQuizTimer(10);
@@ -356,7 +355,14 @@ export default function PremiScreen() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [quiz?.can_play, quiz?.gia_risposto, quiz?.domanda_id]);
+  }, [quizStarted]);
+
+  const startQuiz = () => {
+    setQuizStarted(true);
+    setQuizTimerExpired(false);
+    setQuizTimer(10);
+    setSelectedAnswer(null);
+  };
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -824,10 +830,23 @@ export default function PremiScreen() {
             {/* Quiz Disponibile o Già Risposto */}
             {(quiz.can_play || quiz.gia_risposto) && quiz.domanda && (
               <View style={styles.quizCard}>
+                {/* Pulsante INIZIA - mostrato prima del click */}
+                {quiz.can_play && !quiz.gia_risposto && !quizStarted && (
+                  <View style={styles.quizStartContainer}>
+                    <Text style={styles.quizStartInfo}>Hai 10 secondi per rispondere!</Text>
+                    <TouchableOpacity style={styles.quizStartButton} onPress={startQuiz}>
+                      <Text style={styles.quizStartButtonText}>INIZIA QUIZ</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {/* Domanda + Timer + Risposte - mostrate dopo il click */}
+                {(quizStarted || quiz.gia_risposto) && (
+                  <>
                 <Text style={styles.quizQuestion}>{quiz.domanda}</Text>
                 
                 {/* Timer countdown */}
-                {quiz.can_play && !quiz.gia_risposto && (
+                {quiz.can_play && !quiz.gia_risposto && quizStarted && (
                   <View style={styles.quizTimerContainer}>
                     <View style={styles.quizTimerBarBg}>
                       <View style={[
@@ -939,6 +958,8 @@ export default function PremiScreen() {
                             : 'Peccato! Riprova al prossimo giro! 🔄')}
                     </Text>
                   </View>
+                )}
+                  </>
                 )}
               </View>
             )}
@@ -2395,6 +2416,28 @@ const styles = StyleSheet.create({
   },
   quizOptionDisabled: {
     opacity: 0.4,
+  },
+  quizStartContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    gap: 14,
+  },
+  quizStartInfo: {
+    fontSize: 14,
+    color: VEGAS_COLORS.textSecondary,
+    textAlign: 'center',
+  },
+  quizStartButton: {
+    backgroundColor: '#4ECDC4',
+    paddingHorizontal: 40,
+    paddingVertical: 14,
+    borderRadius: 30,
+  },
+  quizStartButtonText: {
+    color: '#000',
+    fontSize: 18,
+    fontWeight: 'bold',
+    letterSpacing: 1,
   },
   quizOptions: {
     gap: 10,
