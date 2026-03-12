@@ -59,6 +59,7 @@ export interface Booking {
   confermata: boolean;
   lezione_scalata: boolean;
   created_at: string;
+  bonus_biglietti?: number;  // Bonus biglietti lotteria (es. prima prenotazione domenica)
 }
 
 export interface Notification {

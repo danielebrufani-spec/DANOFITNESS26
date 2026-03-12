@@ -202,6 +202,34 @@ export default function PrenotaScreen() {
     }, 2500);
   };
 
+  // State per bonus prima prenotazione
+  const [showBonusModal, setShowBonusModal] = useState(false);
+  const bonusScale = useRef(new Animated.Value(0)).current;
+
+  // Funzione per mostrare modal bonus domenica 🎁
+  const triggerBonusModal = () => {
+    setShowBonusModal(true);
+    bonusScale.setValue(0);
+    
+    Animated.spring(bonusScale, {
+      toValue: 1,
+      friction: 4,
+      tension: 100,
+      useNativeDriver: true,
+    }).start();
+    
+    // Auto-chiudi dopo 4 secondi
+    setTimeout(() => {
+      Animated.timing(bonusScale, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        setShowBonusModal(false);
+      });
+    }, 4000);
+  };
+
   // Redirect admin to home
   useEffect(() => {
     if (isAdmin) {
@@ -395,6 +423,14 @@ export default function PrenotaScreen() {
       
       // Triggera confetti! 🎉
       triggerConfetti();
+      
+      // Se ha vinto bonus biglietti (prima prenotazione domenica)
+      if (response.data.bonus_biglietti && response.data.bonus_biglietti > 0) {
+        // Aspetta che finiscano i confetti poi mostra bonus modal
+        setTimeout(() => {
+          triggerBonusModal();
+        }, 1800);
+      }
       
       await loadData();
       
@@ -903,6 +939,23 @@ export default function PrenotaScreen() {
           </Animated.View>
         </View>
       )}
+
+      {/* Modal Bonus Prima Prenotazione Domenica 🎁 */}
+      {showBonusModal && (
+        <View style={styles.bonusModalOverlay}>
+          <Animated.View style={[styles.bonusModalContent, { transform: [{ scale: bonusScale }] }]}>
+            <Text style={styles.bonusEmoji}>🏆</Text>
+            <Text style={styles.bonusTitle}>SEI IL PRIMO!</Text>
+            <Text style={styles.bonusSubtitle}>+2 BIGLIETTI LOTTERIA! 🎟️🎟️</Text>
+            <Text style={styles.bonusMessage}>
+              Sei stato il più veloce a prenotare questa domenica!
+            </Text>
+            <Text style={styles.bonusMotivation}>
+              La costanza paga sempre... continua così campione! 💪🔥
+            </Text>
+          </Animated.View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -1352,5 +1405,58 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textSecondary,
     textAlign: 'center',
+  },
+  // Bonus Modal Styles
+  bonusModalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1001,
+  },
+  bonusModalContent: {
+    backgroundColor: COLORS.card,
+    borderRadius: 24,
+    padding: 32,
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#FFD700',
+    maxWidth: 320,
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+  },
+  bonusEmoji: {
+    fontSize: 80,
+    marginBottom: 12,
+  },
+  bonusTitle: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#FFD700',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  bonusSubtitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  bonusMessage: {
+    fontSize: 14,
+    color: COLORS.text,
+    marginBottom: 12,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  bonusMotivation: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    lineHeight: 18,
   },
 });

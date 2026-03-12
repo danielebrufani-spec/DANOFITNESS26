@@ -808,12 +808,17 @@ export default function PremiScreen() {
                   quiz.risposta_corretta ? styles.quizResultCorrect : styles.quizResultWrong
                 ]}>
                   <Text style={styles.quizResultEmoji}>
-                    {quiz.risposta_corretta ? '🎉' : '😢'}
+                    {quiz.risposta_corretta ? '🎉' : '💪'}
                   </Text>
                   <Text style={styles.quizResultText}>
                     {quiz.risposta_corretta 
                       ? `Risposta esatta! +${quiz.biglietti_vinti} biglietto!` 
-                      : 'Risposta sbagliata... Riprova domani!'}
+                      : 'Risposta sbagliata...'}
+                  </Text>
+                  <Text style={styles.quizMotivation}>
+                    {quiz.risposta_corretta 
+                      ? 'Grande! Sei un vero esperto di fitness! 🧠💪' 
+                      : 'Non mollare! Ogni errore è un\'opportunità per imparare. Torna domani e spacca tutto! 🔥'}
                   </Text>
                 </View>
               )}
@@ -2329,6 +2334,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: VEGAS_COLORS.text,
     textAlign: 'center',
+  },
+  quizMotivation: {
+    fontSize: 12,
+    color: VEGAS_COLORS.textSecondary,
+    textAlign: 'center',
+    marginTop: 8,
+    fontStyle: 'italic',
+    lineHeight: 18,
   },
   quizInfo: {
     fontSize: 11,

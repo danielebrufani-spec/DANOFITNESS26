@@ -3619,128 +3619,74 @@ async def get_lottery_status(current_user: dict = Depends(get_current_user)):
 
 
 # ==================== QUIZ FITNESS ====================
-# Database di domande fitness
+# Database di 60+ domande fitness - cambiano ogni giorno!
 QUIZ_DOMANDE = [
-    {
-        "id": 1,
-        "domanda": "Quanti litri d'acqua si consiglia di bere al giorno?",
-        "risposte": ["1 litro", "2 litri", "3 litri", "4 litri"],
-        "corretta": 1  # indice 0-based
-    },
-    {
-        "id": 2,
-        "domanda": "Qual è il muscolo più grande del corpo umano?",
-        "risposte": ["Bicipite", "Quadricipite", "Grande gluteo", "Dorsali"],
-        "corretta": 2
-    },
-    {
-        "id": 3,
-        "domanda": "Quanto tempo di recupero serve tra una serie e l'altra per l'ipertrofia?",
-        "risposte": ["30 secondi", "60-90 secondi", "3-5 minuti", "10 minuti"],
-        "corretta": 1
-    },
-    {
-        "id": 4,
-        "domanda": "Qual è la frequenza cardiaca massima teorica per una persona di 30 anni?",
-        "risposte": ["170 bpm", "180 bpm", "190 bpm", "200 bpm"],
-        "corretta": 2
-    },
-    {
-        "id": 5,
-        "domanda": "Quante calorie brucia in media 1 kg di muscolo a riposo al giorno?",
-        "risposte": ["5-10 kcal", "13-15 kcal", "30-50 kcal", "100 kcal"],
-        "corretta": 1
-    },
-    {
-        "id": 6,
-        "domanda": "Quale macronutriente è più importante per la crescita muscolare?",
-        "risposte": ["Carboidrati", "Grassi", "Proteine", "Fibre"],
-        "corretta": 2
-    },
-    {
-        "id": 7,
-        "domanda": "Quante ore di sonno sono raccomandate per un buon recupero muscolare?",
-        "risposte": ["4-5 ore", "6 ore", "7-9 ore", "10-12 ore"],
-        "corretta": 2
-    },
-    {
-        "id": 8,
-        "domanda": "Qual è l'esercizio migliore per gli addominali secondo gli studi?",
-        "risposte": ["Crunch classico", "Plank", "Bicycle crunch", "Sit-up"],
-        "corretta": 2
-    },
-    {
-        "id": 9,
-        "domanda": "Quanti grammi di proteine per kg di peso corporeo servono per la massa?",
-        "risposte": ["0.5g/kg", "1g/kg", "1.6-2.2g/kg", "4g/kg"],
-        "corretta": 2
-    },
-    {
-        "id": 10,
-        "domanda": "Quale tipo di stretching è consigliato PRIMA dell'allenamento?",
-        "risposte": ["Statico", "Dinamico", "PNF", "Balistico"],
-        "corretta": 1
-    },
-    {
-        "id": 11,
-        "domanda": "Quanto tempo ci vuole per perdere i progressi muscolari se non ci si allena?",
-        "risposte": ["1 settimana", "2-3 settimane", "1 mese", "2 mesi"],
-        "corretta": 1
-    },
-    {
-        "id": 12,
-        "domanda": "Qual è la percentuale ideale di grasso corporeo per un uomo in forma?",
-        "risposte": ["5-8%", "10-15%", "20-25%", "30%"],
-        "corretta": 1
-    },
-    {
-        "id": 13,
-        "domanda": "Quante volte a settimana si può allenare lo stesso gruppo muscolare?",
-        "risposte": ["1 volta", "2-3 volte", "Tutti i giorni", "Mai più di 1"],
-        "corretta": 1
-    },
-    {
-        "id": 14,
-        "domanda": "Cosa significa DOMS?",
-        "risposte": ["Dolore muscolare", "Delayed Onset Muscle Soreness", "Danno muscolare", "Distensione muscolare"],
-        "corretta": 1
-    },
-    {
-        "id": 15,
-        "domanda": "Qual è il miglior momento per assumere proteine dopo l'allenamento?",
-        "risposte": ["Subito", "Entro 30 min", "Entro 2 ore", "Non importa"],
-        "corretta": 3
-    },
-    {
-        "id": 16,
-        "domanda": "Quanti passi al giorno sono raccomandati per la salute?",
-        "risposte": ["5.000", "7.500", "10.000", "15.000"],
-        "corretta": 2
-    },
-    {
-        "id": 17,
-        "domanda": "Quale esercizio coinvolge più muscoli in assoluto?",
-        "risposte": ["Squat", "Stacco da terra", "Panca piana", "Military press"],
-        "corretta": 1
-    },
-    {
-        "id": 18,
-        "domanda": "Cosa succede ai muscoli durante il sonno?",
-        "risposte": ["Niente", "Si riparano e crescono", "Si riducono", "Consumano grassi"],
-        "corretta": 1
-    },
-    {
-        "id": 19,
-        "domanda": "Qual è il principale carburante per esercizi ad alta intensità?",
-        "risposte": ["Grassi", "Proteine", "Carboidrati/Glicogeno", "Acqua"],
-        "corretta": 2
-    },
-    {
-        "id": 20,
-        "domanda": "Quanti secondi dura in media la fase eccentrica ottimale?",
-        "risposte": ["1 secondo", "2-3 secondi", "5 secondi", "10 secondi"],
-        "corretta": 1
-    },
+    {"id": 1, "domanda": "Quanti litri d'acqua si consiglia di bere al giorno?", "risposte": ["1 litro", "2 litri", "3 litri", "4 litri"], "corretta": 1},
+    {"id": 2, "domanda": "Qual è il muscolo più grande del corpo umano?", "risposte": ["Bicipite", "Quadricipite", "Grande gluteo", "Dorsali"], "corretta": 2},
+    {"id": 3, "domanda": "Quanto tempo di recupero serve tra serie per l'ipertrofia?", "risposte": ["30 secondi", "60-90 secondi", "3-5 minuti", "10 minuti"], "corretta": 1},
+    {"id": 4, "domanda": "Frequenza cardiaca massima teorica a 30 anni?", "risposte": ["170 bpm", "180 bpm", "190 bpm", "200 bpm"], "corretta": 2},
+    {"id": 5, "domanda": "Calorie bruciate da 1 kg di muscolo a riposo al giorno?", "risposte": ["5-10 kcal", "13-15 kcal", "30-50 kcal", "100 kcal"], "corretta": 1},
+    {"id": 6, "domanda": "Macronutriente più importante per la crescita muscolare?", "risposte": ["Carboidrati", "Grassi", "Proteine", "Fibre"], "corretta": 2},
+    {"id": 7, "domanda": "Ore di sonno raccomandate per il recupero muscolare?", "risposte": ["4-5 ore", "6 ore", "7-9 ore", "10-12 ore"], "corretta": 2},
+    {"id": 8, "domanda": "Esercizio migliore per gli addominali secondo gli studi?", "risposte": ["Crunch classico", "Plank", "Bicycle crunch", "Sit-up"], "corretta": 2},
+    {"id": 9, "domanda": "Grammi di proteine per kg necessari per la massa?", "risposte": ["0.5g/kg", "1g/kg", "1.6-2.2g/kg", "4g/kg"], "corretta": 2},
+    {"id": 10, "domanda": "Tipo di stretching consigliato PRIMA dell'allenamento?", "risposte": ["Statico", "Dinamico", "PNF", "Balistico"], "corretta": 1},
+    {"id": 11, "domanda": "Tempo per perdere progressi muscolari senza allenamento?", "risposte": ["1 settimana", "2-3 settimane", "1 mese", "2 mesi"], "corretta": 1},
+    {"id": 12, "domanda": "Percentuale ideale di grasso corporeo per un uomo in forma?", "risposte": ["5-8%", "10-15%", "20-25%", "30%"], "corretta": 1},
+    {"id": 13, "domanda": "Volte a settimana per allenare lo stesso gruppo muscolare?", "risposte": ["1 volta", "2-3 volte", "Tutti i giorni", "Mai più di 1"], "corretta": 1},
+    {"id": 14, "domanda": "Cosa significa DOMS?", "risposte": ["Dolore muscolare", "Delayed Onset Muscle Soreness", "Danno muscolare", "Distensione"], "corretta": 1},
+    {"id": 15, "domanda": "Miglior momento per assumere proteine post allenamento?", "risposte": ["Subito", "Entro 30 min", "Entro 2 ore", "Non importa il timing"], "corretta": 3},
+    {"id": 16, "domanda": "Passi al giorno raccomandati per la salute?", "risposte": ["5.000", "7.500", "10.000", "15.000"], "corretta": 2},
+    {"id": 17, "domanda": "Esercizio che coinvolge più muscoli in assoluto?", "risposte": ["Squat", "Stacco da terra", "Panca piana", "Military press"], "corretta": 1},
+    {"id": 18, "domanda": "Cosa succede ai muscoli durante il sonno?", "risposte": ["Niente", "Si riparano e crescono", "Si riducono", "Consumano grassi"], "corretta": 1},
+    {"id": 19, "domanda": "Carburante principale per esercizi ad alta intensità?", "risposte": ["Grassi", "Proteine", "Carboidrati/Glicogeno", "Acqua"], "corretta": 2},
+    {"id": 20, "domanda": "Durata ottimale della fase eccentrica?", "risposte": ["1 secondo", "2-3 secondi", "5 secondi", "10 secondi"], "corretta": 1},
+    # Nuove domande
+    {"id": 21, "domanda": "Quante ossa ha il corpo umano adulto?", "risposte": ["106", "156", "206", "256"], "corretta": 2},
+    {"id": 22, "domanda": "Quale vitamina viene prodotta dalla pelle con il sole?", "risposte": ["Vitamina A", "Vitamina C", "Vitamina D", "Vitamina E"], "corretta": 2},
+    {"id": 23, "domanda": "Quanto pesa in media il cuore umano?", "risposte": ["150g", "300g", "500g", "700g"], "corretta": 1},
+    {"id": 24, "domanda": "Quanti muscoli servono per fare un passo?", "risposte": ["50", "100", "200", "300"], "corretta": 2},
+    {"id": 25, "domanda": "Qual è l'organo più grande del corpo?", "risposte": ["Fegato", "Intestino", "Pelle", "Polmoni"], "corretta": 2},
+    {"id": 26, "domanda": "A che velocità viaggia un impulso nervoso?", "risposte": ["1 km/h", "50 km/h", "120 km/h", "400 km/h"], "corretta": 3},
+    {"id": 27, "domanda": "Quanti litri di sangue ha un adulto medio?", "risposte": ["2-3 litri", "4-5 litri", "6-7 litri", "8-9 litri"], "corretta": 1},
+    {"id": 28, "domanda": "Quale percentuale del corpo è acqua?", "risposte": ["40%", "50%", "60%", "70%"], "corretta": 2},
+    {"id": 29, "domanda": "Quante calorie brucia il cervello al giorno?", "risposte": ["100 kcal", "300 kcal", "500 kcal", "700 kcal"], "corretta": 1},
+    {"id": 30, "domanda": "Qual è il muscolo più forte del corpo?", "risposte": ["Bicipite", "Massetere (mandibola)", "Quadricipite", "Cuore"], "corretta": 1},
+    {"id": 31, "domanda": "Quante volte batte il cuore in un giorno?", "risposte": ["50.000", "100.000", "150.000", "200.000"], "corretta": 1},
+    {"id": 32, "domanda": "Quale esercizio brucia più calorie in 30 minuti?", "risposte": ["Camminata", "Corsa", "Nuoto", "Salto corda"], "corretta": 3},
+    {"id": 33, "domanda": "Dopo quanto tempo l'alcol influenza le prestazioni sportive?", "risposte": ["12 ore", "24 ore", "48 ore", "72 ore"], "corretta": 2},
+    {"id": 34, "domanda": "Qual è il range ideale di ripetizioni per la forza?", "risposte": ["1-5 rep", "8-12 rep", "15-20 rep", "25-30 rep"], "corretta": 0},
+    {"id": 35, "domanda": "Quanta caffeina è considerata sicura al giorno?", "risposte": ["100mg", "200mg", "400mg", "600mg"], "corretta": 2},
+    {"id": 36, "domanda": "Qual è il miglior momento per allenarsi?", "risposte": ["Mattina presto", "Tardo pomeriggio", "Sera tardi", "Quando sei costante"], "corretta": 3},
+    {"id": 37, "domanda": "Quanti aminoacidi essenziali esistono?", "risposte": ["5", "9", "12", "20"], "corretta": 1},
+    {"id": 38, "domanda": "Cosa significa RPE nell'allenamento?", "risposte": ["Ripetizioni Per Esercizio", "Rate of Perceived Exertion", "Rest Period Extended", "Resistance Power Exercise"], "corretta": 1},
+    {"id": 39, "domanda": "Quale ormone favorisce la crescita muscolare?", "risposte": ["Cortisolo", "Insulina", "Testosterone", "Adrenalina"], "corretta": 2},
+    {"id": 40, "domanda": "Quante calorie ha 1 grammo di proteine?", "risposte": ["2 kcal", "4 kcal", "7 kcal", "9 kcal"], "corretta": 1},
+    {"id": 41, "domanda": "Quante calorie ha 1 grammo di grassi?", "risposte": ["4 kcal", "7 kcal", "9 kcal", "11 kcal"], "corretta": 2},
+    {"id": 42, "domanda": "Qual è il range ideale di ripetizioni per ipertrofia?", "risposte": ["1-5 rep", "6-12 rep", "15-20 rep", "25+ rep"], "corretta": 1},
+    {"id": 43, "domanda": "Quanto dura in media una sessione di HIIT efficace?", "risposte": ["10-15 min", "20-30 min", "45-60 min", "90 min"], "corretta": 1},
+    {"id": 44, "domanda": "Qual è il battito cardiaco a riposo di un atleta?", "risposte": ["80-90 bpm", "60-70 bpm", "40-50 bpm", "30-40 bpm"], "corretta": 2},
+    {"id": 45, "domanda": "Quanti giorni di riposo servono dopo allenamento intenso?", "risposte": ["0 giorni", "1-2 giorni", "3-4 giorni", "1 settimana"], "corretta": 1},
+    {"id": 46, "domanda": "Quale nutriente è importante per le articolazioni?", "risposte": ["Vitamina C", "Collagene", "Ferro", "Zinco"], "corretta": 1},
+    {"id": 47, "domanda": "A che ora il testosterone è più alto?", "risposte": ["6-8 mattina", "12-14 pomeriggio", "18-20 sera", "22-24 notte"], "corretta": 0},
+    {"id": 48, "domanda": "Quanta acqua si perde in media durante 1h di allenamento?", "risposte": ["0.2 litri", "0.5 litri", "1-1.5 litri", "2-3 litri"], "corretta": 2},
+    {"id": 49, "domanda": "Qual è l'effetto del freddo sui muscoli?", "risposte": ["Li rilassa", "Li contrae", "Nessun effetto", "Li indebolisce"], "corretta": 1},
+    {"id": 50, "domanda": "Quante articolazioni ha il corpo umano?", "risposte": ["100", "200", "300", "400"], "corretta": 2},
+    {"id": 51, "domanda": "Cosa significa 'pump' muscolare?", "risposte": ["Dolore", "Afflusso di sangue", "Crampo", "Strappo"], "corretta": 1},
+    {"id": 52, "domanda": "Qual è l'esercizio base per i pettorali?", "risposte": ["Squat", "Stacco", "Panca piana", "Rematore"], "corretta": 2},
+    {"id": 53, "domanda": "Quanto tempo ci vuole per digerire un pasto?", "risposte": ["1-2 ore", "3-5 ore", "6-8 ore", "12 ore"], "corretta": 1},
+    {"id": 54, "domanda": "Qual è il miglior esercizio per i glutei?", "risposte": ["Leg press", "Hip thrust", "Leg curl", "Calf raise"], "corretta": 1},
+    {"id": 55, "domanda": "Quante calorie brucia 1 ora di camminata veloce?", "risposte": ["100-150 kcal", "200-300 kcal", "400-500 kcal", "600-700 kcal"], "corretta": 1},
+    {"id": 56, "domanda": "Qual è il muscolo antagonista del bicipite?", "risposte": ["Deltoide", "Tricipite", "Avambraccio", "Pettorale"], "corretta": 1},
+    {"id": 57, "domanda": "Cosa significa 'superset'?", "risposte": ["Serie pesante", "Due esercizi consecutivi", "Riposo lungo", "Riscaldamento"], "corretta": 1},
+    {"id": 58, "domanda": "Quanti grammi di carboidrati servono pre-workout?", "risposte": ["10-20g", "30-50g", "70-100g", "150g+"], "corretta": 1},
+    {"id": 59, "domanda": "Qual è il beneficio principale del cardio?", "risposte": ["Massa muscolare", "Salute cardiovascolare", "Flessibilità", "Equilibrio"], "corretta": 1},
+    {"id": 60, "domanda": "Quante volte respirare durante una ripetizione?", "risposte": ["0 - trattenere", "1 - espira nello sforzo", "2 - inspira ed espira", "3+ volte"], "corretta": 1},
+    {"id": 61, "domanda": "Qual è l'integratore più studiato e sicuro?", "risposte": ["BCAA", "Creatina", "Glutammina", "Carnitina"], "corretta": 1},
+    {"id": 62, "domanda": "Quanto tempo serve per vedere risultati visibili?", "risposte": ["1 settimana", "4-6 settimane", "3-6 mesi", "1 anno"], "corretta": 2},
+    {"id": 63, "domanda": "Qual è l'angolo ideale per la panca inclinata (alto petto)?", "risposte": ["15°", "30-45°", "60°", "90°"], "corretta": 1},
+    {"id": 64, "domanda": "Cosa causa principalmente i crampi muscolari?", "risposte": ["Troppo allenamento", "Disidratazione/elettroliti", "Sonno scarso", "Età"], "corretta": 1},
+    {"id": 65, "domanda": "Qual è il ruolo principale dei tendini?", "risposte": ["Nutrire i muscoli", "Collegare muscoli alle ossa", "Proteggere le articolazioni", "Produrre ormoni"], "corretta": 1},
 ]
 
 @api_router.get("/quiz/today")
