@@ -123,11 +123,13 @@ class SubscriptionCreate(BaseModel):
     data_inizio: Optional[datetime] = None
     lezioni_rimanenti: Optional[int] = None  # Allow setting initial lessons
     data_scadenza: Optional[datetime] = None  # Allow setting custom expiry date
+    pagato: Optional[bool] = True  # Default pagato, False = da saldare
 
 class SubscriptionUpdate(BaseModel):
     lezioni_rimanenti: Optional[int] = None
     data_scadenza: Optional[datetime] = None
     attivo: Optional[bool] = None
+    pagato: Optional[bool] = None
 
 class SubscriptionResponse(BaseModel):
     id: str
@@ -141,6 +143,7 @@ class SubscriptionResponse(BaseModel):
     data_scadenza: datetime
     attivo: bool
     scaduto: bool
+    pagato: bool = True
     created_at: datetime
 
 class LessonResponse(BaseModel):
@@ -631,6 +634,7 @@ async def create_subscription(data: SubscriptionCreate, admin_user: dict = Depen
         "data_inizio": start_date,
         "data_scadenza": expiry_date,
         "attivo": True,
+        "pagato": data.pagato if data.pagato is not None else True,
         "created_at": now_rome()
     }
     
@@ -649,6 +653,7 @@ async def create_subscription(data: SubscriptionCreate, admin_user: dict = Depen
         data_scadenza=subscription["data_scadenza"],
         attivo=subscription["attivo"],
         scaduto=is_expired,
+        pagato=subscription.get("pagato", True),
         created_at=subscription["created_at"]
     )
 
@@ -681,6 +686,7 @@ async def get_my_subscriptions(current_user: dict = Depends(get_current_user)):
             data_scadenza=sub["data_scadenza"],
             attivo=sub["attivo"],
             scaduto=False,
+            pagato=sub.get("pagato", True),
             created_at=sub["created_at"]
         ))
     
@@ -730,6 +736,7 @@ async def get_all_subscriptions(admin_user: dict = Depends(get_admin_user)):
             data_scadenza=sub["data_scadenza"],
             attivo=sub["attivo"],
             scaduto=False,
+            pagato=sub.get("pagato", True),
             created_at=sub["created_at"]
         ))
     
@@ -784,10 +791,76 @@ async def get_expired_subscriptions(admin_user: dict = Depends(get_admin_user)):
                 data_scadenza=sub["data_scadenza"],
                 attivo=sub["attivo"],
                 scaduto=True,
+                pagato=sub.get("pagato", True),
                 created_at=sub["created_at"]
             ))
     
     return result
+
+@api_router.get("/subscriptions/insoluti", response_model=List[SubscriptionResponse])
+async def get_unpaid_subscriptions(admin_user: dict = Depends(get_admin_user)):
+    """Lista abbonamenti attivi non pagati"""
+    now = now_rome()
+    unpaid_subs = await db.subscriptions.find({"pagato": False, "attivo": True}).to_list(1000)
+    
+    if not unpaid_subs:
+        return []
+    
+    user_ids = list(set(sub["user_id"] for sub in unpaid_subs))
+    users = await db.users.find(
+        {"_id": {"$in": [ObjectId(uid) for uid in user_ids]}},
+        {"profile_image": 0}
+    ).to_list(len(user_ids))
+    users_cache = {str(u["_id"]): u for u in users}
+    
+    result = []
+    for sub in unpaid_subs:
+        data_scadenza = sub["data_scadenza"]
+        if isinstance(data_scadenza, str):
+            from dateutil import parser
+            data_scadenza = parser.parse(data_scadenza).replace(tzinfo=ROME_TZ)
+        
+        is_expired = data_scadenza < now
+        if sub.get("lezioni_rimanenti") is not None and sub["lezioni_rimanenti"] <= 0:
+            is_expired = True
+        
+        user = users_cache.get(sub["user_id"])
+        result.append(SubscriptionResponse(
+            id=str(sub["_id"]),
+            user_id=sub["user_id"],
+            user_nome=user["nome"] if user else "Sconosciuto",
+            user_cognome=user["cognome"] if user else "",
+            tipo=sub["tipo"],
+            lezioni_rimanenti=sub["lezioni_rimanenti"],
+            lezioni_fatte=None,
+            data_inizio=sub["data_inizio"],
+            data_scadenza=sub["data_scadenza"],
+            attivo=sub["attivo"],
+            scaduto=is_expired,
+            pagato=False,
+            created_at=sub["created_at"]
+        ))
+    
+    return result
+
+@api_router.put("/subscriptions/{subscription_id}/segna-pagato")
+async def mark_subscription_paid(subscription_id: str, admin_user: dict = Depends(get_admin_user)):
+    """Segna un abbonamento come pagato"""
+    try:
+        sub = await db.subscriptions.find_one({"_id": ObjectId(subscription_id)})
+    except:
+        raise HTTPException(status_code=404, detail="Abbonamento non trovato")
+    
+    if not sub:
+        raise HTTPException(status_code=404, detail="Abbonamento non trovato")
+    
+    await db.subscriptions.update_one(
+        {"_id": ObjectId(subscription_id)},
+        {"$set": {"pagato": True}}
+    )
+    
+    return {"message": "Abbonamento segnato come pagato"}
+
 
 @api_router.put("/subscriptions/{subscription_id}", response_model=SubscriptionResponse)
 async def update_subscription(subscription_id: str, data: SubscriptionUpdate, admin_user: dict = Depends(get_admin_user)):
@@ -808,6 +881,8 @@ async def update_subscription(subscription_id: str, data: SubscriptionUpdate, ad
         update_data["data_scadenza"] = data.data_scadenza
     if data.attivo is not None:
         update_data["attivo"] = data.attivo
+    if data.pagato is not None:
+        update_data["pagato"] = data.pagato
     
     if not update_data:
         raise HTTPException(status_code=400, detail="Nessun dato da aggiornare")
@@ -843,6 +918,7 @@ async def update_subscription(subscription_id: str, data: SubscriptionUpdate, ad
         data_scadenza=updated_sub["data_scadenza"],
         attivo=updated_sub["attivo"],
         scaduto=is_expired,
+        pagato=updated_sub.get("pagato", True),
         created_at=updated_sub["created_at"]
     )
 

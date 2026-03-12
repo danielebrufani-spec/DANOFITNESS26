@@ -40,6 +40,7 @@ export interface Subscription {
   data_scadenza: string;
   attivo: boolean;
   scaduto: boolean;
+  pagato: boolean;
   created_at: string;
 }
 
@@ -127,11 +128,13 @@ export const apiService = {
   getMySubscriptions: () => api.get<Subscription[]>('/subscriptions/me'),
   getAllSubscriptions: () => api.get<Subscription[]>('/subscriptions'),
   getExpiredSubscriptions: () => api.get<Subscription[]>('/subscriptions/expired'),
-  createSubscription: (data: { user_id: string; tipo: string; data_inizio?: string; lezioni_rimanenti?: number; data_scadenza?: string }) =>
+  createSubscription: (data: { user_id: string; tipo: string; data_inizio?: string; lezioni_rimanenti?: number; data_scadenza?: string; pagato?: boolean }) =>
     api.post<Subscription>('/subscriptions', data),
-  updateSubscription: (id: string, data: { lezioni_rimanenti?: number; data_scadenza?: string; attivo?: boolean }) =>
+  updateSubscription: (id: string, data: { lezioni_rimanenti?: number; data_scadenza?: string; attivo?: boolean; pagato?: boolean }) =>
     api.put<Subscription>(`/subscriptions/${id}`, data),
   deleteSubscription: (id: string) => api.delete(`/subscriptions/${id}`),
+  getUnpaidSubscriptions: () => api.get<Subscription[]>('/subscriptions/insoluti'),
+  markSubscriptionPaid: (id: string) => api.put(`/subscriptions/${id}/segna-pagato`, {}),
 
   // Bookings
   getMyBookings: () => api.get<Booking[]>('/bookings/me'),

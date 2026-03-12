@@ -61,13 +61,14 @@ interface WeeklyBookings {
 export default function AdminScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'riepilogo' | 'presenze' | 'abbonamenti' | 'utenti' | 'archiviati'>('riepilogo');
+  const [activeTab, setActiveTab] = useState<'riepilogo' | 'presenze' | 'abbonamenti' | 'insoluti' | 'utenti' | 'archiviati'>('riepilogo');
   
   const [weeklyBookings, setWeeklyBookings] = useState<WeeklyBookings | null>(null);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [expiredSubscriptions, setExpiredSubscriptions] = useState<Subscription[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [archivedUsers, setArchivedUsers] = useState<User[]>([]);  // Clienti archiviati
+  const [unpaidSubscriptions, setUnpaidSubscriptions] = useState<Subscription[]>([]);
   
   // Daily stats
   const [dailyStats, setDailyStats] = useState<any>(null);
@@ -83,6 +84,7 @@ export default function AdminScreen() {
   const [selectedUser, setSelectedUser] = useState<string>('');
   const [selectedType, setSelectedType] = useState<string>('lezioni_8');
   const [customLessons, setCustomLessons] = useState<string>('');
+  const [newSubPagato, setNewSubPagato] = useState<boolean>(true);
   const [addingSubscription, setAddingSubscription] = useState(false);
 
   // Edit subscription modal
@@ -165,6 +167,14 @@ export default function AdminScreen() {
         setArchivedUsers([]);
       }
       
+      // Carica pagamenti insoluti
+      try {
+        const unpaidRes = await apiService.getUnpaidSubscriptions();
+        setUnpaidSubscriptions(unpaidRes.data);
+      } catch (e) {
+        setUnpaidSubscriptions([]);
+      }
+      
       setWeeklyBookings(weeklyRes.data);
       setSubscriptions(subsRes.data);
       setExpiredSubscriptions(expiredRes.data);
@@ -241,6 +251,7 @@ export default function AdminScreen() {
       const data: any = {
         user_id: selectedUser,
         tipo: selectedType,
+        pagato: newSubPagato,
       };
       
       if (customLessons && (selectedType === 'lezioni_8' || selectedType === 'lezioni_16')) {
@@ -251,6 +262,7 @@ export default function AdminScreen() {
       setShowAddSubscription(false);
       setSelectedUser('');
       setCustomLessons('');
+      setNewSubPagato(true);
       if (Platform.OS === 'web') {
         alert('Abbonamento creato!');
       } else {
@@ -268,6 +280,26 @@ export default function AdminScreen() {
       setAddingSubscription(false);
     }
   };
+
+  const handleMarkPaid = async (subscriptionId: string) => {
+    try {
+      await apiService.markSubscriptionPaid(subscriptionId);
+      if (Platform.OS === 'web') {
+        alert('Pagamento registrato!');
+      } else {
+        Alert.alert('Successo', 'Pagamento registrato!');
+      }
+      await loadData();
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.detail || 'Errore';
+      if (Platform.OS === 'web') {
+        alert(errorMsg);
+      } else {
+        Alert.alert('Errore', errorMsg);
+      }
+    }
+  };
+
 
   const openEditModal = (subscription: Subscription) => {
     setEditingSubscription(subscription);
@@ -639,6 +671,17 @@ export default function AdminScreen() {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
+          style={[styles.tab, activeTab === 'insoluti' && styles.tabActive]}
+          onPress={() => setActiveTab('insoluti')}
+        >
+          <Text style={[styles.tabText, activeTab === 'insoluti' && styles.tabTextActive]}>
+            Insoluti{unpaidSubscriptions.length > 0 ? ` (${unpaidSubscriptions.length})` : ''}
+          </Text>
+          {unpaidSubscriptions.length > 0 && activeTab !== 'insoluti' && (
+            <View style={styles.unpaidBadge} />
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'utenti' && styles.tabActive]}
           onPress={() => setActiveTab('utenti')}
         >
@@ -803,6 +846,9 @@ export default function AdminScreen() {
                     {sub.scaduto && (
                       <Text style={styles.expiredBadge}>SCADUTO</Text>
                     )}
+                    {!sub.pagato && (
+                      <Text style={styles.unpaidLabel}>DA SALDARE</Text>
+                    )}
                   </View>
                   <View style={styles.iconActions}>
                     <TouchableOpacity 
@@ -821,6 +867,43 @@ export default function AdminScreen() {
                 </View>
               );
             })
+            )}
+          </>
+        )}
+
+        {/* INSOLUTI TAB */}
+        {activeTab === 'insoluti' && (
+          <>
+            <Text style={styles.sectionTitle}>
+              Pagamenti da Saldare ({unpaidSubscriptions.length})
+            </Text>
+            
+            {unpaidSubscriptions.length === 0 ? (
+              <View style={styles.emptyInsoluti}>
+                <Ionicons name="checkmark-circle" size={48} color={COLORS.success} />
+                <Text style={styles.emptyInsolutiText}>Tutti i pagamenti sono in regola!</Text>
+              </View>
+            ) : (
+              unpaidSubscriptions.map((sub) => {
+                const info = ABBONAMENTO_INFO[sub.tipo] || { nome: sub.tipo, prezzo: '?' };
+                return (
+                  <View key={sub.id} style={styles.insolutiCard}>
+                    <View style={styles.insolutiInfo}>
+                      <Text style={styles.insolutiUser}>{sub.user_nome} {sub.user_cognome}</Text>
+                      <Text style={styles.insolutiType}>{info.nome} — {info.prezzo}</Text>
+                      <Text style={styles.insolutiDate}>Attivato: {formatDate(sub.data_inizio)}</Text>
+                      <Text style={styles.insolutiDate}>Scadenza: {formatDate(sub.data_scadenza)}</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.markPaidButton}
+                      onPress={() => handleMarkPaid(sub.id)}
+                    >
+                      <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                      <Text style={styles.markPaidText}>Pagato</Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })
             )}
           </>
         )}
@@ -1003,6 +1086,7 @@ export default function AdminScreen() {
                 setSubscriptionUserSearch('');
                 setSelectedUser('');
                 setCustomLessons('');
+                setNewSubPagato(true);
               }}>
                 <Ionicons name="close" size={24} color={COLORS.text} />
               </TouchableOpacity>
@@ -1091,6 +1175,24 @@ export default function AdminScreen() {
                 </View>
               </>
             )}
+
+            <Text style={styles.modalLabel}>Stato Pagamento</Text>
+            <View style={styles.paymentToggle}>
+              <TouchableOpacity
+                style={[styles.paymentOption, newSubPagato && styles.paymentOptionActive]}
+                onPress={() => setNewSubPagato(true)}
+              >
+                <Ionicons name="checkmark-circle" size={20} color={newSubPagato ? '#fff' : COLORS.success} />
+                <Text style={[styles.paymentOptionText, newSubPagato && styles.paymentOptionTextActive]}>Pagato</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.paymentOption, !newSubPagato && styles.paymentOptionUnpaid]}
+                onPress={() => setNewSubPagato(false)}
+              >
+                <Ionicons name="alert-circle" size={20} color={!newSubPagato ? '#fff' : COLORS.error} />
+                <Text style={[styles.paymentOptionText, !newSubPagato && styles.paymentOptionTextActive]}>Da Saldare</Text>
+              </TouchableOpacity>
+            </View>
 
             <TouchableOpacity
               style={[styles.modalButton, addingSubscription && styles.modalButtonDisabled]}
@@ -2462,5 +2564,116 @@ const styles = StyleSheet.create({
     padding: 10,
     borderWidth: 1,
     borderColor: COLORS.error + '30',
+  },
+  // Pagamento toggle nel modal
+  paymentToggle: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
+  },
+  paymentOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: COLORS.cardLight,
+    backgroundColor: COLORS.cardLight,
+  },
+  paymentOptionActive: {
+    borderColor: COLORS.success,
+    backgroundColor: COLORS.success,
+  },
+  paymentOptionUnpaid: {
+    borderColor: COLORS.error,
+    backgroundColor: COLORS.error,
+  },
+  paymentOptionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  paymentOptionTextActive: {
+    color: '#fff',
+  },
+  // Badge insoluto nella card abbonamento
+  unpaidLabel: {
+    backgroundColor: '#f59e0b',
+    color: '#000',
+    fontSize: 11,
+    fontWeight: 'bold',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginTop: 4,
+    alignSelf: 'flex-start',
+  },
+  // Pallino rosso nel tab
+  unpaidBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.error,
+  },
+  // Sezione insoluti
+  emptyInsoluti: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    gap: 12,
+  },
+  emptyInsolutiText: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+  },
+  insolutiCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: '#f59e0b',
+  },
+  insolutiInfo: {
+    flex: 1,
+  },
+  insolutiUser: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  insolutiType: {
+    fontSize: 14,
+    color: COLORS.primary,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  insolutiDate: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 1,
+  },
+  markPaidButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: COLORS.success,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  markPaidText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
 });

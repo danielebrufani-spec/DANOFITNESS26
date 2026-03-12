@@ -56,6 +56,7 @@ App fitness completa per gestione palestra con sistema di abbonamenti, prenotazi
 ## Bug Fix Completati (Feb 2026)
 - [x] Fix banner "Abbonamento Scaduto" - separata la logica di verifica abbonamento (`check_user_has_active_subscription`) dalla logica lotteria (`get_users_with_active_subscription`)
 - [x] Timer 10 secondi sul Quiz Bonus - barra visuale con countdown, blocco risposte e messaggio "Tempo scaduto!" quando scade
+- [x] Sistema Pagamenti Insoluti: toggle "Pagato/Da saldare" alla creazione abbonamento, tab "Insoluti" nell'admin con pulsante "Segna Pagato", badge "DA SALDARE" sulle card
 
 ## Prossimi Task (P1)
 - [ ] Streak Bonus: +1 biglietto per 3 giorni consecutivi di allenamento
@@ -98,6 +99,8 @@ App fitness completa per gestione palestra con sistema di abbonamenti, prenotazi
 - `POST /api/bookings` - Crea prenotazione
 - `GET /api/subscriptions/me` - Abbonamenti utente
 - `POST /api/wheel/spin` - Gira la ruota della fortuna
+- `GET /api/subscriptions/insoluti` - Lista abbonamenti non pagati (admin)
+- `PUT /api/subscriptions/{id}/segna-pagato` - Segna abbonamento come pagato (admin)
 
 ## Note Tecniche
 - L'app e un progetto React Native/Expo, non funziona nel browser tradizionale
