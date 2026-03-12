@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -144,6 +146,41 @@ export default function PrenotaScreen() {
   const [expandedLesson, setExpandedLesson] = useState<string | null>(null);
   const [participants, setParticipants] = useState<{[key: string]: {nome: string}[]}>({});
   const [loadingParticipants, setLoadingParticipants] = useState<string | null>(null);
+  
+  // Animazione fly-away
+  const [flyingLesson, setFlyingLesson] = useState<string | null>(null);
+  const flyAnim = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+  const flyScale = useRef(new Animated.Value(1)).current;
+  const flyOpacity = useRef(new Animated.Value(1)).current;
+  const screenWidth = Dimensions.get('window').width;
+
+  // Funzione per animazione fly-away
+  const triggerFlyAnimation = (lessonId: string) => {
+    setFlyingLesson(lessonId);
+    flyAnim.setValue({ x: 0, y: 0 });
+    flyScale.setValue(1);
+    flyOpacity.setValue(1);
+    
+    Animated.parallel([
+      Animated.timing(flyAnim, {
+        toValue: { x: screenWidth * 0.3, y: -150 },
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(flyScale, {
+        toValue: 0.3,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(flyOpacity, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setFlyingLesson(null);
+    });
+  };
 
   // Redirect admin to home
   useEffect(() => {
@@ -335,6 +372,10 @@ export default function PrenotaScreen() {
         lesson_id: lessonId,
         data_lezione: dateString,
       });
+      
+      // Triggera animazione fly-away! 🚀
+      triggerFlyAnimation(lessonId);
+      
       await loadData();
       
       if (response.data.abbonamento_scaduto) {
@@ -600,9 +641,24 @@ export default function PrenotaScreen() {
             // Use new isLessonPassed function that considers time + 1 hour buffer
             const isPassed = dateString ? isLessonPassed(dateString, lesson.orario) : false;
             const canBook = bookingStatus.open && !isPassed;
+            const isFlying = flyingLesson === lesson.id;
 
             return (
-              <View key={lesson.id} style={[styles.lessonCard, isPassed && styles.lessonCardPassed]}>
+              <Animated.View 
+                key={lesson.id} 
+                style={[
+                  styles.lessonCard, 
+                  isPassed && styles.lessonCardPassed,
+                  isFlying && {
+                    transform: [
+                      { translateX: flyAnim.x },
+                      { translateY: flyAnim.y },
+                      { scale: flyScale },
+                    ],
+                    opacity: flyOpacity,
+                  }
+                ]}
+              >
                 <View
                   style={[
                     styles.lessonColorBar,
@@ -692,7 +748,7 @@ export default function PrenotaScreen() {
                     )}
                   </View>
                 )}
-              </View>
+              </Animated.View>
             );
           })
         ) : selectedDate ? (
