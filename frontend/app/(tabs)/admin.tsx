@@ -300,6 +300,20 @@ export default function AdminScreen() {
     }
   };
 
+  const handleTogglePayment = async (subscriptionId: string, pagato: boolean) => {
+    try {
+      await apiService.updateSubscription(subscriptionId, { pagato });
+      await loadData();
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.detail || 'Errore';
+      if (Platform.OS === 'web') {
+        alert(errorMsg);
+      } else {
+        Alert.alert('Errore', errorMsg);
+      }
+    }
+  };
+
 
   const openEditModal = (subscription: Subscription) => {
     setEditingSubscription(subscription);
@@ -851,6 +865,21 @@ export default function AdminScreen() {
                     )}
                   </View>
                   <View style={styles.iconActions}>
+                    {sub.pagato ? (
+                      <TouchableOpacity 
+                        style={styles.markUnpaidBtn}
+                        onPress={() => handleTogglePayment(sub.id, false)}
+                      >
+                        <Ionicons name="alert-circle" size={18} color="#f59e0b" />
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity 
+                        style={styles.markPaidBtnSmall}
+                        onPress={() => handleMarkPaid(sub.id)}
+                      >
+                        <Ionicons name="checkmark-circle" size={18} color="#fff" />
+                      </TouchableOpacity>
+                    )}
                     <TouchableOpacity 
                       style={styles.iconBtn}
                       onPress={() => openEditModal(sub)}
@@ -2675,5 +2704,17 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 14,
+  },
+  markUnpaidBtn: {
+    padding: 10,
+    backgroundColor: '#f59e0b20',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#f59e0b',
+  },
+  markPaidBtnSmall: {
+    padding: 10,
+    backgroundColor: COLORS.success,
+    borderRadius: 8,
   },
 });
