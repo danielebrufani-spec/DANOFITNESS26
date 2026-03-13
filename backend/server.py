@@ -463,7 +463,8 @@ async def login(login_data: UserLogin):
             role=user["role"],
             created_at=user["created_at"],
             push_token=user.get("push_token"),
-            must_reset_password=user.get("must_reset_password", False)
+            must_reset_password=user.get("must_reset_password", False),
+            archived=user.get("archived", False)
         )
     }
 
@@ -479,7 +480,8 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         created_at=current_user["created_at"],
         push_token=current_user.get("push_token"),
         profile_image=None,
-        must_reset_password=current_user.get("must_reset_password", False)
+        must_reset_password=current_user.get("must_reset_password", False),
+        archived=current_user.get("archived", False)
     )
 
 @api_router.put("/auth/push-token")

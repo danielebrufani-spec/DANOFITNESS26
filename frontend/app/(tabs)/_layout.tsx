@@ -7,10 +7,48 @@ import { COLORS } from '../../src/utils/constants';
 import { apiService } from '../../src/services/api';
 
 export default function TabsLayout() {
-  const { isAdmin, isIstruttore, mustResetPassword, clearMustResetPassword, user } = useAuth();
+  const { isAdmin, isIstruttore, mustResetPassword, clearMustResetPassword, user, logout } = useAuth();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // BLOCCO UTENTI ARCHIVIATI - Schermata dedicata
+  if (user?.archived) {
+    return (
+      <View style={archivedStyles.container}>
+        <View style={archivedStyles.card}>
+          <View style={archivedStyles.iconCircle}>
+            <Ionicons name="lock-closed" size={44} color="#fff" />
+          </View>
+          
+          <Text style={archivedStyles.title}>Account Sospeso</Text>
+          
+          <View style={archivedStyles.divider} />
+          
+          <Text style={archivedStyles.message}>
+            Ciao{user?.nome ? ` ${user.nome}` : ''}!{'\n\n'}
+            Il tuo account al momento non è attivo.{'\n'}
+            Per riattivare tutti i servizi dell'app e tornare nella grande famiglia{' '}
+            <Text style={archivedStyles.brand}>DanoFitness</Text>, contatta il Maestro Daniele.
+          </Text>
+
+          <View style={archivedStyles.contactBox}>
+            <Ionicons name="call-outline" size={20} color={COLORS.primary} />
+            <Text style={archivedStyles.contactText}>Contatta il Maestro Daniele</Text>
+          </View>
+          
+          <Text style={archivedStyles.footer}>
+            Ti aspettiamo a braccia aperte!
+          </Text>
+
+          <TouchableOpacity style={archivedStyles.logoutBtn} onPress={logout}>
+            <Ionicons name="log-out-outline" size={18} color={COLORS.textSecondary} />
+            <Text style={archivedStyles.logoutText}>Esci</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   const handleChangePassword = async () => {
     if (newPassword.length < 6) {
@@ -306,5 +344,96 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+});
+
+const archivedStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  card: {
+    backgroundColor: COLORS.card,
+    borderRadius: 24,
+    padding: 32,
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  iconCircle: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    textAlign: 'center',
+  },
+  divider: {
+    width: 50,
+    height: 3,
+    backgroundColor: COLORS.primary,
+    borderRadius: 2,
+    marginVertical: 16,
+  },
+  message: {
+    fontSize: 15,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 20,
+  },
+  brand: {
+    color: COLORS.primary,
+    fontWeight: 'bold',
+  },
+  contactBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: COLORS.primary + '15',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.primary + '30',
+    marginBottom: 20,
+  },
+  contactText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  footer: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  logoutText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
   },
 });
