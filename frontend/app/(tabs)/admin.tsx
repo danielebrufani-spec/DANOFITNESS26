@@ -109,6 +109,8 @@ export default function AdminScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [resettingPassword, setResettingPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Expanded days
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
@@ -567,6 +569,8 @@ export default function AdminScreen() {
     setResetPasswordUser(user);
     setNewPassword('');
     setConfirmPassword('');
+    setShowNewPassword(false);
+    setShowConfirmPassword(false);
     setShowResetPassword(true);
   };
 
@@ -1482,24 +1486,34 @@ export default function AdminScreen() {
             )}
 
             <Text style={styles.modalLabel}>Nuova Password</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={newPassword}
-              onChangeText={setNewPassword}
-              placeholder="Minimo 6 caratteri"
-              placeholderTextColor={COLORS.textSecondary}
-              secureTextEntry
-            />
+            <View style={styles.passwordInputRow}>
+              <TextInput
+                style={styles.passwordInput}
+                value={newPassword}
+                onChangeText={setNewPassword}
+                placeholder="Minimo 6 caratteri"
+                placeholderTextColor={COLORS.textSecondary}
+                secureTextEntry={!showNewPassword}
+              />
+              <Pressable onPress={() => setShowNewPassword(!showNewPassword)} style={styles.eyeBtn}>
+                <Ionicons name={showNewPassword ? 'eye-outline' : 'eye-off-outline'} size={22} color={COLORS.textSecondary} />
+              </Pressable>
+            </View>
 
             <Text style={styles.modalLabel}>Conferma Password</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              placeholder="Ripeti la password"
-              placeholderTextColor={COLORS.textSecondary}
-              secureTextEntry
-            />
+            <View style={styles.passwordInputRow}>
+              <TextInput
+                style={styles.passwordInput}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                placeholder="Ripeti la password"
+                placeholderTextColor={COLORS.textSecondary}
+                secureTextEntry={!showConfirmPassword}
+              />
+              <Pressable onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeBtn}>
+                <Ionicons name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'} size={22} color={COLORS.textSecondary} />
+              </Pressable>
+            </View>
 
             <TouchableOpacity
               style={[styles.modalButton, resettingPassword && styles.modalButtonDisabled]}
@@ -2153,6 +2167,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textSecondary,
     marginTop: 4,
+  },
+  passwordInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: 12,
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 14,
+    fontSize: 16,
+    color: COLORS.text,
+  },
+  eyeBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
   searchContainer: {
     flexDirection: 'row',
