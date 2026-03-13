@@ -120,6 +120,46 @@ export default function ProfiloScreen() {
     router.replace('/');
   };
 
+  // Utente archiviato - mostra solo messaggio di blocco + logout
+  if (user?.archived) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ScrollView contentContainerStyle={archivedStyles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={archivedStyles.card}>
+            <View style={archivedStyles.iconCircle}>
+              <Ionicons name="lock-closed" size={44} color="#fff" />
+            </View>
+            
+            <Text style={archivedStyles.title}>Account Sospeso</Text>
+            
+            <View style={archivedStyles.divider} />
+            
+            <Text style={archivedStyles.message}>
+              Ciao{user?.nome ? ` ${user.nome}` : ''}!{'\n\n'}
+              Il tuo account al momento non è attivo.{'\n'}
+              Per riattivare tutti i servizi dell'app e tornare nella grande famiglia{' '}
+              <Text style={archivedStyles.brand}>DanoFitness</Text>, contatta il Maestro Daniele.
+            </Text>
+
+            <View style={archivedStyles.contactBox}>
+              <Ionicons name="call-outline" size={22} color={COLORS.primary} />
+              <Text style={archivedStyles.contactText}>Contatta il Maestro Daniele</Text>
+            </View>
+            
+            <Text style={archivedStyles.footer}>
+              Ti aspettiamo a braccia aperte!
+            </Text>
+          </View>
+
+          <TouchableOpacity style={archivedStyles.logoutBtn} onPress={logout}>
+            <Ionicons name="log-out-outline" size={20} color={COLORS.error} />
+            <Text style={archivedStyles.logoutText}>Esci dall'account</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -1032,5 +1072,94 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: 'center',
     paddingVertical: 20,
+  },
+});
+
+const archivedStyles = StyleSheet.create({
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: 24,
+  },
+  card: {
+    backgroundColor: COLORS.card,
+    borderRadius: 24,
+    padding: 32,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  iconCircle: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    textAlign: 'center',
+  },
+  divider: {
+    width: 50,
+    height: 3,
+    backgroundColor: COLORS.primary,
+    borderRadius: 2,
+    marginVertical: 16,
+  },
+  message: {
+    fontSize: 15,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 20,
+  },
+  brand: {
+    color: COLORS.primary,
+    fontWeight: 'bold',
+  },
+  contactBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: COLORS.primary + '15',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.primary + '30',
+    marginBottom: 20,
+  },
+  contactText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  footer: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 24,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.error + '40',
+    backgroundColor: COLORS.error + '10',
+  },
+  logoutText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.error,
   },
 });
