@@ -361,6 +361,7 @@ export default function HomeScreen() {
   const [expiredSubs, setExpiredSubs] = useState<ExpiredSub[]>([]);
   const [selectedUser, setSelectedUser] = useState<ExpiredSub | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [renewPagato, setRenewPagato] = useState(true);
   const [weeklyStats, setWeeklyStats] = useState({ presenze: 0, lezioni_scalate: 0, settimana: '' });
 
   // Funzione per caricare notifiche cliente
@@ -522,10 +523,13 @@ export default function HomeScreen() {
       await apiService.createSubscription({
         user_id: selectedUser.user_id,
         tipo: tipo,
+        pagato: renewPagato,
       });
-      Alert.alert('Successo', `Abbonamento ${tipo} assegnato!`);
+      const pagatoLabel = renewPagato ? '' : ' (DA SALDARE)';
+      Alert.alert('Successo', `Abbonamento ${tipo} assegnato!${pagatoLabel}`);
       setShowModal(false);
       setSelectedUser(null);
+      setRenewPagato(true);
       loadData();
     } catch (error) {
       Alert.alert('Errore', 'Impossibile assegnare abbonamento');
@@ -709,6 +713,24 @@ export default function HomeScreen() {
                 <Text style={styles.modalSubtitle}>
                   {selectedUser?.user_nome} {selectedUser?.user_cognome}
                 </Text>
+
+                {/* Toggle Pagato / Da Saldare */}
+                <View style={styles.paymentToggle}>
+                  <TouchableOpacity
+                    style={[styles.paymentBtn, renewPagato && styles.paymentBtnPaid]}
+                    onPress={() => setRenewPagato(true)}
+                  >
+                    <Ionicons name="checkmark-circle" size={18} color={renewPagato ? '#fff' : COLORS.success} />
+                    <Text style={[styles.paymentBtnText, renewPagato && styles.paymentBtnTextActive]}>Pagato</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.paymentBtn, !renewPagato && styles.paymentBtnUnpaid]}
+                    onPress={() => setRenewPagato(false)}
+                  >
+                    <Ionicons name="alert-circle" size={18} color={!renewPagato ? '#fff' : '#f59e0b'} />
+                    <Text style={[styles.paymentBtnText, !renewPagato && styles.paymentBtnTextActive]}>Da Saldare</Text>
+                  </TouchableOpacity>
+                </View>
                 
                 <View style={styles.modalOptions}>
                   <TouchableOpacity 
@@ -768,7 +790,7 @@ export default function HomeScreen() {
                 
                 <TouchableOpacity 
                   style={styles.modalCancel}
-                  onPress={() => setShowModal(false)}
+                  onPress={() => { setShowModal(false); setRenewPagato(true); }}
                 >
                   <Text style={styles.modalCancelText}>Annulla</Text>
                 </TouchableOpacity>
@@ -1097,7 +1119,13 @@ const styles = StyleSheet.create({
     maxWidth: 320,
   },
   modalTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text, textAlign: 'center' },
-  modalSubtitle: { fontSize: 14, color: COLORS.primary, textAlign: 'center', marginTop: 4, marginBottom: 16 },
+  modalSubtitle: { fontSize: 14, color: COLORS.primary, textAlign: 'center', marginTop: 4, marginBottom: 12 },
+  paymentToggle: { flexDirection: 'row', gap: 8, marginBottom: 14 },
+  paymentBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, padding: 10, borderRadius: 10, borderWidth: 2, borderColor: COLORS.border, backgroundColor: COLORS.card },
+  paymentBtnPaid: { borderColor: COLORS.success, backgroundColor: COLORS.success },
+  paymentBtnUnpaid: { borderColor: '#f59e0b', backgroundColor: '#f59e0b' },
+  paymentBtnText: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
+  paymentBtnTextActive: { color: '#fff' },
   modalOptions: { gap: 10 },
   modalOption: {
     backgroundColor: COLORS.background,
