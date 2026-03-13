@@ -332,14 +332,14 @@ export default function PremiScreen() {
     return () => clearInterval(interval);
   }, [status?.prossima_estrazione]);
 
-  // Quiz countdown timer (10 secondi) - parte SOLO quando il cliente clicca "Inizia"
+  // Quiz countdown timer (15 secondi) - parte SOLO quando il cliente clicca "Inizia"
   useEffect(() => {
     if (!quizStarted || !quiz || !quiz.can_play || quiz.gia_risposto) {
       return;
     }
     if (quizTimerExpired) return;
     
-    setQuizTimer(10);
+    setQuizTimer(15);
     setQuizTimerActive(true);
 
     const interval = setInterval(() => {
@@ -360,7 +360,7 @@ export default function PremiScreen() {
   const startQuiz = () => {
     setQuizStarted(true);
     setQuizTimerExpired(false);
-    setQuizTimer(10);
+    setQuizTimer(15);
     setSelectedAnswer(null);
   };
 
@@ -830,10 +830,25 @@ export default function PremiScreen() {
             {/* Quiz Disponibile o Già Risposto */}
             {(quiz.can_play || quiz.gia_risposto) && quiz.domanda && (
               <View style={styles.quizCard}>
-                {/* Pulsante INIZIA - mostrato prima del click */}
+                {/* Pulsante INIZIA - mostrato prima del click con REGOLE */}
                 {quiz.can_play && !quiz.gia_risposto && !quizStarted && (
                   <View style={styles.quizStartContainer}>
-                    <Text style={styles.quizStartInfo}>Hai 10 secondi per rispondere!</Text>
+                    <Text style={styles.quizRulesTitle}>REGOLE DEL QUIZ</Text>
+                    <View style={styles.quizRulesList}>
+                      <Text style={styles.quizRuleItem}>Hai 15 secondi per rispondere</Text>
+                      <Text style={styles.quizRuleItem}>La domanda appare dopo aver premuto INIZIA</Text>
+                      <Text style={styles.quizRuleItem}>Seleziona la risposta e conferma prima dello scadere</Text>
+                      <Text style={styles.quizRuleItem}>Se il tempo scade, perdi il bonus!</Text>
+                      {quiz.bonus_type === 'raddoppia' && (
+                        <Text style={styles.quizRuleBonus}>Rispondi correttamente per RADDOPPIARE i biglietti vinti alla ruota!</Text>
+                      )}
+                      {quiz.bonus_type === 'annulla' && (
+                        <Text style={styles.quizRuleBonus}>Rispondi correttamente per ANNULLARE la perdita della ruota!</Text>
+                      )}
+                      {quiz.bonus_type === 'standard' && (
+                        <Text style={styles.quizRuleBonus}>Rispondi correttamente per vincere +1 biglietto!</Text>
+                      )}
+                    </View>
                     <TouchableOpacity style={styles.quizStartButton} onPress={startQuiz}>
                       <Text style={styles.quizStartButtonText}>INIZIA QUIZ</Text>
                     </TouchableOpacity>
@@ -845,22 +860,30 @@ export default function PremiScreen() {
                   <>
                 <Text style={styles.quizQuestion}>{quiz.domanda}</Text>
                 
-                {/* Timer countdown */}
+                {/* Timer countdown - GRANDE e EVIDENTE */}
                 {quiz.can_play && !quiz.gia_risposto && quizStarted && (
                   <View style={styles.quizTimerContainer}>
+                    <View style={[
+                      styles.quizTimerCircle,
+                      quizTimer <= 5 && styles.quizTimerCircleDanger,
+                    ]}>
+                      <Text style={[
+                        styles.quizTimerBigNumber,
+                        quizTimer <= 5 && styles.quizTimerBigNumberDanger,
+                      ]}>
+                        {quizTimerExpired ? '0' : quizTimer}
+                      </Text>
+                    </View>
                     <View style={styles.quizTimerBarBg}>
                       <View style={[
                         styles.quizTimerBarFill,
-                        { width: `${(quizTimer / 10) * 100}%` },
-                        quizTimer <= 3 && styles.quizTimerBarDanger,
+                        { width: `${(quizTimer / 15) * 100}%` },
+                        quizTimer <= 5 && styles.quizTimerBarDanger,
                       ]} />
                     </View>
-                    <Text style={[
-                      styles.quizTimerText,
-                      quizTimer <= 3 && styles.quizTimerTextDanger,
-                    ]}>
-                      {quizTimerExpired ? 'TEMPO SCADUTO!' : `${quizTimer}s`}
-                    </Text>
+                    {quizTimerExpired && (
+                      <Text style={styles.quizTimerExpiredLabel}>TEMPO SCADUTO!</Text>
+                    )}
                   </View>
                 )}
                 
@@ -2388,7 +2411,30 @@ const styles = StyleSheet.create({
   },
   quizTimerContainer: {
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 16,
+    gap: 8,
+  },
+  quizTimerCircle: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    borderWidth: 4,
+    borderColor: '#4ECDC4',
+    backgroundColor: 'rgba(78,205,196,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quizTimerCircleDanger: {
+    borderColor: '#FF6B6B',
+    backgroundColor: 'rgba(255,107,107,0.15)',
+  },
+  quizTimerBigNumber: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#4ECDC4',
+  },
+  quizTimerBigNumberDanger: {
+    color: '#FF6B6B',
   },
   quizTimerBarBg: {
     width: '100%',
@@ -2405,22 +2451,44 @@ const styles = StyleSheet.create({
   quizTimerBarDanger: {
     backgroundColor: '#FF6B6B',
   },
-  quizTimerText: {
-    marginTop: 6,
-    fontSize: 15,
+  quizTimerExpiredLabel: {
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#4ECDC4',
-  },
-  quizTimerTextDanger: {
     color: '#FF6B6B',
+    letterSpacing: 1,
   },
   quizOptionDisabled: {
     opacity: 0.4,
   },
   quizStartContainer: {
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: 16,
     gap: 14,
+  },
+  quizRulesTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#4ECDC4',
+    letterSpacing: 1,
+  },
+  quizRulesList: {
+    width: '100%',
+    gap: 6,
+    paddingHorizontal: 8,
+  },
+  quizRuleItem: {
+    fontSize: 13,
+    color: VEGAS_COLORS.textSecondary,
+    paddingLeft: 8,
+    borderLeftWidth: 2,
+    borderLeftColor: 'rgba(78,205,196,0.3)',
+  },
+  quizRuleBonus: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: VEGAS_COLORS.gold,
+    textAlign: 'center',
+    marginTop: 6,
   },
   quizStartInfo: {
     fontSize: 14,
