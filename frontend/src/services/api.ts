@@ -210,6 +210,7 @@ export const apiService = {
   setUserRole: (userId: string, role: string) => api.post(`/admin/users/${userId}/set-role?role=${role}`),
   resetUserPassword: (userId: string, newPassword: string) => api.post(`/admin/users/${userId}/reset-password`, { new_password: newPassword }),
   changePassword: (newPassword: string, confirmPassword: string) => api.post('/auth/change-password', { new_password: newPassword, confirm_password: confirmPassword }),
+  forceProcessLessons: () => api.post<{message: string}>('/admin/force-process'),
 
   // Lottery
   getLotteryStatus: () => api.get('/lottery/status'),

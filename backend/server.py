@@ -1917,6 +1917,55 @@ async def process_started_lessons(admin_user: dict = Depends(get_admin_user)):
 
 # ======================== WEEKLY STATS (ADMIN ONLY) ========================
 
+
+@api_router.post("/admin/force-process")
+async def force_process_lessons(admin_user: dict = Depends(get_admin_user)):
+    """Forza il processamento di tutte le lezioni non scalate (oggi e ieri)"""
+    now = now_rome()
+    oggi = now.strftime("%Y-%m-%d")
+    ieri = (now - timedelta(days=1)).strftime("%Y-%m-%d")
+    
+    bookings = await db.bookings.find({
+        "data_lezione": {"$in": [oggi, ieri]},
+        "lezione_scalata": False,
+        "confermata": True
+    }).to_list(1000)
+    
+    processed = 0
+    for booking in bookings:
+        user_id = booking["user_id"]
+        
+        sub_pacchetto = await db.subscriptions.find_one({
+            "user_id": user_id, "attivo": True,
+            "tipo": {"$in": ["lezioni_8", "lezioni_16"]},
+            "lezioni_rimanenti": {"$gt": 0}
+        })
+        
+        if sub_pacchetto:
+            await db.subscriptions.update_one(
+                {"_id": sub_pacchetto["_id"]},
+                {"$inc": {"lezioni_rimanenti": -1}}
+            )
+            await db.bookings.update_one(
+                {"_id": booking["_id"]},
+                {"$set": {"lezione_scalata": True, "subscription_id": str(sub_pacchetto["_id"])}}
+            )
+            processed += 1
+        else:
+            sub_tempo = await db.subscriptions.find_one({
+                "user_id": user_id, "attivo": True,
+                "tipo": {"$in": ["mensile", "trimestrale"]},
+                "data_scadenza": {"$gte": now}
+            })
+            if sub_tempo:
+                await db.bookings.update_one(
+                    {"_id": booking["_id"]},
+                    {"$set": {"lezione_scalata": True, "subscription_id": str(sub_tempo["_id"])}}
+                )
+                processed += 1
+    
+    return {"message": f"Processate {processed} prenotazioni su {len(bookings)} trovate"}
+
 @api_router.get("/admin/weekly-stats")
 async def get_weekly_stats(admin_user: dict = Depends(get_admin_user)):
     """Get weekly statistics: total presences and lessons already deducted.
@@ -4418,9 +4467,10 @@ async def auto_process_lessons_task():
             
             logger.info(f"[AUTO-PROCESS] Check alle {ora_corrente} (Roma) - Data: {oggi}")
             
-            # Trova prenotazioni di oggi non ancora scalate
+            # Trova prenotazioni di oggi E di ieri non ancora scalate (safety net per restart/deploy)
+            ieri = (now - timedelta(days=1)).strftime("%Y-%m-%d")
             bookings = await db.bookings.find({
-                "data_lezione": oggi,
+                "data_lezione": {"$in": [oggi, ieri]},
                 "lezione_scalata": False,
                 "confermata": True
             }).to_list(1000)
@@ -4451,8 +4501,10 @@ async def auto_process_lessons_task():
                 if not orario_lezione:
                     logger.warning(f"[AUTO-PROCESS] Booking {booking['_id']} senza orario")
                     continue
-                    
-                if ora_corrente < orario_lezione:
+                
+                # Per le lezioni di ieri, processa subito (sono già passate)
+                booking_date = booking.get("data_lezione", "")
+                if booking_date == oggi and ora_corrente < orario_lezione:
                     logger.info(f"[AUTO-PROCESS] Lezione {orario_lezione} non ancora iniziata (ora: {ora_corrente})")
                     continue
                 

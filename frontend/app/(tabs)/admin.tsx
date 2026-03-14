@@ -767,6 +767,23 @@ export default function AdminScreen() {
                   <Text style={styles.totalLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>Lezioni Scalate</Text>
                 </View>
 
+                {/* Pulsante Forza Processamento */}
+                <TouchableOpacity
+                  style={styles.forceProcessBtn}
+                  onPress={async () => {
+                    try {
+                      const res = await apiService.forceProcessLessons();
+                      Alert.alert('Risultato', res.data.message);
+                      loadData();
+                    } catch (e) {
+                      Alert.alert('Errore', 'Impossibile processare');
+                    }
+                  }}
+                >
+                  <Ionicons name="refresh-circle" size={20} color="#fff" />
+                  <Text style={styles.forceProcessText}>Forza Aggiornamento Presenze</Text>
+                </TouchableOpacity>
+
                 {/* Presenze per Lezione */}
                 <Text style={styles.riepilogoSectionTitle}>Dettaglio per Lezione</Text>
                 
@@ -2749,5 +2766,21 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: COLORS.success,
     borderRadius: 8,
+  },
+  forceProcessBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: COLORS.primary,
+    padding: 12,
+    borderRadius: 12,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  forceProcessText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
   },
 });
