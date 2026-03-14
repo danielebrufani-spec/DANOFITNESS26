@@ -2046,20 +2046,41 @@ async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user))
     saturday = monday + timedelta(days=5)
     saturday_str = saturday.strftime("%Y-%m-%d")
     
-    # Controlla se le lezioni del sabato di QUESTA settimana sono state scalate
-    yoga_sabato_scalate = await db.bookings.count_documents({
-        "data_lezione": saturday_str,
-        "confermata": True,
-        "lezione_scalata": True
-    })
+    # Controlla se il sabato è bloccato (lezione sospesa)
+    sabato_bloccato = await db.blocked_dates.find_one({"data": saturday_str})
     
-    if yoga_sabato_scalate == 0:
-        return {
-            "leaderboard": [],
-            "settimana": f"{monday.strftime('%d/%m')} - {saturday.strftime('%d/%m')}",
-            "total_participants": 0,
-            "status": "pending"
-        }
+    if not sabato_bloccato:
+        # Sabato NON bloccato: aspetta che le lezioni del sabato vengano processate
+        yoga_sabato_scalate = await db.bookings.count_documents({
+            "data_lezione": saturday_str,
+            "confermata": True,
+            "lezione_scalata": True
+        })
+        
+        if yoga_sabato_scalate == 0:
+            return {
+                "leaderboard": [],
+                "settimana": f"{monday.strftime('%d/%m')} - {saturday.strftime('%d/%m')}",
+                "total_participants": 0,
+                "status": "pending"
+            }
+    else:
+        # Sabato BLOCCATO: la classifica esce basandosi sulle lezioni fino a venerdì
+        # Aspetta che sia almeno sabato per mostrare la classifica
+        if current_day < 5:  # Prima di sabato
+            venerdi_str = (monday + timedelta(days=4)).strftime("%Y-%m-%d")
+            lezioni_venerdi = await db.bookings.count_documents({
+                "data_lezione": venerdi_str,
+                "confermata": True,
+                "lezione_scalata": True
+            })
+            if lezioni_venerdi == 0 and current_day < 4:
+                return {
+                    "leaderboard": [],
+                    "settimana": f"{monday.strftime('%d/%m')} - {saturday.strftime('%d/%m')}",
+                    "total_participants": 0,
+                    "status": "pending"
+                }
     
     # Get date strings for the week (Mon-Sat)
     week_dates = [(monday + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(6)]
