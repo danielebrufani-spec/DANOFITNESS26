@@ -4798,7 +4798,14 @@ app.add_middleware(GZipMiddleware, minimum_size=500)
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://danofitness23.vercel.app",
+        "https://danofitness26.vercel.app",
+        "http://localhost:3000",
+        "http://localhost:8081",
+        "http://localhost:19006",
+        "https://danofitness-perf.preview.emergentagent.com",
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
