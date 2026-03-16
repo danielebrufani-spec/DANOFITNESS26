@@ -1,79 +1,56 @@
-# DANOFITNESS26 - Product Requirements Document
+# DanoFitness23 - Product Requirements Document
 
-## Problem Statement
-Fitness application for "DANOFITNESS26" gym. Full-stack app with React Native (Expo) frontend and FastAPI backend using MongoDB. Features user management, class booking, gamification (lottery, wheel of fortune, quiz), and an admin panel with AI nutrition plans.
+## Descrizione
+App di fitness per la gestione di lezioni, prenotazioni, abbonamenti e gamification per DanoFitness23. 
+- **Frontend**: React Native (Expo) con deploy su Vercel
+- **Backend**: FastAPI + MongoDB con deploy su Render
+- **Dominio produzione**: `danofitness23.vercel.app` → `diobestia.onrender.com`
 
-## Tech Stack
-- **Frontend:** React Native (Expo 54), TypeScript, expo-router
-- **Backend:** Python, FastAPI
-- **Database:** MongoDB (motor async driver)
-- **AI:** OpenAI GPT via emergentintegrations (Emergent LLM Key)
-- **Deployment:** Vercel (frontend), Render (backend)
+## Architettura
+- Frontend: Expo Router, React Native Web, TypeScript
+- Backend: FastAPI, Motor (async MongoDB), bcrypt, PyJWT
+- Database: MongoDB
+- AI: OpenAI GPT via emergentintegrations (piano nutrizione)
 
-## Code Architecture
-```
-/app
-├── backend/
-│   ├── .env (MONGO_URL, DB_NAME, EMERGENT_LLM_KEY)
-│   ├── server.py (monolith)
-│   └── requirements.txt
-└── frontend/
-    ├── .env (REACT_APP_BACKEND_URL, EXPO_PUBLIC_BACKEND_URL)
-    ├── app/(tabs)/ (_layout, home, admin, alimentazione, prenota, premi, profilo, etc.)
-    ├── src/context/AuthContext.tsx
-    ├── src/services/api.ts
-    └── src/utils/constants.ts
-```
+## Configurazione URL
+- **Preview**: `EXPO_PUBLIC_BACKEND_URL` da `.env`  
+- **Produzione**: Fallback hardcoded a `https://diobestia.onrender.com`
+- **CORS**: Include `danofitness23.vercel.app`, `danofitness26.vercel.app`
 
-## Completed Features
+## Funzionalità Implementate
+- Login/Registrazione con JWT
+- Dashboard Home con saluti, ricetta del giorno, banner nutrizione
+- Prenotazione lezioni (circuito, funzionale, pilates, yoga)
+- Gestione abbonamenti (pacchetto lezioni, mensile, trimestrale)
+- Lotteria mensile + Ruota della Fortuna
+- Quiz fitness giornaliero
+- Chat/Comunicazioni
+- Classifica settimanale + Medaglie
+- Consigli del Maestro + Consigli Musicali
+- Piano nutrizione AI (GPT)
+- Pannello Admin (gestione utenti, statistiche, piani AI)
+- Pannello Istruttore
+- Livello settimanale
+- Date bloccate
+- Performance optimization (cache, indici MongoDB, asyncio.gather)
 
-### Core
-- User auth (JWT), admin panel, class booking system
-- Subscription management (lesson-based + time-based, paid/unpaid tracking)
-- Gamification: weekly leaderboard, lottery, wheel of fortune, quiz with timer
-- Push notifications (Expo + Web), Chat/communications system
-- Consigli del Maestro + Consigli Musicali (Spotify)
-- Archived user lockout
+## Fix Critici (16 Marzo 2026)
+- Rimosso proxy code rotto che crashava il backend
+- Corretti URL env vars (EXPO_PUBLIC_BACKEND_URL + fallback produzione)
+- Rimosso public/index.html CRA che bloccava rendering Expo
+- Eliminato nginx.conf inutile
+- Verificato CORS produzione
 
-### AI Nutrition (March 2026)
-- "Alimentazione" tab with AI-generated monthly meal plans (GPT via emergentintegrations)
-- User nutritional profile (weight, height, goals, intolerances)
-- Admin "Dieta AI" tab showing profiles count, plans count, plan details
-- Home banner inviting clients to create their plan (persistent until done)
+## Credenziali Test
+- Email: danielebrufani@gmail.com
+- Password: Mariavittoria23
 
-### Performance Optimizations (March 2026)
-1. MongoDB Indexes on major collections
-2. GZip Compression (min 500 bytes)
-3. In-Memory Cache (SimpleCache with TTL): Lessons 5min, Blocked dates 1min
-4. Batch Query Fixes (N+1 → batch): notifications, lottery users
-5. Parallel Queries (asyncio.gather): dashboard, livello, lottery, weekly-stats, nutrition, quiz, wheel
-6. Query Projections on admin user lookups
-7. profile_image exclusion from bulk queries
+## Task Futuri
+### P1
+- "Porta un Amico" (sistema referral per biglietti lotteria bonus)
+- Gamification avanzata (streak e milestone)
 
-### UI/UX (March 2026)
-- "Dieta AI" tab positioned 2nd (after Home) with red colored icon (#FF6B6B)
-- Prominent nutrition banner on Home with red accent (visible until plan created)
-- Admin "Dieta AI" tab with stats and plan list
-
-### Environment Fix (March 2026)
-- Fixed EXPO_PUBLIC_BACKEND_URL not being baked into static export
-- Added window.location fallback for preview environment detection
-
-## Upcoming Tasks (P1)
-- "Porta un Amico" (Refer a Friend) system
-- Streak Bonuses (+1 ticket for 3 consecutive training days)
-- Milestone Bonuses (+5 tickets for 50 total lessons)
-
-## Future/Backlog (P2)
-- Instagram Integration for Bonuses
-- UI/UX Graphic Enhancements (dark/light mode, visual calendar, stats page)
-- Update outdated frontend dependencies
-
-## Key API Endpoints
-- Auth: /api/auth/login, /api/auth/me, /api/auth/register
-- Lessons: /api/lessons, /api/lessons/day/{giorno}
-- Bookings: /api/bookings, /api/bookings/me
-- Subscriptions: /api/subscriptions, /api/subscriptions/me, /api/subscriptions/insoluti
-- Admin: /api/admin/dashboard, /api/admin/users, /api/admin/weekly-bookings, /api/admin/nutrition/plans
-- Gamification: /api/lottery/status, /api/wheel/status, /api/quiz/today
-- Nutrition: /api/nutrition/profile, /api/nutrition/generate-plan, /api/nutrition/my-plan
+### P2  
+- Integrazione Instagram per bonus
+- UI/UX: Dark/Light mode, calendario visuale, pagina statistiche personali
+- Aggiornamento dipendenze frontend outdated

@@ -4806,7 +4806,7 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:8081",
         "http://localhost:19006",
-        "https://danofitness-perf.preview.emergentagent.com",
+        "https://production-restore-8.preview.emergentagent.com",
     ],
     allow_methods=["*"],
     allow_headers=["*"],

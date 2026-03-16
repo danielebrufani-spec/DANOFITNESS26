@@ -1,7 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'https://diobestia.onrender.com';
+const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://diobestia.onrender.com';
 
 const api = axios.create({
   baseURL: `${API_URL}/api`,
