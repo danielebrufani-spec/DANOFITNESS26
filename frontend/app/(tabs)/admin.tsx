@@ -61,7 +61,7 @@ interface WeeklyBookings {
 export default function AdminScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'riepilogo' | 'presenze' | 'abbonamenti' | 'insoluti' | 'utenti' | 'archiviati'>('riepilogo');
+  const [activeTab, setActiveTab] = useState<'riepilogo' | 'presenze' | 'abbonamenti' | 'insoluti' | 'utenti' | 'archiviati' | 'pianiAI'>('riepilogo');
   
   const [weeklyBookings, setWeeklyBookings] = useState<WeeklyBookings | null>(null);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -69,6 +69,12 @@ export default function AdminScreen() {
   const [users, setUsers] = useState<User[]>([]);
   const [archivedUsers, setArchivedUsers] = useState<User[]>([]);  // Clienti archiviati
   const [unpaidSubscriptions, setUnpaidSubscriptions] = useState<Subscription[]>([]);
+  
+  // Nutrition plans (admin)
+  const [nutritionData, setNutritionData] = useState<any>(null);
+  const [viewingPlanUserId, setViewingPlanUserId] = useState<string | null>(null);
+  const [viewingPlan, setViewingPlan] = useState<any>(null);
+  const [loadingPlan, setLoadingPlan] = useState(false);
   
   // Daily stats
   const [dailyStats, setDailyStats] = useState<any>(null);
@@ -175,6 +181,14 @@ export default function AdminScreen() {
         setUnpaidSubscriptions(unpaidRes.data);
       } catch (e) {
         setUnpaidSubscriptions([]);
+      }
+      
+      // Carica piani alimentari AI
+      try {
+        const nutritionRes = await apiService.getAdminNutritionPlans();
+        setNutritionData(nutritionRes.data);
+      } catch (e) {
+        setNutritionData(null);
       }
       
       setWeeklyBookings(weeklyRes.data);
@@ -708,6 +722,14 @@ export default function AdminScreen() {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
+          style={[styles.tab, activeTab === 'pianiAI' && styles.tabActive]}
+          onPress={() => setActiveTab('pianiAI')}
+        >
+          <Text style={[styles.tabText, activeTab === 'pianiAI' && styles.tabTextActive]}>
+            Dieta AI
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'archiviati' && styles.tabActive, archivedUsers.length > 0 && styles.tabWithBadge]}
           onPress={() => setActiveTab('archiviati')}
         >
@@ -1067,6 +1089,127 @@ export default function AdminScreen() {
             {filteredUsers.length === 0 && userSearchQuery && (
               <Text style={styles.noResults}>Nessun utente trovato per "{userSearchQuery}"</Text>
             )}
+          </>
+        )}
+
+        {/* PIANI AI TAB */}
+        {activeTab === 'pianiAI' && (
+          <>
+            <View style={styles.nutritionHeader}>
+              <Ionicons name="nutrition" size={28} color="#FF6B6B" />
+              <Text style={styles.nutritionTitle}>Piani Alimentari AI</Text>
+            </View>
+
+            {/* Stats */}
+            {nutritionData && (
+              <View style={styles.nutritionStats}>
+                <View style={[styles.nutritionStatCard, { borderLeftColor: '#FF6B6B' }]}>
+                  <Text style={styles.nutritionStatNumber}>{nutritionData.profili_totali || 0}</Text>
+                  <Text style={styles.nutritionStatLabel}>Profili Creati</Text>
+                </View>
+                <View style={[styles.nutritionStatCard, { borderLeftColor: COLORS.primary }]}>
+                  <Text style={[styles.nutritionStatNumber, { color: COLORS.primary }]}>{nutritionData.piani_generati || 0}</Text>
+                  <Text style={styles.nutritionStatLabel}>Piani Generati ({nutritionData.mese})</Text>
+                </View>
+              </View>
+            )}
+
+            {/* Lista piani */}
+            <Text style={styles.sectionTitle}>
+              Piani Generati Questo Mese ({nutritionData?.plans?.length || 0})
+            </Text>
+            
+            {(!nutritionData?.plans || nutritionData.plans.length === 0) ? (
+              <View style={styles.emptyNutrition}>
+                <Ionicons name="restaurant-outline" size={48} color={COLORS.textSecondary} />
+                <Text style={styles.emptyNutritionText}>Nessun piano generato questo mese</Text>
+              </View>
+            ) : (
+              nutritionData.plans.map((plan: any, idx: number) => (
+                <TouchableOpacity
+                  key={idx}
+                  style={styles.nutritionPlanCard}
+                  onPress={async () => {
+                    setLoadingPlan(true);
+                    setViewingPlanUserId(plan.user_id);
+                    try {
+                      const res = await apiService.getAdminUserPlan(plan.user_id);
+                      setViewingPlan(res.data);
+                    } catch (e) {
+                      Alert.alert('Errore', 'Impossibile caricare il piano');
+                    } finally {
+                      setLoadingPlan(false);
+                    }
+                  }}
+                >
+                  <View style={styles.nutritionPlanInfo}>
+                    <View style={styles.nutritionPlanAvatar}>
+                      <Ionicons name="person" size={18} color="#FF6B6B" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.nutritionPlanUser}>{plan.user_nome} {plan.user_cognome}</Text>
+                      <Text style={styles.nutritionPlanDate}>
+                        Generato: {new Date(plan.generated_at || plan.created_at).toLocaleDateString('it-IT')}
+                      </Text>
+                      {plan.profile_at_generation && (
+                        <Text style={styles.nutritionPlanGoal}>
+                          Obiettivo: {plan.profile_at_generation.obiettivo || '—'} | {Math.round(plan.profile_at_generation.calorie_giornaliere || 0)} kcal
+                        </Text>
+                      )}
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+                  </View>
+                </TouchableOpacity>
+              ))
+            )}
+
+            {/* Modal Visualizza Piano */}
+            <Modal
+              visible={viewingPlan !== null}
+              animationType="slide"
+              transparent={true}
+              onRequestClose={() => { setViewingPlan(null); setViewingPlanUserId(null); }}
+            >
+              <View style={styles.modalOverlay}>
+                <View style={[styles.modalContent, { maxHeight: '85%' }]}>
+                  <View style={styles.modalHeader}>
+                    <Text style={styles.modalTitle}>Piano Alimentare</Text>
+                    <TouchableOpacity onPress={() => { setViewingPlan(null); setViewingPlanUserId(null); }}>
+                      <Ionicons name="close" size={24} color={COLORS.text} />
+                    </TouchableOpacity>
+                  </View>
+                  
+                  {loadingPlan ? (
+                    <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 20 }} />
+                  ) : viewingPlan ? (
+                    <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 500 }}>
+                      {/* Profilo utente */}
+                      {viewingPlan.profile && (
+                        <View style={styles.nutritionProfileCard}>
+                          <Text style={styles.nutritionProfileTitle}>Profilo</Text>
+                          <Text style={styles.nutritionProfileLine}>
+                            {viewingPlan.profile.sesso === 'M' ? 'Uomo' : 'Donna'}, {viewingPlan.profile.eta} anni, {viewingPlan.profile.peso}kg, {viewingPlan.profile.altezza}cm
+                          </Text>
+                          <Text style={styles.nutritionProfileLine}>
+                            Obiettivo: {viewingPlan.profile.obiettivo} | {Math.round(viewingPlan.profile.calorie_giornaliere)} kcal/giorno
+                          </Text>
+                          {viewingPlan.profile.intolleranze?.length > 0 && (
+                            <Text style={styles.nutritionProfileLine}>
+                              Intolleranze: {viewingPlan.profile.intolleranze.join(', ')}
+                            </Text>
+                          )}
+                        </View>
+                      )}
+                      
+                      {/* Piano completo */}
+                      {viewingPlan.plan?.piano && (
+                        <Text style={styles.nutritionPlanText}>{viewingPlan.plan.piano}</Text>
+                      )}
+                    </ScrollView>
+                  ) : null}
+                </View>
+              </View>
+            </Modal>
           </>
         )}
 
@@ -2817,5 +2960,108 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 14,
+  },
+  // Nutrition Admin styles
+  nutritionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 14,
+  },
+  nutritionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  nutritionStats: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
+  },
+  nutritionStatCard: {
+    flex: 1,
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    borderLeftWidth: 4,
+  },
+  nutritionStatNumber: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#FF6B6B',
+  },
+  nutritionStatLabel: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  emptyNutrition: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    gap: 10,
+  },
+  emptyNutritionText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  nutritionPlanCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#FF6B6B',
+  },
+  nutritionPlanInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  nutritionPlanAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FF6B6B20',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  nutritionPlanUser: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  nutritionPlanDate: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  nutritionPlanGoal: {
+    fontSize: 11,
+    color: COLORS.primary,
+    marginTop: 2,
+  },
+  nutritionProfileCard: {
+    backgroundColor: COLORS.cardLight,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+  },
+  nutritionProfileTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#FF6B6B',
+    marginBottom: 6,
+  },
+  nutritionProfileLine: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    lineHeight: 20,
+  },
+  nutritionPlanText: {
+    fontSize: 13,
+    color: COLORS.text,
+    lineHeight: 22,
   },
 });

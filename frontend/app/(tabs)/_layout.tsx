@@ -85,6 +85,25 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="alimentazione"
+        options={{
+          title: 'Dieta AI',
+          href: (isAdmin || isIstruttore || isArchived) ? null : '/alimentazione',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons 
+              name={focused ? "nutrition" : "nutrition-outline"} 
+              size={size + 4} 
+              color={focused ? '#FF6B6B' : color} 
+            />
+          ),
+          tabBarActiveTintColor: '#FF6B6B',
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontWeight: '700',
+          },
+        }}
+      />
+      <Tabs.Screen
         name="prenota"
         options={{
           title: 'Prenota',
@@ -173,21 +192,6 @@ export default function TabsLayout() {
             />
           ),
           tabBarActiveTintColor: '#FFD700',
-        }}
-      />
-      <Tabs.Screen
-        name="alimentazione"
-        options={{
-          title: 'Alimentazione',
-          href: (isAdmin || isIstruttore || isArchived) ? null : '/alimentazione',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons 
-              name={focused ? "nutrition" : "nutrition-outline"} 
-              size={size + 2} 
-              color={focused ? '#FF6B6B' : color} 
-            />
-          ),
-          tabBarActiveTintColor: '#FF6B6B',
         }}
       />
       <Tabs.Screen

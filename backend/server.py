@@ -2734,14 +2734,31 @@ async def get_all_nutrition_plans(admin_user: dict = Depends(get_admin_user)):
     now = now_rome()
     mese_corrente = now.strftime("%Y-%m")
     
-    plans = await db.meal_plans.find(
+    # PERFORMANCE: Parallel queries
+    plans_task = db.meal_plans.find(
         {"mese": mese_corrente},
         {"_id": 0, "piano": 0}  # Escludi il piano completo per leggerezza
     ).sort("created_at", -1).to_list(1000)
+    count_plans_task = db.meal_plans.count_documents({"mese": mese_corrente})
+    count_profiles_task = db.nutrition_profiles.count_documents({})
     
-    # Conta totali
-    total_plans = await db.meal_plans.count_documents({"mese": mese_corrente})
-    total_profiles = await db.nutrition_profiles.count_documents({})
+    plans, total_plans, total_profiles = await asyncio.gather(
+        plans_task, count_plans_task, count_profiles_task
+    )
+    
+    # Arricchisci con dati dal profilo
+    user_ids = list(set(p["user_id"] for p in plans))
+    profiles_cache = {}
+    if user_ids:
+        profiles = await db.nutrition_profiles.find(
+            {"user_id": {"$in": user_ids}},
+            {"_id": 0, "user_id": 1, "obiettivo": 1, "calorie_giornaliere": 1, "peso": 1}
+        ).to_list(len(user_ids))
+        profiles_cache = {p["user_id"]: p for p in profiles}
+    
+    for plan in plans:
+        plan["profile_at_generation"] = profiles_cache.get(plan["user_id"], plan.get("profilo", {}))
+        plan.setdefault("generated_at", plan.get("created_at"))
     
     return {
         "mese": mese_corrente,

@@ -364,7 +364,7 @@ export default function HomeScreen() {
   const [showModal, setShowModal] = useState(false);
   const [renewPagato, setRenewPagato] = useState(true);
   const [weeklyStats, setWeeklyStats] = useState({ presenze: 0, lezioni_scalate: 0, settimana: '' });
-  const [hasMealPlan, setHasMealPlan] = useState(true); // default true per non mostrare banner subito
+  const [hasMealPlan, setHasMealPlan] = useState(false);
 
   // Funzione per caricare notifiche cliente
   const loadClientNotifications = async () => {
@@ -513,9 +513,10 @@ export default function HomeScreen() {
         // Check piano alimentare
         try {
           const nutritionRes = await apiService.getNutritionPlan();
+          // Banner scompare SOLO quando l'utente ha COMPLETATO il piano
           setHasMealPlan(!!nutritionRes.data.plan);
         } catch (e) {
-          setHasMealPlan(true);
+          setHasMealPlan(false);
         }
       }
     } catch (error) {
@@ -838,6 +839,26 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {/* BANNER PIANO ALIMENTARE - Sempre visibile fino a completamento */}
+        {!isAdmin && !hasMealPlan && (
+          <TouchableOpacity 
+            style={styles.mealPlanBanner}
+            onPress={() => router.push('/(tabs)/alimentazione')}
+            data-testid="nutrition-banner"
+          >
+            <View style={styles.mealPlanBannerIcon}>
+              <Ionicons name="nutrition" size={28} color="#fff" />
+            </View>
+            <View style={styles.mealPlanBannerContent}>
+              <Text style={styles.mealPlanBannerTitle}>Crea il Tuo Piano Alimentare!</Text>
+              <Text style={styles.mealPlanBannerText}>
+                Piano personalizzato generato con IA, gratis per te
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={22} color="#FF6B6B" />
+          </TouchableOpacity>
+        )}
+
         {/* NOTIFICHE IN-APP */}
         {visibleNotifications.length > 0 && (
           <View style={styles.notificationsContainer}>
@@ -857,25 +878,6 @@ export default function HomeScreen() {
               </View>
             ))}
           </View>
-        )}
-
-        {/* BANNER PIANO ALIMENTARE */}
-        {!isAdmin && !hasMealPlan && (
-          <TouchableOpacity 
-            style={styles.mealPlanBanner}
-            onPress={() => router.push('/(tabs)/alimentazione')}
-          >
-            <View style={styles.mealPlanBannerIcon}>
-              <Ionicons name="nutrition" size={28} color="#fff" />
-            </View>
-            <View style={styles.mealPlanBannerContent}>
-              <Text style={styles.mealPlanBannerTitle}>Nuovo Piano Alimentare Disponibile!</Text>
-              <Text style={styles.mealPlanBannerText}>
-                Crea il tuo piano personalizzato per questo mese
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={22} color={COLORS.primary} />
-          </TouchableOpacity>
         )}
 
         {/* Frase Divertente */}
@@ -1135,24 +1137,24 @@ const styles = StyleSheet.create({
   mealPlanBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FF6B6B15',
+    backgroundColor: '#FF6B6B18',
     borderRadius: 14,
     padding: 14,
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#FF6B6B40',
+    borderWidth: 2,
+    borderColor: '#FF6B6B50',
     gap: 12,
   },
   mealPlanBannerIcon: {
     width: 48,
     height: 48,
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: '#FF6B6B',
     justifyContent: 'center',
     alignItems: 'center',
   },
   mealPlanBannerContent: { flex: 1 },
-  mealPlanBannerTitle: { fontSize: 14, fontWeight: 'bold', color: COLORS.text },
+  mealPlanBannerTitle: { fontSize: 15, fontWeight: 'bold', color: '#FF6B6B' },
   mealPlanBannerText: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
 
   // Modal
