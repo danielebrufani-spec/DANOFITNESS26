@@ -404,14 +404,16 @@ export default function AlimentazioneScreen() {
             </View>
             <Text style={styles.planContent}>{plan.piano}</Text>
             
-            <TouchableOpacity 
-              style={styles.resetButton} 
-              onPress={handleResetPlan}
-              data-testid="reset-plan-button"
-            >
-              <Ionicons name="refresh-outline" size={18} color="#FF6B6B" />
-              <Text style={styles.resetButtonText}>Azzera e Rigenera Piano</Text>
-            </TouchableOpacity>
+            {user?.role === 'admin' && (
+              <TouchableOpacity 
+                style={styles.resetButton} 
+                onPress={handleResetPlan}
+                data-testid="reset-plan-button"
+              >
+                <Ionicons name="refresh-outline" size={18} color="#FF6B6B" />
+                <Text style={styles.resetButtonText}>Azzera e Rigenera Piano</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
       </ScrollView>

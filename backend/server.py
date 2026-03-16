@@ -2765,7 +2765,10 @@ async def get_my_plan(current_user: dict = Depends(get_current_user)):
 
 @api_router.delete("/nutrition/reset-plan")
 async def reset_meal_plan(current_user: dict = Depends(get_current_user)):
-    """Azzera il piano alimentare corrente per poterlo rigenerare"""
+    """Azzera il piano alimentare - solo admin"""
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Solo l'admin può azzerare i piani")
+    
     user_id = str(current_user["_id"])
     now = now_rome()
     mese_corrente = now.strftime("%Y-%m")
@@ -2775,6 +2778,23 @@ async def reset_meal_plan(current_user: dict = Depends(get_current_user)):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Nessun piano da azzerare per questo mese")
     
+
+@api_router.delete("/admin/nutrition/reset-plan/{user_id}")
+async def admin_reset_user_plan(user_id: str, current_user: dict = Depends(get_current_user)):
+    """Admin azzera il piano di un utente specifico"""
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Solo l'admin può azzerare i piani")
+    
+    now = now_rome()
+    mese_corrente = now.strftime("%Y-%m")
+    
+    result = await db.meal_plans.delete_one({"user_id": user_id, "mese": mese_corrente})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Nessun piano da azzerare per questo utente")
+    
+    return {"message": "Piano dell'utente azzerato con successo."}
+
     return {"message": "Piano azzerato! Ora puoi rigenerarlo con nuove indicazioni."}
 
 
