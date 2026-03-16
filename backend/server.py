@@ -2674,7 +2674,7 @@ Crea 2 settimane tipo (la 3a e 4a possono ruotare). Per ogni giorno: Colazione, 
     async def generate_plan_background(uid, profile_data, mese):
         try:
             import httpx
-            llm_key = os.environ.get("EMERGENT_LLM_KEY")
+            llm_key = os.environ.get("EMERGENT_LLM_KEY", "").strip()
             
             # Retry fino a 3 volte in caso di errore 502
             response_text = None
@@ -3924,7 +3924,7 @@ async def test_llm_connection():
     """Test di connessione al servizio AI"""
     import httpx
     try:
-        llm_key = os.environ.get("EMERGENT_LLM_KEY")
+        llm_key = os.environ.get("EMERGENT_LLM_KEY", "").strip()
         if not llm_key:
             return {"status": "error", "detail": "EMERGENT_LLM_KEY non configurata"}
         
