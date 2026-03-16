@@ -2668,39 +2668,53 @@ Rispondi con un testo ben formattato con sezioni chiare per ogni settimana."""
         if not llm_key:
             raise HTTPException(status_code=500, detail="Chiave AI non configurata")
         
-        chat = LlmChat(
-            api_key=llm_key,
-            session_id=f"nutrition-{user_id}-{mese_corrente}",
-            system_message="Sei un nutrizionista sportivo esperto italiano. Crea piani alimentari dettagliati, personalizzati e basati sulla scienza della nutrizione. Rispondi sempre in italiano."
-        )
-        chat.with_model("openai", "gpt-4.1")
+        # Retry mechanism per gestire errori di connessione
+        max_retries = 3
+        last_error = None
         
-        user_message = UserMessage(text=prompt)
-        response = await chat.send_message(user_message)
+        for attempt in range(max_retries):
+            try:
+                chat = LlmChat(
+                    api_key=llm_key,
+                    session_id=f"nutrition-{user_id}-{mese_corrente}-{attempt}",
+                    system_message="Sei un nutrizionista sportivo esperto italiano. Crea piani alimentari dettagliati, personalizzati e basati sulla scienza della nutrizione. Rispondi sempre in italiano."
+                )
+                chat.with_model("openai", "gpt-4.1")
+                
+                user_message = UserMessage(text=prompt)
+                response = await chat.send_message(user_message)
+                
+                # Salva il piano
+                plan_doc = {
+                    "user_id": user_id,
+                    "user_nome": current_user["nome"],
+                    "user_cognome": current_user["cognome"],
+                    "mese": mese_corrente,
+                    "piano": response,
+                    "profilo": {
+                        "peso": profile["peso"],
+                        "obiettivo": profile["obiettivo"],
+                        "calorie": profile["calorie_giornaliere"],
+                    },
+                    "created_at": now,
+                }
+                
+                await db.meal_plans.insert_one(plan_doc)
+                
+                return {
+                    "piano": response,
+                    "mese": mese_corrente,
+                    "calorie": profile["calorie_giornaliere"],
+                    "message": "Piano generato con successo!"
+                }
+            except Exception as retry_err:
+                last_error = retry_err
+                logger.warning(f"[NUTRITION] Tentativo {attempt+1}/{max_retries} fallito: {retry_err}")
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(2)
         
-        # Salva il piano
-        plan_doc = {
-            "user_id": user_id,
-            "user_nome": current_user["nome"],
-            "user_cognome": current_user["cognome"],
-            "mese": mese_corrente,
-            "piano": response,
-            "profilo": {
-                "peso": profile["peso"],
-                "obiettivo": profile["obiettivo"],
-                "calorie": profile["calorie_giornaliere"],
-            },
-            "created_at": now,
-        }
-        
-        await db.meal_plans.insert_one(plan_doc)
-        
-        return {
-            "piano": response,
-            "mese": mese_corrente,
-            "calorie": profile["calorie_giornaliere"],
-            "message": "Piano generato con successo!"
-        }
+        logger.error(f"[NUTRITION] Tutti i tentativi falliti: {last_error}")
+        raise HTTPException(status_code=500, detail="Generazione del piano fallita dopo 3 tentativi. Riprova tra qualche minuto.")
         
     except HTTPException:
         raise
@@ -3892,6 +3906,26 @@ async def root():
 @api_router.head("/health")
 async def health_check():
     return {"status": "healthy", "service": "DanoFitness23 API"}
+
+@api_router.get("/test-llm")
+async def test_llm_connection():
+    """Test di connessione al servizio AI"""
+    try:
+        llm_key = os.environ.get("EMERGENT_LLM_KEY")
+        if not llm_key:
+            return {"status": "error", "detail": "EMERGENT_LLM_KEY non configurata"}
+        
+        chat = LlmChat(
+            api_key=llm_key,
+            session_id="test-connection",
+            system_message="Rispondi solo OK"
+        )
+        chat.with_model("openai", "gpt-4.1")
+        msg = UserMessage(text="Dimmi solo OK")
+        response = await chat.send_message(msg)
+        return {"status": "ok", "response": response[:50]}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}
 
 
 # ==================== LOTTERIA PREMI ====================
