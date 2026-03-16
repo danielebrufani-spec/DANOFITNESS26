@@ -182,6 +182,24 @@ export default function AlimentazioneScreen() {
     }, 3000);
   };
 
+  const handleResetPlan = async () => {
+    const conferma = typeof window !== 'undefined'
+      ? window.confirm('Sei sicuro di voler azzerare il piano? Potrai rigenerarlo con nuove indicazioni (verrà consumato un credito).')
+      : true;
+    if (!conferma) return;
+    
+    try {
+      await apiService.resetMealPlan();
+      setPlan(null);
+      if (typeof window !== 'undefined') {
+        window.alert('Piano azzerato! Ora puoi modificare il profilo e rigenerare.');
+      }
+    } catch (e: any) {
+      const msg = e.response?.data?.detail || 'Errore durante l\'azzeramento';
+      if (typeof window !== 'undefined') window.alert('Errore: ' + msg);
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -385,6 +403,15 @@ export default function AlimentazioneScreen() {
               <Text style={styles.planTitle}>Il Tuo Piano — {plan.mese || ''}</Text>
             </View>
             <Text style={styles.planContent}>{plan.piano}</Text>
+            
+            <TouchableOpacity 
+              style={styles.resetButton} 
+              onPress={handleResetPlan}
+              data-testid="reset-plan-button"
+            >
+              <Ionicons name="refresh-outline" size={18} color="#FF6B6B" />
+              <Text style={styles.resetButtonText}>Azzera e Rigenera Piano</Text>
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
@@ -460,4 +487,6 @@ const styles = StyleSheet.create({
   planHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
   planTitle: { fontSize: 17, fontWeight: 'bold', color: COLORS.text },
   planContent: { fontSize: 14, color: COLORS.textSecondary, lineHeight: 22 },
+  resetButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 20, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: '#FF6B6B40', backgroundColor: '#FF6B6B10' },
+  resetButtonText: { fontSize: 14, fontWeight: '600', color: '#FF6B6B' },
 });

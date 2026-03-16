@@ -2763,6 +2763,22 @@ async def get_my_plan(current_user: dict = Depends(get_current_user)):
     }
 
 
+@api_router.delete("/nutrition/reset-plan")
+async def reset_meal_plan(current_user: dict = Depends(get_current_user)):
+    """Azzera il piano alimentare corrente per poterlo rigenerare"""
+    user_id = str(current_user["_id"])
+    now = now_rome()
+    mese_corrente = now.strftime("%Y-%m")
+    
+    result = await db.meal_plans.delete_one({"user_id": user_id, "mese": mese_corrente})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Nessun piano da azzerare per questo mese")
+    
+    return {"message": "Piano azzerato! Ora puoi rigenerarlo con nuove indicazioni."}
+
+
+
 @api_router.get("/admin/nutrition/plans")
 async def get_all_nutrition_plans(admin_user: dict = Depends(get_admin_user)):
     """Admin: vedi tutti i piani generati"""
