@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://diobestia.onrender.com';
 
@@ -15,6 +14,15 @@ interface User {
   push_token?: string;
   profile_image?: string;
   must_reset_password?: boolean;
+  archived?: boolean;
+}
+
+interface RegisterData {
+  email: string;
+  password: string;
+  nome: string;
+  cognome: string;
+  telefono?: string;
 }
 
 interface AuthContextType {
@@ -31,22 +39,11 @@ interface AuthContextType {
   clearMustResetPassword: () => void;
 }
 
-interface RegisterData {
-  email: string;
-  password: string;
-  nome: string;
-  cognome: string;
-  telefono?: string;
-  soprannome?: string;
-}
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within AuthProvider');
   return context;
 };
 
@@ -71,15 +68,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(parsedUser);
         setMustResetPassword(parsedUser.must_reset_password || false);
         
-        // Verify token is still valid
         try {
-          const response = await axios.get(`${API_URL}/api/auth/me`, {
+          const resp = await fetch(`${API_URL}/api/auth/me`, {
             headers: { Authorization: `Bearer ${storedToken}` }
           });
-          setUser(response.data);
-          setMustResetPassword(response.data.must_reset_password || false);
+          if (resp.ok) {
+            const data = await resp.json();
+            setUser(data);
+            setMustResetPassword(data.must_reset_password || false);
+          } else {
+            await AsyncStorage.multiRemove(['token', 'user']);
+            setToken(null);
+            setUser(null);
+            setMustResetPassword(false);
+          }
         } catch (error) {
-          // Token invalid, clear storage
           await AsyncStorage.multiRemove(['token', 'user']);
           setToken(null);
           setUser(null);
@@ -94,42 +97,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const login = async (email: string, password: string) => {
-    try {
-      const response = await axios.post(`${API_URL}/api/auth/login`, {
-        email,
-        password
-      });
-      
-      const { token: newToken, user: userData } = response.data;
-      
-      await AsyncStorage.setItem('token', newToken);
-      await AsyncStorage.setItem('user', JSON.stringify(userData));
-      
-      setToken(newToken);
-      setUser(userData);
-      setMustResetPassword(userData.must_reset_password || false);
-    } catch (error: any) {
-      const message = error.response?.data?.detail || 'Errore durante il login';
-      throw new Error(message);
+    const resp = await fetch(`${API_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) {
+      throw new Error(data.detail || 'Errore durante il login');
     }
+    const { token: newToken, user: userData } = data;
+    await AsyncStorage.setItem('token', newToken);
+    await AsyncStorage.setItem('user', JSON.stringify(userData));
+    setToken(newToken);
+    setUser(userData);
+    setMustResetPassword(userData.must_reset_password || false);
   };
 
-  const register = async (data: RegisterData) => {
-    try {
-      const response = await axios.post(`${API_URL}/api/auth/register`, data);
-      
-      const { token: newToken, user: userData } = response.data;
-      
-      await AsyncStorage.setItem('token', newToken);
-      await AsyncStorage.setItem('user', JSON.stringify(userData));
-      
-      setToken(newToken);
-      setUser(userData);
-      setMustResetPassword(false);
-    } catch (error: any) {
-      const message = error.response?.data?.detail || 'Errore durante la registrazione';
-      throw new Error(message);
+  const register = async (regData: RegisterData) => {
+    const resp = await fetch(`${API_URL}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(regData),
+    });
+    const data = await resp.json();
+    if (!resp.ok) {
+      throw new Error(data.detail || 'Errore durante la registrazione');
     }
+    const { token: newToken, user: userData } = data;
+    await AsyncStorage.setItem('token', newToken);
+    await AsyncStorage.setItem('user', JSON.stringify(userData));
+    setToken(newToken);
+    setUser(userData);
+    setMustResetPassword(false);
   };
 
   const logout = async () => {
@@ -142,13 +142,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const refreshUser = async () => {
     try {
       if (token) {
-        const response = await axios.get(`${API_URL}/api/auth/me`, {
+        const resp = await fetch(`${API_URL}/api/auth/me`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        const userData = response.data;
-        setUser(userData);
-        setMustResetPassword(userData.must_reset_password || false);
-        await AsyncStorage.setItem('user', JSON.stringify(userData));
+        if (resp.ok) {
+          const userData = await resp.json();
+          setUser(userData);
+          setMustResetPassword(userData.must_reset_password || false);
+          await AsyncStorage.setItem('user', JSON.stringify(userData));
+        }
       }
     } catch (error) {
       console.error('Error refreshing user:', error);
