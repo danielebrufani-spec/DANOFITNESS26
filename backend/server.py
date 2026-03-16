@@ -297,9 +297,28 @@ def calculate_expiry_date(tipo: SubscriptionType, start_date: datetime) -> datet
         # Validità annuale per abbonamenti a lezioni
         return start_date + timedelta(days=365)
     elif tipo == SubscriptionType.MENSILE:
-        return start_date + timedelta(days=30)
+        # Stesso giorno del mese successivo (es. 16/3 -> 16/4)
+        month = start_date.month + 1
+        year = start_date.year
+        if month > 12:
+            month = 1
+            year += 1
+        # Gestisci mesi con meno giorni (es. 31 gennaio -> 28 febbraio)
+        import calendar
+        max_day = calendar.monthrange(year, month)[1]
+        day = min(start_date.day, max_day)
+        return start_date.replace(year=year, month=month, day=day)
     elif tipo == SubscriptionType.TRIMESTRALE:
-        return start_date + timedelta(days=90)
+        # Stesso giorno, 3 mesi dopo (es. 16/3 -> 16/6)
+        month = start_date.month + 3
+        year = start_date.year
+        while month > 12:
+            month -= 12
+            year += 1
+        import calendar
+        max_day = calendar.monthrange(year, month)[1]
+        day = min(start_date.day, max_day)
+        return start_date.replace(year=year, month=month, day=day)
     return start_date
 
 def get_initial_lessons(tipo: SubscriptionType) -> Optional[int]:
