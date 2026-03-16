@@ -403,17 +403,6 @@ export default function AlimentazioneScreen() {
               <Text style={styles.planTitle}>Il Tuo Piano — {plan.mese || ''}</Text>
             </View>
             <Text style={styles.planContent}>{plan.piano}</Text>
-            
-            {user?.role === 'admin' && (
-              <TouchableOpacity 
-                style={styles.resetButton} 
-                onPress={handleResetPlan}
-                data-testid="reset-plan-button"
-              >
-                <Ionicons name="refresh-outline" size={18} color="#FF6B6B" />
-                <Text style={styles.resetButtonText}>Azzera e Rigenera Piano</Text>
-              </TouchableOpacity>
-            )}
           </View>
         )}
       </ScrollView>

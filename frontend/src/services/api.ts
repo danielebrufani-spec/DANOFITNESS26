@@ -316,6 +316,7 @@ export const apiService = {
   saveNutritionProfile: (data: any) => api.post<any>('/nutrition/profile', data),
   generateMealPlan: () => api.post<any>('/nutrition/generate-plan'),
   resetMealPlan: () => api.delete<any>('/nutrition/reset-plan'),
+  adminResetUserPlan: (userId: string) => api.delete<any>(`/admin/nutrition/reset-plan/${userId}`),
   getAdminNutritionPlans: () => api.get<any>('/admin/nutrition/plans'),
   getAdminUserPlan: (userId: string) => api.get<any>(`/admin/nutrition/plan/${userId}`),
 };

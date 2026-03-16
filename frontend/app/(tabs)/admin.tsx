@@ -1157,6 +1157,26 @@ export default function AdminScreen() {
                         </Text>
                       )}
                     </View>
+                    <TouchableOpacity
+                      data-testid={`reset-plan-${plan.user_id}`}
+                      style={{ padding: 8, marginRight: 4 }}
+                      onPress={async (e) => {
+                        e.stopPropagation();
+                        const ok = typeof window !== 'undefined'
+                          ? window.confirm(`Azzerare il piano di ${plan.user_nome} ${plan.user_cognome}? Potrà rigenerarlo.`)
+                          : true;
+                        if (!ok) return;
+                        try {
+                          await apiService.adminResetUserPlan(plan.user_id);
+                          if (typeof window !== 'undefined') window.alert('Piano azzerato!');
+                          loadData();
+                        } catch (err: any) {
+                          if (typeof window !== 'undefined') window.alert('Errore: ' + (err.response?.data?.detail || 'Impossibile azzerare'));
+                        }
+                      }}
+                    >
+                      <Ionicons name="trash-outline" size={20} color="#FF6B6B" />
+                    </TouchableOpacity>
                     <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
                   </View>
                 </TouchableOpacity>
@@ -1204,6 +1224,32 @@ export default function AdminScreen() {
                       {/* Piano completo */}
                       {viewingPlan.plan?.piano && (
                         <Text style={styles.nutritionPlanText}>{viewingPlan.plan.piano}</Text>
+                      )}
+                      
+                      {/* Pulsante Azzera */}
+                      {viewingPlanUserId && (
+                        <TouchableOpacity
+                          data-testid="admin-reset-plan-modal"
+                          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 16, marginBottom: 16, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: '#FF6B6B40', backgroundColor: '#FF6B6B10' }}
+                          onPress={async () => {
+                            const ok = typeof window !== 'undefined'
+                              ? window.confirm('Azzerare questo piano? Il cliente potrà rigenerarlo.')
+                              : true;
+                            if (!ok) return;
+                            try {
+                              await apiService.adminResetUserPlan(viewingPlanUserId);
+                              if (typeof window !== 'undefined') window.alert('Piano azzerato!');
+                              setViewingPlan(null);
+                              setViewingPlanUserId(null);
+                              loadData();
+                            } catch (err: any) {
+                              if (typeof window !== 'undefined') window.alert('Errore: ' + (err.response?.data?.detail || 'Impossibile azzerare'));
+                            }
+                          }}
+                        >
+                          <Ionicons name="trash-outline" size={18} color="#FF6B6B" />
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: '#FF6B6B' }}>Azzera Piano del Cliente</Text>
+                        </TouchableOpacity>
                       )}
                     </ScrollView>
                   ) : null}
