@@ -2823,7 +2823,7 @@ async def get_all_nutrition_plans(admin_user: dict = Depends(get_admin_user)):
     if user_ids:
         profiles = await db.nutrition_profiles.find(
             {"user_id": {"$in": user_ids}},
-            {"_id": 0, "user_id": 1, "obiettivo": 1, "calorie_giornaliere": 1, "peso": 1}
+            {"_id": 0}
         ).to_list(len(user_ids))
         profiles_cache = {p["user_id"]: p for p in profiles}
     
@@ -4898,7 +4898,7 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:8081",
         "http://localhost:19006",
-        "https://production-restore-8.preview.emergentagent.com",
+        "https://plan-manager-lite.preview.emergentagent.com",
     ],
     allow_methods=["*"],
     allow_headers=["*"],

@@ -84,6 +84,7 @@ export default function AdminScreen() {
   const [userSearchQuery, setUserSearchQuery] = useState<string>('');
   const [subSearchQuery, setSubSearchQuery] = useState<string>('');
   const [subscriptionUserSearch, setSubscriptionUserSearch] = useState<string>('');
+  const [nutritionSearch, setNutritionSearch] = useState<string>('');
   
   // Add subscription modal
   const [showAddSubscription, setShowAddSubscription] = useState(false);
@@ -1114,148 +1115,142 @@ export default function AdminScreen() {
               </View>
             )}
 
-            {/* Lista piani */}
-            <Text style={styles.sectionTitle}>
-              Piani Generati Questo Mese ({nutritionData?.plans?.length || 0})
-            </Text>
-            
-            {(!nutritionData?.plans || nutritionData.plans.length === 0) ? (
-              <View style={styles.emptyNutrition}>
-                <Ionicons name="restaurant-outline" size={48} color={COLORS.textSecondary} />
-                <Text style={styles.emptyNutritionText}>Nessun piano generato questo mese</Text>
-              </View>
-            ) : (
-              nutritionData.plans.map((plan: any, idx: number) => (
-                <TouchableOpacity
-                  key={idx}
-                  style={styles.nutritionPlanCard}
-                  onPress={async () => {
-                    setLoadingPlan(true);
-                    setViewingPlanUserId(plan.user_id);
-                    try {
-                      const res = await apiService.getAdminUserPlan(plan.user_id);
-                      setViewingPlan(res.data);
-                    } catch (e) {
-                      Alert.alert('Errore', 'Impossibile caricare il piano');
-                    } finally {
-                      setLoadingPlan(false);
-                    }
-                  }}
-                >
-                  <View style={styles.nutritionPlanInfo}>
-                    <View style={styles.nutritionPlanAvatar}>
-                      <Ionicons name="person" size={18} color="#FF6B6B" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.nutritionPlanUser}>{plan.user_nome} {plan.user_cognome}</Text>
-                      <Text style={styles.nutritionPlanDate}>
-                        Generato: {new Date(plan.generated_at || plan.created_at).toLocaleDateString('it-IT')}
-                      </Text>
-                      {plan.profile_at_generation && (
-                        <Text style={styles.nutritionPlanGoal}>
-                          Obiettivo: {plan.profile_at_generation.obiettivo || '—'} | {Math.round(plan.profile_at_generation.calorie_giornaliere || 0)} kcal
-                        </Text>
-                      )}
-                    </View>
-                    <TouchableOpacity
-                      data-testid={`reset-plan-${plan.user_id}`}
-                      style={{ padding: 8, marginRight: 4 }}
-                      onPress={async (e) => {
-                        e.stopPropagation();
-                        const ok = typeof window !== 'undefined'
-                          ? window.confirm(`Azzerare il piano di ${plan.user_nome} ${plan.user_cognome}? Potrà rigenerarlo.`)
-                          : true;
-                        if (!ok) return;
-                        try {
-                          await apiService.adminResetUserPlan(plan.user_id);
-                          if (typeof window !== 'undefined') window.alert('Piano azzerato!');
-                          loadData();
-                        } catch (err: any) {
-                          if (typeof window !== 'undefined') window.alert('Errore: ' + (err.response?.data?.detail || 'Impossibile azzerare'));
-                        }
-                      }}
-                    >
-                      <Ionicons name="trash-outline" size={20} color="#FF6B6B" />
-                    </TouchableOpacity>
-                    <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-                  </View>
+            {/* Barra di ricerca */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card, borderRadius: 12, paddingHorizontal: 14, marginBottom: 16, borderWidth: 1, borderColor: COLORS.border }}>
+              <Ionicons name="search" size={18} color={COLORS.textSecondary} />
+              <TextInput
+                data-testid="search-nutrition-plans"
+                style={{ flex: 1, padding: 12, color: COLORS.text, fontSize: 14 }}
+                placeholder="Cerca cliente per nome..."
+                placeholderTextColor={COLORS.textSecondary}
+                value={nutritionSearch}
+                onChangeText={setNutritionSearch}
+              />
+              {nutritionSearch ? (
+                <TouchableOpacity onPress={() => setNutritionSearch('')}>
+                  <Ionicons name="close-circle" size={18} color={COLORS.textSecondary} />
                 </TouchableOpacity>
-              ))
-            )}
+              ) : null}
+            </View>
 
-            {/* Modal Visualizza Piano */}
-            <Modal
-              visible={viewingPlan !== null}
-              animationType="slide"
-              transparent={true}
-              onRequestClose={() => { setViewingPlan(null); setViewingPlanUserId(null); }}
-            >
-              <View style={styles.modalOverlay}>
-                <View style={[styles.modalContent, { maxHeight: '85%' }]}>
-                  <View style={styles.modalHeader}>
-                    <Text style={styles.modalTitle}>Piano Alimentare</Text>
-                    <TouchableOpacity onPress={() => { setViewingPlan(null); setViewingPlanUserId(null); }}>
-                      <Ionicons name="close" size={24} color={COLORS.text} />
-                    </TouchableOpacity>
+            {/* Lista clienti con piano */}
+            {(() => {
+              const plans = nutritionData?.plans || [];
+              const filtered = nutritionSearch.trim()
+                ? plans.filter((p: any) => 
+                    `${p.user_nome} ${p.user_cognome}`.toLowerCase().includes(nutritionSearch.toLowerCase())
+                  )
+                : plans;
+              
+              if (filtered.length === 0) {
+                return (
+                  <View style={styles.emptyNutrition}>
+                    <Ionicons name="restaurant-outline" size={48} color={COLORS.textSecondary} />
+                    <Text style={styles.emptyNutritionText}>
+                      {nutritionSearch ? 'Nessun cliente trovato' : 'Nessun piano generato questo mese'}
+                    </Text>
                   </View>
-                  
-                  {loadingPlan ? (
-                    <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 20 }} />
-                  ) : viewingPlan ? (
-                    <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 500 }}>
-                      {/* Profilo utente */}
-                      {viewingPlan.profile && (
-                        <View style={styles.nutritionProfileCard}>
-                          <Text style={styles.nutritionProfileTitle}>Profilo</Text>
-                          <Text style={styles.nutritionProfileLine}>
-                            {viewingPlan.profile.sesso === 'M' ? 'Uomo' : 'Donna'}, {viewingPlan.profile.eta} anni, {viewingPlan.profile.peso}kg, {viewingPlan.profile.altezza}cm
-                          </Text>
-                          <Text style={styles.nutritionProfileLine}>
-                            Obiettivo: {viewingPlan.profile.obiettivo} | {Math.round(viewingPlan.profile.calorie_giornaliere)} kcal/giorno
-                          </Text>
-                          {viewingPlan.profile.intolleranze?.length > 0 && (
-                            <Text style={styles.nutritionProfileLine}>
-                              Intolleranze: {viewingPlan.profile.intolleranze.join(', ')}
-                            </Text>
-                          )}
+                );
+              }
+              
+              return filtered.map((plan: any, idx: number) => {
+                const prof = plan.profile_at_generation || {};
+                return (
+                  <View key={idx} data-testid={`nutrition-plan-card-${idx}`} style={styles.nutritionPlanCard}>
+                    {/* Header: Nome + Reset */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                        <View style={styles.nutritionPlanAvatar}>
+                          <Ionicons name="person" size={18} color="#FF6B6B" />
                         </View>
-                      )}
-                      
-                      {/* Piano completo */}
-                      {viewingPlan.plan?.piano && (
-                        <Text style={styles.nutritionPlanText}>{viewingPlan.plan.piano}</Text>
-                      )}
-                      
-                      {/* Pulsante Azzera */}
-                      {viewingPlanUserId && (
-                        <TouchableOpacity
-                          data-testid="admin-reset-plan-modal"
-                          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 16, marginBottom: 16, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: '#FF6B6B40', backgroundColor: '#FF6B6B10' }}
-                          onPress={async () => {
-                            const ok = typeof window !== 'undefined'
-                              ? window.confirm('Azzerare questo piano? Il cliente potrà rigenerarlo.')
-                              : true;
-                            if (!ok) return;
-                            try {
-                              await apiService.adminResetUserPlan(viewingPlanUserId);
-                              if (typeof window !== 'undefined') window.alert('Piano azzerato!');
-                              setViewingPlan(null);
-                              setViewingPlanUserId(null);
-                              loadData();
-                            } catch (err: any) {
-                              if (typeof window !== 'undefined') window.alert('Errore: ' + (err.response?.data?.detail || 'Impossibile azzerare'));
-                            }
-                          }}
-                        >
-                          <Ionicons name="trash-outline" size={18} color="#FF6B6B" />
-                          <Text style={{ fontSize: 14, fontWeight: '600', color: '#FF6B6B' }}>Azzera Piano del Cliente</Text>
-                        </TouchableOpacity>
-                      )}
-                    </ScrollView>
-                  ) : null}
-                </View>
-              </View>
-            </Modal>
+                        <View style={{ flex: 1, marginLeft: 10 }}>
+                          <Text style={styles.nutritionPlanUser}>{plan.user_nome} {plan.user_cognome}</Text>
+                          <Text style={styles.nutritionPlanDate}>
+                            Generato: {new Date(plan.generated_at || plan.created_at).toLocaleDateString('it-IT')}
+                          </Text>
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        data-testid={`reset-plan-${plan.user_id}`}
+                        style={{ padding: 10, borderRadius: 8, backgroundColor: '#FF6B6B10', borderWidth: 1, borderColor: '#FF6B6B30' }}
+                        onPress={async () => {
+                          const ok = typeof window !== 'undefined'
+                            ? window.confirm(`Azzerare il piano di ${plan.user_nome} ${plan.user_cognome}? Potrà rigenerarlo.`)
+                            : true;
+                          if (!ok) return;
+                          try {
+                            await apiService.adminResetUserPlan(plan.user_id);
+                            if (typeof window !== 'undefined') window.alert('Piano azzerato!');
+                            loadData();
+                          } catch (err: any) {
+                            if (typeof window !== 'undefined') window.alert('Errore: ' + (err.response?.data?.detail || 'Impossibile azzerare'));
+                          }
+                        }}
+                      >
+                        <Ionicons name="trash-outline" size={18} color="#FF6B6B" />
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Dati Profilo */}
+                    {(prof.sesso || prof.eta || prof.peso) ? (
+                      <>
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                          {prof.sesso ? (
+                            <View style={styles.profileChip}>
+                              <Ionicons name={prof.sesso === 'M' ? 'male' : 'female'} size={12} color={COLORS.primary} />
+                              <Text style={styles.profileChipText}>{prof.sesso === 'M' ? 'Uomo' : 'Donna'}</Text>
+                            </View>
+                          ) : null}
+                          {prof.eta ? (
+                            <View style={styles.profileChip}>
+                              <Text style={styles.profileChipText}>{prof.eta} anni</Text>
+                            </View>
+                          ) : null}
+                          {prof.altezza ? (
+                            <View style={styles.profileChip}>
+                              <Text style={styles.profileChipText}>{prof.altezza} cm</Text>
+                            </View>
+                          ) : null}
+                          {prof.peso ? (
+                            <View style={styles.profileChip}>
+                              <Text style={styles.profileChipText}>{prof.peso} kg</Text>
+                            </View>
+                          ) : null}
+                        </View>
+
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                          <Ionicons name="flag" size={13} color="#FF6B6B" />
+                          <Text style={{ color: COLORS.text, fontSize: 13, fontWeight: '600', marginLeft: 5 }}>
+                            {prof.obiettivo || '—'}
+                          </Text>
+                          <Text style={{ color: COLORS.textSecondary, fontSize: 12, marginLeft: 8 }}>
+                            {Math.round(prof.calorie_giornaliere || 0)} kcal/giorno
+                          </Text>
+                        </View>
+
+                        {(prof.proteine_g || prof.carboidrati_g || prof.grassi_g) ? (
+                          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 6 }}>
+                            <Text style={{ fontSize: 11, color: '#ef4444', fontWeight: '600' }}>P: {Math.round(prof.proteine_g || 0)}g</Text>
+                            <Text style={{ fontSize: 11, color: '#f59e0b', fontWeight: '600' }}>C: {Math.round(prof.carboidrati_g || 0)}g</Text>
+                            <Text style={{ fontSize: 11, color: '#22c55e', fontWeight: '600' }}>G: {Math.round(prof.grassi_g || 0)}g</Text>
+                          </View>
+                        ) : null}
+
+                        {prof.intolleranze && prof.intolleranze.length > 0 ? (
+                          <Text style={{ fontSize: 11, color: '#f59e0b', marginTop: 2 }}>
+                            Intolleranze: {prof.intolleranze.join(', ')}
+                          </Text>
+                        ) : null}
+                      </>
+                    ) : (
+                      <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontStyle: 'italic' }}>
+                        Dati profilo non disponibili
+                      </Text>
+                    )}
+                  </View>
+                );
+              });
+            })()}
           </>
         )}
 
@@ -3087,6 +3082,20 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: COLORS.primary,
     marginTop: 2,
+  },
+  profileChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.cardLight,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    gap: 4,
+  },
+  profileChipText: {
+    fontSize: 11,
+    color: COLORS.text,
+    fontWeight: '500',
   },
   nutritionProfileCard: {
     backgroundColor: COLORS.cardLight,
