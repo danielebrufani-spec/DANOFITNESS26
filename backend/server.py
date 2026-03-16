@@ -2,6 +2,7 @@ from fastapi import FastAPI, APIRouter, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
@@ -15,13 +16,40 @@ from passlib.context import CryptContext
 import jwt
 from bson import ObjectId
 from enum import Enum
-# APScheduler removed to save memory on Render free tier
 import asyncio
-# pywebpush disabled to save memory - uncomment when needed
-# from pywebpush import webpush, WebPushException
 import json
 import random
+import time
 from emergentintegrations.llm.chat import LlmChat, UserMessage
+
+
+# ======================== IN-MEMORY CACHE ========================
+
+class SimpleCache:
+    """Cache in-memory con TTL per dati che cambiano raramente"""
+    def __init__(self):
+        self._store = {}
+
+    def get(self, key: str):
+        entry = self._store.get(key)
+        if entry and time.time() < entry["expires"]:
+            return entry["value"]
+        if entry:
+            del self._store[key]
+        return None
+
+    def set(self, key: str, value, ttl_seconds: int):
+        self._store[key] = {"value": value, "expires": time.time() + ttl_seconds}
+
+    def invalidate(self, key: str):
+        self._store.pop(key, None)
+
+    def invalidate_prefix(self, prefix: str):
+        keys_to_del = [k for k in self._store if k.startswith(prefix)]
+        for k in keys_to_del:
+            del self._store[k]
+
+cache = SimpleCache()
 
 # Fuso orario Roma
 ROME_TZ = ZoneInfo("Europe/Rome")
@@ -554,8 +582,13 @@ class BlockedDateCreate(BaseModel):
 async def get_blocked_dates(current_user: dict = Depends(get_current_user)):
     """Ritorna tutte le date bloccate future"""
     today = now_rome().strftime("%Y-%m-%d")
+    cached = cache.get(f"blocked_dates_{today}")
+    if cached is not None:
+        return cached
     blocked = await db.blocked_dates.find({"data": {"$gte": today}}).to_list(100)
-    return [{"data": b["data"], "motivo": b["motivo"]} for b in blocked]
+    result = [{"data": b["data"], "motivo": b["motivo"]} for b in blocked]
+    cache.set(f"blocked_dates_{today}", result, 60)
+    return result
 
 @api_router.post("/admin/block-date")
 async def block_date(blocked: BlockedDateCreate, admin_user: dict = Depends(get_admin_user)):
@@ -572,6 +605,9 @@ async def block_date(blocked: BlockedDateCreate, admin_user: dict = Depends(get_
         "created_by": str(admin_user["_id"])
     })
     
+    # Invalida cache date bloccate
+    cache.invalidate_prefix("blocked_dates_")
+    
     # Cancella eventuali prenotazioni esistenti per quella data
     result = await db.bookings.delete_many({"data_lezione": blocked.data})
     
@@ -587,15 +623,18 @@ async def unblock_date(data: str, admin_user: dict = Depends(get_admin_user)):
     result = await db.blocked_dates.delete_one({"data": data})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Data non trovata")
+    cache.invalidate_prefix("blocked_dates_")
     return {"message": f"Data {data} sbloccata"}
 
 # ======================== LESSONS ROUTES ========================
 
-@api_router.get("/lessons", response_model=List[LessonResponse])
-async def get_lessons(current_user: dict = Depends(get_current_user)):
-    # Initialize lessons if not exists
-    count = await db.lessons.count_documents({})
-    if count == 0:
+async def get_cached_lessons():
+    """Recupera lezioni dalla cache o dal DB (TTL 5 minuti)"""
+    cached = cache.get("all_lessons")
+    if cached is not None:
+        return cached
+    lessons = await db.lessons.find().to_list(100)
+    if not lessons:
         lessons_to_insert = []
         for lesson in SCHEDULE:
             lessons_to_insert.append({
@@ -606,8 +645,13 @@ async def get_lessons(current_user: dict = Depends(get_current_user)):
                 "coach": lesson.get("coach", "Daniele")
             })
         await db.lessons.insert_many(lessons_to_insert)
-    
-    lessons = await db.lessons.find().to_list(100)
+        lessons = await db.lessons.find().to_list(100)
+    cache.set("all_lessons", lessons, 300)
+    return lessons
+
+@api_router.get("/lessons", response_model=List[LessonResponse])
+async def get_lessons(current_user: dict = Depends(get_current_user)):
+    lessons = await get_cached_lessons()
     return [
         LessonResponse(
             id=str(lesson["_id"]),
@@ -621,7 +665,8 @@ async def get_lessons(current_user: dict = Depends(get_current_user)):
 
 @api_router.get("/lessons/day/{giorno}", response_model=List[LessonResponse])
 async def get_lessons_by_day(giorno: str, current_user: dict = Depends(get_current_user)):
-    lessons = await db.lessons.find({"giorno": giorno.lower()}).to_list(100)
+    all_lessons = await get_cached_lessons()
+    lessons = [l for l in all_lessons if l["giorno"] == giorno.lower()]
     return [
         LessonResponse(
             id=str(lesson["_id"]),
@@ -952,7 +997,7 @@ async def update_subscription(subscription_id: str, data: SubscriptionUpdate, ad
     
     # Get user info
     try:
-        user = await db.users.find_one({"_id": ObjectId(updated_sub["user_id"])})
+        user = await db.users.find_one({"_id": ObjectId(updated_sub["user_id"])}, {"nome": 1, "cognome": 1})
     except:
         user = None
     
@@ -1165,10 +1210,8 @@ async def get_my_bookings(current_user: dict = Depends(get_current_user)):
     lessons_cache = {}
     if lesson_ids_to_fetch:
         try:
-            lessons = await db.lessons.find(
-                {"_id": {"$in": [ObjectId(lid) for lid in set(lesson_ids_to_fetch)]}}
-            ).to_list(len(set(lesson_ids_to_fetch)))
-            lessons_cache = {str(l["_id"]): l for l in lessons}
+            all_lessons = await get_cached_lessons()
+            lessons_cache = {str(l["_id"]): l for l in all_lessons}
         except:
             pass
     
@@ -1246,16 +1289,6 @@ async def get_user_livello(current_user: dict = Depends(get_current_user)):
         d = start + timedelta(days=i)
         prev_week_dates.append(d.strftime("%Y-%m-%d"))
     
-    prev_bookings = await db.bookings.find({
-        "user_id": user_id,
-        "data_lezione": {"$in": prev_week_dates},
-        "lezione_scalata": True
-    }).to_list(100)
-    
-    # Conta OGNI allenamento fatto (anche più di uno al giorno)
-    allenamenti_prev = len(prev_bookings)
-    livello_info = get_livello_info(allenamenti_prev)
-    
     # === SETTIMANA CORRENTE (per barra progresso) ===
     curr_monday, curr_saturday = get_current_week_dates()
     curr_week_dates = []
@@ -1264,12 +1297,23 @@ async def get_user_livello(current_user: dict = Depends(get_current_user)):
         d = start_curr + timedelta(days=i)
         curr_week_dates.append(d.strftime("%Y-%m-%d"))
     
-    # Conta prenotazioni confermate (scalate) + prenotazioni future confermate
-    curr_bookings = await db.bookings.find({
-        "user_id": user_id,
-        "data_lezione": {"$in": curr_week_dates},
-        "confermata": True
-    }).to_list(100)
+    # PERFORMANCE FIX: Query parallele per le due settimane
+    prev_bookings, curr_bookings = await asyncio.gather(
+        db.bookings.find({
+            "user_id": user_id,
+            "data_lezione": {"$in": prev_week_dates},
+            "lezione_scalata": True
+        }).to_list(100),
+        db.bookings.find({
+            "user_id": user_id,
+            "data_lezione": {"$in": curr_week_dates},
+            "confermata": True
+        }).to_list(100)
+    )
+    
+    # Conta OGNI allenamento fatto (anche più di uno al giorno)
+    allenamenti_prev = len(prev_bookings)
+    livello_info = get_livello_info(allenamenti_prev)
     
     # Conta OGNI allenamento (anche più di uno al giorno)
     allenamenti_curr_fatti = len([b for b in curr_bookings if b.get("lezione_scalata")])
@@ -1591,10 +1635,8 @@ async def get_bookings_by_date(day_date: str, admin_user: dict = Depends(get_adm
     
     lessons_cache = {}
     if lesson_ids:
-        lessons = await db.lessons.find(
-            {"_id": {"$in": [ObjectId(lid) for lid in lesson_ids]}}
-        ).to_list(len(lesson_ids))
-        lessons_cache = {str(l["_id"]): l for l in lessons}
+        all_lessons = await get_cached_lessons()
+        lessons_cache = {str(l["_id"]): l for l in all_lessons}
     
     result = []
     for booking in bookings:
@@ -1671,7 +1713,7 @@ async def get_archived_users(admin_user: dict = Depends(get_admin_user)):
 async def archive_user(user_id: str, admin_user: dict = Depends(get_admin_user)):
     """Archivia un cliente (lo mette in stato non attivo senza cancellarlo)"""
     try:
-        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        user = await db.users.find_one({"_id": ObjectId(user_id)}, {"role": 1, "nome": 1, "cognome": 1})
     except:
         raise HTTPException(status_code=404, detail="Utente non trovato")
     
@@ -1695,7 +1737,7 @@ async def archive_user(user_id: str, admin_user: dict = Depends(get_admin_user))
 async def restore_user(user_id: str, admin_user: dict = Depends(get_admin_user)):
     """Riattiva un cliente archiviato"""
     try:
-        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        user = await db.users.find_one({"_id": ObjectId(user_id)}, {"nome": 1, "cognome": 1})
     except:
         raise HTTPException(status_code=404, detail="Utente non trovato")
     
@@ -1726,10 +1768,8 @@ async def get_daily_stats(stats_date: str, admin_user: dict = Depends(get_admin_
     
     lessons_cache = {}
     if lesson_ids_to_fetch:
-        lessons = await db.lessons.find(
-            {"_id": {"$in": [ObjectId(lid) for lid in set(lesson_ids_to_fetch)]}}
-        ).to_list(len(set(lesson_ids_to_fetch)))
-        lessons_cache = {str(l["_id"]): l for l in lessons}
+        all_lessons = await get_cached_lessons()
+        lessons_cache = {str(l["_id"]): l for l in all_lessons}
     
     # Batch load all subscriptions for these users
     pacchetto_users = set()
@@ -2050,18 +2090,18 @@ async def get_weekly_stats(admin_user: dict = Depends(get_admin_user)):
         d = monday + timedelta(days=i)
         week_dates.append(d.strftime("%Y-%m-%d"))
     
-    # Count total confirmed bookings (presenze)
-    presenze = await db.bookings.count_documents({
-        "data_lezione": {"$in": week_dates},
-        "confermata": True
-    })
-    
-    # Count lessons that have been actually deducted (lezione_scalata = true)
-    lezioni_scalate = await db.bookings.count_documents({
-        "data_lezione": {"$in": week_dates},
-        "confermata": True,
-        "lezione_scalata": True
-    })
+    # PERFORMANCE FIX: Parallel count queries
+    presenze, lezioni_scalate = await asyncio.gather(
+        db.bookings.count_documents({
+            "data_lezione": {"$in": week_dates},
+            "confermata": True
+        }),
+        db.bookings.count_documents({
+            "data_lezione": {"$in": week_dates},
+            "confermata": True,
+            "lezione_scalata": True
+        })
+    )
     
     # Format dates for display (DD/MM)
     monday_display = monday.strftime("%d/%m")
@@ -2336,8 +2376,8 @@ async def get_weekly_bookings(admin_user: dict = Depends(get_admin_user)):
         d = monday + timedelta(days=i)
         week_dates.append(d.strftime("%Y-%m-%d"))
     
-    # Get all lessons
-    lessons = await db.lessons.find().to_list(100)
+    # Get all lessons (from cache)
+    lessons = await get_cached_lessons()
     
     # Get all bookings for this week
     all_bookings = await db.bookings.find({
@@ -2412,45 +2452,38 @@ async def get_weekly_bookings(admin_user: dict = Depends(get_admin_user)):
 # Dashboard stats for admin
 @api_router.get("/admin/dashboard")
 async def get_admin_dashboard(current_user: dict = Depends(get_current_user)):
-    """Get dashboard statistics for admin - OPTIMIZED"""
+    """Get dashboard statistics for admin - OPTIMIZED with parallel queries"""
     if current_user.get("role") != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Solo admin")
     
     today = today_rome()
     now = now_rome()
     
-    # Stats - Conta utenti non archiviati
-    total_users = await db.users.count_documents({"role": "client", "archived": {"$ne": True}})
+    # PERFORMANCE FIX: Esegui query indipendenti in parallelo
+    total_users_task = db.users.count_documents({"role": "client", "archived": {"$ne": True}})
+    bookings_today_task = db.bookings.count_documents({"data_lezione": today, "confermata": True})
+    all_active_subs_task = db.subscriptions.find({"attivo": True}, {"user_id": 1, "data_scadenza": 1, "lezioni_rimanenti": 1}).to_list(1000)
+    archived_users_task = db.users.find({"archived": True}, {"_id": 1}).to_list(1000)
     
-    # Carica TUTTI gli utenti archiviati in un set per lookup veloce
-    archived_users = await db.users.find({"archived": True}, {"_id": 1}).to_list(1000)
+    total_users, bookings_today, all_active_subs, archived_users = await asyncio.gather(
+        total_users_task, bookings_today_task, all_active_subs_task, archived_users_task
+    )
+    
     archived_user_ids = set(str(u["_id"]) for u in archived_users)
     
-    # Conta abbonamenti REALMENTE attivi (non scaduti per data e non esauriti per lezioni)
-    all_active_subs = await db.subscriptions.find({"attivo": True}).to_list(1000)
     active_subscriptions = 0
-    
     for sub in all_active_subs:
-        # Skip se utente archiviato (lookup O(1) nel set)
         if sub["user_id"] in archived_user_ids:
             continue
-        
-        # Verifica scadenza per data
         data_scadenza = sub.get("data_scadenza")
         if isinstance(data_scadenza, str):
             from dateutil import parser
             data_scadenza = parser.parse(data_scadenza).replace(tzinfo=ROME_TZ)
-        
         is_expired = data_scadenza < now if data_scadenza else False
-        
-        # Verifica lezioni esaurite (per abbonamenti a pacchetto)
         if sub.get("lezioni_rimanenti") is not None and sub["lezioni_rimanenti"] <= 0:
             is_expired = True
-        
         if not is_expired:
             active_subscriptions += 1
-    
-    bookings_today = await db.bookings.count_documents({"data_lezione": today, "confermata": True})
     
     return {
         "stats": {
@@ -2674,18 +2707,18 @@ Rispondi con un testo ben formattato con sezioni chiare per ogni settimana."""
 async def get_my_plan(current_user: dict = Depends(get_current_user)):
     """Recupera profilo e piano corrente dell'utente"""
     user_id = str(current_user["_id"])
-    
-    profile = await db.nutrition_profiles.find_one({"user_id": user_id}, {"_id": 0})
-    
     now = now_rome()
     mese_corrente = now.strftime("%Y-%m")
-    plan = await db.meal_plans.find_one(
-        {"user_id": user_id, "mese": mese_corrente},
-        {"_id": 0, "user_nome": 0, "user_cognome": 0}
-    )
     
-    # Verifica abbonamento
-    has_sub = await check_user_has_active_subscription(user_id)
+    # PERFORMANCE FIX: Parallel DB queries
+    profile, plan, has_sub = await asyncio.gather(
+        db.nutrition_profiles.find_one({"user_id": user_id}, {"_id": 0}),
+        db.meal_plans.find_one(
+            {"user_id": user_id, "mese": mese_corrente},
+            {"_id": 0, "user_nome": 0, "user_cognome": 0}
+        ),
+        check_user_has_active_subscription(user_id)
+    )
     
     return {
         "has_subscription": has_sub,
@@ -2748,8 +2781,8 @@ async def process_lessons_after_30min():
     
     logger.info(f"[SCHEDULER] Checking lessons that started around {time_30min_ago}")
     
-    # Find all lessons for today
-    lessons = await db.lessons.find({}).to_list(100)
+    # Find all lessons for today (from cache)
+    lessons = await get_cached_lessons()
     
     for lesson in lessons:
         lesson_time = lesson["orario"]
@@ -2932,13 +2965,19 @@ async def update_user(user_id: str, data: UserUpdate, admin_user: dict = Depends
 async def get_all_notifications(admin_user: dict = Depends(get_admin_user)):
     notifications = await db.notifications.find().sort("created_at", -1).to_list(100)
     
+    # PERFORMANCE FIX: Batch load all users at once (era N+1 query)
+    user_ids = list(set(n["user_id"] for n in notifications))
+    users_cache = {}
+    if user_ids:
+        users = await db.users.find(
+            {"_id": {"$in": [ObjectId(uid) for uid in user_ids]}},
+            {"nome": 1, "cognome": 1}
+        ).to_list(len(user_ids))
+        users_cache = {str(u["_id"]): u for u in users}
+    
     result = []
     for notif in notifications:
-        try:
-            user = await db.users.find_one({"_id": ObjectId(notif["user_id"])})
-        except:
-            user = None
-        
+        user = users_cache.get(notif["user_id"])
         result.append(NotificationResponse(
             id=str(notif["_id"]),
             user_id=notif["user_id"],
@@ -2956,7 +2995,7 @@ async def get_all_notifications(admin_user: dict = Depends(get_admin_user)):
 async def delete_user(user_id: str, admin_user: dict = Depends(get_admin_user)):
     """Delete a user and all their associated data (subscriptions, bookings)"""
     try:
-        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        user = await db.users.find_one({"_id": ObjectId(user_id)}, {"role": 1})
         if not user:
             raise HTTPException(status_code=404, detail="Utente non trovato")
         
@@ -2987,7 +3026,7 @@ async def delete_user(user_id: str, admin_user: dict = Depends(get_admin_user)):
 async def set_user_role(user_id: str, role: str, admin_user: dict = Depends(get_admin_user)):
     """Imposta il ruolo di un utente (admin only)"""
     try:
-        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        user = await db.users.find_one({"_id": ObjectId(user_id)}, {"role": 1})
         if not user:
             raise HTTPException(status_code=404, detail="Utente non trovato")
         
@@ -3054,7 +3093,7 @@ async def change_password(data: ChangePasswordRequest, current_user: dict = Depe
 async def admin_reset_password(user_id: str, data: ResetPasswordRequest, admin_user: dict = Depends(get_admin_user)):
     """Reset password di un utente (admin only) - richiede cambio al primo login"""
     try:
-        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        user = await db.users.find_one({"_id": ObjectId(user_id)}, {"role": 1, "email": 1})
         if not user:
             raise HTTPException(status_code=404, detail="Utente non trovato")
         
@@ -3117,14 +3156,12 @@ async def get_istruttore_lezioni(current_user: dict = Depends(get_current_user))
     # Genera date della settimana (lun-sab)
     week_dates = [(monday + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(6)]
     
-    # Query parallele per velocizzare
-    all_lessons, bookings = await asyncio.gather(
-        db.lessons.find({}, {"_id": 1, "giorno": 1, "orario": 1, "tipo_attivita": 1, "coach": 1}).to_list(100),
-        db.bookings.find(
-            {"data_lezione": {"$in": week_dates}, "confermata": True},
-            {"user_id": 1, "lesson_id": 1, "data_lezione": 1, "lezione_scalata": 1}
-        ).to_list(1000)
-    )
+    # Query parallele per velocizzare (lezioni dalla cache)
+    all_lessons = await get_cached_lessons()
+    bookings = await db.bookings.find(
+        {"data_lezione": {"$in": week_dates}, "confermata": True},
+        {"user_id": 1, "lesson_id": 1, "data_lezione": 1, "lezione_scalata": 1}
+    ).to_list(1000)
     
     # Carica solo gli utenti necessari (solo nome e soprannome)
     user_ids = list(set(b["user_id"] for b in bookings))
@@ -3833,8 +3870,6 @@ async def health_check():
 
 # ==================== LOTTERIA PREMI ====================
 
-import random
-
 # Utenti di test esclusi dalla lotteria (nome, cognome in minuscolo)
 UTENTI_TEST_ESCLUSI = [
     ("daniele", "brufani"),
@@ -3844,11 +3879,11 @@ async def check_user_has_active_subscription(user_id: str) -> bool:
     """Verifica se un singolo utente ha abbonamento attivo (per UI)"""
     now = now_rome()
     
-    # Cerca abbonamento attivo dell'utente
-    subscription = await db.subscriptions.find_one({
-        "user_id": user_id,
-        "attivo": True
-    })
+    # Cerca abbonamento attivo dell'utente (solo campi necessari)
+    subscription = await db.subscriptions.find_one(
+        {"user_id": user_id, "attivo": True},
+        {"data_scadenza": 1, "lezioni_rimanenti": 1}
+    )
     
     if not subscription:
         return False
@@ -3868,24 +3903,33 @@ async def get_users_with_active_subscription() -> set:
     # Ottieni tutti gli abbonamenti attivi
     subscriptions = await db.subscriptions.find({"attivo": True}).to_list(1000)
     
+    # Filtra abbonamenti non scaduti
+    candidate_user_ids = set()
     for sub in subscriptions:
         is_expired = sub["data_scadenza"] < now
-        # Per abbonamenti a pacchetto, controlla anche le lezioni rimanenti
         if sub.get("lezioni_rimanenti") is not None and sub["lezioni_rimanenti"] <= 0:
             is_expired = True
-        
         if not is_expired:
-            # Verifica se è un utente test da escludere
-            user = await db.users.find_one({"_id": ObjectId(sub["user_id"])})
-            if user:
-                nome = (user.get("nome") or "").lower().strip()
-                cognome = (user.get("cognome") or "").lower().strip()
-                is_test_user = (nome, cognome) in UTENTI_TEST_ESCLUSI
-                
-                if not is_test_user:
-                    active_user_ids.add(sub["user_id"])
-                else:
-                    logger.info(f"[LOTTERY] Utente test escluso: {user.get('nome')} {user.get('cognome')}")
+            candidate_user_ids.add(sub["user_id"])
+    
+    if not candidate_user_ids:
+        return active_user_ids
+    
+    # PERFORMANCE FIX: Batch load tutti gli utenti in una query sola (era N+1)
+    users = await db.users.find(
+        {"_id": {"$in": [ObjectId(uid) for uid in candidate_user_ids]}},
+        {"nome": 1, "cognome": 1}
+    ).to_list(len(candidate_user_ids))
+    
+    for user in users:
+        nome = (user.get("nome") or "").lower().strip()
+        cognome = (user.get("cognome") or "").lower().strip()
+        is_test_user = (nome, cognome) in UTENTI_TEST_ESCLUSI
+        
+        if not is_test_user:
+            active_user_ids.add(str(user["_id"]))
+        else:
+            logger.info(f"[LOTTERY] Utente test escluso: {user.get('nome')} {user.get('cognome')}")
     
     return active_user_ids
 
@@ -4045,25 +4089,24 @@ async def get_lottery_status(current_user: dict = Depends(get_current_user)):
     
     user_id = str(current_user["_id"])
     
-    # Biglietti da allenamenti
-    biglietti_allenamenti = await db.bookings.count_documents({
+    # PERFORMANCE FIX: Parallel queries per biglietti, ruota, abbonamento e vincitori
+    biglietti_task = db.bookings.count_documents({
         "user_id": user_id,
         "data_lezione": {"$gte": start_date, "$lt": end_date},
         "lezione_scalata": True
     })
+    wheel_task = db.wheel_tickets.find_one({"user_id": user_id, "mese": current_month})
+    sub_task = check_user_has_active_subscription(user_id)
+    winner_task = db.lottery_winners.find_one({"mese": current_month})
     
-    # Biglietti bonus dalla ruota della fortuna
-    wheel_doc = await db.wheel_tickets.find_one({"user_id": user_id, "mese": current_month})
+    biglietti_allenamenti, wheel_doc, ha_abbonamento_attivo, winner_data = await asyncio.gather(
+        biglietti_task, wheel_task, sub_task, winner_task
+    )
+    
     biglietti_ruota = wheel_doc.get("biglietti", 0) if wheel_doc else 0
     
     # Totale biglietti = allenamenti + bonus ruota
     biglietti = biglietti_allenamenti + biglietti_ruota
-    
-    # Verifica se l'utente ha abbonamento attivo (per mostrare avviso UI)
-    ha_abbonamento_attivo = await check_user_has_active_subscription(user_id)
-    
-    # Ottieni vincitori correnti (estratti questo mese, riferiti al mese scorso)
-    winner_data = await db.lottery_winners.find_one({"mese": current_month})
     
     # Calcola prossima estrazione (1° del prossimo mese alle 12:00)
     if now.month == 12:
@@ -4205,17 +4248,11 @@ async def get_quiz_today(current_user: dict = Depends(get_current_user)):
     user_id = str(current_user["_id"])
     today = now_rome().strftime("%Y-%m-%d")
     
-    # Controlla se ha già risposto oggi
-    existing_answer = await db.quiz_answers.find_one({
-        "user_id": user_id,
-        "data": today
-    })
-    
-    # Controlla se ha girato la ruota oggi
-    spin_today = await db.wheel_spins.find_one({
-        "user_id": user_id,
-        "data": today
-    })
+    # PERFORMANCE FIX: Query parallele
+    existing_answer, spin_today = await asyncio.gather(
+        db.quiz_answers.find_one({"user_id": user_id, "data": today}),
+        db.wheel_spins.find_one({"user_id": user_id, "data": today})
+    )
     
     if existing_answer:
         # Ha già risposto - mostra risultato
@@ -4644,11 +4681,11 @@ async def get_wheel_status(current_user: dict = Depends(get_current_user)):
     user_id = str(current_user["_id"])
     today = today_rome()
     
-    # Controlla se ha già girato oggi
-    spin_today = await db.wheel_spins.find_one({
-        "user_id": user_id,
-        "data": today
-    })
+    # PERFORMANCE FIX: Query parallele
+    spin_today, allenamento_oggi = await asyncio.gather(
+        db.wheel_spins.find_one({"user_id": user_id, "data": today}),
+        db.bookings.find_one({"user_id": user_id, "data_lezione": today, "lezione_scalata": True})
+    )
     
     if spin_today:
         return {
@@ -4657,13 +4694,6 @@ async def get_wheel_status(current_user: dict = Depends(get_current_user)):
             "last_result": spin_today.get("premio"),
             "message": "Hai già girato! Torna dopo il prossimo allenamento 🎰"
         }
-    
-    # Controlla se ha fatto almeno un allenamento oggi (confermato e scalato)
-    allenamento_oggi = await db.bookings.find_one({
-        "user_id": user_id,
-        "data_lezione": today,
-        "lezione_scalata": True
-    })
     
     if not allenamento_oggi:
         return {
@@ -4747,6 +4777,7 @@ async def get_wheel_prizes():
 # Include the router in the main app
 app.include_router(api_router)
 
+app.add_middleware(GZipMiddleware, minimum_size=500)
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
@@ -4762,14 +4793,23 @@ async def startup_event():
     # Creazione indici MongoDB per ottimizzare le query
     try:
         await db.users.create_index("email", unique=True)
+        await db.users.create_index("role")
+        await db.users.create_index("archived")
         await db.subscriptions.create_index([("user_id", 1), ("attivo", 1)])
         await db.subscriptions.create_index("data_scadenza")
+        await db.subscriptions.create_index([("attivo", 1), ("pagato", 1)])
         await db.bookings.create_index([("user_id", 1), ("data_lezione", 1)])
         await db.bookings.create_index([("lesson_id", 1), ("data_lezione", 1)])
         await db.bookings.create_index("data_lezione")
+        await db.bookings.create_index([("data_lezione", 1), ("confermata", 1), ("lezione_scalata", 1)])
         await db.lessons.create_index("giorno")
         await db.log_ingressi.create_index([("user_id", 1), ("data_lezione", 1)])
         await db.blocked_dates.create_index("data", unique=True)
+        await db.medals.create_index("user_id")
+        await db.wheel_spins.create_index([("user_id", 1), ("data", 1)])
+        await db.quiz_answers.create_index([("user_id", 1), ("date", 1)])
+        await db.meal_plans.create_index([("user_id", 1), ("mese", 1)])
+        await db.nutrition_profiles.create_index("user_id", unique=True)
         logger.info("[DB] MongoDB indexes created successfully")
     except Exception as e:
         logger.warning(f"[DB] Index creation warning: {e}")
