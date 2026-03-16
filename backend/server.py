@@ -2631,6 +2631,10 @@ async def generate_meal_plan(background_tasks: BackgroundTasks, current_user: di
     if existing_plan and existing_plan.get("status") == "generating":
         return {"status": "generating", "message": "Il piano è in fase di generazione... attendere circa 1 minuto."}
     
+    # Se c'era un errore, elimina il record per poter riprovare
+    if existing_plan and existing_plan.get("status") == "error":
+        await db.meal_plans.delete_one({"user_id": user_id, "mese": mese_corrente})
+    
     # Prepara il prompt per l'AI
     intolleranze_text = ", ".join(profile.get("intolleranze", [])) if profile.get("intolleranze") else "nessuna"
     esclusi_text = profile.get("alimenti_esclusi", "nessuno") or "nessuno"
@@ -2667,21 +2671,40 @@ Crea 2 settimane tipo (la 3a e 4a possono ruotare). Per ogni giorno: Colazione, 
     )
     
     # Lancia la generazione in background
-    async def generate_plan_background(uid, profile_data, mese, user_data):
+    async def generate_plan_background(uid, profile_data, mese):
         try:
-            from openai import AsyncOpenAI
+            import httpx
             llm_key = os.environ.get("EMERGENT_LLM_KEY")
-            client = AsyncOpenAI(api_key=llm_key, base_url="https://integrations.emergentagent.com/llm")
             
-            ai_response = await client.chat.completions.create(
-                model="gpt-4.1",
-                messages=[
-                    {"role": "system", "content": "Sei un nutrizionista sportivo esperto italiano. Crea piani alimentari dettagliati, personalizzati e basati sulla scienza della nutrizione. Rispondi sempre in italiano."},
-                    {"role": "user", "content": prompt}
-                ]
-            )
+            # Retry fino a 3 volte in caso di errore 502
+            response_text = None
+            for attempt in range(3):
+                try:
+                    async with httpx.AsyncClient(timeout=180.0) as client:
+                        resp = await client.post(
+                            "https://integrations.emergentagent.com/llm/chat/completions",
+                            headers={"Content-Type": "application/json", "Authorization": f"Bearer {llm_key}"},
+                            json={
+                                "model": "gpt-4.1",
+                                "messages": [
+                                    {"role": "system", "content": "Sei un nutrizionista sportivo esperto italiano. Crea piani alimentari dettagliati, personalizzati e basati sulla scienza della nutrizione. Rispondi sempre in italiano."},
+                                    {"role": "user", "content": prompt}
+                                ]
+                            }
+                        )
+                    
+                    if resp.status_code == 200:
+                        response_text = resp.json()["choices"][0]["message"]["content"]
+                        break
+                    else:
+                        logger.warning(f"[NUTRITION] Tentativo {attempt+1}/3 - Status {resp.status_code}")
+                        await asyncio.sleep(3)
+                except Exception as retry_err:
+                    logger.warning(f"[NUTRITION] Tentativo {attempt+1}/3 - Errore: {retry_err}")
+                    await asyncio.sleep(3)
             
-            response_text = ai_response.choices[0].message.content
+            if not response_text:
+                raise Exception("Generazione fallita dopo 3 tentativi")
             
             await db.meal_plans.update_one(
                 {"user_id": uid, "mese": mese},
@@ -2704,7 +2727,7 @@ Crea 2 settimane tipo (la 3a e 4a possono ruotare). Per ogni giorno: Colazione, 
             )
     
     # Avvia task in background con asyncio
-    asyncio.create_task(generate_plan_background(user_id, dict(profile), mese_corrente, dict(current_user)))
+    asyncio.create_task(generate_plan_background(user_id, dict(profile), mese_corrente))
     
     return {
         "status": "generating",
@@ -3899,19 +3922,23 @@ async def health_check():
 @api_router.get("/test-llm")
 async def test_llm_connection():
     """Test di connessione al servizio AI"""
+    import httpx
     try:
         llm_key = os.environ.get("EMERGENT_LLM_KEY")
         if not llm_key:
             return {"status": "error", "detail": "EMERGENT_LLM_KEY non configurata"}
         
-        from openai import AsyncOpenAI
-        client = AsyncOpenAI(api_key=llm_key, base_url="https://integrations.emergentagent.com/llm")
-        resp = await client.chat.completions.create(
-            model="gpt-4.1",
-            messages=[{"role": "user", "content": "Dimmi solo OK"}],
-            max_tokens=10
-        )
-        return {"status": "ok", "response": resp.choices[0].message.content}
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(
+                "https://integrations.emergentagent.com/llm/chat/completions",
+                headers={"Content-Type": "application/json", "Authorization": f"Bearer {llm_key}"},
+                json={"model": "gpt-4.1", "messages": [{"role": "user", "content": "Dimmi solo OK"}], "max_tokens": 10}
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                return {"status": "ok", "response": data["choices"][0]["message"]["content"]}
+            else:
+                return {"status": "error", "http_code": resp.status_code, "detail": resp.text[:300]}
     except Exception as e:
         return {"status": "error", "detail": str(e)}
 
