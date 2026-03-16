@@ -13,6 +13,7 @@ import uuid
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from passlib.context import CryptContext
+import bcrypt as _bcrypt_lib
 import jwt
 from bson import ObjectId
 from enum import Enum
@@ -83,9 +84,17 @@ VAPID_EMAIL = os.environ.get('VAPID_EMAIL', 'admin@danofitness.it')
 # Scheduler removed to save memory on Render free tier
 # scheduler = AsyncIOScheduler()
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing - direct bcrypt (compatible with all Python versions)
 security = HTTPBearer()
+
+def hash_password(password: str) -> str:
+    return _bcrypt_lib.hashpw(password.encode('utf-8'), _bcrypt_lib.gensalt()).decode('utf-8')
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    try:
+        return _bcrypt_lib.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    except Exception:
+        return False
 
 # Create the main app
 app = FastAPI(title="DanoFitness23 API")
@@ -313,12 +322,6 @@ class NutritionProfileResponse(BaseModel):
 
 
 # ======================== HELPER FUNCTIONS ========================
-
-def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
 
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()
