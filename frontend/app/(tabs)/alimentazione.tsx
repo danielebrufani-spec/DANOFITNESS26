@@ -88,7 +88,7 @@ export default function AlimentazioneScreen() {
 
   const handleSaveProfile = async () => {
     if (!eta || !peso || !altezza || !obiettivo) {
-      Alert.alert('Attenzione', 'Compila tutti i campi obbligatori');
+      if (typeof window !== 'undefined') window.alert('Compila tutti i campi obbligatori');
       return;
     }
     setSavingProfile(true);
@@ -100,34 +100,37 @@ export default function AlimentazioneScreen() {
       });
       setProfile(res.data);
       setShowForm(false);
-      Alert.alert('Profilo Salvato!', 'Ora puoi generare il tuo piano alimentare');
+      if (typeof window !== 'undefined') window.alert('Profilo Salvato! Ora puoi generare il tuo piano alimentare');
     } catch (e: any) {
-      Alert.alert('Errore', e.response?.data?.detail || 'Impossibile salvare');
+      const msg = e.response?.data?.detail || 'Impossibile salvare';
+      if (typeof window !== 'undefined') window.alert('Errore: ' + msg);
     } finally {
       setSavingProfile(false);
     }
   };
 
   const handleGeneratePlan = async () => {
-    Alert.alert(
-      'Genera Piano',
-      'Vuoi generare il piano alimentare per questo mese? Potrai generarne uno nuovo il prossimo mese.',
-      [
-        { text: 'Annulla', style: 'cancel' },
-        { text: 'Genera', onPress: async () => {
-          setGenerating(true);
-          try {
-            const res = await apiService.generateMealPlan();
-            setPlan(res.data);
-            Alert.alert('Piano Generato!', 'Il tuo piano alimentare mensile è pronto!');
-          } catch (e: any) {
-            Alert.alert('Errore', e.response?.data?.detail || 'Impossibile generare il piano');
-          } finally {
-            setGenerating(false);
-          }
-        }},
-      ]
-    );
+    const conferma = typeof window !== 'undefined' 
+      ? window.confirm('Vuoi generare il piano alimentare per questo mese? Potrai generarne uno nuovo il prossimo mese.')
+      : true;
+    
+    if (!conferma) return;
+    
+    setGenerating(true);
+    try {
+      const res = await apiService.generateMealPlan();
+      setPlan(res.data);
+      if (typeof window !== 'undefined') {
+        window.alert('Piano Generato! Il tuo piano alimentare mensile è pronto!');
+      }
+    } catch (e: any) {
+      const msg = e.response?.data?.detail || 'Impossibile generare il piano';
+      if (typeof window !== 'undefined') {
+        window.alert('Errore: ' + msg);
+      }
+    } finally {
+      setGenerating(false);
+    }
   };
 
   if (loading) {
@@ -199,7 +202,7 @@ export default function AlimentazioneScreen() {
         )}
 
         {/* FORM PROFILO */}
-        {(showForm || (profile && !plan)) && (
+        {showForm && (
           <View style={styles.formCard}>
             <Text style={styles.formTitle}>{profile ? 'Modifica Profilo' : 'Il Tuo Profilo'}</Text>
 
