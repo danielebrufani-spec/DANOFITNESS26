@@ -403,6 +403,63 @@ export default function AlimentazioneScreen() {
               <Text style={styles.planTitle}>Il Tuo Piano — {plan.mese || ''}</Text>
             </View>
             <Text style={styles.planContent}>{plan.piano}</Text>
+
+            {/* Pulsanti Copia & Stampa */}
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
+              <TouchableOpacity
+                data-testid="copy-plan-button"
+                style={styles.copyButton}
+                onPress={async () => {
+                  try {
+                    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                      await navigator.clipboard.writeText(plan.piano);
+                      if (Platform.OS === 'web') window.alert('Piano copiato negli appunti!');
+                      else Alert.alert('Copiato!', 'Piano copiato negli appunti');
+                    } else {
+                      // Fallback per dispositivi senza clipboard API
+                      const textArea = document.createElement('textarea');
+                      textArea.value = plan.piano;
+                      textArea.style.position = 'fixed';
+                      textArea.style.opacity = '0';
+                      document.body.appendChild(textArea);
+                      textArea.select();
+                      document.execCommand('copy');
+                      document.body.removeChild(textArea);
+                      if (Platform.OS === 'web') window.alert('Piano copiato negli appunti!');
+                      else Alert.alert('Copiato!', 'Piano copiato negli appunti');
+                    }
+                  } catch {
+                    if (Platform.OS === 'web') window.alert('Impossibile copiare. Seleziona il testo manualmente.');
+                    else Alert.alert('Errore', 'Impossibile copiare');
+                  }
+                }}
+              >
+                <Ionicons name="copy-outline" size={18} color="#000" />
+                <Text style={styles.copyButtonText}>Copia Piano</Text>
+              </TouchableOpacity>
+
+              {Platform.OS === 'web' && (
+                <TouchableOpacity
+                  data-testid="print-plan-button"
+                  style={[styles.copyButton, { backgroundColor: '#6366f1' }]}
+                  onPress={() => {
+                    const printWindow = window.open('', '_blank');
+                    if (printWindow) {
+                      printWindow.document.write(`
+                        <html><head><title>Piano Alimentare - ${plan.mese || ''}</title>
+                        <style>body{font-family:Arial,sans-serif;padding:32px;line-height:1.7;color:#222;max-width:800px;margin:0 auto}h1{color:#4ECDC4;border-bottom:2px solid #4ECDC4;padding-bottom:8px}pre{white-space:pre-wrap;font-family:inherit;font-size:14px}</style>
+                        </head><body><h1>Piano Alimentare — ${plan.mese || ''}</h1><pre>${plan.piano}</pre></body></html>
+                      `);
+                      printWindow.document.close();
+                      printWindow.print();
+                    }
+                  }}
+                >
+                  <Ionicons name="print-outline" size={18} color="#fff" />
+                  <Text style={[styles.copyButtonText, { color: '#fff' }]}>Stampa</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         )}
       </ScrollView>
@@ -480,4 +537,8 @@ const styles = StyleSheet.create({
   planContent: { fontSize: 14, color: COLORS.textSecondary, lineHeight: 22 },
   resetButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 20, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: '#FF6B6B40', backgroundColor: '#FF6B6B10' },
   resetButtonText: { fontSize: 14, fontWeight: '600', color: '#FF6B6B' },
+
+  // Copy & Print
+  copyButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: COLORS.primary, padding: 12, borderRadius: 12 },
+  copyButtonText: { fontSize: 14, fontWeight: '600', color: '#000' },
 });

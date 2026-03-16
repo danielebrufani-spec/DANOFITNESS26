@@ -48,6 +48,11 @@ App di fitness per la gestione di lezioni, prenotazioni, abbonamenti e gamificat
 - Backend ottimizzato: restituisce tutti i campi profilo senza il testo del piano
 - Pulsante "Azzera Piano" funzionante su ogni card
 
+## Pulsanti Copia & Stampa Piano (16 Marzo 2026)
+- Pulsante "Copia Piano" per copiare il testo del piano negli appunti (con fallback)
+- Pulsante "Stampa" (solo web) apre finestra di stampa formattata con titolo e stile
+- Entrambi visibili sotto il piano generato nella pagina Dieta AI del cliente
+
 ## Credenziali Test
 - Email: danielebrufani@gmail.com
 - Password: Mariavittoria23
