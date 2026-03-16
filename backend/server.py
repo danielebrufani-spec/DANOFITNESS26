@@ -12,7 +12,6 @@ from typing import List, Optional
 import uuid
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
-from passlib.context import CryptContext
 import bcrypt as _bcrypt_lib
 import jwt
 from bson import ObjectId
@@ -3091,7 +3090,7 @@ async def change_password(data: ChangePasswordRequest, current_user: dict = Depe
         if len(data.new_password) < 6:
             raise HTTPException(status_code=400, detail="La password deve essere di almeno 6 caratteri")
         
-        hashed_password = pwd_context.hash(data.new_password)
+        hashed_password = hash_password(data.new_password)
         
         await db.users.update_one(
             {"_id": current_user["_id"]},
@@ -3126,7 +3125,7 @@ async def admin_reset_password(user_id: str, data: ResetPasswordRequest, admin_u
             raise HTTPException(status_code=400, detail="La password deve essere di almeno 6 caratteri")
         
         # Hash della nuova password
-        hashed_password = pwd_context.hash(data.new_password)
+        hashed_password = hash_password(data.new_password)
         
         await db.users.update_one(
             {"_id": ObjectId(user_id)},
