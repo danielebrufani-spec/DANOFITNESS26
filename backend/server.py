@@ -3910,22 +3910,51 @@ async def health_check():
 @api_router.get("/test-llm")
 async def test_llm_connection():
     """Test di connessione al servizio AI"""
+    import httpx
+    results = {}
+    
+    # Test 1: Check env var
+    llm_key = os.environ.get("EMERGENT_LLM_KEY")
+    results["key_configured"] = llm_key is not None
+    
+    # Test 2: DNS + HTTP connection to proxy
     try:
-        llm_key = os.environ.get("EMERGENT_LLM_KEY")
-        if not llm_key:
-            return {"status": "error", "detail": "EMERGENT_LLM_KEY non configurata"}
-        
-        chat = LlmChat(
-            api_key=llm_key,
-            session_id="test-connection",
-            system_message="Rispondi solo OK"
-        )
-        chat.with_model("openai", "gpt-4.1")
-        msg = UserMessage(text="Dimmi solo OK")
-        response = await chat.send_message(msg)
-        return {"status": "ok", "response": response[:50]}
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.get("https://integrations.emergentagent.com")
+            results["proxy_reachable"] = True
+            results["proxy_status"] = resp.status_code
     except Exception as e:
-        return {"status": "error", "detail": str(e)}
+        results["proxy_reachable"] = False
+        results["proxy_error"] = str(e)
+    
+    # Test 3: DNS + HTTP to OpenAI directly
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.get("https://api.openai.com")
+            results["openai_reachable"] = True
+            results["openai_status"] = resp.status_code
+    except Exception as e:
+        results["openai_reachable"] = False
+        results["openai_error"] = str(e)
+    
+    # Test 4: Try LLM call if proxy is reachable
+    if results.get("proxy_reachable") and llm_key:
+        try:
+            chat = LlmChat(
+                api_key=llm_key,
+                session_id="test-diag",
+                system_message="Rispondi solo OK"
+            )
+            chat.with_model("openai", "gpt-4.1")
+            msg = UserMessage(text="OK")
+            response = await chat.send_message(msg)
+            results["llm_call"] = "success"
+            results["llm_response"] = response[:50]
+        except Exception as e:
+            results["llm_call"] = "failed"
+            results["llm_error"] = str(e)
+    
+    return results
 
 
 # ==================== LOTTERIA PREMI ====================
