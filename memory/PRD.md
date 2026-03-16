@@ -41,6 +41,13 @@ App di fitness per la gestione di lezioni, prenotazioni, abbonamenti e gamificat
 - Eliminato nginx.conf inutile
 - Verificato CORS produzione
 
+## Miglioramento Admin Piani AI (16 Marzo 2026)
+- Aggiunta barra di ricerca per filtrare piani per nome/cognome cliente
+- Card profilo cliente con: sesso, età, altezza, peso, obiettivo, calorie, macro (P/C/G), intolleranze
+- Rimossa visualizzazione piano completo dalla lista (performance)
+- Backend ottimizzato: restituisce tutti i campi profilo senza il testo del piano
+- Pulsante "Azzera Piano" funzionante su ogni card
+
 ## Credenziali Test
 - Email: danielebrufani@gmail.com
 - Password: Mariavittoria23
