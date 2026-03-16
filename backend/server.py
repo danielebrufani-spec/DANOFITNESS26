@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, status
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, BackgroundTasks
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -2601,8 +2601,8 @@ async def save_nutrition_profile(data: NutritionProfileCreate, current_user: dic
 
 
 @api_router.post("/nutrition/generate-plan")
-async def generate_meal_plan(current_user: dict = Depends(get_current_user)):
-    """Genera il piano alimentare mensile con AI"""
+async def generate_meal_plan(background_tasks: BackgroundTasks, current_user: dict = Depends(get_current_user)):
+    """Genera il piano alimentare mensile con AI (in background)"""
     user_id = str(current_user["_id"])
     
     # Verifica abbonamento attivo (admin e istruttori bypassano)
@@ -2624,8 +2624,12 @@ async def generate_meal_plan(current_user: dict = Depends(get_current_user)):
         "user_id": user_id,
         "mese": mese_corrente
     })
-    if existing_plan:
-        raise HTTPException(status_code=400, detail="Hai già generato il piano per questo mese. Il prossimo sarà disponibile il 1° del mese prossimo!")
+    if existing_plan and existing_plan.get("piano"):
+        raise HTTPException(status_code=400, detail="Hai già generato il piano per questo mese!")
+    
+    # Controlla se c'è già una generazione in corso
+    if existing_plan and existing_plan.get("status") == "generating":
+        return {"status": "generating", "message": "Il piano è in fase di generazione... attendere circa 1 minuto."}
     
     # Prepara il prompt per l'AI
     intolleranze_text = ", ".join(profile.get("intolleranze", [])) if profile.get("intolleranze") else "nessuna"
@@ -2637,90 +2641,75 @@ async def generate_meal_plan(current_user: dict = Depends(get_current_user)):
         "massa": "aumento della massa muscolare"
     }.get(profile["obiettivo"], profile["obiettivo"])
     
-    prompt = f"""Genera un piano alimentare mensile completo per una persona con queste caratteristiche:
-
-- Sesso: {"Uomo" if profile["sesso"] == "M" else "Donna"}
-- Età: {profile["eta"]} anni
-- Peso: {profile["peso"]} kg, Altezza: {profile["altezza"]} cm
+    prompt = f"""Crea un piano alimentare settimanale per:
+- {"Uomo" if profile["sesso"] == "M" else "Donna"}, {profile["eta"]} anni, {profile["peso"]}kg, {profile["altezza"]}cm
 - Obiettivo: {obiettivo_desc}
-- Calorie giornaliere: {profile["calorie_giornaliere"]} kcal
-- Macronutrienti: Proteine {profile["proteine_g"]}g, Carboidrati {profile["carboidrati_g"]}g, Grassi {profile["grassi_g"]}g
+- {profile["calorie_giornaliere"]} kcal/giorno (P:{profile["proteine_g"]}g C:{profile["carboidrati_g"]}g G:{profile["grassi_g"]}g)
 - Intolleranze: {intolleranze_text}
-- Alimenti da evitare: {esclusi_text}
-- Lezioni fitness settimanali: {profile.get("lezioni_settimana", 0)}
-- Note: {profile.get("note", "nessuna") or "nessuna"}
+- Evitare: {esclusi_text}
+- Allenamenti: {profile.get("lezioni_settimana", 0)}/settimana
 
-ISTRUZIONI:
-1. Crea un piano per 4 SETTIMANE con pasti giornalieri: Colazione, Spuntino Mattina, Pranzo, Merenda, Cena
-2. Per ogni pasto fornisci 2-3 ALTERNATIVE tra cui scegliere
-3. Usa ricette ITALIANE, ingredienti facilmente reperibili e di stagione
-4. Ogni alternativa deve indicare le calorie approssimative
-5. Aggiungi una LISTA DELLA SPESA settimanale
-6. Includi CONSIGLI sulle attività fisiche: quante lezioni a settimana, che tipo di allenamento (functional, yoga, cardio), quando è meglio allenarsi rispetto ai pasti
-7. Il piano deve essere vario e gustoso, non noioso
-8. Aggiungi consigli su idratazione e integratori se necessari
-
-FORMATO RISPOSTA (in italiano):
-Rispondi con un testo ben formattato con sezioni chiare per ogni settimana."""
+Crea 2 settimane tipo (la 3a e 4a possono ruotare). Per ogni giorno: Colazione, Spuntino, Pranzo, Merenda, Cena con 2 alternative e calorie. Usa ricette italiane di stagione. Aggiungi lista spesa e consigli allenamento. Formato ben strutturato in italiano."""
     
-    try:
-        llm_key = os.environ.get("EMERGENT_LLM_KEY")
-        if not llm_key:
-            raise HTTPException(status_code=500, detail="Chiave AI non configurata")
-        
-        # Retry mechanism per gestire errori di connessione
-        max_retries = 3
-        last_error = None
-        
-        for attempt in range(max_retries):
-            try:
-                chat = LlmChat(
-                    api_key=llm_key,
-                    session_id=f"nutrition-{user_id}-{mese_corrente}-{attempt}",
-                    system_message="Sei un nutrizionista sportivo esperto italiano. Crea piani alimentari dettagliati, personalizzati e basati sulla scienza della nutrizione. Rispondi sempre in italiano."
-                )
-                chat.with_model("openai", "gpt-4.1")
-                
-                user_message = UserMessage(text=prompt)
-                response = await chat.send_message(user_message)
-                
-                # Salva il piano
-                plan_doc = {
-                    "user_id": user_id,
-                    "user_nome": current_user["nome"],
-                    "user_cognome": current_user["cognome"],
-                    "mese": mese_corrente,
-                    "piano": response,
+    # Crea un record "in generazione" nel DB
+    await db.meal_plans.update_one(
+        {"user_id": user_id, "mese": mese_corrente},
+        {"$set": {
+            "user_id": user_id,
+            "user_nome": current_user["nome"],
+            "user_cognome": current_user["cognome"],
+            "mese": mese_corrente,
+            "status": "generating",
+            "piano": None,
+            "created_at": now,
+        }},
+        upsert=True
+    )
+    
+    # Lancia la generazione in background
+    async def generate_plan_background(uid, profile_data, mese, user_data):
+        try:
+            from openai import AsyncOpenAI
+            llm_key = os.environ.get("EMERGENT_LLM_KEY")
+            client = AsyncOpenAI(api_key=llm_key, base_url="https://integrations.emergentagent.com/llm")
+            
+            ai_response = await client.chat.completions.create(
+                model="gpt-4.1",
+                messages=[
+                    {"role": "system", "content": "Sei un nutrizionista sportivo esperto italiano. Crea piani alimentari dettagliati, personalizzati e basati sulla scienza della nutrizione. Rispondi sempre in italiano."},
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            
+            response_text = ai_response.choices[0].message.content
+            
+            await db.meal_plans.update_one(
+                {"user_id": uid, "mese": mese},
+                {"$set": {
+                    "piano": response_text,
+                    "status": "completed",
                     "profilo": {
-                        "peso": profile["peso"],
-                        "obiettivo": profile["obiettivo"],
-                        "calorie": profile["calorie_giornaliere"],
+                        "peso": profile_data["peso"],
+                        "obiettivo": profile_data["obiettivo"],
+                        "calorie": profile_data["calorie_giornaliere"],
                     },
-                    "created_at": now,
-                }
-                
-                await db.meal_plans.insert_one(plan_doc)
-                
-                return {
-                    "piano": response,
-                    "mese": mese_corrente,
-                    "calorie": profile["calorie_giornaliere"],
-                    "message": "Piano generato con successo!"
-                }
-            except Exception as retry_err:
-                last_error = retry_err
-                logger.warning(f"[NUTRITION] Tentativo {attempt+1}/{max_retries} fallito: {retry_err}")
-                if attempt < max_retries - 1:
-                    await asyncio.sleep(2)
-        
-        logger.error(f"[NUTRITION] Tutti i tentativi falliti: {last_error}")
-        raise HTTPException(status_code=500, detail="Generazione del piano fallita dopo 3 tentativi. Riprova tra qualche minuto.")
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"[NUTRITION] Errore generazione piano: {e}")
-        raise HTTPException(status_code=500, detail=f"Errore nella generazione del piano: {str(e)}")
+                }}
+            )
+            logger.info(f"[NUTRITION] Piano generato per {uid} - {len(response_text)} caratteri")
+        except Exception as e:
+            logger.error(f"[NUTRITION] Errore background: {e}")
+            await db.meal_plans.update_one(
+                {"user_id": uid, "mese": mese},
+                {"$set": {"status": "error", "error_detail": str(e)}}
+            )
+    
+    # Avvia task in background con asyncio
+    asyncio.create_task(generate_plan_background(user_id, dict(profile), mese_corrente, dict(current_user)))
+    
+    return {
+        "status": "generating",
+        "message": "Il piano alimentare è in fase di generazione! Ci vogliono circa 30-60 secondi. La pagina si aggiornerà automaticamente."
+    }
 
 
 @api_router.get("/nutrition/my-plan")
@@ -3910,51 +3899,21 @@ async def health_check():
 @api_router.get("/test-llm")
 async def test_llm_connection():
     """Test di connessione al servizio AI"""
-    import httpx
-    results = {}
-    
-    # Test 1: Check env var
-    llm_key = os.environ.get("EMERGENT_LLM_KEY")
-    results["key_configured"] = llm_key is not None
-    
-    # Test 2: DNS + HTTP connection to proxy
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.get("https://integrations.emergentagent.com")
-            results["proxy_reachable"] = True
-            results["proxy_status"] = resp.status_code
+        llm_key = os.environ.get("EMERGENT_LLM_KEY")
+        if not llm_key:
+            return {"status": "error", "detail": "EMERGENT_LLM_KEY non configurata"}
+        
+        from openai import AsyncOpenAI
+        client = AsyncOpenAI(api_key=llm_key, base_url="https://integrations.emergentagent.com/llm")
+        resp = await client.chat.completions.create(
+            model="gpt-4.1",
+            messages=[{"role": "user", "content": "Dimmi solo OK"}],
+            max_tokens=10
+        )
+        return {"status": "ok", "response": resp.choices[0].message.content}
     except Exception as e:
-        results["proxy_reachable"] = False
-        results["proxy_error"] = str(e)
-    
-    # Test 3: DNS + HTTP to OpenAI directly
-    try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.get("https://api.openai.com")
-            results["openai_reachable"] = True
-            results["openai_status"] = resp.status_code
-    except Exception as e:
-        results["openai_reachable"] = False
-        results["openai_error"] = str(e)
-    
-    # Test 4: Try LLM call if proxy is reachable
-    if results.get("proxy_reachable") and llm_key:
-        try:
-            chat = LlmChat(
-                api_key=llm_key,
-                session_id="test-diag",
-                system_message="Rispondi solo OK"
-            )
-            chat.with_model("openai", "gpt-4.1")
-            msg = UserMessage(text="OK")
-            response = await chat.send_message(msg)
-            results["llm_call"] = "success"
-            results["llm_response"] = response[:50]
-        except Exception as e:
-            results["llm_call"] = "failed"
-            results["llm_error"] = str(e)
-    
-    return results
+        return {"status": "error", "detail": str(e)}
 
 
 # ==================== LOTTERIA PREMI ====================

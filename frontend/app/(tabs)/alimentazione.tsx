@@ -56,7 +56,17 @@ export default function AlimentazioneScreen() {
       const data = res.data;
       setHasSubscription(data.has_subscription);
       setProfile(data.profile);
-      setPlan(data.plan);
+      
+      // Se il piano è in generazione, inizia il polling
+      if (data.plan && data.plan.status === 'generating') {
+        setPlan(null);
+        setGenerating(true);
+        pollForPlan();
+      } else if (data.plan && data.plan.piano) {
+        setPlan(data.plan);
+      } else {
+        setPlan(null);
+      }
       
       if (data.profile) {
         setSesso(data.profile.sesso || 'F');
@@ -111,7 +121,7 @@ export default function AlimentazioneScreen() {
 
   const handleGeneratePlan = async () => {
     const conferma = typeof window !== 'undefined' 
-      ? window.confirm('Vuoi generare il piano alimentare per questo mese? Potrai generarne uno nuovo il prossimo mese.')
+      ? window.confirm('Vuoi generare il piano alimentare per questo mese? Ci vorranno circa 30-60 secondi.')
       : true;
     
     if (!conferma) return;
@@ -119,18 +129,57 @@ export default function AlimentazioneScreen() {
     setGenerating(true);
     try {
       const res = await apiService.generateMealPlan();
-      setPlan(res.data);
-      if (typeof window !== 'undefined') {
-        window.alert('Piano Generato! Il tuo piano alimentare mensile è pronto!');
+      
+      // Se la generazione è in background, inizia il polling
+      if (res.data.status === 'generating') {
+        pollForPlan();
+      } else if (res.data.piano) {
+        setPlan(res.data);
+        setGenerating(false);
       }
     } catch (e: any) {
       const msg = e.response?.data?.detail || 'Impossibile generare il piano';
       if (typeof window !== 'undefined') {
         window.alert('Errore: ' + msg);
       }
-    } finally {
       setGenerating(false);
     }
+  };
+
+  const pollForPlan = () => {
+    let attempts = 0;
+    const maxAttempts = 30; // 30 x 3s = 90 secondi max
+    
+    const interval = setInterval(async () => {
+      attempts++;
+      try {
+        const res = await apiService.getNutritionPlan();
+        const data = res.data;
+        
+        if (data.plan && data.plan.piano) {
+          clearInterval(interval);
+          setPlan(data.plan);
+          setGenerating(false);
+          if (typeof window !== 'undefined') {
+            window.alert('Piano Generato! Il tuo piano alimentare è pronto!');
+          }
+        } else if (data.plan && data.plan.status === 'error') {
+          clearInterval(interval);
+          setGenerating(false);
+          if (typeof window !== 'undefined') {
+            window.alert('Errore nella generazione. Riprova.');
+          }
+        } else if (attempts >= maxAttempts) {
+          clearInterval(interval);
+          setGenerating(false);
+          if (typeof window !== 'undefined') {
+            window.alert('La generazione sta impiegando più del previsto. Ricarica la pagina tra qualche minuto.');
+          }
+        }
+      } catch {
+        // Ignora errori di polling, continua a provare
+      }
+    }, 3000);
   };
 
   if (loading) {
