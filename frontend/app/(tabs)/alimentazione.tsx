@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
-import apiService from '../../src/services/api';
+import { apiService } from '../../src/services/api';
 
 const COLORS = {
   background: '#0a0a0a',

@@ -2556,10 +2556,12 @@ async def save_nutrition_profile(data: NutritionProfileCreate, current_user: dic
     """Salva il profilo nutrizionale dell'utente"""
     user_id = str(current_user["_id"])
     
-    # Verifica abbonamento attivo
-    has_sub = await check_user_has_active_subscription(user_id)
-    if not has_sub:
-        raise HTTPException(status_code=403, detail="Serve un abbonamento attivo per accedere al piano alimentare")
+    # Verifica abbonamento attivo (admin e istruttori bypassano)
+    is_privileged = current_user.get("role") in ("admin", "istruttore")
+    if not is_privileged:
+        has_sub = await check_user_has_active_subscription(user_id)
+        if not has_sub:
+            raise HTTPException(status_code=403, detail="Serve un abbonamento attivo per accedere al piano alimentare")
     
     # Calcola lezioni medie settimanali dell'utente (ultime 4 settimane)
     now = now_rome()
@@ -2603,10 +2605,12 @@ async def generate_meal_plan(current_user: dict = Depends(get_current_user)):
     """Genera il piano alimentare mensile con AI"""
     user_id = str(current_user["_id"])
     
-    # Verifica abbonamento attivo
-    has_sub = await check_user_has_active_subscription(user_id)
-    if not has_sub:
-        raise HTTPException(status_code=403, detail="Serve un abbonamento attivo")
+    # Verifica abbonamento attivo (admin e istruttori bypassano)
+    is_privileged = current_user.get("role") in ("admin", "istruttore")
+    if not is_privileged:
+        has_sub = await check_user_has_active_subscription(user_id)
+        if not has_sub:
+            raise HTTPException(status_code=403, detail="Serve un abbonamento attivo")
     
     # Recupera profilo nutrizionale
     profile = await db.nutrition_profiles.find_one({"user_id": user_id})
@@ -2722,8 +2726,11 @@ async def get_my_plan(current_user: dict = Depends(get_current_user)):
         check_user_has_active_subscription(user_id)
     )
     
+    # Admin e istruttori hanno sempre accesso
+    is_privileged = current_user.get("role") in ("admin", "istruttore")
+    
     return {
-        "has_subscription": has_sub,
+        "has_subscription": has_sub or is_privileged,
         "profile": profile,
         "plan": plan,
         "mese_corrente": mese_corrente,

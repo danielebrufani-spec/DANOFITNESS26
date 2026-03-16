@@ -88,7 +88,7 @@ export default function TabsLayout() {
         name="alimentazione"
         options={{
           title: 'Dieta AI',
-          href: (isAdmin || isIstruttore || isArchived) ? null : '/alimentazione',
+          href: (isIstruttore || isArchived) ? null : '/alimentazione',
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons 
               name={focused ? "nutrition" : "nutrition-outline"} 
