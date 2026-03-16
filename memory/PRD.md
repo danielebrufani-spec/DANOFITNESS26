@@ -1,115 +1,72 @@
-# DANOFITNESS26 - PRD
+# DANOFITNESS26 - Product Requirements Document
 
-## Descrizione del Progetto
-App fitness completa per gestione palestra con sistema di abbonamenti, prenotazione lezioni, gamification e classifica settimanale.
+## Problem Statement
+Fitness application for "DANOFITNESS26" gym. Full-stack app with React Native (Expo) frontend and FastAPI backend using MongoDB. Features user management, class booking, gamification (lottery, wheel of fortune, quiz), admin panel, AI nutrition plans.
 
-## Stack Tecnologico
-- **Frontend:** React Native (Expo) + TypeScript
-- **Backend:** FastAPI (Python)
-- **Database:** MongoDB
-- **Deployment:** Vercel (frontend) + Render (backend)
+## Tech Stack
+- **Frontend:** React Native (Expo), TypeScript
+- **Backend:** Python, FastAPI
+- **Database:** MongoDB (motor async driver)
+- **AI:** OpenAI GPT via emergentintegrations (Emergent LLM Key)
+- **Deployment:** Vercel (frontend), Render (backend)
 
-## Core Features Implementate
-
-### Autenticazione
-- Login/Registrazione utenti
-- Ruoli: Admin, Istruttore, Client
-- Reset password
-
-### Abbonamenti
-- Tipi: 8 lezioni, 16 lezioni, Mensile, Trimestrale
-- Gestione scadenza e lezioni rimanenti
-- Log ingressi per abbonamento
-
-### Prenotazioni
-- Prenotazione lezioni settimanali
-- Conferma presenza da admin
-- Date bloccate (es. 14 Marzo 2026)
-- Notifiche in-app
-
-### Gamification
-- **Sistema Livelli:** 7 livelli da "Divano Vivente" a "Dio della Palestra"
-- **Classifica Settimanale:** TOP 3 (podio) con gestione pari merito
-- **Bacheca Medaglie:** Collezione medaglie vinte (oro, argento, bronzo) nel profilo utente
-- **Ruota della Fortuna:** Premi settimanali con suoni
-
-## Task Completati (7 Marzo 2025 - sessioni iniziali)
-- [x] Implementazione UI Bacheca Medaglie nel profilo utente
-- [x] Card preview con conteggio medaglie (oro/argento/bronzo)
-- [x] Modal dettagliato con storico vittorie
-- [x] Modifica classifica da TOP 5 a TOP 3 (solo podio)
-- [x] Medaglie del podio piu grandi e visibili
-- [x] Aggiunta suoni alla Ruota della Fortuna (spin + vittoria/perdita)
-- [x] Toggle ON/OFF per i suoni
-
-## Task Completati (12 Marzo 2025 - sessione precedente)
-- [x] Sistema lotteria mensile con 3 vincitori
-- [x] Quiz bonus dopo la Ruota della Fortuna (65+ domande)
-- [x] Bonus domenicale (2 biglietti al primo che prenota)
-- [x] Suoni Ruota della Fortuna con toggle
-- [x] Animazioni prenotazioni (confetti + modal cancellazione)
-- [x] Bacheca Medaglie nel profilo
-- [x] Correzione reset dati settimanali per admin/istruttori (domenica)
-- [x] Log ingressi solo per abbonamento corrente
-- [x] Esclusione utente test "Daniele Brufani" dalla lotteria
-
-## Bug Fix Completati (Feb 2026)
-- [x] Fix banner "Abbonamento Scaduto"
-- [x] Timer 15 secondi sul Quiz Bonus con pulsante "INIZIA QUIZ" e regole
-- [x] Sistema Pagamenti Insoluti con totale da incassare
-- [x] Visibilità password nel reset password admin
-- [x] Blocco utenti archiviati (solo tab Profilo visibile + messaggio)
-- [x] Fix auto-process: controlla anche lezioni del giorno precedente
-- [x] Fix classifica: non si blocca più se sabato è data bloccata
-- [x] Fix scadenza abbonamenti: stesso giorno del mese (16/3 → 16/4)
-- [x] Tab Alimentazione: profilo nutrizionale + piano AI mensile + banner Home + admin view
-
-## Prossimi Task (P1)
-- [ ] Streak Bonus: +1 biglietto per 3 giorni consecutivi di allenamento
-- [ ] Milestone Bonus: +5 biglietti per 50 lezioni totali
-- [ ] Porta un Amico (Referral): bonus biglietti per chi invita e chi viene invitato
-
-## Task Futuri (P2)
-- [ ] Integrazione Instagram per bonus (codice segreto o upload screenshot)
-- [ ] Dark/Light mode toggle
-- [ ] Vista calendario prenotazioni
-- [ ] Pagina statistiche personali con grafici
-
-## Backlog (P3)
-- [ ] Aggiornamento dipendenze npm obsolete (warning Vercel)
-- [ ] Sfide settimanali
-- [ ] Badge collezionabili per milestone
-- [ ] Sistema XP
-- [ ] Funzionalita social ("Chi viene?")
-
-## Schema Database
-
-### Collection: medals
-```json
-{
-  "user_id": "string",
-  "settimana_display": "string",
-  "settimana_inizio": "string",
-  "posizione": "number",
-  "medaglia": "oro|argento|bronzo",
-  "allenamenti": "number",
-  "pari_merito": "boolean",
-  "created_at": "datetime"
-}
+## Code Architecture
+```
+/app
+├── backend/
+│   ├── .env
+│   ├── server.py (monolith - all routes, models, helpers)
+│   ├── requirements.txt
+│   └── tests/
+│       └── test_performance_optimizations.py
+└── frontend/
+    ├── app/(tabs)/ (alimentazione, admin, home, premi, profilo, _layout)
+    ├── app/services/api.ts
+    └── ...
 ```
 
-## API Endpoints Principali
-- `GET /api/medals/me` - Medaglie utente corrente
-- `GET /api/leaderboard/weekly` - Classifica settimanale (TOP 3)
-- `GET /api/user/livello` - Livello settimanale utente
-- `POST /api/bookings` - Crea prenotazione
-- `GET /api/subscriptions/me` - Abbonamenti utente
-- `POST /api/wheel/spin` - Gira la ruota della fortuna
-- `GET /api/subscriptions/insoluti` - Lista abbonamenti non pagati (admin)
-- `PUT /api/subscriptions/{id}/segna-pagato` - Segna abbonamento come pagato (admin)
+## Completed Features
+- User auth (JWT), admin panel, class booking system
+- Subscription management (lesson-based + time-based, paid/unpaid tracking)
+- Gamification: weekly leaderboard, lottery, wheel of fortune, quiz
+- AI nutrition plan (GPT via emergentintegrations)
+- Archived user lockout
+- Push notifications (Expo + Web)
+- Chat/communications system
+- Consigli del Maestro + Consigli Musicali (Spotify)
+- Performance optimizations (indexes, GZip, cache, parallel queries, projections)
 
-## Note Tecniche
-- L'app e un progetto React Native/Expo, non funziona nel browser tradizionale
-- Test vanno fatti nell'app Expo Go o build nativa
-- Backend endpoint testabile con curl
-- Suoni ruota usano expo-av con URL audio esterni
+## Performance Optimizations (March 2026)
+1. **MongoDB Indexes** on all major collections
+2. **GZip Compression** via middleware (min 500 bytes)
+3. **In-Memory Cache** (SimpleCache with TTL):
+   - Lessons: 5 min TTL
+   - Blocked dates: 1 min TTL
+4. **Batch Query Fixes** (N+1 → batch):
+   - admin/notifications
+   - get_users_with_active_subscription (lottery)
+5. **Parallel Queries** (asyncio.gather):
+   - admin/dashboard, user/livello, lottery/status
+   - weekly-stats, nutrition/my-plan, quiz/today, wheel/status
+6. **Query Projections** on admin user lookups (archive, restore, delete, set-role, reset-password)
+7. **profile_image exclusion** from bulk queries
+
+## Upcoming Tasks (P1)
+- "Porta un Amico" (Refer a Friend) system
+- Streak Bonuses (+1 ticket for 3 consecutive days)
+- Milestone Bonuses (+5 tickets for 50 total lessons)
+
+## Future/Backlog (P2)
+- Instagram Integration for Bonuses
+- UI/UX Graphic Enhancements (dark/light mode, visual calendar, stats page)
+- Update outdated frontend dependencies
+
+## Key API Endpoints
+See server.py for full list. Major endpoints:
+- Auth: /api/auth/login, /api/auth/me, /api/auth/register
+- Lessons: /api/lessons, /api/lessons/day/{giorno}
+- Bookings: /api/bookings, /api/bookings/me
+- Subscriptions: /api/subscriptions, /api/subscriptions/me
+- Admin: /api/admin/dashboard, /api/admin/users, /api/admin/weekly-bookings
+- Gamification: /api/lottery/status, /api/wheel/status, /api/quiz/today
+- Nutrition: /api/nutrition/profile, /api/nutrition/generate-plan, /api/nutrition/my-plan
