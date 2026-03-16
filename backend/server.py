@@ -20,6 +20,8 @@ import asyncio
 # pywebpush disabled to save memory - uncomment when needed
 # from pywebpush import webpush, WebPushException
 import json
+import random
+from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 # Fuso orario Roma
 ROME_TZ = ZoneInfo("Europe/Rome")
@@ -250,6 +252,37 @@ class ConsiglioMusicaleResponse(BaseModel):
     titolo: Optional[str] = None
     spotify_url: str
     created_at: datetime
+
+
+# ======================== NUTRIZIONE ========================
+
+class NutritionProfileCreate(BaseModel):
+    sesso: str  # "M" o "F"
+    eta: int
+    peso: float  # kg
+    altezza: float  # cm
+    obiettivo: str  # "dimagrire", "mantenimento", "massa"
+    intolleranze: List[str] = []  # es. ["glutine", "lattosio"]
+    alimenti_esclusi: Optional[str] = None  # testo libero
+    note: Optional[str] = None
+
+class NutritionProfileResponse(BaseModel):
+    sesso: str
+    eta: int
+    peso: float
+    altezza: float
+    obiettivo: str
+    intolleranze: List[str] = []
+    alimenti_esclusi: Optional[str] = None
+    note: Optional[str] = None
+    bmr: float
+    tdee: float
+    calorie_giornaliere: float
+    proteine_g: float
+    carboidrati_g: float
+    grassi_g: float
+    lezioni_consigliate: int
+
 
 # ======================== HELPER FUNCTIONS ========================
 
@@ -2429,6 +2462,278 @@ async def get_admin_dashboard(current_user: dict = Depends(get_current_user)):
         "today_lessons": [],
         "recent_users": []
     }
+
+
+# ======================== NUTRIZIONE ENDPOINTS ========================
+
+def calcola_nutrizione(profilo: NutritionProfileCreate, lezioni_settimana: int = 0):
+    """Calcolo scientifico del fabbisogno calorico e macronutrienti"""
+    # BMR - Formula Mifflin-St Jeor
+    if profilo.sesso.upper() == "M":
+        bmr = (10 * profilo.peso) + (6.25 * profilo.altezza) - (5 * profilo.eta) - 5
+    else:
+        bmr = (10 * profilo.peso) + (6.25 * profilo.altezza) - (5 * profilo.eta) - 161
+    
+    # Fattore attività basato sulle lezioni settimanali
+    if lezioni_settimana == 0:
+        fattore = 1.2
+        lezioni_consigliate = 3
+    elif lezioni_settimana <= 2:
+        fattore = 1.375
+        lezioni_consigliate = 3
+    elif lezioni_settimana <= 4:
+        fattore = 1.55
+        lezioni_consigliate = 4
+    else:
+        fattore = 1.725
+        lezioni_consigliate = 5
+    
+    tdee = bmr * fattore
+    
+    # Aggiustamento per obiettivo
+    if profilo.obiettivo == "dimagrire":
+        calorie = tdee - 400
+        lezioni_consigliate = max(lezioni_consigliate, 4)
+    elif profilo.obiettivo == "massa":
+        calorie = tdee + 350
+        lezioni_consigliate = max(lezioni_consigliate, 4)
+    else:
+        calorie = tdee
+    
+    # Macronutrienti
+    proteine_g = round((calorie * 0.28) / 4, 0)
+    carboidrati_g = round((calorie * 0.45) / 4, 0)
+    grassi_g = round((calorie * 0.27) / 9, 0)
+    
+    return {
+        "bmr": round(bmr, 0),
+        "tdee": round(tdee, 0),
+        "calorie_giornaliere": round(calorie, 0),
+        "proteine_g": proteine_g,
+        "carboidrati_g": carboidrati_g,
+        "grassi_g": grassi_g,
+        "lezioni_consigliate": lezioni_consigliate,
+    }
+
+
+@api_router.post("/nutrition/profile")
+async def save_nutrition_profile(data: NutritionProfileCreate, current_user: dict = Depends(get_current_user)):
+    """Salva il profilo nutrizionale dell'utente"""
+    user_id = str(current_user["_id"])
+    
+    # Verifica abbonamento attivo
+    has_sub = await check_user_has_active_subscription(user_id)
+    if not has_sub:
+        raise HTTPException(status_code=403, detail="Serve un abbonamento attivo per accedere al piano alimentare")
+    
+    # Calcola lezioni medie settimanali dell'utente (ultime 4 settimane)
+    now = now_rome()
+    quattro_sett_fa = (now - timedelta(days=28)).strftime("%Y-%m-%d")
+    lezioni_count = await db.bookings.count_documents({
+        "user_id": user_id,
+        "confermata": True,
+        "lezione_scalata": True,
+        "data_lezione": {"$gte": quattro_sett_fa}
+    })
+    lezioni_settimana = round(lezioni_count / 4)
+    
+    calcoli = calcola_nutrizione(data, lezioni_settimana)
+    
+    profile_doc = {
+        "user_id": user_id,
+        "sesso": data.sesso,
+        "eta": data.eta,
+        "peso": data.peso,
+        "altezza": data.altezza,
+        "obiettivo": data.obiettivo,
+        "intolleranze": data.intolleranze,
+        "alimenti_esclusi": data.alimenti_esclusi,
+        "note": data.note,
+        "lezioni_settimana": lezioni_settimana,
+        **calcoli,
+        "updated_at": now,
+    }
+    
+    await db.nutrition_profiles.update_one(
+        {"user_id": user_id},
+        {"$set": profile_doc},
+        upsert=True
+    )
+    
+    return {**profile_doc, "message": "Profilo salvato"}
+
+
+@api_router.post("/nutrition/generate-plan")
+async def generate_meal_plan(current_user: dict = Depends(get_current_user)):
+    """Genera il piano alimentare mensile con AI"""
+    user_id = str(current_user["_id"])
+    
+    # Verifica abbonamento attivo
+    has_sub = await check_user_has_active_subscription(user_id)
+    if not has_sub:
+        raise HTTPException(status_code=403, detail="Serve un abbonamento attivo")
+    
+    # Recupera profilo nutrizionale
+    profile = await db.nutrition_profiles.find_one({"user_id": user_id})
+    if not profile:
+        raise HTTPException(status_code=400, detail="Compila prima il tuo profilo nutrizionale")
+    
+    # Controlla se ha già generato questo mese
+    now = now_rome()
+    mese_corrente = now.strftime("%Y-%m")
+    existing_plan = await db.meal_plans.find_one({
+        "user_id": user_id,
+        "mese": mese_corrente
+    })
+    if existing_plan:
+        raise HTTPException(status_code=400, detail="Hai già generato il piano per questo mese. Il prossimo sarà disponibile il 1° del mese prossimo!")
+    
+    # Prepara il prompt per l'AI
+    intolleranze_text = ", ".join(profile.get("intolleranze", [])) if profile.get("intolleranze") else "nessuna"
+    esclusi_text = profile.get("alimenti_esclusi", "nessuno") or "nessuno"
+    
+    obiettivo_desc = {
+        "dimagrire": "perdita di peso graduale e sana",
+        "mantenimento": "mantenimento del peso forma",
+        "massa": "aumento della massa muscolare"
+    }.get(profile["obiettivo"], profile["obiettivo"])
+    
+    prompt = f"""Genera un piano alimentare mensile completo per una persona con queste caratteristiche:
+
+- Sesso: {"Uomo" if profile["sesso"] == "M" else "Donna"}
+- Età: {profile["eta"]} anni
+- Peso: {profile["peso"]} kg, Altezza: {profile["altezza"]} cm
+- Obiettivo: {obiettivo_desc}
+- Calorie giornaliere: {profile["calorie_giornaliere"]} kcal
+- Macronutrienti: Proteine {profile["proteine_g"]}g, Carboidrati {profile["carboidrati_g"]}g, Grassi {profile["grassi_g"]}g
+- Intolleranze: {intolleranze_text}
+- Alimenti da evitare: {esclusi_text}
+- Lezioni fitness settimanali: {profile.get("lezioni_settimana", 0)}
+- Note: {profile.get("note", "nessuna") or "nessuna"}
+
+ISTRUZIONI:
+1. Crea un piano per 4 SETTIMANE con pasti giornalieri: Colazione, Spuntino Mattina, Pranzo, Merenda, Cena
+2. Per ogni pasto fornisci 2-3 ALTERNATIVE tra cui scegliere
+3. Usa ricette ITALIANE, ingredienti facilmente reperibili e di stagione
+4. Ogni alternativa deve indicare le calorie approssimative
+5. Aggiungi una LISTA DELLA SPESA settimanale
+6. Includi CONSIGLI sulle attività fisiche: quante lezioni a settimana, che tipo di allenamento (functional, yoga, cardio), quando è meglio allenarsi rispetto ai pasti
+7. Il piano deve essere vario e gustoso, non noioso
+8. Aggiungi consigli su idratazione e integratori se necessari
+
+FORMATO RISPOSTA (in italiano):
+Rispondi con un testo ben formattato con sezioni chiare per ogni settimana."""
+    
+    try:
+        llm_key = os.environ.get("EMERGENT_LLM_KEY")
+        if not llm_key:
+            raise HTTPException(status_code=500, detail="Chiave AI non configurata")
+        
+        chat = LlmChat(
+            api_key=llm_key,
+            session_id=f"nutrition-{user_id}-{mese_corrente}",
+            system_message="Sei un nutrizionista sportivo esperto italiano. Crea piani alimentari dettagliati, personalizzati e basati sulla scienza della nutrizione. Rispondi sempre in italiano."
+        )
+        chat.with_model("openai", "gpt-4.1")
+        
+        user_message = UserMessage(text=prompt)
+        response = await chat.send_message(user_message)
+        
+        # Salva il piano
+        plan_doc = {
+            "user_id": user_id,
+            "user_nome": current_user["nome"],
+            "user_cognome": current_user["cognome"],
+            "mese": mese_corrente,
+            "piano": response,
+            "profilo": {
+                "peso": profile["peso"],
+                "obiettivo": profile["obiettivo"],
+                "calorie": profile["calorie_giornaliere"],
+            },
+            "created_at": now,
+        }
+        
+        await db.meal_plans.insert_one(plan_doc)
+        
+        return {
+            "piano": response,
+            "mese": mese_corrente,
+            "calorie": profile["calorie_giornaliere"],
+            "message": "Piano generato con successo!"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[NUTRITION] Errore generazione piano: {e}")
+        raise HTTPException(status_code=500, detail=f"Errore nella generazione del piano: {str(e)}")
+
+
+@api_router.get("/nutrition/my-plan")
+async def get_my_plan(current_user: dict = Depends(get_current_user)):
+    """Recupera profilo e piano corrente dell'utente"""
+    user_id = str(current_user["_id"])
+    
+    profile = await db.nutrition_profiles.find_one({"user_id": user_id}, {"_id": 0})
+    
+    now = now_rome()
+    mese_corrente = now.strftime("%Y-%m")
+    plan = await db.meal_plans.find_one(
+        {"user_id": user_id, "mese": mese_corrente},
+        {"_id": 0, "user_nome": 0, "user_cognome": 0}
+    )
+    
+    # Verifica abbonamento
+    has_sub = await check_user_has_active_subscription(user_id)
+    
+    return {
+        "has_subscription": has_sub,
+        "profile": profile,
+        "plan": plan,
+        "mese_corrente": mese_corrente,
+    }
+
+
+@api_router.get("/admin/nutrition/plans")
+async def get_all_nutrition_plans(admin_user: dict = Depends(get_admin_user)):
+    """Admin: vedi tutti i piani generati"""
+    now = now_rome()
+    mese_corrente = now.strftime("%Y-%m")
+    
+    plans = await db.meal_plans.find(
+        {"mese": mese_corrente},
+        {"_id": 0, "piano": 0}  # Escludi il piano completo per leggerezza
+    ).sort("created_at", -1).to_list(1000)
+    
+    # Conta totali
+    total_plans = await db.meal_plans.count_documents({"mese": mese_corrente})
+    total_profiles = await db.nutrition_profiles.count_documents({})
+    
+    return {
+        "mese": mese_corrente,
+        "piani_generati": total_plans,
+        "profili_totali": total_profiles,
+        "plans": plans,
+    }
+
+@api_router.get("/admin/nutrition/plan/{user_id}")
+async def get_user_nutrition_plan(user_id: str, admin_user: dict = Depends(get_admin_user)):
+    """Admin: vedi il piano completo di un utente"""
+    now = now_rome()
+    mese_corrente = now.strftime("%Y-%m")
+    
+    plan = await db.meal_plans.find_one(
+        {"user_id": user_id, "mese": mese_corrente},
+        {"_id": 0}
+    )
+    if not plan:
+        raise HTTPException(status_code=404, detail="Nessun piano trovato per questo utente")
+    
+    profile = await db.nutrition_profiles.find_one({"user_id": user_id}, {"_id": 0})
+    
+    return {"plan": plan, "profile": profile}
+
 
 # ======================== AUTOMATIC LESSON PROCESSING ========================
 

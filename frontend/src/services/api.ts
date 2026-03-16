@@ -308,6 +308,13 @@ export const apiService = {
 
   // Init
   initAdmin: () => api.post('/init/admin'),
+
+  // Nutrizione
+  getNutritionPlan: () => api.get<any>('/nutrition/my-plan'),
+  saveNutritionProfile: (data: any) => api.post<any>('/nutrition/profile', data),
+  generateMealPlan: () => api.post<any>('/nutrition/generate-plan'),
+  getAdminNutritionPlans: () => api.get<any>('/admin/nutrition/plans'),
+  getAdminUserPlan: (userId: string) => api.get<any>(`/admin/nutrition/plan/${userId}`),
 };
 
 export default api;

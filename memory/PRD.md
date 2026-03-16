@@ -54,11 +54,15 @@ App fitness completa per gestione palestra con sistema di abbonamenti, prenotazi
 - [x] Esclusione utente test "Daniele Brufani" dalla lotteria
 
 ## Bug Fix Completati (Feb 2026)
-- [x] Fix banner "Abbonamento Scaduto" - separata la logica di verifica abbonamento (`check_user_has_active_subscription`) dalla logica lotteria (`get_users_with_active_subscription`)
-- [x] Timer 10 secondi sul Quiz Bonus - barra visuale con countdown, blocco risposte e messaggio "Tempo scaduto!" quando scade
-- [x] Sistema Pagamenti Insoluti: toggle "Pagato/Da saldare" alla creazione abbonamento, tab "Insoluti" nell'admin con pulsante "Segna Pagato", badge "DA SALDARE" sulle card, pulsante toggle pagamento su ogni card abbonamento
-- [x] Timer Quiz parte al click del cliente (pulsante "INIZIA QUIZ"), non automaticamente
-- [x] Domande quiz sostituite con 65 domande tecniche di fisiologia, biochimica e scienza dell'allenamento
+- [x] Fix banner "Abbonamento Scaduto"
+- [x] Timer 15 secondi sul Quiz Bonus con pulsante "INIZIA QUIZ" e regole
+- [x] Sistema Pagamenti Insoluti con totale da incassare
+- [x] Visibilità password nel reset password admin
+- [x] Blocco utenti archiviati (solo tab Profilo visibile + messaggio)
+- [x] Fix auto-process: controlla anche lezioni del giorno precedente
+- [x] Fix classifica: non si blocca più se sabato è data bloccata
+- [x] Fix scadenza abbonamenti: stesso giorno del mese (16/3 → 16/4)
+- [x] Tab Alimentazione: profilo nutrizionale + piano AI mensile + banner Home + admin view
 
 ## Prossimi Task (P1)
 - [ ] Streak Bonus: +1 biglietto per 3 giorni consecutivi di allenamento

@@ -176,6 +176,21 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="alimentazione"
+        options={{
+          title: 'Alimentazione',
+          href: (isAdmin || isIstruttore || isArchived) ? null : '/alimentazione',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons 
+              name={focused ? "nutrition" : "nutrition-outline"} 
+              size={size + 2} 
+              color={focused ? '#FF6B6B' : color} 
+            />
+          ),
+          tabBarActiveTintColor: '#FF6B6B',
+        }}
+      />
+      <Tabs.Screen
         name="profilo"
         options={{
           title: 'Profilo',

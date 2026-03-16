@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { apiService } from '../../src/services/api';
 import { COLORS } from '../../src/utils/constants';
@@ -327,6 +327,7 @@ interface ExpiredSub {
 
 export default function HomeScreen() {
   const { user, isAdmin } = useAuth();
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
@@ -363,6 +364,7 @@ export default function HomeScreen() {
   const [showModal, setShowModal] = useState(false);
   const [renewPagato, setRenewPagato] = useState(true);
   const [weeklyStats, setWeeklyStats] = useState({ presenze: 0, lezioni_scalate: 0, settimana: '' });
+  const [hasMealPlan, setHasMealPlan] = useState(true); // default true per non mostrare banner subito
 
   // Funzione per caricare notifiche cliente
   const loadClientNotifications = async () => {
@@ -508,6 +510,13 @@ export default function HomeScreen() {
       } else {
         // Carica notifiche per cliente
         await loadClientNotifications();
+        // Check piano alimentare
+        try {
+          const nutritionRes = await apiService.getNutritionPlan();
+          setHasMealPlan(!!nutritionRes.data.plan);
+        } catch (e) {
+          setHasMealPlan(true);
+        }
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -850,6 +859,25 @@ export default function HomeScreen() {
           </View>
         )}
 
+        {/* BANNER PIANO ALIMENTARE */}
+        {!isAdmin && !hasMealPlan && (
+          <TouchableOpacity 
+            style={styles.mealPlanBanner}
+            onPress={() => router.push('/(tabs)/alimentazione')}
+          >
+            <View style={styles.mealPlanBannerIcon}>
+              <Ionicons name="nutrition" size={28} color="#fff" />
+            </View>
+            <View style={styles.mealPlanBannerContent}>
+              <Text style={styles.mealPlanBannerTitle}>Nuovo Piano Alimentare Disponibile!</Text>
+              <Text style={styles.mealPlanBannerText}>
+                Crea il tuo piano personalizzato per questo mese
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={22} color={COLORS.primary} />
+          </TouchableOpacity>
+        )}
+
         {/* Frase Divertente */}
         <View style={styles.quoteContainer}>
           <View style={styles.quoteCard}>
@@ -1102,6 +1130,30 @@ const styles = StyleSheet.create({
   },
   expiredInfo: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   expiredName: { fontSize: 14, fontWeight: '600', color: COLORS.text },
+
+  // Banner Piano Alimentare
+  mealPlanBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF6B6B15',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#FF6B6B40',
+    gap: 12,
+  },
+  mealPlanBannerIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#FF6B6B',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mealPlanBannerContent: { flex: 1 },
+  mealPlanBannerTitle: { fontSize: 14, fontWeight: 'bold', color: COLORS.text },
+  mealPlanBannerText: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
 
   // Modal
   modalOverlay: {
