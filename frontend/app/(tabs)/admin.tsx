@@ -955,6 +955,20 @@ export default function AdminScreen() {
                 );
               })
             )}
+
+            {/* Totale da incassare */}
+            {unpaidSubscriptions.length > 0 && (
+              <View style={styles.insolutiTotale}>
+                <Text style={styles.insolutiTotaleLabel}>Totale da incassare</Text>
+                <Text style={styles.insolutiTotaleValue}>
+                  {unpaidSubscriptions.reduce((sum, sub) => {
+                    const info = ABBONAMENTO_INFO[sub.tipo];
+                    const prezzo = info ? parseInt(info.prezzo.replace(/[^0-9]/g, '')) : 0;
+                    return sum + prezzo;
+                  }, 0)} €
+                </Text>
+              </View>
+            )}
           </>
         )}
 
@@ -2754,6 +2768,27 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 14,
+  },
+  insolutiTotale: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#f59e0b15',
+    borderRadius: 14,
+    padding: 16,
+    marginTop: 6,
+    borderWidth: 1,
+    borderColor: '#f59e0b40',
+  },
+  insolutiTotaleLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  insolutiTotaleValue: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#f59e0b',
   },
   markUnpaidBtn: {
     padding: 10,
