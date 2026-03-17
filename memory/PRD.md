@@ -53,6 +53,10 @@ App di fitness per la gestione di lezioni, prenotazioni, abbonamenti e gamificat
 - Pulsante "Stampa" (solo web) apre finestra di stampa formattata con titolo e stile
 - Entrambi visibili sotto il piano generato nella pagina Dieta AI del cliente
 
+## Dieta AI visibile per Istruttori (17 Marzo 2026)
+- Tab "Dieta AI" ora accessibile anche agli istruttori (prima era nascosta)
+- Backend già supportava il ruolo istruttore, modifica solo frontend _layout.tsx
+
 ## Credenziali Test
 - Email: danielebrufani@gmail.com
 - Password: Mariavittoria23

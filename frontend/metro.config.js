@@ -18,6 +18,12 @@ config.resolver = {
   nodeModulesPaths: [path.resolve(__dirname, 'node_modules')],
 };
 
+// Use polling-based watcher to avoid inotify ENOSPC
+config.watcher = {
+  watchman: { enabled: false },
+  healthCheck: { enabled: false },
+};
+
 // Reduce the number of workers to decrease resource usage
 config.maxWorkers = 2;
 
