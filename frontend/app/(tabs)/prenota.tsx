@@ -704,30 +704,40 @@ export default function PrenotaScreen() {
             const isPassed = dateString ? isLessonPassed(dateString, lesson.orario) : false;
             const canBook = bookingStatus.open && !isPassed;
 
+            // BLOCCO TEMPORANEO: Lezione 13:15 del 17/03/2026 annullata
+            const isCancelled = dateString === '2026-03-17' && lesson.orario === '13:15';
+
             return (
-              <View key={lesson.id} style={[styles.lessonCard, isPassed && styles.lessonCardPassed]}>
+              <View key={lesson.id} style={[styles.lessonCard, (isPassed || isCancelled) && styles.lessonCardPassed]}>
                 <View
                   style={[
                     styles.lessonColorBar,
-                    { backgroundColor: info.colore || COLORS.primary },
+                    { backgroundColor: isCancelled ? '#EF4444' : (info.colore || COLORS.primary) },
                   ]}
                 />
                 <View style={styles.lessonContent}>
                   <View style={styles.lessonHeader}>
-                    <Text style={[styles.lessonTime, isPassed && styles.lessonTimePassed]}>{lesson.orario}</Text>
+                    <Text style={[styles.lessonTime, (isPassed || isCancelled) && styles.lessonTimePassed]}>{lesson.orario}</Text>
                     <View style={styles.lessonTypeContainer}>
-                      <Text style={[styles.lessonType, { color: isPassed ? COLORS.textSecondary : (info.colore || COLORS.primary) }]}>
+                      <Text style={[styles.lessonType, { color: (isPassed || isCancelled) ? COLORS.textSecondary : (info.colore || COLORS.primary) }]}>
                         {info.nome || lesson.tipo_attivita}
                       </Text>
-                      {lesson.coach && (
+                      {isCancelled ? (
+                        <Text style={{ color: '#EF4444', fontSize: 11, fontWeight: 'bold' }}>ANNULLATA - Fabio malato</Text>
+                      ) : lesson.coach ? (
                         <Text style={[styles.coachName, isPassed && styles.coachNamePassed]}>
                           Coach {lesson.coach}
                         </Text>
-                      )}
+                      ) : null}
                     </View>
                   </View>
                 </View>
-                {!isPassed ? (
+                {isCancelled ? (
+                  <View style={[styles.bookButton, { backgroundColor: '#EF444420', borderColor: '#EF444450' }]}>
+                    <Ionicons name="close-circle" size={24} color="#EF4444" />
+                    <Text style={[styles.bookButtonText, { color: '#EF4444' }]}>Annullata</Text>
+                  </View>
+                ) : !isPassed ? (
                   <TouchableOpacity
                     style={[
                       styles.bookButton,
