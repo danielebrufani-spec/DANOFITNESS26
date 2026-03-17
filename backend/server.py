@@ -1048,6 +1048,13 @@ async def create_booking(data: BookingCreate, current_user: dict = Depends(get_c
     if not lesson:
         raise HTTPException(status_code=404, detail="Lezione non trovata")
     
+    # BLOCCO TEMPORANEO: Lezione 13:15 del 17/03/2026 annullata (Fabio malato)
+    if data.data_lezione == "2026-03-17" and lesson.get("orario") == "13:15":
+        raise HTTPException(
+            status_code=400,
+            detail="La lezione delle 13:15 di oggi è annullata. Fabio non sta bene, ci scusiamo per il disagio."
+        )
+    
     # CHECK DATA BLOCCATA
     blocked = await db.blocked_dates.find_one({"data": data.data_lezione})
     if blocked:
@@ -2874,6 +2881,11 @@ async def process_lessons_after_30min():
     
     for lesson in lessons:
         lesson_time = lesson["orario"]
+        
+        # BLOCCO TEMPORANEO: Non processare la lezione 13:15 del 17/03/2026 (annullata)
+        if today == "2026-03-17" and lesson_time == "13:15":
+            logger.info(f"[SCHEDULER] Skipping 13:15 lesson on 2026-03-17 (cancelled - Fabio sick)")
+            continue
         
         # Check if this lesson started approximately 30 minutes ago (within 5 min window)
         lesson_hour, lesson_min = map(int, lesson_time.split(":"))

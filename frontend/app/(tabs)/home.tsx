@@ -649,6 +649,32 @@ export default function HomeScreen() {
             <Image source={require('../../assets/images/logo.jpg')} style={styles.logoImage} resizeMode="contain" />
           </View>
 
+          {/* AVVISO URGENTE ADMIN - Lezione 13:15 annullata (solo 17/03/2026) */}
+          {(() => {
+            const now = new Date();
+            const isToday = now.toLocaleDateString('sv-SE', {timeZone: 'Europe/Rome'}) === '2026-03-17';
+            const romeHour = parseInt(now.toLocaleString('en-US', {timeZone: 'Europe/Rome', hour: 'numeric', hour12: false}));
+            const romeMin = parseInt(now.toLocaleString('en-US', {timeZone: 'Europe/Rome', minute: 'numeric'}));
+            const beforeDeadline = romeHour < 13 || (romeHour === 13 && romeMin <= 30);
+            if (isToday && beforeDeadline) {
+              return (
+                <View style={{ backgroundColor: '#EF444420', borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#EF444450' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                    <Ionicons name="warning" size={22} color="#EF4444" />
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#EF4444' }}>Lezione Annullata</Text>
+                  </View>
+                  <Text style={{ fontSize: 14, color: COLORS.text, lineHeight: 22 }}>
+                    La lezione delle <Text style={{ fontWeight: 'bold' }}>13:15</Text> di oggi è <Text style={{ fontWeight: 'bold', color: '#EF4444' }}>annullata</Text>. Fabio non sta bene, ci scusiamo per il disagio.
+                  </Text>
+                  <Text style={{ fontSize: 12, color: COLORS.textSecondary, marginTop: 6 }}>
+                    Le prenotazioni non verranno scalate dall'abbonamento.
+                  </Text>
+                </View>
+              );
+            }
+            return null;
+          })()}
+
           {/* Stats Cards */}
           <View style={styles.statsGrid}>
             <View style={[styles.statCard, { backgroundColor: '#00E676' }]}>
@@ -838,6 +864,32 @@ export default function HomeScreen() {
             ))}
           </View>
         </View>
+
+        {/* AVVISO URGENTE - Lezione 13:15 annullata (solo 17/03/2026) */}
+        {(() => {
+          const now = new Date();
+          const isToday = now.toLocaleDateString('sv-SE', {timeZone: 'Europe/Rome'}) === '2026-03-17';
+          const romeHour = parseInt(now.toLocaleString('en-US', {timeZone: 'Europe/Rome', hour: 'numeric', hour12: false}));
+          const romeMin = parseInt(now.toLocaleString('en-US', {timeZone: 'Europe/Rome', minute: 'numeric'}));
+          const beforeDeadline = romeHour < 13 || (romeHour === 13 && romeMin <= 30);
+          if (isToday && beforeDeadline) {
+            return (
+              <View style={{ backgroundColor: '#EF444420', borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#EF444450' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <Ionicons name="warning" size={22} color="#EF4444" />
+                  <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#EF4444' }}>Lezione Annullata</Text>
+                </View>
+                <Text style={{ fontSize: 14, color: COLORS.text, lineHeight: 22 }}>
+                  La lezione delle <Text style={{ fontWeight: 'bold' }}>13:15</Text> di oggi è <Text style={{ fontWeight: 'bold', color: '#EF4444' }}>annullata</Text>. Fabio non sta bene, ci scusiamo per il disagio.
+                </Text>
+                <Text style={{ fontSize: 12, color: COLORS.textSecondary, marginTop: 6 }}>
+                  Le prenotazioni non verranno scalate dall'abbonamento.
+                </Text>
+              </View>
+            );
+          }
+          return null;
+        })()}
 
         {/* BANNER PIANO ALIMENTARE - Sempre visibile fino a completamento */}
         {!isAdmin && !hasMealPlan && (
