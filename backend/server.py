@@ -4959,6 +4959,20 @@ async def startup_event():
             })
             logger.info(f"[BLOCKED] Data {bd['data']} bloccata: {bd['motivo']}")
     
+    # PULIZIA TEMPORANEA: Cancella prenotazioni per la lezione 13:15 del 17/03/2026 (Fabio malato)
+    try:
+        lessons_1315 = await db.lessons.find({'orario': '13:15'}).to_list(10)
+        lesson_ids_1315 = [str(l['_id']) for l in lessons_1315]
+        if lesson_ids_1315:
+            result = await db.bookings.delete_many({
+                'data_lezione': '2026-03-17',
+                'lesson_id': {'$in': lesson_ids_1315}
+            })
+            if result.deleted_count > 0:
+                logger.info(f"[CLEANUP] Eliminate {result.deleted_count} prenotazioni per lezione 13:15 del 17/03/2026 (annullata)")
+    except Exception as e:
+        logger.warning(f"[CLEANUP] Errore pulizia prenotazioni 13:15: {e}")
+    
     # Avvia il background task per processare le lezioni automaticamente
     asyncio.create_task(auto_process_lessons_task())
     logger.info("[AUTO-PROCESS] Background task avviato - controlla ogni 2 minuti")
