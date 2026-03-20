@@ -61,7 +61,7 @@ interface WeeklyBookings {
 export default function AdminScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'riepilogo' | 'presenze' | 'abbonamenti' | 'insoluti' | 'utenti' | 'archiviati' | 'pianiAI'>('riepilogo');
+  const [activeTab, setActiveTab] = useState<'riepilogo' | 'abbonamenti' | 'insoluti' | 'utenti' | 'archiviati'>('riepilogo');
   
   const [weeklyBookings, setWeeklyBookings] = useState<WeeklyBookings | null>(null);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -705,6 +705,14 @@ export default function AdminScreen() {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
+          style={[styles.tab, activeTab === 'utenti' && styles.tabActive]}
+          onPress={() => setActiveTab('utenti')}
+        >
+          <Text style={[styles.tabText, activeTab === 'utenti' && styles.tabTextActive]}>
+            Utenti
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'abbonamenti' && styles.tabActive]}
           onPress={() => setActiveTab('abbonamenti')}
         >
@@ -724,19 +732,11 @@ export default function AdminScreen() {
           )}
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'utenti' && styles.tabActive]}
-          onPress={() => setActiveTab('utenti')}
-        >
-          <Text style={[styles.tabText, activeTab === 'utenti' && styles.tabTextActive]}>
-            Utenti
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
           style={[styles.tab, activeTab === 'archiviati' && styles.tabActive, archivedUsers.length > 0 && styles.tabWithBadge]}
           onPress={() => setActiveTab('archiviati')}
         >
           <Text style={[styles.tabText, activeTab === 'archiviati' && styles.tabTextActive]}>
-            📦 {archivedUsers.length > 0 ? `(${archivedUsers.length})` : ''}
+            Archivio{archivedUsers.length > 0 ? ` (${archivedUsers.length})` : ''}
           </Text>
         </TouchableOpacity>
       </View>
