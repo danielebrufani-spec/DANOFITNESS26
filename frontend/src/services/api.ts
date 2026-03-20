@@ -236,6 +236,13 @@ export const apiService = {
   blockDate: (data: string, motivo: string) => api.post('/admin/block-date', { data, motivo }),
   unblockDate: (data: string) => api.delete(`/admin/unblock-date/${data}`),
 
+  // Annulla/Ripristina lezione singola
+  cancelLesson: (lesson_id: string, data_lezione: string, motivo: string) => 
+    api.post('/admin/cancel-lesson', { lesson_id, data_lezione, motivo }),
+  restoreLesson: (lesson_id: string, data_lezione: string) => 
+    api.delete(`/admin/cancel-lesson/${lesson_id}/${data_lezione}`),
+  getCancelledLessons: () => api.get<any[]>('/cancelled-lessons'),
+
   getAdminDashboard: () => api.get<{
     stats: {total_users: number; active_subscriptions: number; bookings_today: number};
     today_lessons: {id: string; orario: string; tipo_attivita: string; coach: string; partecipanti: number}[];

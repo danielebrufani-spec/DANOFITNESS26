@@ -79,6 +79,7 @@ export default function AdminScreen() {
   // Daily stats
   const [dailyStats, setDailyStats] = useState<any>(null);
   const [loadingStats, setLoadingStats] = useState(false);
+  const [cancelledLessons, setCancelledLessons] = useState<any[]>([]);
   
   // Search
   const [userSearchQuery, setUserSearchQuery] = useState<string>('');
@@ -190,6 +191,14 @@ export default function AdminScreen() {
         setNutritionData(nutritionRes.data);
       } catch (e) {
         setNutritionData(null);
+      }
+      
+      // Carica lezioni annullate
+      try {
+        const cancelledRes = await apiService.getCancelledLessons();
+        setCancelledLessons(cancelledRes.data);
+      } catch (e) {
+        setCancelledLessons([]);
       }
       
       setWeeklyBookings(weeklyRes.data);
@@ -833,6 +842,85 @@ export default function AdminScreen() {
                 ) : (
                   <Text style={styles.noDataText}>Nessuna prenotazione per oggi</Text>
                 )}
+
+                {/* GESTIONE LEZIONI - Annulla/Ripristina */}
+                <Text style={[styles.riepilogoSectionTitle, { marginTop: 20 }]}>Gestione Lezioni di Oggi</Text>
+                {(() => {
+                  const today = getTodayDateString();
+                  const todayDay = weeklyBookings?.giorni.find(g => g.data === today);
+                  if (!todayDay || todayDay.lezioni.length === 0) {
+                    return <Text style={styles.noDataText}>Nessuna lezione oggi</Text>;
+                  }
+                  return todayDay.lezioni.map((lesson) => {
+                    const info = ATTIVITA_INFO[lesson.tipo_attivita?.toLowerCase()] || {};
+                    const isCancelled = cancelledLessons.some(
+                      (c: any) => c.lesson_id === lesson.lesson_id && c.data_lezione === today
+                    );
+                    const cancelInfo = cancelledLessons.find(
+                      (c: any) => c.lesson_id === lesson.lesson_id && c.data_lezione === today
+                    );
+                    return (
+                      <View key={lesson.lesson_id} data-testid={`manage-lesson-${lesson.lesson_id}`}
+                        style={[styles.lessonStatCard, isCancelled && { opacity: 0.6, borderColor: '#EF444450' }]}>
+                        <View style={[styles.lessonStatColor, { backgroundColor: isCancelled ? '#EF4444' : (info.colore || COLORS.primary) }]} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.lessonStatTime}>{lesson.orario} - {info.nome || lesson.tipo_attivita}</Text>
+                          {isCancelled && (
+                            <Text style={{ color: '#EF4444', fontSize: 11, fontWeight: 'bold' }}>
+                              ANNULLATA: {cancelInfo?.motivo}
+                            </Text>
+                          )}
+                        </View>
+                        {isCancelled ? (
+                          <TouchableOpacity
+                            data-testid={`restore-lesson-${lesson.lesson_id}`}
+                            style={{ backgroundColor: '#22c55e20', borderWidth: 1, borderColor: '#22c55e50', borderRadius: 8, padding: 8, flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                            onPress={async () => {
+                              const ok = typeof window !== 'undefined'
+                                ? window.confirm('Ripristinare questa lezione?')
+                                : true;
+                              if (!ok) return;
+                              try {
+                                await apiService.restoreLesson(lesson.lesson_id, today);
+                                if (typeof window !== 'undefined') window.alert('Lezione ripristinata!');
+                                loadData(false);
+                              } catch (e: any) {
+                                if (typeof window !== 'undefined') window.alert('Errore: ' + (e.response?.data?.detail || 'Impossibile ripristinare'));
+                              }
+                            }}
+                          >
+                            <Ionicons name="checkmark-circle" size={16} color="#22c55e" />
+                            <Text style={{ color: '#22c55e', fontSize: 12, fontWeight: '600' }}>Ripristina</Text>
+                          </TouchableOpacity>
+                        ) : (
+                          <TouchableOpacity
+                            data-testid={`cancel-lesson-${lesson.lesson_id}`}
+                            style={{ backgroundColor: '#EF444410', borderWidth: 1, borderColor: '#EF444430', borderRadius: 8, padding: 8, flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                            onPress={async () => {
+                              const motivo = typeof window !== 'undefined'
+                                ? window.prompt(`Motivo annullamento lezione ${lesson.orario}:`, 'Istruttore assente')
+                                : 'Istruttore assente';
+                              if (!motivo) return;
+                              try {
+                                const res = await apiService.cancelLesson(lesson.lesson_id, today, motivo);
+                                const msg = res.data.prenotazioni_cancellate > 0
+                                  ? `Lezione annullata! ${res.data.prenotazioni_cancellate} prenotazioni cancellate.`
+                                  : 'Lezione annullata!';
+                                if (typeof window !== 'undefined') window.alert(msg);
+                                loadData(false);
+                              } catch (e: any) {
+                                if (typeof window !== 'undefined') window.alert('Errore: ' + (e.response?.data?.detail || 'Impossibile annullare'));
+                              }
+                            }}
+                          >
+                            <Ionicons name="close-circle" size={16} color="#EF4444" />
+                            <Text style={{ color: '#EF4444', fontSize: 12, fontWeight: '600' }}>Annulla</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    );
+                  });
+                })()}
               </>
             ) : (
               <Text style={styles.noDataText}>Caricamento statistiche...</Text>

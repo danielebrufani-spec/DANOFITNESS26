@@ -146,6 +146,7 @@ export default function PrenotaScreen() {
   const [expandedLesson, setExpandedLesson] = useState<string | null>(null);
   const [participants, setParticipants] = useState<{[key: string]: {nome: string}[]}>({});
   const [loadingParticipants, setLoadingParticipants] = useState<string | null>(null);
+  const [cancelledLessons, setCancelledLessons] = useState<any[]>([]);
   
   // Animazioni
   const [showConfetti, setShowConfetti] = useState(false);
@@ -276,6 +277,12 @@ export default function PrenotaScreen() {
       ]);
       setLessons(lessonsRes.data);
       setMyBookings(bookingsRes.data);
+      
+      // Carica lezioni annullate
+      try {
+        const cancelledRes = await apiService.getCancelledLessons();
+        setCancelledLessons(cancelledRes.data);
+      } catch { setCancelledLessons([]); }
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -704,8 +711,13 @@ export default function PrenotaScreen() {
             const isPassed = dateString ? isLessonPassed(dateString, lesson.orario) : false;
             const canBook = bookingStatus.open && !isPassed;
 
-            // BLOCCO TEMPORANEO: Lezione 13:15 del 17/03/2026 annullata
-            const isCancelled = dateString === '2026-03-17' && lesson.orario === '13:15';
+            // LEZIONE ANNULLATA (dinamico da DB)
+            const isCancelled = cancelledLessons.some(
+              (c: any) => c.lesson_id === lesson.id && c.data_lezione === dateString
+            );
+            const cancelInfo = cancelledLessons.find(
+              (c: any) => c.lesson_id === lesson.id && c.data_lezione === dateString
+            );
 
             return (
               <View key={lesson.id} style={[styles.lessonCard, (isPassed || isCancelled) && styles.lessonCardPassed]}>
@@ -723,7 +735,7 @@ export default function PrenotaScreen() {
                         {info.nome || lesson.tipo_attivita}
                       </Text>
                       {isCancelled ? (
-                        <Text style={{ color: '#EF4444', fontSize: 11, fontWeight: 'bold' }}>ANNULLATA - Fabio malato</Text>
+                        <Text style={{ color: '#EF4444', fontSize: 11, fontWeight: 'bold' }}>ANNULLATA{cancelInfo?.motivo ? ` - ${cancelInfo.motivo}` : ''}</Text>
                       ) : lesson.coach ? (
                         <Text style={[styles.coachName, isPassed && styles.coachNamePassed]}>
                           Coach {lesson.coach}

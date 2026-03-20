@@ -262,6 +262,12 @@ class DailyStats(BaseModel):
     abbonamenti_scaduti: int
     lezioni_scalate: int = 0
 
+# Annullamento Lezione singola
+class CancelLessonCreate(BaseModel):
+    lesson_id: str
+    data_lezione: str  # YYYY-MM-DD
+    motivo: str
+
 # Consigli del Maestro
 class ConsiglioCreate(BaseModel):
     testo: Optional[str] = None
@@ -627,6 +633,83 @@ async def unblock_date(data: str, admin_user: dict = Depends(get_admin_user)):
         raise HTTPException(status_code=404, detail="Data non trovata")
     cache.invalidate_prefix("blocked_dates_")
     return {"message": f"Data {data} sbloccata"}
+
+# ======================== CANCEL SINGLE LESSON ========================
+
+@api_router.post("/admin/cancel-lesson")
+async def cancel_lesson(data: CancelLessonCreate, admin_user: dict = Depends(get_admin_user)):
+    """Annulla una lezione specifica in una data specifica"""
+    # Verifica che la lezione esista
+    try:
+        lesson = await db.lessons.find_one({"_id": ObjectId(data.lesson_id)})
+    except:
+        raise HTTPException(status_code=404, detail="Lezione non trovata")
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Lezione non trovata")
+    
+    # Controlla se già annullata
+    existing = await db.cancelled_lessons.find_one({
+        "lesson_id": data.lesson_id,
+        "data_lezione": data.data_lezione
+    })
+    if existing:
+        return {"message": "Lezione già annullata", "prenotazioni_cancellate": 0}
+    
+    # Salva l'annullamento
+    await db.cancelled_lessons.insert_one({
+        "lesson_id": data.lesson_id,
+        "data_lezione": data.data_lezione,
+        "motivo": data.motivo,
+        "orario": lesson.get("orario"),
+        "tipo_attivita": lesson.get("tipo_attivita"),
+        "coach": lesson.get("coach", ""),
+        "created_at": now_rome(),
+        "created_by": str(admin_user["_id"])
+    })
+    
+    # Cancella prenotazioni esistenti per quella lezione in quella data
+    result = await db.bookings.delete_many({
+        "lesson_id": data.lesson_id,
+        "data_lezione": data.data_lezione
+    })
+    
+    cache.invalidate_prefix("cancelled_lessons_")
+    
+    return {
+        "message": f"Lezione {lesson.get('orario')} del {data.data_lezione} annullata",
+        "motivo": data.motivo,
+        "prenotazioni_cancellate": result.deleted_count
+    }
+
+@api_router.delete("/admin/cancel-lesson/{lesson_id}/{data_lezione}")
+async def restore_lesson(lesson_id: str, data_lezione: str, admin_user: dict = Depends(get_admin_user)):
+    """Ripristina una lezione precedentemente annullata"""
+    result = await db.cancelled_lessons.delete_one({
+        "lesson_id": lesson_id,
+        "data_lezione": data_lezione
+    })
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Annullamento non trovato")
+    cache.invalidate_prefix("cancelled_lessons_")
+    return {"message": "Lezione ripristinata"}
+
+@api_router.get("/cancelled-lessons")
+async def get_cancelled_lessons(current_user: dict = Depends(get_current_user)):
+    """Ottieni lezioni annullate per la settimana corrente"""
+    now = now_rome()
+    weekday = now.weekday()
+    monday = now - timedelta(days=weekday)
+    saturday = monday + timedelta(days=5)
+    
+    monday_str = monday.strftime("%Y-%m-%d")
+    saturday_str = saturday.strftime("%Y-%m-%d")
+    
+    cancelled = await db.cancelled_lessons.find(
+        {"data_lezione": {"$gte": monday_str, "$lte": saturday_str}},
+        {"_id": 0}
+    ).to_list(100)
+    
+    return cancelled
 
 # ======================== LESSONS ROUTES ========================
 
@@ -1048,11 +1131,15 @@ async def create_booking(data: BookingCreate, current_user: dict = Depends(get_c
     if not lesson:
         raise HTTPException(status_code=404, detail="Lezione non trovata")
     
-    # BLOCCO TEMPORANEO: Lezione 13:15 del 17/03/2026 annullata (Fabio malato)
-    if data.data_lezione == "2026-03-17" and lesson.get("orario") == "13:15":
+    # CHECK LEZIONE ANNULLATA
+    cancelled = await db.cancelled_lessons.find_one({
+        "lesson_id": data.lesson_id,
+        "data_lezione": data.data_lezione
+    })
+    if cancelled:
         raise HTTPException(
             status_code=400,
-            detail="La lezione delle 13:15 di oggi è annullata. Fabio non sta bene, ci scusiamo per il disagio."
+            detail=f"Lezione annullata: {cancelled.get('motivo', 'Lezione sospesa')}"
         )
     
     # CHECK DATA BLOCCATA
@@ -2881,10 +2968,15 @@ async def process_lessons_after_30min():
     
     for lesson in lessons:
         lesson_time = lesson["orario"]
+        lesson_id = str(lesson["_id"])
         
-        # BLOCCO TEMPORANEO: Non processare la lezione 13:15 del 17/03/2026 (annullata)
-        if today == "2026-03-17" and lesson_time == "13:15":
-            logger.info(f"[SCHEDULER] Skipping 13:15 lesson on 2026-03-17 (cancelled - Fabio sick)")
+        # Check se la lezione è annullata per oggi
+        cancelled = await db.cancelled_lessons.find_one({
+            "lesson_id": lesson_id,
+            "data_lezione": today
+        })
+        if cancelled:
+            logger.info(f"[SCHEDULER] Skipping {lesson_time} on {today} (cancelled: {cancelled.get('motivo', '')})")
             continue
         
         # Check if this lesson started approximately 30 minutes ago (within 5 min window)
@@ -4959,19 +5051,11 @@ async def startup_event():
             })
             logger.info(f"[BLOCKED] Data {bd['data']} bloccata: {bd['motivo']}")
     
-    # PULIZIA TEMPORANEA: Cancella prenotazioni per la lezione 13:15 del 17/03/2026 (Fabio malato)
+    # Indice per cancelled_lessons
     try:
-        lessons_1315 = await db.lessons.find({'orario': '13:15'}).to_list(10)
-        lesson_ids_1315 = [str(l['_id']) for l in lessons_1315]
-        if lesson_ids_1315:
-            result = await db.bookings.delete_many({
-                'data_lezione': '2026-03-17',
-                'lesson_id': {'$in': lesson_ids_1315}
-            })
-            if result.deleted_count > 0:
-                logger.info(f"[CLEANUP] Eliminate {result.deleted_count} prenotazioni per lezione 13:15 del 17/03/2026 (annullata)")
-    except Exception as e:
-        logger.warning(f"[CLEANUP] Errore pulizia prenotazioni 13:15: {e}")
+        await db.cancelled_lessons.create_index([("lesson_id", 1), ("data_lezione", 1)], unique=True)
+    except Exception:
+        pass
     
     # Avvia il background task per processare le lezioni automaticamente
     asyncio.create_task(auto_process_lessons_task())
