@@ -799,23 +799,6 @@ export default function AdminScreen() {
                   <Text style={styles.totalLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>Lezioni Scalate</Text>
                 </View>
 
-                {/* Pulsante Forza Processamento */}
-                <TouchableOpacity
-                  style={styles.forceProcessBtn}
-                  onPress={async () => {
-                    try {
-                      const res = await apiService.forceProcessLessons();
-                      Alert.alert('Risultato', res.data.message);
-                      loadData();
-                    } catch (e) {
-                      Alert.alert('Errore', 'Impossibile processare');
-                    }
-                  }}
-                >
-                  <Ionicons name="refresh-circle" size={20} color="#fff" />
-                  <Text style={styles.forceProcessText}>Forza Aggiornamento Presenze</Text>
-                </TouchableOpacity>
-
                 {/* Presenze per Lezione */}
                 <Text style={styles.riepilogoSectionTitle}>Dettaglio per Lezione</Text>
                 
