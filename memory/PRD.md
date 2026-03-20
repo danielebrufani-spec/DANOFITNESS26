@@ -59,15 +59,13 @@ App di fitness per la gestione di lezioni, prenotazioni, abbonamenti e gamificat
 
 ## Sistema Annullamento Lezioni da Admin (20 Marzo 2026)
 - Nuova collection `cancelled_lessons` nel DB
-- Admin può annullare/ripristinare lezioni singole dal tab "Oggi" → "Gestione Lezioni di Oggi"
+- Admin può annullare/ripristinare lezioni singole dal tab "Oggi" → "Gestione Lezioni della Settimana"
+- Vista settimanale completa: tutte le lezioni da lunedì a sabato con pulsante Annulla/Ripristina
+- Giorni passati senza pulsanti (non modificabili), giorni futuri con Annulla
 - Prenotazioni esistenti cancellate automaticamente all'annullamento
-- Nuove prenotazioni bloccate per lezioni annullate (check in create_booking)
-- Scheduler non processa lezioni annullate
-- Banner dinamico nella Home per lezioni annullate di oggi (admin + clienti)
-- Pagina Lezioni mostra "ANNULLATA" con pulsante disabilitato
-- Rimossi tutti i check hardcoded per date specifiche (era il blocco 17/03)
+- Nuove prenotazioni bloccate per lezioni annullate
+- Banner dinamico nella Home + "ANNULLATA" nella pagina Lezioni
 - Endpoint: POST/DELETE /api/admin/cancel-lesson, GET /api/cancelled-lessons
-- Testato: backend 12/12 test, frontend UI verificata
 
 ## Credenziali Test
 - Email: danielebrufani@gmail.com
