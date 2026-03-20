@@ -4472,7 +4472,7 @@ async def get_quiz_today(current_user: dict = Depends(get_current_user)):
     if existing_answer:
         # Ha già risposto - mostra risultato
         day_of_year = now_rome().timetuple().tm_yday
-        quiz_index = day_of_year % len(QUIZ_DOMANDE)
+        quiz_index = hash(user_id + today) % len(QUIZ_DOMANDE)
         domanda = QUIZ_DOMANDE[quiz_index]
         return {
             "can_play": False,
@@ -4520,9 +4520,8 @@ async def get_quiz_today(current_user: dict = Depends(get_current_user)):
         bonus_type = "standard"  # Bonus standard +1
         potential_bonus = 1
     
-    # Seleziona domanda basata sul giorno (ciclica)
-    day_of_year = now_rome().timetuple().tm_yday
-    quiz_index = day_of_year % len(QUIZ_DOMANDE)
+    # Seleziona domanda unica per ogni utente (basata su user_id + data)
+    quiz_index = hash(user_id + today) % len(QUIZ_DOMANDE)
     domanda = QUIZ_DOMANDE[quiz_index]
     
     return {
@@ -4587,9 +4586,8 @@ async def submit_quiz_answer(risposta_index: int, current_user: dict = Depends(g
         bonus_type = "standard"
         potential_bonus = 1
     
-    # Ottieni domanda del giorno
-    day_of_year = now_rome().timetuple().tm_yday
-    quiz_index = day_of_year % len(QUIZ_DOMANDE)
+    # Ottieni domanda unica per questo utente
+    quiz_index = hash(user_id + today) % len(QUIZ_DOMANDE)
     domanda = QUIZ_DOMANDE[quiz_index]
     
     # Verifica risposta
