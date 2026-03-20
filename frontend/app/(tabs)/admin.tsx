@@ -725,18 +725,18 @@ export default function AdminScreen() {
           onPress={() => setActiveTab('insoluti')}
         >
           <Text style={[styles.tabText, activeTab === 'insoluti' && styles.tabTextActive]}>
-            Insoluti{unpaidSubscriptions.length > 0 ? ` (${unpaidSubscriptions.length})` : ''}
+            Insoluti
           </Text>
           {unpaidSubscriptions.length > 0 && activeTab !== 'insoluti' && (
             <View style={styles.unpaidBadge} />
           )}
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'archiviati' && styles.tabActive, archivedUsers.length > 0 && styles.tabWithBadge]}
+          style={[styles.tab, activeTab === 'archiviati' && styles.tabActive]}
           onPress={() => setActiveTab('archiviati')}
         >
           <Text style={[styles.tabText, activeTab === 'archiviati' && styles.tabTextActive]}>
-            Archivio{archivedUsers.length > 0 ? ` (${archivedUsers.length})` : ''}
+            Archivio
           </Text>
         </TouchableOpacity>
       </View>
