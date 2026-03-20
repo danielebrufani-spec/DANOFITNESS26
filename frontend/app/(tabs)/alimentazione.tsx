@@ -31,6 +31,9 @@ const INTOLLERANZE_OPTIONS = ['Glutine', 'Lattosio', 'Uova', 'Frutta secca', 'Ve
 
 export default function AlimentazioneScreen() {
   const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  const isIstruttore = user?.role === 'istruttore';
+  const isPrivileged = isAdmin || isIstruttore;
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -38,6 +41,11 @@ export default function AlimentazioneScreen() {
   const [profile, setProfile] = useState<any>(null);
   const [plan, setPlan] = useState<any>(null);
   const [showForm, setShowForm] = useState(false);
+
+  // Admin state
+  const [activeView, setActiveView] = useState<'mio' | 'clienti'>(isPrivileged ? 'clienti' : 'mio');
+  const [nutritionData, setNutritionData] = useState<any>(null);
+  const [nutritionSearch, setNutritionSearch] = useState('');
 
   // Form state
   const [sesso, setSesso] = useState('F');
@@ -86,7 +94,15 @@ export default function AlimentazioneScreen() {
     }
   };
 
-  useEffect(() => { loadData(); }, []);
+  const loadAdminData = async () => {
+    if (!isPrivileged) return;
+    try {
+      const res = await apiService.getAdminNutritionPlans();
+      setNutritionData(res.data);
+    } catch { setNutritionData(null); }
+  };
+
+  useEffect(() => { loadData(); loadAdminData(); }, []);
 
   const toggleIntolleranza = (item: string) => {
     setIntolleranze(prev => 
@@ -232,6 +248,166 @@ export default function AlimentazioneScreen() {
         {/* Header */}
         <Text style={styles.header}>Piano Alimentare</Text>
         <Text style={styles.subheader}>Personalizzato per te ogni mese</Text>
+
+        {/* Tab Admin/Istruttore: Il mio Piano | Piani Clienti */}
+        {isPrivileged && (
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+            <TouchableOpacity
+              style={{ flex: 1, padding: 10, borderRadius: 10, alignItems: 'center',
+                backgroundColor: activeView === 'clienti' ? COLORS.primary : COLORS.card,
+                borderWidth: 1, borderColor: activeView === 'clienti' ? COLORS.primary : COLORS.border }}
+              onPress={() => setActiveView('clienti')}
+            >
+              <Text style={{ color: activeView === 'clienti' ? '#000' : COLORS.text, fontWeight: '600', fontSize: 13 }}>
+                Piani Clienti
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ flex: 1, padding: 10, borderRadius: 10, alignItems: 'center',
+                backgroundColor: activeView === 'mio' ? COLORS.primary : COLORS.card,
+                borderWidth: 1, borderColor: activeView === 'mio' ? COLORS.primary : COLORS.border }}
+              onPress={() => setActiveView('mio')}
+            >
+              <Text style={{ color: activeView === 'mio' ? '#000' : COLORS.text, fontWeight: '600', fontSize: 13 }}>
+                Il mio Piano
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* === SEZIONE ADMIN: PIANI CLIENTI === */}
+        {isPrivileged && activeView === 'clienti' && (
+          <>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <Ionicons name="people" size={24} color={COLORS.accent} />
+              <Text style={{ fontSize: 20, fontWeight: 'bold', color: COLORS.text }}>Piani Alimentari Clienti</Text>
+            </View>
+
+            {nutritionData && (
+              <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
+                <View style={{ flex: 1, backgroundColor: COLORS.card, borderRadius: 10, padding: 12, borderLeftWidth: 3, borderLeftColor: COLORS.accent }}>
+                  <Text style={{ fontSize: 20, fontWeight: 'bold', color: COLORS.text }}>{nutritionData.profili_totali || 0}</Text>
+                  <Text style={{ fontSize: 11, color: COLORS.textSecondary }}>Profili Creati</Text>
+                </View>
+                <View style={{ flex: 1, backgroundColor: COLORS.card, borderRadius: 10, padding: 12, borderLeftWidth: 3, borderLeftColor: COLORS.primary }}>
+                  <Text style={{ fontSize: 20, fontWeight: 'bold', color: COLORS.primary }}>{nutritionData.piani_generati || 0}</Text>
+                  <Text style={{ fontSize: 11, color: COLORS.textSecondary }}>Piani Generati ({nutritionData.mese})</Text>
+                </View>
+              </View>
+            )}
+
+            {/* Barra di ricerca */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card, borderRadius: 12, paddingHorizontal: 14, marginBottom: 16, borderWidth: 1, borderColor: COLORS.border }}>
+              <Ionicons name="search" size={18} color={COLORS.textSecondary} />
+              <TextInput
+                data-testid="search-nutrition-plans"
+                style={{ flex: 1, padding: 12, color: COLORS.text, fontSize: 14 }}
+                placeholder="Cerca cliente per nome..."
+                placeholderTextColor={COLORS.textSecondary}
+                value={nutritionSearch}
+                onChangeText={setNutritionSearch}
+              />
+              {nutritionSearch ? (
+                <TouchableOpacity onPress={() => setNutritionSearch('')}>
+                  <Ionicons name="close-circle" size={18} color={COLORS.textSecondary} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            {/* Lista clienti con piano */}
+            {(() => {
+              const plans = nutritionData?.plans || [];
+              const filtered = nutritionSearch.trim()
+                ? plans.filter((p: any) =>
+                    `${p.user_nome} ${p.user_cognome}`.toLowerCase().includes(nutritionSearch.toLowerCase())
+                  )
+                : plans;
+
+              if (filtered.length === 0) {
+                return (
+                  <View style={{ alignItems: 'center', padding: 32, gap: 10 }}>
+                    <Ionicons name="restaurant-outline" size={48} color={COLORS.textSecondary} />
+                    <Text style={{ color: COLORS.textSecondary, fontSize: 14 }}>
+                      {nutritionSearch ? 'Nessun cliente trovato' : 'Nessun piano generato questo mese'}
+                    </Text>
+                  </View>
+                );
+              }
+
+              return filtered.map((planItem: any, idx: number) => {
+                const prof = planItem.profile_at_generation || {};
+                return (
+                  <View key={idx} data-testid={`nutrition-plan-card-${idx}`}
+                    style={{ backgroundColor: COLORS.card, borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: COLORS.border }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                        <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#FF6B6B20', justifyContent: 'center', alignItems: 'center' }}>
+                          <Ionicons name="person" size={18} color={COLORS.accent} />
+                        </View>
+                        <View style={{ flex: 1, marginLeft: 10 }}>
+                          <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.text }}>{planItem.user_nome} {planItem.user_cognome}</Text>
+                          <Text style={{ fontSize: 11, color: COLORS.textSecondary }}>
+                            Generato: {new Date(planItem.generated_at || planItem.created_at).toLocaleDateString('it-IT')}
+                          </Text>
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        data-testid={`reset-plan-${planItem.user_id}`}
+                        style={{ padding: 10, borderRadius: 8, backgroundColor: '#FF6B6B10', borderWidth: 1, borderColor: '#FF6B6B30' }}
+                        onPress={async () => {
+                          const ok = typeof window !== 'undefined'
+                            ? window.confirm(`Azzerare il piano di ${planItem.user_nome} ${planItem.user_cognome}? Potrà rigenerarlo.`)
+                            : true;
+                          if (!ok) return;
+                          try {
+                            await apiService.adminResetUserPlan(planItem.user_id);
+                            if (typeof window !== 'undefined') window.alert('Piano azzerato!');
+                            loadAdminData();
+                          } catch (err: any) {
+                            if (typeof window !== 'undefined') window.alert('Errore: ' + (err.response?.data?.detail || 'Impossibile azzerare'));
+                          }
+                        }}
+                      >
+                        <Ionicons name="trash-outline" size={18} color={COLORS.accent} />
+                      </TouchableOpacity>
+                    </View>
+
+                    {(prof.sesso || prof.eta || prof.peso) ? (
+                      <>
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                          {prof.sesso ? <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.cardLight, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, gap: 4 }}><Ionicons name={prof.sesso === 'M' ? 'male' : 'female'} size={12} color={COLORS.primary} /><Text style={{ fontSize: 11, color: COLORS.text, fontWeight: '500' }}>{prof.sesso === 'M' ? 'Uomo' : 'Donna'}</Text></View> : null}
+                          {prof.eta ? <View style={{ backgroundColor: COLORS.cardLight, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}><Text style={{ fontSize: 11, color: COLORS.text, fontWeight: '500' }}>{prof.eta} anni</Text></View> : null}
+                          {prof.altezza ? <View style={{ backgroundColor: COLORS.cardLight, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}><Text style={{ fontSize: 11, color: COLORS.text, fontWeight: '500' }}>{prof.altezza} cm</Text></View> : null}
+                          {prof.peso ? <View style={{ backgroundColor: COLORS.cardLight, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}><Text style={{ fontSize: 11, color: COLORS.text, fontWeight: '500' }}>{prof.peso} kg</Text></View> : null}
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                          <Ionicons name="flag" size={13} color={COLORS.accent} />
+                          <Text style={{ color: COLORS.text, fontSize: 13, fontWeight: '600', marginLeft: 5 }}>{prof.obiettivo || '—'}</Text>
+                          <Text style={{ color: COLORS.textSecondary, fontSize: 12, marginLeft: 8 }}>{Math.round(prof.calorie_giornaliere || 0)} kcal/giorno</Text>
+                        </View>
+                        {(prof.proteine_g || prof.carboidrati_g || prof.grassi_g) ? (
+                          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 6 }}>
+                            <Text style={{ fontSize: 11, color: '#ef4444', fontWeight: '600' }}>P: {Math.round(prof.proteine_g || 0)}g</Text>
+                            <Text style={{ fontSize: 11, color: '#f59e0b', fontWeight: '600' }}>C: {Math.round(prof.carboidrati_g || 0)}g</Text>
+                            <Text style={{ fontSize: 11, color: '#22c55e', fontWeight: '600' }}>G: {Math.round(prof.grassi_g || 0)}g</Text>
+                          </View>
+                        ) : null}
+                        {prof.intolleranze && prof.intolleranze.length > 0 ? (
+                          <Text style={{ fontSize: 11, color: '#f59e0b', marginTop: 2 }}>Intolleranze: {prof.intolleranze.join(', ')}</Text>
+                        ) : null}
+                      </>
+                    ) : (
+                      <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontStyle: 'italic' }}>Dati profilo non disponibili</Text>
+                    )}
+                  </View>
+                );
+              });
+            })()}
+          </>
+        )}
+
+        {/* === SEZIONE PERSONALE === */}
+        {(!isPrivileged || activeView === 'mio') && (<>
 
         {/* SPIEGAZIONE */}
         {!profile && !showForm && (
@@ -462,6 +638,8 @@ export default function AlimentazioneScreen() {
             </View>
           </View>
         )}
+
+        </>)}
       </ScrollView>
     </SafeAreaView>
   );
