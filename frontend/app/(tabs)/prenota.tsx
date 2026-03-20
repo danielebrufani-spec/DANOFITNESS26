@@ -607,7 +607,6 @@ export default function PrenotaScreen() {
           <Text style={styles.title}>Prenota Lezione</Text>
           <Text style={styles.subtitle}>Settimana {formatDate(getDateString(weekDates[0]))} - {formatDate(getDateString(weekDates[5]))}</Text>
         </View>
-        <Image source={require('../../assets/images/logo.jpg')} style={{ width: 56, height: 56, borderRadius: 28 }} resizeMode="contain" />
       </View>
 
       {/* Booking Status Banner */}

@@ -158,7 +158,6 @@ export default function ClassificaScreen() {
             <Text style={styles.title}>CLASSIFICA</Text>
             <Animated.Text style={[styles.fireEmoji, { transform: [{ scale: fireScale }] }]}>🔥</Animated.Text>
           </View>
-          <Image source={require('../../assets/images/logo.jpg')} style={{ width: 56, height: 56, borderRadius: 28 }} resizeMode="contain" />
         </View>
         <Text style={styles.subtitle}>TOP 3 SETTIMANALE</Text>
         <Text style={styles.weekText}>📅 {settimana}</Text>

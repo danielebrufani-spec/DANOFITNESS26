@@ -1087,7 +1087,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   greeting: { fontSize: 14, color: COLORS.textSecondary },
   userName: { fontSize: 22, fontWeight: 'bold', color: COLORS.text },
-  logoImage: { width: 70, height: 70, borderRadius: 35 },
+  logoImage: { width: 90, height: 90, borderRadius: 45 },
 
   // Stats Grid (Admin)
   statsGrid: { flexDirection: 'row', gap: 6, marginBottom: 16 },
