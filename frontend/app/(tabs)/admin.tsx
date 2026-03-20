@@ -843,8 +843,8 @@ export default function AdminScreen() {
                   <Text style={styles.noDataText}>Nessuna prenotazione per oggi</Text>
                 )}
 
-                {/* GESTIONE LEZIONI - Tutta la settimana */}
-                <Text style={[styles.riepilogoSectionTitle, { marginTop: 20 }]}>Gestione Lezioni della Settimana</Text>
+                {/* GESTIONE LEZIONI - Solo lezioni attive */}
+                <Text style={[styles.riepilogoSectionTitle, { marginTop: 20 }]}>Gestione Lezioni Attive</Text>
                 {(() => {
                   if (!weeklyBookings || !weeklyBookings.giorni || weeklyBookings.giorni.length === 0) {
                     return <Text style={styles.noDataText}>Nessuna lezione questa settimana</Text>;
@@ -854,10 +854,28 @@ export default function AdminScreen() {
                     giovedi: 'Giovedì', venerdi: 'Venerdì', sabato: 'Sabato'
                   };
                   const today = getTodayDateString();
-                  return weeklyBookings.giorni.map((giorno) => {
+                  const now = new Date();
+                  const romeHour = parseInt(now.toLocaleString('en-US', {timeZone: 'Europe/Rome', hour: 'numeric', hour12: false}));
+                  const romeMin = parseInt(now.toLocaleString('en-US', {timeZone: 'Europe/Rome', minute: 'numeric'}));
+                  const nowMinutes = romeHour * 60 + romeMin;
+
+                  let hasAny = false;
+                  const content = weeklyBookings.giorni.map((giorno) => {
                     if (!giorno.lezioni || giorno.lezioni.length === 0) return null;
-                    const isToday = giorno.data === today;
                     const isPast = giorno.data < today;
+                    if (isPast) return null;
+                    const isToday = giorno.data === today;
+
+                    // Filtra: se è oggi, mostra solo lezioni non ancora iniziate
+                    const activeLessons = isToday
+                      ? giorno.lezioni.filter((l) => {
+                          const [h, m] = l.orario.split(':').map(Number);
+                          return h * 60 + m > nowMinutes;
+                        })
+                      : giorno.lezioni;
+
+                    if (activeLessons.length === 0) return null;
+                    hasAny = true;
                     return (
                       <View key={giorno.data} style={{ marginBottom: 12 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
@@ -867,7 +885,7 @@ export default function AdminScreen() {
                           {isToday && <Text style={{ color: COLORS.primary, fontSize: 11, fontWeight: '600' }}>OGGI</Text>}
                           {isPast && <Text style={{ color: COLORS.textSecondary, fontSize: 11 }}>passato</Text>}
                         </View>
-                        {giorno.lezioni.map((lesson) => {
+                        {activeLessons.map((lesson) => {
                           const info = ATTIVITA_INFO[lesson.tipo_attivita?.toLowerCase()] || {};
                           const isCancelled = cancelledLessons.some(
                             (c: any) => c.lesson_id === lesson.lesson_id && c.data_lezione === giorno.data
@@ -893,7 +911,7 @@ export default function AdminScreen() {
                                   </Text>
                                 )}
                               </View>
-                              {!isPast && (isCancelled ? (
+                              {isCancelled ? (
                                 <TouchableOpacity
                                   data-testid={`restore-lesson-${giorno.data}-${lesson.lesson_id}`}
                                   style={{ backgroundColor: '#22c55e20', borderWidth: 1, borderColor: '#22c55e50', borderRadius: 8, padding: 8, flexDirection: 'row', alignItems: 'center', gap: 4 }}
@@ -938,13 +956,15 @@ export default function AdminScreen() {
                                   <Ionicons name="close-circle" size={16} color="#EF4444" />
                                   <Text style={{ color: '#EF4444', fontSize: 12, fontWeight: '600' }}>Annulla</Text>
                                 </TouchableOpacity>
-                              ))}
+                              )}
                             </View>
                           );
                         })}
                       </View>
                     );
                   });
+                  if (!hasAny) return <Text style={styles.noDataText}>Nessuna lezione attiva questa settimana</Text>;
+                  return content;
                 })()}
               </>
             ) : (
