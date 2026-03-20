@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput,
-  ActivityIndicator, SafeAreaView, Platform, Alert, RefreshControl
+  ActivityIndicator, SafeAreaView, Platform, Alert, RefreshControl, Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
@@ -245,9 +245,14 @@ export default function AlimentazioneScreen() {
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadData(); }} tintColor={COLORS.primary} />}
       >
-        {/* Header */}
-        <Text style={styles.header}>Piano Alimentare</Text>
-        <Text style={styles.subheader}>Personalizzato per te ogni mese</Text>
+        {/* Header con Logo */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <View>
+            <Text style={styles.header}>Piano Alimentare</Text>
+            <Text style={styles.subheader}>Personalizzato per te ogni mese</Text>
+          </View>
+          <Image source={require('../../assets/images/logo.jpg')} style={{ width: 56, height: 56, borderRadius: 28 }} resizeMode="contain" />
+        </View>
 
         {/* Tab Admin/Istruttore: Il mio Piano | Piani Clienti */}
         {isPrivileged && (

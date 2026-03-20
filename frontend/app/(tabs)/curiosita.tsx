@@ -393,9 +393,12 @@ export default function CuriositaScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* CURIOSITA DEL GIORNO */}
-        <View style={styles.header}>
-          <Ionicons name="bulb" size={24} color={COLORS.warning} />
-          <Text style={styles.title}>Curiosità</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <View style={styles.header}>
+            <Ionicons name="bulb" size={24} color={COLORS.warning} />
+            <Text style={styles.title}>Curiosità</Text>
+          </View>
+          <Image source={require('../../assets/images/logo.jpg')} style={{ width: 56, height: 56, borderRadius: 28 }} resizeMode="contain" />
         </View>
 
         {curiositaDelGiorno && (

@@ -1054,9 +1054,9 @@ const styles = StyleSheet.create({
     textShadowRadius: 10,
   },
   starWarsLogo: {
-    width: 45,
-    height: 45,
-    borderRadius: 22,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     borderWidth: 2,
     borderColor: '#FFE81F44',
   },
@@ -1087,7 +1087,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   greeting: { fontSize: 14, color: COLORS.textSecondary },
   userName: { fontSize: 22, fontWeight: 'bold', color: COLORS.text },
-  logoImage: { width: 50, height: 50, borderRadius: 25 },
+  logoImage: { width: 70, height: 70, borderRadius: 35 },
 
   // Stats Grid (Admin)
   statsGrid: { flexDirection: 'row', gap: 6, marginBottom: 16 },

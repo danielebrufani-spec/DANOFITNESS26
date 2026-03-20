@@ -13,6 +13,7 @@ import {
   Modal,
   Easing,
   Platform,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -523,6 +524,7 @@ export default function PremiScreen() {
             ))}
           </View>
           <Text style={styles.casinoTitle}>DANO FITNESS</Text>
+          <Image source={require('../../assets/images/logo.jpg')} style={{ width: 60, height: 60, borderRadius: 30, marginVertical: 6 }} resizeMode="contain" />
           <Text style={styles.jackpotSubtitle}>★ LOTTERIA ★</Text>
           <View style={styles.lightsRow}>
             {[...Array(7)].map((_, i) => (
