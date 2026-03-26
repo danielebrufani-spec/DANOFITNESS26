@@ -873,23 +873,23 @@ export default function HomeScreen() {
         <Modal visible={showNewUsersAlert} transparent animationType="fade" onRequestClose={handleDismissNewUsers}>
           <View style={styles.newUserOverlay}>
             <View style={styles.newUserModal}>
+              <TouchableOpacity style={styles.newUserDismissBtn} onPress={handleDismissNewUsers} data-testid="dismiss-new-users">
+                <Text style={styles.newUserDismissText}>OK, VISTO!</Text>
+              </TouchableOpacity>
               <View style={styles.newUserHeader}>
                 <Ionicons name="person-add" size={28} color="#4CAF50" />
                 <Text style={styles.newUserTitle}>
                   {newRegistrations.length === 1 ? 'NUOVO ISCRITTO!' : `${newRegistrations.length} NUOVI ISCRITTI!`}
                 </Text>
               </View>
-              <View style={styles.newUserList}>
+              <ScrollView style={styles.newUserList} showsVerticalScrollIndicator={true}>
                 {newRegistrations.map((u, i) => (
                   <View key={i} style={styles.newUserItem}>
                     <Ionicons name="person-circle" size={20} color={COLORS.primary} />
                     <Text style={styles.newUserName}>{u.nome} {u.cognome}</Text>
                   </View>
                 ))}
-              </View>
-              <TouchableOpacity style={styles.newUserDismissBtn} onPress={handleDismissNewUsers} data-testid="dismiss-new-users">
-                <Text style={styles.newUserDismissText}>OK, VISTO!</Text>
-              </TouchableOpacity>
+              </ScrollView>
             </View>
           </View>
         </Modal>
@@ -1498,6 +1498,7 @@ const styles = StyleSheet.create({
     padding: 24,
     width: '100%',
     maxWidth: 400,
+    maxHeight: '70%',
     borderWidth: 2,
     borderColor: '#4CAF5040',
   },
@@ -1515,7 +1516,8 @@ const styles = StyleSheet.create({
   },
   newUserList: {
     gap: 10,
-    marginBottom: 20,
+    marginBottom: 10,
+    flexGrow: 0,
   },
   newUserItem: {
     flexDirection: 'row',
@@ -1535,6 +1537,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     alignItems: 'center',
+    marginBottom: 16,
   },
   newUserDismissText: {
     fontSize: 16,
