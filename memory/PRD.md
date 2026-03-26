@@ -67,12 +67,25 @@ App di fitness per la gestione di lezioni, prenotazioni, abbonamenti e gamificat
 - Banner dinamico nella Home + "ANNULLATA" nella pagina Lezioni
 - Endpoint: POST/DELETE /api/admin/cancel-lesson, GET /api/cancelled-lessons
 
+## Sistema Lotteria a 3 Vincitori e 3 Premi (26 Marzo 2026)
+- Lotteria mensile aggiornata: ora estrae 3 vincitori distinti (1°, 2°, 3° posto)
+- Admin può configurare 3 premi distinti per ogni mese (premio_1, premio_2, premio_3)
+- Estrazione senza reinserimento: chi vince il 1° premio viene rimosso dal pool prima del 2° posto
+- Ogni vincitore riceve il premio associato alla propria posizione
+- Sia estrazione automatica (1° del mese ore 12:00) che manuale (admin) estraggono 3 vincitori
+- Frontend mostra 3 premi con medaglie (🥇🥈🥉) nella sezione premi, countdown e vincitori
+- Modal admin aggiornato con 3 campi input separati per i premi
+- Albo d'Oro mostra 3 vincitori per mese con i rispettivi premi
+- Mark prize collected ora supporta per-posizione (posizione 1, 2 o 3)
+- Endpoint: POST /admin/lottery/set-prize (3 premi), POST /admin/lottery/mark-prize-collected/{mese}/{posizione}
+
 ## Credenziali Test
 - Email: danielebrufani@gmail.com
 - Password: Mariavittoria23
 
 ## Task Futuri
 ### P1
+- Sistema Notifiche In-App (icona campanella) per lezioni cancellate, abbonamenti in scadenza, classifica
 - "Porta un Amico" (sistema referral per biglietti lotteria bonus)
 - Gamification avanzata (streak e milestone)
 
