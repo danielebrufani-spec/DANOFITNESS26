@@ -1342,6 +1342,7 @@ export default function AdminScreen() {
               </TouchableOpacity>
             </View>
 
+            <ScrollView showsVerticalScrollIndicator={true} style={{ maxHeight: '85%' }}>
             <Text style={styles.modalLabel}>Cerca Utente</Text>
             <View style={styles.modalSearchContainer}>
               <Ionicons name="search" size={18} color={COLORS.textSecondary} />
@@ -1360,30 +1361,70 @@ export default function AdminScreen() {
               )}
             </View>
             
-            <ScrollView style={styles.userListHorizontal} horizontal showsHorizontalScrollIndicator={false}>
-              {filteredUsersForSubscription.map((user) => (
-                <TouchableOpacity
-                  key={user.id}
-                  style={[
-                    styles.userOptionHorizontal,
-                    selectedUser === user.id && styles.userOptionSelected,
-                  ]}
-                  onPress={() => setSelectedUser(user.id)}
-                >
-                  <Text
-                    style={[
-                      styles.userOptionText,
-                      selectedUser === user.id && styles.userOptionTextSelected,
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {user.nome} {user.cognome?.charAt(0)}.
-                  </Text>
+            {selectedUser ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12, backgroundColor: COLORS.primary + '20', borderRadius: 10, padding: 10 }}>
+                <Ionicons name="person-circle" size={22} color={COLORS.primary} />
+                <Text style={{ color: COLORS.text, fontSize: 15, fontWeight: '600', flex: 1 }}>
+                  {users.find(u => u.id === selectedUser)?.nome || ''} {users.find(u => u.id === selectedUser)?.cognome || ''}
+                </Text>
+                <TouchableOpacity onPress={() => setSelectedUser('')}>
+                  <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
-            {filteredUsersForSubscription.length === 0 && (
-              <Text style={styles.noUsersText}>Nessun utente trovato</Text>
+              </View>
+            ) : subscriptionUserSearch.length > 0 ? (
+              <View style={{ maxHeight: 180, marginBottom: 8 }}>
+                <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={true}>
+                  {filteredUsersForSubscription.map((user) => (
+                    <TouchableOpacity
+                      key={user.id}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: 12,
+                        backgroundColor: 'rgba(255,255,255,0.05)',
+                        borderRadius: 10,
+                        marginBottom: 6,
+                      }}
+                      onPress={() => {
+                        setSelectedUser(user.id);
+                        setSubscriptionUserSearch('');
+                      }}
+                    >
+                      <Ionicons name="person-circle" size={22} color={COLORS.primary} />
+                      <Text style={{ color: COLORS.text, fontSize: 15, fontWeight: '500' }}>
+                        {user.nome} {user.cognome}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                  {filteredUsersForSubscription.length === 0 && (
+                    <Text style={styles.noUsersText}>Nessun utente trovato</Text>
+                  )}
+                </ScrollView>
+              </View>
+            ) : (
+              <ScrollView style={styles.userListHorizontal} horizontal showsHorizontalScrollIndicator={false}>
+                {filteredUsersForSubscription.map((user) => (
+                  <TouchableOpacity
+                    key={user.id}
+                    style={[
+                      styles.userOptionHorizontal,
+                      selectedUser === user.id && styles.userOptionSelected,
+                    ]}
+                    onPress={() => setSelectedUser(user.id)}
+                  >
+                    <Text
+                      style={[
+                        styles.userOptionText,
+                        selectedUser === user.id && styles.userOptionTextSelected,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {user.nome} {user.cognome?.charAt(0)}.
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             )}
 
             <Text style={styles.modalLabel}>Tipo Abbonamento</Text>
@@ -1471,6 +1512,7 @@ export default function AdminScreen() {
                 <Text style={styles.modalButtonText}>Crea Abbonamento</Text>
               )}
             </TouchableOpacity>
+            </ScrollView>
           </View>
         </View>
       </Modal>
