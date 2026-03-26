@@ -188,7 +188,7 @@ export default function AbbonamentoScreen() {
                     <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#f59e0b' }}>Abbonamento da saldare</Text>
                   </View>
                   <Text style={{ fontSize: 12, color: COLORS.textSecondary, lineHeight: 18 }}>
-                    Ciao! Il tuo abbonamento non risulta ancora saldato. Scrivimi per qualsiasi cosa, sistemiamo insieme! - Daniele
+                    Ciao! Il tuo abbonamento non risulta ancora saldato. Puoi regolarizzarlo quando ci vediamo in palestra!
                   </Text>
                 </View>
               )}
