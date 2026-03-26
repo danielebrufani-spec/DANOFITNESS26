@@ -386,10 +386,6 @@ export default function ClassificaScreen() {
             <Text style={styles.ruleBullet}>⚖️</Text>
             <Text style={styles.ruleText}>In caso di parità, vince chi ha raggiunto quel numero di allenamenti PRIMA</Text>
           </View>
-          <View style={styles.ruleItem}>
-            <Text style={styles.ruleBullet}>📊</Text>
-            <Text style={styles.ruleText}>Rimane visibile fino al sabato successivo</Text>
-          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
