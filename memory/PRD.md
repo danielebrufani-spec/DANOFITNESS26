@@ -112,6 +112,14 @@ App di fitness per la gestione di lezioni, prenotazioni, abbonamenti e gamificat
 - Il pulsante "Prova 7gg" non appariva per utenti con ruolo "utente" (solo per "client")
 - Fix: condizione cambiata da `role === 'client'` a `role !== 'admin' && role !== 'istruttore'`
 
+## Prova 7 Giorni come Tipo Abbonamento (26 Marzo 2026)
+- "Prova 7 Giorni - Gratis" aggiunta come 5° tipo abbonamento (accanto a 8 Lezioni, 16 Lezioni, Mensile, Trimestrale)
+- Accessibile da Admin > Abbon. > Nuovo Abbonamento > Prova 7 Giorni
+- Selezionandola: toggle pagamento nascosto, info box verde con limitazioni prova
+- Backend: crea subscription con scadenza 7 giorni + attiva flag prova_attiva sull'utente
+- Rimosso pulsante "Prova 7gg" dal tab Utenti (non più necessario)
+- Test: Backend 6/6 passati, Frontend code review OK
+
 ## Task Futuri
 ### P1
 - Sistema Notifiche In-App (icona campanella) per lezioni cancellate, abbonamenti in scadenza, classifica
