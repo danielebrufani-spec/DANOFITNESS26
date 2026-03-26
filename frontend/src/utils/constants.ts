@@ -53,6 +53,10 @@ export const ABBONAMENTO_INFO: { [key: string]: { nome: string; prezzo: string }
     nome: 'Trimestrale',
     prezzo: '175 €'
   },
+  'prova_7gg': {
+    nome: 'Prova 7 Giorni',
+    prezzo: 'Gratis'
+  },
 };
 
 // Format date for display

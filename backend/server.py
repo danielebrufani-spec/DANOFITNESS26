@@ -116,6 +116,7 @@ class SubscriptionType(str, Enum):
     LEZIONI_16 = "lezioni_16"
     MENSILE = "mensile"
     TRIMESTRALE = "trimestrale"
+    PROVA_7GG = "prova_7gg"
 
 class ActivityType(str, Enum):
     CIRCUITO = "circuito"
@@ -366,7 +367,9 @@ async def get_admin_user(current_user: dict = Depends(get_current_user)):
     return current_user
 
 def calculate_expiry_date(tipo: SubscriptionType, start_date: datetime) -> datetime:
-    if tipo == SubscriptionType.LEZIONI_8 or tipo == SubscriptionType.LEZIONI_16:
+    if tipo == SubscriptionType.PROVA_7GG:
+        return start_date + timedelta(days=7)
+    elif tipo == SubscriptionType.LEZIONI_8 or tipo == SubscriptionType.LEZIONI_16:
         # Validità annuale per abbonamenti a lezioni
         return start_date + timedelta(days=365)
     elif tipo == SubscriptionType.MENSILE:
@@ -399,6 +402,7 @@ def get_initial_lessons(tipo: SubscriptionType) -> Optional[int]:
         return 8
     elif tipo == SubscriptionType.LEZIONI_16:
         return 16
+    # prova_7gg, mensile, trimestrale: no lesson count
     return None
 
 # Removed count_attended_lessons to save memory - was causing too many DB queries
@@ -830,6 +834,18 @@ async def create_subscription(data: SubscriptionCreate, admin_user: dict = Depen
     }
     
     result = await db.subscriptions.insert_one(subscription)
+    
+    # Se è prova 7gg, attiva anche i flag prova sull'utente
+    if data.tipo == SubscriptionType.PROVA_7GG:
+        await db.users.update_one(
+            {"_id": ObjectId(data.user_id)},
+            {"$set": {
+                "prova_attiva": True,
+                "prova_inizio": start_date.strftime("%Y-%m-%d"),
+                "prova_scadenza": expiry_date.strftime("%Y-%m-%d"),
+            }}
+        )
+        logger.info(f"[TRIAL] Prova attivata via abbonamento per {user.get('nome')} {user.get('cognome')} - scade {expiry_date.strftime('%Y-%m-%d')}")
     
     is_expired = expiry_date < now_rome()
     
@@ -4225,12 +4241,24 @@ async def check_user_has_active_subscription(user_id: str) -> bool:
 async def check_user_is_trial(user_id: str) -> bool:
     """Verifica se un utente e in prova gratuita (non abbonato vero)"""
     today_str = now_rome().strftime("%Y-%m-%d")
+    now = now_rome()
+    # Controlla flag prova sull'utente
     user = await db.users.find_one(
         {"_id": ObjectId(user_id)},
         {"prova_attiva": 1, "prova_scadenza": 1}
     )
     if user and user.get("prova_attiva") and user.get("prova_scadenza"):
-        return user["prova_scadenza"] >= today_str
+        if user["prova_scadenza"] >= today_str:
+            return True
+    # Controlla anche se ha un abbonamento di tipo prova_7gg attivo
+    trial_sub = await db.subscriptions.find_one({
+        "user_id": user_id,
+        "tipo": "prova_7gg",
+        "attivo": True,
+        "data_scadenza": {"$gte": now}
+    })
+    if trial_sub:
+        return True
     return False
 
 async def get_users_with_active_subscription() -> set:

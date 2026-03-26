@@ -277,7 +277,7 @@ export default function AdminScreen() {
       const data: any = {
         user_id: selectedUser,
         tipo: selectedType,
-        pagato: newSubPagato,
+        pagato: selectedType === 'prova_7gg' ? true : newSubPagato,
       };
       
       if (customLessons && (selectedType === 'lezioni_8' || selectedType === 'lezioni_16')) {
@@ -1239,18 +1239,6 @@ export default function AdminScreen() {
                       <Ionicons name="archive-outline" size={16} color="#6366f1" />
                       <Text style={[styles.actionBtnText, { color: '#6366f1' }]}>Archivia</Text>
                     </TouchableOpacity>
-                    {user.role !== 'admin' && user.role !== 'istruttore' && (
-                      <TouchableOpacity 
-                        style={[styles.actionBtnSmall, { backgroundColor: user.prova_attiva ? '#FF572220' : '#4CAF5020' }]}
-                        onPress={() => handleToggleTrial(user)}
-                        data-testid={`trial-btn-${user.id}`}
-                      >
-                        <Ionicons name={user.prova_attiva ? "close-circle-outline" : "gift-outline"} size={16} color={user.prova_attiva ? '#FF5722' : '#4CAF50'} />
-                        <Text style={[styles.actionBtnText, { color: user.prova_attiva ? '#FF5722' : '#4CAF50' }]}>
-                          {user.prova_attiva ? 'Stop Prova' : 'Prova 7gg'}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
                     <TouchableOpacity 
                       style={[styles.actionBtnSmall, { backgroundColor: COLORS.error + '20' }]}
                       onPress={() => handleDeleteUser(user.id, `${user.nome} ${user.cognome}`)}
@@ -1438,23 +1426,39 @@ export default function AdminScreen() {
               </>
             )}
 
-            <Text style={styles.modalLabel}>Stato Pagamento</Text>
-            <View style={styles.paymentToggle}>
-              <TouchableOpacity
-                style={[styles.paymentOption, newSubPagato && styles.paymentOptionActive]}
-                onPress={() => setNewSubPagato(true)}
-              >
-                <Ionicons name="checkmark-circle" size={20} color={newSubPagato ? '#fff' : COLORS.success} />
-                <Text style={[styles.paymentOptionText, newSubPagato && styles.paymentOptionTextActive]}>Pagato</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.paymentOption, !newSubPagato && styles.paymentOptionUnpaid]}
-                onPress={() => setNewSubPagato(false)}
-              >
-                <Ionicons name="alert-circle" size={20} color={!newSubPagato ? '#fff' : COLORS.error} />
-                <Text style={[styles.paymentOptionText, !newSubPagato && styles.paymentOptionTextActive]}>Da Saldare</Text>
-              </TouchableOpacity>
-            </View>
+            {selectedType === 'prova_7gg' && (
+              <View style={{ backgroundColor: '#4CAF5015', borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: '#4CAF5040' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Ionicons name="gift" size={20} color="#4CAF50" />
+                  <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#4CAF50' }}>Prova Gratuita</Text>
+                </View>
+                <Text style={{ fontSize: 12, color: COLORS.textSecondary, marginTop: 6, lineHeight: 18 }}>
+                  Il cliente potrà prenotare lezioni per 7 giorni ma NON potrà generare il piano alimentare AI.
+                </Text>
+              </View>
+            )}
+
+            {selectedType !== 'prova_7gg' && (
+              <>
+                <Text style={styles.modalLabel}>Stato Pagamento</Text>
+                <View style={styles.paymentToggle}>
+                  <TouchableOpacity
+                    style={[styles.paymentOption, newSubPagato && styles.paymentOptionActive]}
+                    onPress={() => setNewSubPagato(true)}
+                  >
+                    <Ionicons name="checkmark-circle" size={20} color={newSubPagato ? '#fff' : COLORS.success} />
+                    <Text style={[styles.paymentOptionText, newSubPagato && styles.paymentOptionTextActive]}>Pagato</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.paymentOption, !newSubPagato && styles.paymentOptionUnpaid]}
+                    onPress={() => setNewSubPagato(false)}
+                  >
+                    <Ionicons name="alert-circle" size={20} color={!newSubPagato ? '#fff' : COLORS.error} />
+                    <Text style={[styles.paymentOptionText, !newSubPagato && styles.paymentOptionTextActive]}>Da Saldare</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
 
             <TouchableOpacity
               style={[styles.modalButton, addingSubscription && styles.modalButtonDisabled]}

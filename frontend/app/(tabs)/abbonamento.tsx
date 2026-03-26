@@ -30,6 +30,7 @@ const PACCHETTO_NOME: { [key: string]: string } = {
   'lezioni_16': '16 Lezioni',
   'mensile': 'Mensile',
   'trimestrale': 'Trimestrale',
+  'prova_7gg': 'Prova 7 Giorni',
 };
 
 export default function AbbonamentoScreen() {
