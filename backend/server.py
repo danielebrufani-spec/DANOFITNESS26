@@ -154,7 +154,10 @@ class UserResponse(BaseModel):
     push_token: Optional[str] = None
     profile_image: Optional[str] = None
     must_reset_password: Optional[bool] = False
-    archived: Optional[bool] = False  # Cliente archiviato (non attivo)
+    archived: Optional[bool] = False
+    prova_attiva: Optional[bool] = False
+    prova_inizio: Optional[str] = None
+    prova_scadenza: Optional[str] = None
 
 class SubscriptionCreate(BaseModel):
     user_id: str
@@ -570,7 +573,10 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         push_token=current_user.get("push_token"),
         profile_image=None,
         must_reset_password=current_user.get("must_reset_password", False),
-        archived=current_user.get("archived", False)
+        archived=current_user.get("archived", False),
+        prova_attiva=current_user.get("prova_attiva", False),
+        prova_inizio=current_user.get("prova_inizio"),
+        prova_scadenza=current_user.get("prova_scadenza")
     )
 
 @api_router.put("/auth/push-token")
@@ -1116,6 +1122,55 @@ async def delete_subscription(subscription_id: str, admin_user: dict = Depends(g
         return {"message": "Abbonamento eliminato"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# ======================== PROVA GRATUITA (TRIAL) ========================
+
+@api_router.post("/admin/activate-trial/{user_id}")
+async def activate_trial(user_id: str, admin_user: dict = Depends(get_admin_user)):
+    """Attiva 7 giorni di prova gratuita per un utente"""
+    user = await db.users.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="Utente non trovato")
+    
+    if user.get("prova_attiva"):
+        raise HTTPException(status_code=400, detail="Questo utente ha gia una prova attiva!")
+    
+    now = datetime.now(ROME_TZ)
+    scadenza = now + timedelta(days=7)
+    
+    await db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$set": {
+            "prova_attiva": True,
+            "prova_inizio": now.strftime("%Y-%m-%d"),
+            "prova_scadenza": scadenza.strftime("%Y-%m-%d"),
+        }}
+    )
+    
+    logger.info(f"[TRIAL] Prova attivata per {user.get('nome')} {user.get('cognome')} - scade {scadenza.strftime('%Y-%m-%d')}")
+    return {
+        "message": f"Prova attivata per {user.get('nome')} {user.get('cognome')}!",
+        "prova_inizio": now.strftime("%Y-%m-%d"),
+        "prova_scadenza": scadenza.strftime("%Y-%m-%d")
+    }
+
+
+@api_router.post("/admin/deactivate-trial/{user_id}")
+async def deactivate_trial(user_id: str, admin_user: dict = Depends(get_admin_user)):
+    """Disattiva la prova gratuita di un utente"""
+    user = await db.users.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="Utente non trovato")
+    
+    await db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$set": {"prova_attiva": False}}
+    )
+    
+    logger.info(f"[TRIAL] Prova disattivata per {user.get('nome')} {user.get('cognome')}")
+    return {"message": f"Prova disattivata per {user.get('nome')} {user.get('cognome')}"}
+
 
 # ======================== BOOKINGS ROUTES ========================
 
@@ -1780,7 +1835,10 @@ async def get_all_users(admin_user: dict = Depends(get_admin_user)):
             created_at=user["created_at"],
             push_token=user.get("push_token"),
             profile_image=None,  # Excluded for performance
-            archived=user.get("archived", False)
+            archived=user.get("archived", False),
+            prova_attiva=user.get("prova_attiva", False),
+            prova_inizio=user.get("prova_inizio"),
+            prova_scadenza=user.get("prova_scadenza")
         ) for user in users
     ]
 
@@ -2703,6 +2761,10 @@ async def generate_meal_plan(background_tasks: BackgroundTasks, current_user: di
     # Verifica abbonamento attivo (admin e istruttori bypassano)
     is_privileged = current_user.get("role") in ("admin", "istruttore")
     if not is_privileged:
+        # Utenti in prova NON possono generare il piano
+        is_trial = await check_user_is_trial(user_id)
+        if is_trial:
+            raise HTTPException(status_code=403, detail="Il piano alimentare AI e riservato agli abbonati. Sottoscrivi un abbonamento per accedere!")
         has_sub = await check_user_has_active_subscription(user_id)
         if not has_sub:
             raise HTTPException(status_code=403, detail="Serve un abbonamento attivo")
@@ -4092,8 +4154,18 @@ UTENTI_TEST_ESCLUSI = [
 ]
 
 async def check_user_has_active_subscription(user_id: str) -> bool:
-    """Verifica se un singolo utente ha abbonamento attivo (per UI)"""
+    """Verifica se un singolo utente ha abbonamento attivo O prova attiva (per UI)"""
     now = now_rome()
+    today_str = now.strftime("%Y-%m-%d")
+    
+    # Controlla prova gratuita attiva
+    user = await db.users.find_one(
+        {"_id": ObjectId(user_id)},
+        {"prova_attiva": 1, "prova_scadenza": 1}
+    )
+    if user and user.get("prova_attiva") and user.get("prova_scadenza"):
+        if user["prova_scadenza"] >= today_str:
+            return True
     
     # Cerca abbonamento attivo dell'utente (solo campi necessari)
     subscription = await db.subscriptions.find_one(
@@ -4105,11 +4177,22 @@ async def check_user_has_active_subscription(user_id: str) -> bool:
         return False
     
     is_expired = subscription["data_scadenza"] < now
-    # Per abbonamenti a pacchetto, controlla anche le lezioni rimanenti
     if subscription.get("lezioni_rimanenti") is not None and subscription["lezioni_rimanenti"] <= 0:
         is_expired = True
     
     return not is_expired
+
+
+async def check_user_is_trial(user_id: str) -> bool:
+    """Verifica se un utente e in prova gratuita (non abbonato vero)"""
+    today_str = now_rome().strftime("%Y-%m-%d")
+    user = await db.users.find_one(
+        {"_id": ObjectId(user_id)},
+        {"prova_attiva": 1, "prova_scadenza": 1}
+    )
+    if user and user.get("prova_attiva") and user.get("prova_scadenza"):
+        return user["prova_scadenza"] >= today_str
+    return False
 
 async def get_users_with_active_subscription() -> set:
     """Restituisce gli user_id degli utenti con abbonamento attivo per la LOTTERIA (esclude utenti test)"""

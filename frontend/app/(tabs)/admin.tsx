@@ -522,6 +522,55 @@ export default function AdminScreen() {
     }
   };
 
+  // Toggle prova gratuita
+  const handleToggleTrial = async (user: any) => {
+    const nome = `${user.nome} ${user.cognome}`;
+    const isActive = user.prova_attiva;
+    const msg = isActive 
+      ? `Vuoi disattivare la prova di ${nome}?`
+      : `Vuoi attivare 7 giorni di prova gratuita per ${nome}?`;
+    
+    if (Platform.OS === 'web') {
+      if (window.confirm(msg)) {
+        try {
+          if (isActive) {
+            await apiService.deactivateTrial(user.id);
+            alert(`Prova disattivata per ${nome}`);
+          } else {
+            const res = await apiService.activateTrial(user.id);
+            alert(`Prova attivata! Scade il ${res.data.prova_scadenza}`);
+          }
+          loadData();
+        } catch (error: any) {
+          alert(error.response?.data?.detail || 'Errore');
+        }
+      }
+    } else {
+      Alert.alert(
+        isActive ? 'Disattiva Prova' : 'Attiva Prova',
+        msg,
+        [
+          { text: 'No', style: 'cancel' },
+          { text: 'Si', onPress: async () => {
+            try {
+              if (isActive) {
+                await apiService.deactivateTrial(user.id);
+                Alert.alert('Fatto', `Prova disattivata per ${nome}`);
+              } else {
+                const res = await apiService.activateTrial(user.id);
+                Alert.alert('Fatto', `Prova attivata! Scade il ${res.data.prova_scadenza}`);
+              }
+              loadData();
+            } catch (error: any) {
+              Alert.alert('Errore', error.response?.data?.detail || 'Errore');
+            }
+          }}
+        ]
+      );
+    }
+  };
+
+
   // Riattiva cliente archiviato
   const handleRestoreUser = async (userId: string, userName: string) => {
     if (Platform.OS === 'web') {
@@ -1152,6 +1201,11 @@ export default function AdminScreen() {
                       <Ionicons name="fitness" size={14} color="#FFF" />
                     </TouchableOpacity>
                   ) : null}
+                  {user.prova_attiva && (
+                    <View style={styles.trialBadge} data-testid={`trial-badge-${user.id}`}>
+                      <Text style={styles.trialBadgeText}>PROVA</Text>
+                    </View>
+                  )}
                 </View>
                 {user.role !== 'admin' && (
                   <View style={styles.userActionsRow}>
@@ -1185,6 +1239,18 @@ export default function AdminScreen() {
                       <Ionicons name="archive-outline" size={16} color="#6366f1" />
                       <Text style={[styles.actionBtnText, { color: '#6366f1' }]}>Archivia</Text>
                     </TouchableOpacity>
+                    {user.role === 'client' && (
+                      <TouchableOpacity 
+                        style={[styles.actionBtnSmall, { backgroundColor: user.prova_attiva ? '#FF572220' : '#4CAF5020' }]}
+                        onPress={() => handleToggleTrial(user)}
+                        data-testid={`trial-btn-${user.id}`}
+                      >
+                        <Ionicons name={user.prova_attiva ? "close-circle-outline" : "gift-outline"} size={16} color={user.prova_attiva ? '#FF5722' : '#4CAF50'} />
+                        <Text style={[styles.actionBtnText, { color: user.prova_attiva ? '#FF5722' : '#4CAF50' }]}>
+                          {user.prova_attiva ? 'Stop Prova' : 'Prova 7gg'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                     <TouchableOpacity 
                       style={[styles.actionBtnSmall, { backgroundColor: COLORS.error + '20' }]}
                       onPress={() => handleDeleteUser(user.id, `${user.nome} ${user.cognome}`)}
@@ -2131,6 +2197,18 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  trialBadge: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  trialBadgeText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 1,
   },
   adminBadge: {
     backgroundColor: COLORS.primary,

@@ -87,7 +87,10 @@ export interface User {
   push_token?: string;
   profile_image?: string;
   must_reset_password?: boolean;
-  archived?: boolean;  // Cliente archiviato (non attivo)
+  archived?: boolean;
+  prova_attiva?: boolean;
+  prova_inizio?: string;
+  prova_scadenza?: string;
 }
 
 export interface Reply {
@@ -189,6 +192,8 @@ export const apiService = {
   archiveUser: (userId: string) => api.post(`/admin/users/${userId}/archive`),
   restoreUser: (userId: string) => api.post(`/admin/users/${userId}/restore`),
   deleteUser: (userId: string) => api.delete(`/admin/users/${userId}`),
+  activateTrial: (userId: string) => api.post(`/admin/activate-trial/${userId}`),
+  deactivateTrial: (userId: string) => api.post(`/admin/deactivate-trial/${userId}`),
   updateUser: (userId: string, data: {nome?: string; cognome?: string; soprannome?: string; telefono?: string}) => 
     api.put(`/admin/users/${userId}`, data),
   getDailyStats: (date: string) => api.get<DailyStats>(`/admin/daily-stats/${date}`),

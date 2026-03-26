@@ -560,7 +560,15 @@ export default function AlimentazioneScreen() {
         )}
 
         {/* GENERA PIANO o MOSTRA PIANO */}
-        {profile && !plan && !showForm && (
+        {profile && !plan && !showForm && user?.prova_attiva && !isPrivileged && (
+          <View style={styles.trialDietWarning} data-testid="trial-diet-warning">
+            <Ionicons name="lock-closed" size={20} color="#FF9800" />
+            <Text style={styles.trialDietWarningText}>
+              Il piano alimentare AI e riservato ai clienti abbonati. Al termine della prova, sottoscrivi un abbonamento per generare il tuo piano personalizzato!
+            </Text>
+          </View>
+        )}
+        {profile && !plan && !showForm && (!user?.prova_attiva || isPrivileged) && (
           <TouchableOpacity style={styles.generateButton} onPress={handleGeneratePlan} disabled={generating}>
             {generating ? (
               <View style={styles.generatingContent}>
@@ -708,6 +716,8 @@ const styles = StyleSheet.create({
   lessonAdviceText: { flex: 1, fontSize: 13, color: COLORS.textSecondary, lineHeight: 18 },
 
   // Generate button
+  trialDietWarning: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: '#FF980015', borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#FF980040' },
+  trialDietWarningText: { flex: 1, fontSize: 13, color: '#FF9800', lineHeight: 20, fontWeight: '600' },
   generateButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: COLORS.primary, padding: 18, borderRadius: 16 },
   generateButtonText: { fontSize: 17, fontWeight: 'bold', color: '#000' },
   generatingContent: { alignItems: 'center', gap: 6 },

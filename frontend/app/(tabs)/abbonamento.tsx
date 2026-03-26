@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { apiService, Subscription } from '../../src/services/api';
 import { COLORS, formatDate } from '../../src/utils/constants';
+import { useAuth } from '../../src/context/AuthContext';
 
 interface LogEntry {
   numero: number;
@@ -32,6 +33,7 @@ const PACCHETTO_NOME: { [key: string]: string } = {
 };
 
 export default function AbbonamentoScreen() {
+  const { user, refreshUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -167,6 +169,37 @@ export default function AbbonamentoScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.title}>Il Mio Abbonamento</Text>
+
+        {/* PROVA GRATUITA ATTIVA */}
+        {user?.prova_attiva && user?.prova_scadenza && (
+          <View style={styles.trialCard} data-testid="trial-card">
+            <View style={styles.trialHeader}>
+              <Ionicons name="gift" size={24} color="#4CAF50" />
+              <Text style={styles.trialTitle}>ABBONAMENTO DI PROVA</Text>
+            </View>
+            <View style={styles.trialDatesRow}>
+              <View style={styles.trialDateBox}>
+                <Text style={styles.trialDateLabel}>Inizio</Text>
+                <Text style={styles.trialDateValue}>
+                  {user.prova_inizio ? formatDate(user.prova_inizio) : 'Oggi'}
+                </Text>
+              </View>
+              <View style={styles.trialDateDivider} />
+              <View style={styles.trialDateBox}>
+                <Text style={styles.trialDateLabel}>Scadenza</Text>
+                <Text style={[styles.trialDateValue, { color: COLORS.error }]}>
+                  {formatDate(user.prova_scadenza)}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.trialInfoBox}>
+              <Ionicons name="information-circle" size={18} color="#4CAF50" />
+              <Text style={styles.trialInfoText}>
+                Stai usando un periodo di prova gratuita. Al termine, per continuare ad usufruire di tutti i servizi dovrai sottoscrivere un abbonamento. Contatta Daniele!
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* STATO ABBONAMENTO */}
         <View style={styles.statusSection}>
@@ -441,6 +474,69 @@ const styles = StyleSheet.create({
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scrollContent: { padding: 14, paddingBottom: 30 },
   title: { fontSize: 20, fontWeight: 'bold', color: COLORS.text, marginBottom: 16 },
+
+  // Trial Card
+  trialCard: {
+    backgroundColor: '#4CAF5010',
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: '#4CAF5040',
+  },
+  trialHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 14,
+  },
+  trialTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+    letterSpacing: 1,
+  },
+  trialDatesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+  },
+  trialDateBox: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  trialDateDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: '#4CAF5030',
+  },
+  trialDateLabel: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginBottom: 4,
+  },
+  trialDateValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  trialInfoBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: '#4CAF5010',
+    borderRadius: 10,
+    padding: 12,
+  },
+  trialInfoText: {
+    flex: 1,
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    lineHeight: 18,
+  },
 
   // Status Section
   statusSection: { marginBottom: 20 },
