@@ -60,6 +60,7 @@ interface Vincitore {
   cognome: string;
   soprannome?: string;
   biglietti: number;
+  premio?: string;
   is_me: boolean;
 }
 
@@ -72,8 +73,9 @@ interface LotteryStatus {
   totale_partecipanti: number;
   totale_biglietti?: number;
   data_estrazione?: string;
-  premio?: string;
-  premio_descrizione?: string;
+  premio_1?: string;
+  premio_2?: string;
+  premio_3?: string;
   is_me_winner: boolean;
   prossima_estrazione: string;
   secondi_a_estrazione: number;
@@ -83,17 +85,22 @@ interface LotteryStatus {
 interface Winner {
   mese: string;
   mese_riferimento: string;
-  nome: string;
-  cognome: string;
-  soprannome?: string;
-  biglietti: number;
+  vincitori: {
+    posizione: number;
+    nome: string;
+    cognome: string;
+    soprannome?: string;
+    biglietti: number;
+    premio?: string;
+  }[];
   totale_partecipanti: number;
   data_estrazione?: string;
 }
 
 interface Prize {
-  premio: string | null;
-  descrizione: string | null;
+  premio_1: string | null;
+  premio_2: string | null;
+  premio_3: string | null;
   mese: string;
 }
 
@@ -107,8 +114,9 @@ export default function PremiScreen() {
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [showRules, setShowRules] = useState(false);
   const [showSetPrize, setShowSetPrize] = useState(false);
-  const [newPrize, setNewPrize] = useState('');
-  const [newPrizeDesc, setNewPrizeDesc] = useState('');
+  const [newPrize1, setNewPrize1] = useState('');
+  const [newPrize2, setNewPrize2] = useState('');
+  const [newPrize3, setNewPrize3] = useState('');
   const [savingPrize, setSavingPrize] = useState(false);
 
   // Ruota della Fortuna
@@ -444,17 +452,18 @@ export default function PremiScreen() {
   };
 
   const handleSavePrize = async () => {
-    if (!newPrize.trim()) {
-      Alert.alert('Errore', 'Inserisci il premio');
+    if (!newPrize1.trim() || !newPrize2.trim() || !newPrize3.trim()) {
+      Alert.alert('Errore', 'Inserisci tutti e 3 i premi');
       return;
     }
     setSavingPrize(true);
     try {
-      await apiService.setMonthlyPrize(newPrize, newPrizeDesc || undefined);
-      Alert.alert('Successo', 'Premio impostato!');
+      await apiService.setMonthlyPrize(newPrize1, newPrize2, newPrize3);
+      Alert.alert('Successo', 'Premi impostati!');
       setShowSetPrize(false);
-      setNewPrize('');
-      setNewPrizeDesc('');
+      setNewPrize1('');
+      setNewPrize2('');
+      setNewPrize3('');
       loadData();
     } catch (error: any) {
       Alert.alert('Errore', error.response?.data?.detail || 'Errore');
@@ -540,21 +549,31 @@ export default function PremiScreen() {
           </View>
         </View>
 
-        {/* Premio del Mese */}
+        {/* Premi del Mese - 3 Premi */}
         <Animated.View style={[styles.prizeCard, { transform: [{ scale: pulseAnim }] }]}>
-          <Text style={styles.prizeLabel}>🎰 PREMIO IN PALIO 🎰</Text>
-          {prize?.premio ? (
-            <>
-              <Text style={styles.prizeName}>{prize.premio}</Text>
-              {prize.descrizione && <Text style={styles.prizeDesc}>{prize.descrizione}</Text>}
-            </>
+          <Text style={styles.prizeLabel}>🎰 PREMI IN PALIO 🎰</Text>
+          {(prize?.premio_1 || prize?.premio_2 || prize?.premio_3) ? (
+            <View style={{ width: '100%' }}>
+              <View style={styles.prizeRow}>
+                <Text style={styles.prizeMedal}>🥇</Text>
+                <Text style={styles.prizeName}>{prize?.premio_1 || 'Da annunciare'}</Text>
+              </View>
+              <View style={styles.prizeRow}>
+                <Text style={styles.prizeMedal}>🥈</Text>
+                <Text style={styles.prizeName}>{prize?.premio_2 || 'Da annunciare'}</Text>
+              </View>
+              <View style={styles.prizeRow}>
+                <Text style={styles.prizeMedal}>🥉</Text>
+                <Text style={styles.prizeName}>{prize?.premio_3 || 'Da annunciare'}</Text>
+              </View>
+            </View>
           ) : (
-            <Text style={styles.prizeEmpty}>Premio da annunciare...</Text>
+            <Text style={styles.prizeEmpty}>Premi da annunciare...</Text>
           )}
           {isAdmin && (
-            <TouchableOpacity style={styles.setPrizeBtn} onPress={() => setShowSetPrize(true)}>
+            <TouchableOpacity style={styles.setPrizeBtn} onPress={() => setShowSetPrize(true)} data-testid="set-prize-btn">
               <Ionicons name="create" size={16} color={VEGAS_COLORS.gold} />
-              <Text style={styles.setPrizeBtnText}>Imposta Premio</Text>
+              <Text style={styles.setPrizeBtnText}>Imposta Premi</Text>
             </TouchableOpacity>
           )}
         </Animated.View>
@@ -748,10 +767,18 @@ export default function PremiScreen() {
 
         {/* Countdown */}
         <View style={styles.countdownCard}>
-          {/* Premio in palio - sempre visibile */}
+          {/* Premi in palio - sempre visibile */}
           <View style={styles.premioHeaderBanner}>
-            <Text style={styles.premioHeaderText}>🎁 PREMIO IN PALIO 🎁</Text>
-            <Text style={styles.premioHeaderPrize}>3 Magliette o Canotte</Text>
+            <Text style={styles.premioHeaderText}>🎁 PREMI IN PALIO 🎁</Text>
+            {(prize?.premio_1 || status?.premio_1) ? (
+              <>
+                <Text style={styles.premioHeaderPrize}>🥇 {prize?.premio_1 || status?.premio_1}</Text>
+                <Text style={styles.premioHeaderPrize}>🥈 {prize?.premio_2 || status?.premio_2 || 'Da annunciare'}</Text>
+                <Text style={styles.premioHeaderPrize}>🥉 {prize?.premio_3 || status?.premio_3 || 'Da annunciare'}</Text>
+              </>
+            ) : (
+              <Text style={styles.premioHeaderPrize}>3 Premi da annunciare</Text>
+            )}
             <Text style={styles.premioHeaderWinners}>3 VINCITORI! Il Maestro è buono e vi vuole bene! 💪</Text>
           </View>
           
@@ -1013,12 +1040,11 @@ export default function PremiScreen() {
                 {/* Messaggio del Maestro */}
                 <View style={styles.maestroMessage}>
                   <Text style={styles.maestroText}>
-                    Il Maestro è buono e vi vuole bene! 💪{'\n'}
-                    3 magliette/canotte in palio!
+                    Il Maestro è buono e vi vuole bene! 💪
                   </Text>
                 </View>
 
-                {/* Lista 3 vincitori */}
+                {/* Lista 3 vincitori con premio */}
                 {status.vincitori.map((vincitore, index) => (
                   <View key={index} style={[
                     styles.vincitoreCard,
@@ -1039,6 +1065,11 @@ export default function PremiScreen() {
                       <Text style={styles.vincitoreBiglietti}>
                         {vincitore.biglietti} biglietti
                       </Text>
+                      {vincitore.premio && (
+                        <Text style={styles.vincitorePremio}>
+                          🎁 {vincitore.premio}
+                        </Text>
+                      )}
                     </View>
                     {vincitore.is_me && (
                       <View style={styles.vincitoreWinBadge}>
@@ -1093,11 +1124,11 @@ export default function PremiScreen() {
           </Animated.View>
         )}
 
-        {/* Nessun vincitore ancora - Mostra premio in palio */}
+        {/* Nessun vincitore ancora - Mostra premi in palio */}
         {(!status?.vincitori || status.vincitori.length === 0) && (
           <View style={styles.noWinnerCard}>
             <Text style={styles.noWinnerIcon}>🎁</Text>
-            <Text style={styles.noWinnerTitle}>PREMIO IN PALIO</Text>
+            <Text style={styles.noWinnerTitle}>PREMI IN PALIO</Text>
             
             {/* Messaggio del Maestro */}
             <View style={styles.maestroMessagePreview}>
@@ -1106,10 +1137,29 @@ export default function PremiScreen() {
               </Text>
             </View>
             
-            {/* Premio */}
+            {/* 3 Premi */}
             <View style={styles.premioInPalio}>
-              <Text style={styles.premioInPalioText}>🏆 3 Magliette o Canotte 🏆</Text>
-              <Text style={styles.premioInPalioSub}>3 VINCITORI questo mese!</Text>
+              {prize?.premio_1 ? (
+                <>
+                  <View style={styles.premioInPalioRow}>
+                    <Text style={styles.premioInPalioMedal}>🥇</Text>
+                    <Text style={styles.premioInPalioText}>{prize.premio_1}</Text>
+                  </View>
+                  <View style={styles.premioInPalioRow}>
+                    <Text style={styles.premioInPalioMedal}>🥈</Text>
+                    <Text style={styles.premioInPalioText}>{prize.premio_2 || 'Da annunciare'}</Text>
+                  </View>
+                  <View style={styles.premioInPalioRow}>
+                    <Text style={styles.premioInPalioMedal}>🥉</Text>
+                    <Text style={styles.premioInPalioText}>{prize.premio_3 || 'Da annunciare'}</Text>
+                  </View>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.premioInPalioText}>🏆 3 Premi da annunciare 🏆</Text>
+                  <Text style={styles.premioInPalioSub}>3 VINCITORI questo mese!</Text>
+                </>
+              )}
             </View>
             
             <Text style={styles.noWinnerText}>
@@ -1148,16 +1198,21 @@ export default function PremiScreen() {
         {winners.length > 0 && (
           <View style={styles.hallOfFame}>
             <Text style={styles.hofTitle}>🏆 ALBO D'ORO 🏆</Text>
-            {winners.slice(0, 5).map((winner, index) => (
-              <View key={index} style={styles.hofItem}>
-                <Text style={styles.hofMedal}>
-                  {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🎖️'}
-                </Text>
-                <View style={styles.hofInfo}>
-                  <Text style={styles.hofName}>{winner.nome} {winner.cognome}</Text>
-                  <Text style={styles.hofMonth}>{formatMese(winner.mese_riferimento)}</Text>
-                </View>
-                <Text style={styles.hofTickets}>{winner.biglietti} 🎟️</Text>
+            {winners.slice(0, 5).map((winnerMonth, idx) => (
+              <View key={idx} style={styles.hofMonthBlock}>
+                <Text style={styles.hofMonthLabel}>{formatMese(winnerMonth.mese_riferimento)}</Text>
+                {winnerMonth.vincitori.map((v, vIdx) => (
+                  <View key={vIdx} style={styles.hofItem}>
+                    <Text style={styles.hofMedal}>
+                      {v.posizione === 1 ? '🥇' : v.posizione === 2 ? '🥈' : '🥉'}
+                    </Text>
+                    <View style={styles.hofInfo}>
+                      <Text style={styles.hofName}>{v.soprannome || `${v.nome} ${v.cognome}`}</Text>
+                      {v.premio && <Text style={styles.hofPrize}>🎁 {v.premio}</Text>}
+                    </View>
+                    <Text style={styles.hofTickets}>{v.biglietti} 🎟️</Text>
+                  </View>
+                ))}
               </View>
             ))}
           </View>
@@ -1204,7 +1259,7 @@ export default function PremiScreen() {
               <Text style={styles.ruleTitle}>🏆 COSA SI VINCE?</Text>
               <Text style={styles.ruleText}>
                 Il Maestro è buono e vi vuole bene! 💪{'\n'}
-                Ogni mese ci sono 3 VINCITORI che riceveranno ciascuno una maglietta o canotta DanoFitness!
+                Ogni mese ci sono 3 VINCITORI con 3 PREMI DIVERSI (1°, 2° e 3° posto)! Il Maestro sceglie i premi ogni mese.
               </Text>
 
               <Text style={styles.ruleTitle}>📢 COME SAPRÒ SE HO VINTO?</Text>
@@ -1222,45 +1277,57 @@ export default function PremiScreen() {
         </View>
       </Modal>
 
-      {/* Modal Imposta Premio (Admin) */}
+      {/* Modal Imposta Premi (Admin) */}
       <Modal visible={showSetPrize} transparent animationType="fade" onRequestClose={() => setShowSetPrize(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>🎁 IMPOSTA PREMIO</Text>
+              <Text style={styles.modalTitle}>🎁 IMPOSTA 3 PREMI</Text>
               <TouchableOpacity onPress={() => setShowSetPrize(false)}>
                 <Ionicons name="close-circle" size={28} color={VEGAS_COLORS.gold} />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.inputLabel}>Premio del mese</Text>
+            <Text style={styles.inputLabel}>🥇 1° Premio</Text>
             <TextInput
               style={styles.input}
-              value={newPrize}
-              onChangeText={setNewPrize}
-              placeholder="Es: Maglietta DanoFitness"
+              value={newPrize1}
+              onChangeText={setNewPrize1}
+              placeholder="Es: Scarpe Nike"
               placeholderTextColor="#666"
+              data-testid="prize-1-input"
             />
 
-            <Text style={styles.inputLabel}>Descrizione (opzionale)</Text>
+            <Text style={styles.inputLabel}>🥈 2° Premio</Text>
             <TextInput
-              style={[styles.input, styles.inputMultiline]}
-              value={newPrizeDesc}
-              onChangeText={setNewPrizeDesc}
-              placeholder="Es: Taglia a scelta!"
+              style={styles.input}
+              value={newPrize2}
+              onChangeText={setNewPrize2}
+              placeholder="Es: Maglietta DanoFitness"
               placeholderTextColor="#666"
-              multiline
+              data-testid="prize-2-input"
+            />
+
+            <Text style={styles.inputLabel}>🥉 3° Premio</Text>
+            <TextInput
+              style={styles.input}
+              value={newPrize3}
+              onChangeText={setNewPrize3}
+              placeholder="Es: Canotta DanoFitness"
+              placeholderTextColor="#666"
+              data-testid="prize-3-input"
             />
 
             <TouchableOpacity
               style={[styles.saveButton, savingPrize && styles.saveButtonDisabled]}
               onPress={handleSavePrize}
               disabled={savingPrize}
+              data-testid="save-prizes-btn"
             >
               {savingPrize ? (
                 <ActivityIndicator color="#000" />
               ) : (
-                <Text style={styles.saveButtonText}>SALVA PREMIO</Text>
+                <Text style={styles.saveButtonText}>SALVA PREMI</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -1344,10 +1411,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   prizeName: {
-    fontSize: 26,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#FFF',
-    textAlign: 'center',
+    flex: 1,
   },
   prizeDesc: {
     fontSize: 14,
@@ -1359,6 +1426,15 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: VEGAS_COLORS.textSecondary,
     fontStyle: 'italic',
+  },
+  prizeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 10,
+  },
+  prizeMedal: {
+    fontSize: 22,
   },
   setPrizeBtn: {
     flexDirection: 'row',
@@ -1837,6 +1913,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: VEGAS_COLORS.textSecondary,
   },
+  hofMonthBlock: {
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,215,0,0.2)',
+    paddingBottom: 12,
+  },
+  hofMonthLabel: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: VEGAS_COLORS.gold,
+    marginBottom: 8,
+    letterSpacing: 1,
+  },
+  hofPrize: {
+    fontSize: 11,
+    color: VEGAS_COLORS.gold,
+    marginTop: 2,
+  },
 
   // Footer
   footer: {
@@ -2294,6 +2388,12 @@ const styles = StyleSheet.create({
     color: VEGAS_COLORS.textSecondary,
     marginTop: 2,
   },
+  vincitorePremio: {
+    fontSize: 13,
+    color: VEGAS_COLORS.gold,
+    marginTop: 3,
+    fontWeight: '600',
+  },
   vincitoreWinBadge: {
     width: 36,
     height: 36,
@@ -2327,8 +2427,17 @@ const styles = StyleSheet.create({
     marginVertical: 12,
     alignItems: 'center',
   },
-  premioInPalioText: {
+  premioInPalioRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 6,
+  },
+  premioInPalioMedal: {
     fontSize: 20,
+  },
+  premioInPalioText: {
+    fontSize: 18,
     color: VEGAS_COLORS.gold,
     fontWeight: 'bold',
     textAlign: 'center',

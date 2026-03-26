@@ -218,7 +218,7 @@ export const apiService = {
   getLotteryStatus: () => api.get('/lottery/status'),
   getLotteryWinners: () => api.get('/lottery/winners'),
   getCurrentPrize: () => api.get('/lottery/current-prize'),
-  setMonthlyPrize: (premio: string, descrizione?: string) => api.post('/admin/lottery/set-prize', { premio, descrizione }),
+  setMonthlyPrize: (premio_1: string, premio_2: string, premio_3: string) => api.post('/admin/lottery/set-prize', { premio_1, premio_2, premio_3 }),
 
   // Ruota della Fortuna
   getWheelStatus: () => api.get('/wheel/status'),
