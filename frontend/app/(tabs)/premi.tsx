@@ -650,11 +650,11 @@ export default function PremiScreen() {
             </View>
             <Text style={styles.ticketsNumber}>{status?.biglietti_utente || 0}</Text>
             <Text style={styles.ticketsSubtitle}>
-              {status?.biglietti_utente === 0 
+              {!status?.biglietti_utente || status.biglietti_utente === 0 
                 ? 'Allenati per guadagnare biglietti!' 
-                : status?.biglietti_utente === 1 
+                : status.biglietti_utente === 1 
                   ? '1 possibilità di vincere!'
-                  : `${status?.biglietti_utente} possibilità di vincere!`}
+                  : `${status.biglietti_utente} possibilità di vincere!`}
             </Text>
             <View style={styles.ticketsMini}>
               {[...Array(Math.min(status?.biglietti_utente || 0, 10))].map((_, i) => (

@@ -73,11 +73,21 @@ App di fitness per la gestione di lezioni, prenotazioni, abbonamenti e gamificat
 - Estrazione senza reinserimento: chi vince il 1° premio viene rimosso dal pool prima del 2° posto
 - Ogni vincitore riceve il premio associato alla propria posizione
 - Sia estrazione automatica (1° del mese ore 12:00) che manuale (admin) estraggono 3 vincitori
-- Frontend mostra 3 premi con medaglie (🥇🥈🥉) nella sezione premi, countdown e vincitori
-- Modal admin aggiornato con 3 campi input separati per i premi
+- Frontend mostra 3 premi con medaglie nella sezione premi, countdown e vincitori
 - Albo d'Oro mostra 3 vincitori per mese con i rispettivi premi
-- Mark prize collected ora supporta per-posizione (posizione 1, 2 o 3)
-- Endpoint: POST /admin/lottery/set-prize (3 premi), POST /admin/lottery/mark-prize-collected/{mese}/{posizione}
+
+## Riorganizzazione Pagina Lotteria (26 Marzo 2026)
+- Premi mostrati UNA SOLA VOLTA (eliminata tripla ripetizione)
+- Struttura: Premi → Countdown → Avviso abbonamento attivo
+
+## Quiz a 4 Categorie (26 Marzo 2026)
+- Rimosso vecchio quiz fitness con 65 domande
+- 4 nuove categorie: GOSSIP, CULTURA GENERALE, CINEMA & SERIE TV, MUSICA
+- 25 domande diverse per categoria (100 totali) in file separato `quiz_domande.py`
+- Flusso: Gira ruota → Scegli categoria → Rispondi alla domanda
+- Nuovo endpoint `POST /quiz/select-category` per salvare la scelta
+- UI con griglia 2x2 per la selezione categoria, badge categoria sopra la domanda
+- Ogni utente riceve una domanda diversa ogni giorno (hash user_id + data)
 
 ## Credenziali Test
 - Email: danielebrufani@gmail.com
