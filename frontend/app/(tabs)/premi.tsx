@@ -303,8 +303,11 @@ export default function PremiScreen() {
         try {
           const quizRes = await apiService.getQuizToday();
           setQuiz(quizRes.data);
-          if (quizRes.data.gia_risposto && quizRes.data.risposta_data !== null) {
-            setSelectedAnswer(quizRes.data.risposta_data);
+          if (quizRes.data.gia_risposto) {
+            setQuizDismissed(true);
+            if (quizRes.data.risposta_data !== null) {
+              setSelectedAnswer(quizRes.data.risposta_data);
+            }
           }
         } catch (e) {
           console.log('Quiz not available');
@@ -362,6 +365,10 @@ export default function PremiScreen() {
           clearInterval(interval);
           setQuizTimerActive(false);
           setQuizTimerExpired(true);
+          // Auto-chiudi quiz dopo timeout (3 secondi)
+          setTimeout(() => {
+            setQuizDismissed(true);
+          }, 3000);
           return 0;
         }
         return prev - 1;
@@ -521,6 +528,11 @@ export default function PremiScreen() {
       
       // Ricarica dati per aggiornare biglietti
       loadData();
+      
+      // Auto-chiudi quiz dopo 3 secondi
+      setTimeout(() => {
+        setQuizDismissed(true);
+      }, 3000);
     } catch (error: any) {
       Alert.alert('Errore', error.response?.data?.detail || 'Errore nel quiz');
     } finally {
