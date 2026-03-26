@@ -184,11 +184,11 @@ export default function AbbonamentoScreen() {
               {!activeSubscription.pagato && (
                 <View style={{ backgroundColor: '#f59e0b15', borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: '#f59e0b40' }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                    <Ionicons name="warning" size={18} color="#f59e0b" />
-                    <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#f59e0b' }}>Pagamento in sospeso</Text>
+                    <Ionicons name="wallet-outline" size={18} color="#f59e0b" />
+                    <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#f59e0b' }}>Abbonamento da saldare</Text>
                   </View>
                   <Text style={{ fontSize: 12, color: COLORS.textSecondary, lineHeight: 18 }}>
-                    Il tuo abbonamento risulta non ancora saldato. Contatta la reception per regolarizzare il pagamento.
+                    Ciao! Il tuo abbonamento non risulta ancora saldato. Scrivimi per qualsiasi cosa, sistemiamo insieme! - Daniele
                   </Text>
                 </View>
               )}
