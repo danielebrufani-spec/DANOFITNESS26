@@ -89,6 +89,15 @@ App di fitness per la gestione di lezioni, prenotazioni, abbonamenti e gamificat
 - UI con griglia 2x2 per la selezione categoria, badge categoria sopra la domanda
 - Ogni utente riceve una domanda diversa ogni giorno (hash user_id + data)
 
+## Prova Gratuita 7 Giorni (26 Marzo 2026)
+- Admin attiva manualmente la prova per nuovi clienti dal pannello Utenti
+- Utente in prova vede tutto TRANNE il piano alimentare AI (riservato agli abbonati)
+- Tab Abbonamento mostra card "PROVA" con date inizio/scadenza
+- Tab Alimentazione mostra avviso per utenti in prova
+- Admin può disattivare la prova in qualsiasi momento
+- Trial users partecipano alle prenotazioni ma NON alla lotteria mensile
+- Endpoints: POST /admin/activate-trial/{user_id}, POST /admin/deactivate-trial/{user_id}
+
 ## Credenziali Test
 - Email: danielebrufani@gmail.com
 - Password: Mariavittoria23
