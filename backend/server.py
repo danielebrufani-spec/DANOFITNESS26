@@ -4693,7 +4693,7 @@ async def select_quiz_category(data: SelectCategoryRequest, current_user: dict =
     })
     
     domande = QUIZ_PER_CATEGORIA[data.categoria]
-    quiz_index = hash(user_id + today + cat) % len(domande)
+    quiz_index = hash(user_id + today + data.categoria) % len(domande)
     domanda = domande[quiz_index]
     
     wheel_biglietti = spin_today.get("biglietti", 0)
