@@ -173,6 +173,7 @@ export default function PremiScreen() {
   const [quizTimerExpired, setQuizTimerExpired] = useState(false);
   const [quizStarted, setQuizStarted] = useState(false);
   const [quizDismissed, setQuizDismissed] = useState(false);
+  const quizJustAnswered = useRef(false);
 
   // Carica suoni
   useEffect(() => {
@@ -304,10 +305,18 @@ export default function PremiScreen() {
           const quizRes = await apiService.getQuizToday();
           setQuiz(quizRes.data);
           if (quizRes.data.gia_risposto) {
-            setQuizDismissed(true);
+            // Non sovrascrivere se il quiz è appena stato risposto (mostra risultato 3 sec)
+            if (!quizJustAnswered.current) {
+              setQuizDismissed(true);
+            }
             if (quizRes.data.risposta_data !== null) {
               setSelectedAnswer(quizRes.data.risposta_data);
             }
+          } else {
+            setQuizDismissed(false);
+            setQuizStarted(false);
+            setQuizTimerExpired(false);
+            setSelectedAnswer(null);
           }
         } catch (e) {
           console.log('Quiz not available');
@@ -530,8 +539,10 @@ export default function PremiScreen() {
       loadData();
       
       // Auto-chiudi quiz dopo 3 secondi
+      quizJustAnswered.current = true;
       setTimeout(() => {
         setQuizDismissed(true);
+        quizJustAnswered.current = false;
       }, 3000);
     } catch (error: any) {
       Alert.alert('Errore', error.response?.data?.detail || 'Errore nel quiz');
