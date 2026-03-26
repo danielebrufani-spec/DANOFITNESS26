@@ -173,10 +173,25 @@ export default function AbbonamentoScreen() {
           {activeSubscription ? (
             <>
               {/* Badge Stato */}
-              <View style={styles.statusBadge}>
-                <Ionicons name="checkmark-circle" size={22} color={COLORS.success} />
-                <Text style={styles.statusText}>Abbonamento Attivo</Text>
+              <View style={[styles.statusBadge, !activeSubscription.pagato && { backgroundColor: '#f59e0b20', borderColor: '#f59e0b50' }]}>
+                <Ionicons name={activeSubscription.pagato ? "checkmark-circle" : "alert-circle"} size={22} color={activeSubscription.pagato ? COLORS.success : '#f59e0b'} />
+                <Text style={[styles.statusText, !activeSubscription.pagato && { color: '#f59e0b' }]}>
+                  {activeSubscription.pagato ? 'Abbonamento Attivo' : 'Abbonamento da Saldare'}
+                </Text>
               </View>
+
+              {/* Avviso pagamento mancante */}
+              {!activeSubscription.pagato && (
+                <View style={{ backgroundColor: '#f59e0b15', borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: '#f59e0b40' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <Ionicons name="warning" size={18} color="#f59e0b" />
+                    <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#f59e0b' }}>Pagamento in sospeso</Text>
+                  </View>
+                  <Text style={{ fontSize: 12, color: COLORS.textSecondary, lineHeight: 18 }}>
+                    Il tuo abbonamento risulta non ancora saldato. Contatta la reception per regolarizzare il pagamento.
+                  </Text>
+                </View>
+              )}
 
               {/* Nome Pacchetto */}
               <View style={styles.packageNameCard}>
@@ -290,8 +305,8 @@ export default function AbbonamentoScreen() {
                 <View style={styles.logContainer}>
                   {logIngressi.length > 0 ? (
                     logIngressi.map((entry, idx) => (
-                      <View key={idx} style={styles.logEntry}>
-                        <View style={styles.logNumber}>
+                      <View key={idx} style={[styles.logEntry, !activeSubscription.pagato && { borderLeftColor: '#f59e0b' }]}>
+                        <View style={[styles.logNumber, !activeSubscription.pagato && { backgroundColor: '#f59e0b' }]}>
                           <Text style={styles.logNumberText}>{entry.numero}</Text>
                         </View>
                         <View style={styles.logDate}>
@@ -592,8 +607,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 8,
+    paddingLeft: 8,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.primary,
   },
   logNumber: {
     width: 28,
