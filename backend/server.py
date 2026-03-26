@@ -4422,7 +4422,7 @@ async def get_quiz_today(current_user: dict = Depends(get_current_user)):
     if existing_answer:
         cat = existing_answer.get("categoria", "cultura")
         domande = QUIZ_PER_CATEGORIA.get(cat, QUIZ_PER_CATEGORIA["cultura"])
-        quiz_index = hash(user_id + today) % len(domande)
+        quiz_index = hash(user_id + today + cat) % len(domande)
         domanda = domande[quiz_index]
         return {
             "can_play": False,
@@ -4493,7 +4493,7 @@ async def get_quiz_today(current_user: dict = Depends(get_current_user)):
     
     cat = category_choice["categoria"]
     domande = QUIZ_PER_CATEGORIA.get(cat, QUIZ_PER_CATEGORIA["cultura"])
-    quiz_index = hash(user_id + today) % len(domande)
+    quiz_index = hash(user_id + today + cat) % len(domande)
     domanda = domande[quiz_index]
     
     return {
@@ -4543,7 +4543,7 @@ async def select_quiz_category(data: SelectCategoryRequest, current_user: dict =
     })
     
     domande = QUIZ_PER_CATEGORIA[data.categoria]
-    quiz_index = hash(user_id + today) % len(domande)
+    quiz_index = hash(user_id + today + cat) % len(domande)
     domanda = domande[quiz_index]
     
     wheel_biglietti = spin_today.get("biglietti", 0)
@@ -4603,7 +4603,7 @@ async def submit_quiz_answer(risposta_index: int, current_user: dict = Depends(g
         potential_bonus = 1
     
     domande = QUIZ_PER_CATEGORIA.get(cat, QUIZ_PER_CATEGORIA["cultura"])
-    quiz_index = hash(user_id + today) % len(domande)
+    quiz_index = hash(user_id + today + cat) % len(domande)
     domanda = domande[quiz_index]
     
     is_correct = risposta_index == domanda["corretta"]
