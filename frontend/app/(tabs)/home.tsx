@@ -660,13 +660,23 @@ export default function HomeScreen() {
             const today = new Date().toLocaleDateString('sv-SE', {timeZone: 'Europe/Rome'});
             return c.data_lezione === today;
           }).map((c: any, idx: number) => (
-            <View key={idx} style={{ backgroundColor: '#EF444420', borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#EF444450' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                <Ionicons name="warning" size={20} color="#EF4444" />
-                <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#EF4444' }}>Lezione {c.orario} Annullata</Text>
+            <View key={idx} style={{ backgroundColor: '#1a1a2e', borderRadius: 16, padding: 20, marginBottom: 16, borderWidth: 2, borderColor: '#EF4444', overflow: 'hidden' }}>
+              <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, backgroundColor: '#EF4444' }} />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#EF444430', justifyContent: 'center', alignItems: 'center' }}>
+                  <Ionicons name="close-circle" size={28} color="#EF4444" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#EF4444', letterSpacing: 0.5 }}>LEZIONE ANNULLATA</Text>
+                  <Text style={{ fontSize: 14, color: '#fff', fontWeight: '600', marginTop: 2 }}>Ore {c.orario} — {c.tipo_attivita || 'Lezione'}</Text>
+                </View>
               </View>
-              <Text style={{ fontSize: 13, color: COLORS.text, lineHeight: 20 }}>{c.motivo}</Text>
-              <Text style={{ fontSize: 11, color: COLORS.textSecondary, marginTop: 4 }}>Le prenotazioni non verranno scalate.</Text>
+              <Text style={{ fontSize: 15, color: '#fff', lineHeight: 22, marginBottom: 10 }}>{c.motivo}</Text>
+              <View style={{ backgroundColor: '#ffffff10', borderRadius: 10, padding: 10 }}>
+                <Text style={{ fontSize: 12, color: '#aaa', textAlign: 'center' }}>
+                  Ci scusiamo per il disagio! Le prenotazioni non verranno scalate dal vostro abbonamento.
+                </Text>
+              </View>
             </View>
           ))}
 
@@ -865,13 +875,23 @@ export default function HomeScreen() {
           const today = new Date().toLocaleDateString('sv-SE', {timeZone: 'Europe/Rome'});
           return c.data_lezione === today;
         }).map((c: any, idx: number) => (
-          <View key={idx} style={{ backgroundColor: '#EF444420', borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#EF444450' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-              <Ionicons name="warning" size={20} color="#EF4444" />
-              <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#EF4444' }}>Lezione {c.orario} Annullata</Text>
+          <View key={idx} style={{ backgroundColor: '#1a1a2e', borderRadius: 16, padding: 20, marginBottom: 16, borderWidth: 2, borderColor: '#EF4444', overflow: 'hidden' }}>
+            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, backgroundColor: '#EF4444' }} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#EF444430', justifyContent: 'center', alignItems: 'center' }}>
+                <Ionicons name="close-circle" size={28} color="#EF4444" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#EF4444', letterSpacing: 0.5 }}>LEZIONE ANNULLATA</Text>
+                <Text style={{ fontSize: 14, color: '#fff', fontWeight: '600', marginTop: 2 }}>Ore {c.orario} — {c.tipo_attivita || 'Lezione'}</Text>
+              </View>
             </View>
-            <Text style={{ fontSize: 13, color: COLORS.text, lineHeight: 20 }}>{c.motivo}</Text>
-            <Text style={{ fontSize: 11, color: COLORS.textSecondary, marginTop: 4 }}>Le prenotazioni non verranno scalate.</Text>
+            <Text style={{ fontSize: 15, color: '#fff', lineHeight: 22, marginBottom: 10 }}>{c.motivo}</Text>
+            <View style={{ backgroundColor: '#ffffff10', borderRadius: 10, padding: 10 }}>
+              <Text style={{ fontSize: 12, color: '#aaa', textAlign: 'center' }}>
+                Ci scusiamo per il disagio! Le prenotazioni non verranno scalate dal vostro abbonamento.
+              </Text>
+            </View>
           </View>
         ))}
 
