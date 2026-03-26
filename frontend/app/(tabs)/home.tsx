@@ -657,8 +657,17 @@ export default function HomeScreen() {
 
           {/* AVVISI LEZIONI ANNULLATE (dinamico) */}
           {cancelledLessons.filter((c: any) => {
-            const today = new Date().toLocaleDateString('sv-SE', {timeZone: 'Europe/Rome'});
-            return c.data_lezione === today;
+            const now = new Date();
+            const today = now.toLocaleDateString('sv-SE', {timeZone: 'Europe/Rome'});
+            const romeHour = parseInt(now.toLocaleString('en-US', {timeZone: 'Europe/Rome', hour: 'numeric', hour12: false}));
+            const romeMin = parseInt(now.toLocaleString('en-US', {timeZone: 'Europe/Rome', minute: 'numeric'}));
+            const nowMinutes = romeHour * 60 + romeMin;
+            const [h, m] = (c.orario || '00:00').split(':').map(Number);
+            const lessonMinutes = h * 60 + m;
+            // Mostra se: data futura, oppure oggi ma lezione non ancora passata
+            if (c.data_lezione > today) return true;
+            if (c.data_lezione === today && lessonMinutes > nowMinutes) return true;
+            return false;
           }).map((c: any, idx: number) => (
             <View key={idx} style={{ backgroundColor: '#1a1a2e', borderRadius: 16, padding: 20, marginBottom: 16, borderWidth: 2, borderColor: '#EF4444', overflow: 'hidden' }}>
               <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, backgroundColor: '#EF4444' }} />
@@ -668,7 +677,7 @@ export default function HomeScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#EF4444', letterSpacing: 0.5 }}>LEZIONE ANNULLATA</Text>
-                  <Text style={{ fontSize: 14, color: '#fff', fontWeight: '600', marginTop: 2 }}>Ore {c.orario} — {c.tipo_attivita || 'Lezione'}</Text>
+                  <Text style={{ fontSize: 14, color: '#fff', fontWeight: '600', marginTop: 2 }}>Ore {c.orario} — {c.tipo_attivita || 'Lezione'} ({new Date(c.data_lezione + 'T00:00').toLocaleDateString('it-IT', {weekday: 'long', day: 'numeric', month: 'long'})})</Text>
                 </View>
               </View>
               <Text style={{ fontSize: 15, color: '#fff', lineHeight: 22, marginBottom: 10 }}>{c.motivo}</Text>
@@ -872,8 +881,16 @@ export default function HomeScreen() {
 
         {/* AVVISI LEZIONI ANNULLATE (dinamico) */}
         {cancelledLessons.filter((c: any) => {
-          const today = new Date().toLocaleDateString('sv-SE', {timeZone: 'Europe/Rome'});
-          return c.data_lezione === today;
+          const now = new Date();
+          const today = now.toLocaleDateString('sv-SE', {timeZone: 'Europe/Rome'});
+          const romeHour = parseInt(now.toLocaleString('en-US', {timeZone: 'Europe/Rome', hour: 'numeric', hour12: false}));
+          const romeMin = parseInt(now.toLocaleString('en-US', {timeZone: 'Europe/Rome', minute: 'numeric'}));
+          const nowMinutes = romeHour * 60 + romeMin;
+          const [h, m] = (c.orario || '00:00').split(':').map(Number);
+          const lessonMinutes = h * 60 + m;
+          if (c.data_lezione > today) return true;
+          if (c.data_lezione === today && lessonMinutes > nowMinutes) return true;
+          return false;
         }).map((c: any, idx: number) => (
           <View key={idx} style={{ backgroundColor: '#1a1a2e', borderRadius: 16, padding: 20, marginBottom: 16, borderWidth: 2, borderColor: '#EF4444', overflow: 'hidden' }}>
             <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, backgroundColor: '#EF4444' }} />
@@ -883,7 +900,7 @@ export default function HomeScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#EF4444', letterSpacing: 0.5 }}>LEZIONE ANNULLATA</Text>
-                <Text style={{ fontSize: 14, color: '#fff', fontWeight: '600', marginTop: 2 }}>Ore {c.orario} — {c.tipo_attivita || 'Lezione'}</Text>
+                <Text style={{ fontSize: 14, color: '#fff', fontWeight: '600', marginTop: 2 }}>Ore {c.orario} — {c.tipo_attivita || 'Lezione'} ({new Date(c.data_lezione + 'T00:00').toLocaleDateString('it-IT', {weekday: 'long', day: 'numeric', month: 'long'})})</Text>
               </View>
             </View>
             <Text style={{ fontSize: 15, color: '#fff', lineHeight: 22, marginBottom: 10 }}>{c.motivo}</Text>
