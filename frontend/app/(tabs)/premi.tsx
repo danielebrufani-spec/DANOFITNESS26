@@ -549,7 +549,7 @@ export default function PremiScreen() {
           </View>
         </View>
 
-        {/* Premi del Mese - 3 Premi */}
+        {/* Premi del Mese - 3 Premi (UNICA SEZIONE) */}
         <Animated.View style={[styles.prizeCard, { transform: [{ scale: pulseAnim }] }]}>
           <Text style={styles.prizeLabel}>🎰 PREMI IN PALIO 🎰</Text>
           {(prize?.premio_1 || prize?.premio_2 || prize?.premio_3) ? (
@@ -577,6 +577,41 @@ export default function PremiScreen() {
             </TouchableOpacity>
           )}
         </Animated.View>
+
+        {/* Countdown Estrazione */}
+        <View style={styles.countdownCard}>
+          <Text style={styles.countdownLabel}>⏰ PROSSIMA ESTRAZIONE ⏰</Text>
+          <View style={styles.countdownRow}>
+            <View style={styles.countdownSlot}>
+              <Text style={styles.countdownNumber}>{countdown.days}</Text>
+              <Text style={styles.countdownUnit}>GG</Text>
+            </View>
+            <Text style={styles.countdownColon}>:</Text>
+            <View style={styles.countdownSlot}>
+              <Text style={styles.countdownNumber}>{countdown.hours.toString().padStart(2, '0')}</Text>
+              <Text style={styles.countdownUnit}>ORE</Text>
+            </View>
+            <Text style={styles.countdownColon}>:</Text>
+            <View style={styles.countdownSlot}>
+              <Text style={styles.countdownNumber}>{countdown.minutes.toString().padStart(2, '0')}</Text>
+              <Text style={styles.countdownUnit}>MIN</Text>
+            </View>
+            <Text style={styles.countdownColon}>:</Text>
+            <View style={styles.countdownSlot}>
+              <Text style={styles.countdownNumber}>{countdown.seconds.toString().padStart(2, '0')}</Text>
+              <Text style={styles.countdownUnit}>SEC</Text>
+            </View>
+          </View>
+          <Text style={styles.countdownInfo}>1° del mese alle ore 12:00</Text>
+        </View>
+
+        {/* Avviso partecipazione - ben visibile */}
+        <View style={styles.subscriptionWarningCard}>
+          <Ionicons name="shield-checkmark" size={22} color={VEGAS_COLORS.gold} />
+          <Text style={styles.subscriptionWarningText}>
+            Partecipano all'estrazione SOLO gli utenti con abbonamento attivo!
+          </Text>
+        </View>
 
         {/* I Tuoi Biglietti - Solo per clienti, non per admin */}
         {!isAdmin && (
@@ -764,48 +799,6 @@ export default function PremiScreen() {
             </Animated.View>
           </View>
         </Modal>
-
-        {/* Countdown */}
-        <View style={styles.countdownCard}>
-          {/* Premi in palio - sempre visibile */}
-          <View style={styles.premioHeaderBanner}>
-            <Text style={styles.premioHeaderText}>🎁 PREMI IN PALIO 🎁</Text>
-            {(prize?.premio_1 || status?.premio_1) ? (
-              <>
-                <Text style={styles.premioHeaderPrize}>🥇 {prize?.premio_1 || status?.premio_1}</Text>
-                <Text style={styles.premioHeaderPrize}>🥈 {prize?.premio_2 || status?.premio_2 || 'Da annunciare'}</Text>
-                <Text style={styles.premioHeaderPrize}>🥉 {prize?.premio_3 || status?.premio_3 || 'Da annunciare'}</Text>
-              </>
-            ) : (
-              <Text style={styles.premioHeaderPrize}>3 Premi da annunciare</Text>
-            )}
-            <Text style={styles.premioHeaderWinners}>3 VINCITORI! Il Maestro è buono e vi vuole bene! 💪</Text>
-          </View>
-          
-          <Text style={styles.countdownLabel}>⏰ PROSSIMA ESTRAZIONE AUTOMATICA ⏰</Text>
-          <View style={styles.countdownRow}>
-            <View style={styles.countdownSlot}>
-              <Text style={styles.countdownNumber}>{countdown.days}</Text>
-              <Text style={styles.countdownUnit}>GG</Text>
-            </View>
-            <Text style={styles.countdownColon}>:</Text>
-            <View style={styles.countdownSlot}>
-              <Text style={styles.countdownNumber}>{countdown.hours.toString().padStart(2, '0')}</Text>
-              <Text style={styles.countdownUnit}>ORE</Text>
-            </View>
-            <Text style={styles.countdownColon}>:</Text>
-            <View style={styles.countdownSlot}>
-              <Text style={styles.countdownNumber}>{countdown.minutes.toString().padStart(2, '0')}</Text>
-              <Text style={styles.countdownUnit}>MIN</Text>
-            </View>
-            <Text style={styles.countdownColon}>:</Text>
-            <View style={styles.countdownSlot}>
-              <Text style={styles.countdownNumber}>{countdown.seconds.toString().padStart(2, '0')}</Text>
-              <Text style={styles.countdownUnit}>SEC</Text>
-            </View>
-          </View>
-          <Text style={styles.countdownInfo}>1° del mese • ore 12:00 • Solo abbonati attivi</Text>
-        </View>
 
         {/* ===== QUIZ BONUS - Collegato alla Ruota! ===== */}
         {!isAdmin && quiz && (
@@ -1097,17 +1090,6 @@ export default function PremiScreen() {
                   </View>
                 </View>
 
-                {/* Premio vinto */}
-                {status.premio && (
-                  <View style={styles.prizeBadge}>
-                    <Text style={styles.prizeBadgeLabel}>🎁 PREMIO</Text>
-                    <Text style={styles.prizeBadgeText}>{status.premio}</Text>
-                    {status.premio_descrizione && (
-                      <Text style={styles.prizeBadgeDesc}>{status.premio_descrizione}</Text>
-                    )}
-                  </View>
-                )}
-
                 {/* Messaggio per il vincitore */}
                 {status.is_me_winner && (
                   <View style={styles.winnerMessageBox}>
@@ -1124,47 +1106,14 @@ export default function PremiScreen() {
           </Animated.View>
         )}
 
-        {/* Nessun vincitore ancora - Mostra premi in palio */}
+        {/* Nessun vincitore ancora */}
         {(!status?.vincitori || status.vincitori.length === 0) && (
           <View style={styles.noWinnerCard}>
             <Text style={styles.noWinnerIcon}>🎁</Text>
-            <Text style={styles.noWinnerTitle}>PREMI IN PALIO</Text>
-            
-            {/* Messaggio del Maestro */}
-            <View style={styles.maestroMessagePreview}>
-              <Text style={styles.maestroTextPreview}>
-                Il Maestro è buono e vi vuole bene! 💪
-              </Text>
-            </View>
-            
-            {/* 3 Premi */}
-            <View style={styles.premioInPalio}>
-              {prize?.premio_1 ? (
-                <>
-                  <View style={styles.premioInPalioRow}>
-                    <Text style={styles.premioInPalioMedal}>🥇</Text>
-                    <Text style={styles.premioInPalioText}>{prize.premio_1}</Text>
-                  </View>
-                  <View style={styles.premioInPalioRow}>
-                    <Text style={styles.premioInPalioMedal}>🥈</Text>
-                    <Text style={styles.premioInPalioText}>{prize.premio_2 || 'Da annunciare'}</Text>
-                  </View>
-                  <View style={styles.premioInPalioRow}>
-                    <Text style={styles.premioInPalioMedal}>🥉</Text>
-                    <Text style={styles.premioInPalioText}>{prize.premio_3 || 'Da annunciare'}</Text>
-                  </View>
-                </>
-              ) : (
-                <>
-                  <Text style={styles.premioInPalioText}>🏆 3 Premi da annunciare 🏆</Text>
-                  <Text style={styles.premioInPalioSub}>3 VINCITORI questo mese!</Text>
-                </>
-              )}
-            </View>
-            
+            <Text style={styles.noWinnerTitle}>ESTRAZIONE IN ARRIVO</Text>
             <Text style={styles.noWinnerText}>
               L'estrazione automatica avverrà il 1° del mese alle 12:00.{'\n'}
-              Solo gli abbonati attivi partecipano!
+              3 vincitori saranno estratti tra tutti gli abbonati attivi!
             </Text>
           </View>
         )}
@@ -1556,6 +1505,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: VEGAS_COLORS.textSecondary,
     marginTop: 14,
+  },
+  subscriptionWarningCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,215,0,0.15)',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,215,0,0.4)',
+  },
+  subscriptionWarningText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '700',
+    color: VEGAS_COLORS.gold,
+    lineHeight: 20,
   },
 
   // ===== NUOVA SEZIONE VINCITORE GRANDE =====
