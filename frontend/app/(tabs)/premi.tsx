@@ -172,6 +172,7 @@ export default function PremiScreen() {
   const [quizTimerActive, setQuizTimerActive] = useState(false);
   const [quizTimerExpired, setQuizTimerExpired] = useState(false);
   const [quizStarted, setQuizStarted] = useState(false);
+  const [quizDismissed, setQuizDismissed] = useState(false);
 
   // Carica suoni
   useEffect(() => {
@@ -912,7 +913,7 @@ export default function PremiScreen() {
             )}
             
             {/* Quiz Disponibile o Già Risposto */}
-            {((quiz.can_play && !quiz.needs_category) || quiz.gia_risposto) && quiz.domanda && (
+            {((quiz.can_play && !quiz.needs_category) || (quiz.gia_risposto && !quizDismissed)) && quiz.domanda && (
               <View style={styles.quizCard}>
                 {/* Pulsante INIZIA - mostrato prima del click con REGOLE */}
                 {quiz.can_play && !quiz.gia_risposto && !quizStarted && (
@@ -1037,6 +1038,13 @@ export default function PremiScreen() {
                     <Text style={styles.quizMotivation}>
                       Troppo lento! Domani sarai piu veloce! 💪
                     </Text>
+                    <TouchableOpacity 
+                      style={styles.quizCloseButton} 
+                      onPress={() => setQuizDismissed(true)}
+                      data-testid="quiz-close-timeout"
+                    >
+                      <Text style={styles.quizCloseButtonText}>CHIUDI</Text>
+                    </TouchableOpacity>
                   </View>
                 ) : quiz.gia_risposto && (
                   <View style={[
@@ -1064,6 +1072,13 @@ export default function PremiScreen() {
                             ? 'La perdita resta... ma non mollare! 💪'
                             : 'Peccato! Riprova al prossimo giro! 🔄')}
                     </Text>
+                    <TouchableOpacity 
+                      style={styles.quizCloseButton} 
+                      onPress={() => setQuizDismissed(true)}
+                      data-testid="quiz-close-result"
+                    >
+                      <Text style={styles.quizCloseButtonText}>CHIUDI</Text>
+                    </TouchableOpacity>
                   </View>
                 )}
                   </>
@@ -2743,6 +2758,20 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontStyle: 'italic',
     lineHeight: 18,
+  },
+  quizCloseButton: {
+    backgroundColor: VEGAS_COLORS.gold,
+    paddingVertical: 10,
+    paddingHorizontal: 32,
+    borderRadius: 20,
+    marginTop: 14,
+    alignSelf: 'center',
+  },
+  quizCloseButtonText: {
+    color: '#1a1a2e',
+    fontSize: 14,
+    fontWeight: 'bold',
+    letterSpacing: 1,
   },
   quizInfo: {
     fontSize: 11,
