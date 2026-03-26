@@ -289,10 +289,12 @@ export const apiService = {
   createConsiglioMusicale: (data: {titolo?: string; spotify_url: string}) => api.post('/consigli-musicali', data),
   deleteConsiglioMusicale: (id: string) => api.delete(`/consigli-musicali/${id}`),
 
-  // Quiz Fitness BONUS
+  // Quiz con Categorie BONUS
   getQuizToday: () => api.get<{
     can_play: boolean;
     reason?: string;
+    needs_category?: boolean;
+    categorie?: { key: string; nome: string; emoji: string; colore: string }[];
     domanda_id: number | null;
     domanda: string | null;
     risposte: string[];
@@ -303,8 +305,20 @@ export const apiService = {
     wheel_result: number;
     bonus_type: 'raddoppia' | 'annulla' | 'standard' | null;
     potential_bonus?: number;
+    categoria?: string | null;
     message: string;
   }>('/quiz/today'),
+  selectQuizCategory: (categoria: string) => api.post<{
+    success: boolean;
+    categoria: string;
+    domanda_id: number;
+    domanda: string;
+    risposte: string[];
+    wheel_result: number;
+    bonus_type: string;
+    potential_bonus: number;
+    message: string;
+  }>('/quiz/select-category', { categoria }),
   submitQuizAnswer: (risposta_index: number) => api.post<{
     success: boolean;
     corretta: boolean;
@@ -312,6 +326,7 @@ export const apiService = {
     biglietti_vinti: number;
     bonus_type: string;
     wheel_result: number;
+    categoria?: string;
     message: string;
   }>(`/quiz/answer?risposta_index=${risposta_index}`),
 

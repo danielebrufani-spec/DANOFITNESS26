@@ -138,10 +138,12 @@ export default function PremiScreen() {
   const loseSound = useRef<Audio.Sound | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
-  // Quiz Fitness
+  // Quiz con Categorie
   const [quiz, setQuiz] = useState<{
     can_play: boolean;
     reason?: string;
+    needs_category?: boolean;
+    categorie?: { key: string; nome: string; emoji: string; colore: string }[];
     domanda_id: number | null;
     domanda: string | null;
     risposte: string[];
@@ -152,9 +154,11 @@ export default function PremiScreen() {
     wheel_result: number;
     bonus_type: 'raddoppia' | 'annulla' | 'standard' | null;
     potential_bonus?: number;
+    categoria?: string | null;
     message: string;
   } | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [selectingCategory, setSelectingCategory] = useState(false);
   const [quizResult, setQuizResult] = useState<{
     corretta: boolean;
     risposta_corretta_index: number;
@@ -473,6 +477,29 @@ export default function PremiScreen() {
   };
 
   // Quiz Fitness - invia risposta
+  const handleSelectCategory = async (categoria: string) => {
+    setSelectingCategory(true);
+    try {
+      const response = await apiService.selectQuizCategory(categoria);
+      setQuiz({
+        ...quiz!,
+        needs_category: false,
+        domanda_id: response.data.domanda_id,
+        domanda: response.data.domanda,
+        risposte: response.data.risposte,
+        categoria: response.data.categoria,
+        wheel_result: response.data.wheel_result,
+        bonus_type: response.data.bonus_type as any,
+        potential_bonus: response.data.potential_bonus,
+        message: response.data.message,
+      });
+    } catch (error: any) {
+      Alert.alert('Errore', error.response?.data?.detail || 'Errore nella selezione');
+    } finally {
+      setSelectingCategory(false);
+    }
+  };
+
   const handleQuizSubmit = async () => {
     if (selectedAnswer === null || !quiz || quiz.gia_risposto || quizTimerExpired) return;
     
@@ -809,6 +836,18 @@ export default function PremiScreen() {
               <Text style={styles.quizIcon}>🎯</Text>
             </View>
             
+            {/* Badge categoria selezionata */}
+            {quiz.categoria && !quiz.needs_category && (
+              <View style={styles.categoryBadge}>
+                <Text style={styles.categoryBadgeText}>
+                  {quiz.categoria === 'gossip' ? '💅 GOSSIP' :
+                   quiz.categoria === 'cultura' ? '📚 CULTURA GENERALE' :
+                   quiz.categoria === 'cinema' ? '🎬 CINEMA & SERIE TV' :
+                   quiz.categoria === 'musica' ? '🎵 MUSICA' : ''}
+                </Text>
+              </View>
+            )}
+            
             {/* Badge tipo bonus */}
             {quiz.bonus_type && quiz.can_play && (
               <View style={[
@@ -848,9 +887,32 @@ export default function PremiScreen() {
                 </Text>
               </View>
             )}
+
+            {/* Scelta Categoria */}
+            {quiz.can_play && quiz.needs_category && quiz.categorie && (
+              <View style={styles.categorySelectionCard}>
+                <Text style={styles.categoryTitle}>SCEGLI L'ARGOMENTO!</Text>
+                <Text style={styles.categorySubtitle}>Tocca una categoria per iniziare il quiz</Text>
+                <View style={styles.categoryGrid}>
+                  {quiz.categorie.map((cat) => (
+                    <TouchableOpacity
+                      key={cat.key}
+                      style={[styles.categoryButton, { borderColor: cat.colore }]}
+                      onPress={() => handleSelectCategory(cat.key)}
+                      disabled={selectingCategory}
+                      data-testid={`category-${cat.key}`}
+                    >
+                      <Text style={styles.categoryEmoji}>{cat.emoji}</Text>
+                      <Text style={[styles.categoryName, { color: cat.colore }]}>{cat.nome}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                {selectingCategory && <ActivityIndicator color={VEGAS_COLORS.gold} style={{ marginTop: 12 }} />}
+              </View>
+            )}
             
             {/* Quiz Disponibile o Già Risposto */}
-            {(quiz.can_play || quiz.gia_risposto) && quiz.domanda && (
+            {((quiz.can_play && !quiz.needs_category) || quiz.gia_risposto) && quiz.domanda && (
               <View style={styles.quizCard}>
                 {/* Pulsante INIZIA - mostrato prima del click con REGOLE */}
                 {quiz.can_play && !quiz.gia_risposto && !quizStarted && (
@@ -2747,5 +2809,66 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: VEGAS_COLORS.text,
     textAlign: 'center',
+  },
+  // Category Selection styles
+  categorySelectionCard: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255,215,0,0.3)',
+  },
+  categoryTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: VEGAS_COLORS.gold,
+    marginBottom: 4,
+    letterSpacing: 2,
+  },
+  categorySubtitle: {
+    fontSize: 13,
+    color: VEGAS_COLORS.textSecondary,
+    marginBottom: 16,
+  },
+  categoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 12,
+    width: '100%',
+  },
+  categoryButton: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 14,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '46%',
+    borderWidth: 2,
+    minHeight: 90,
+  },
+  categoryEmoji: {
+    fontSize: 30,
+    marginBottom: 6,
+  },
+  categoryName: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  categoryBadge: {
+    backgroundColor: 'rgba(255,215,0,0.15)',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    marginBottom: 8,
+    alignSelf: 'center',
+  },
+  categoryBadgeText: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: VEGAS_COLORS.gold,
+    letterSpacing: 1,
   },
 });

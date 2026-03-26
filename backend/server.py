@@ -21,6 +21,7 @@ import json
 import random
 import time
 from emergentintegrations.llm.chat import LlmChat, UserMessage
+from quiz_domande import QUIZ_PER_CATEGORIA, CATEGORIE_INFO, CATEGORIE
 
 
 # ======================== IN-MEMORY CACHE ========================
@@ -4402,98 +4403,27 @@ async def get_lottery_status(current_user: dict = Depends(get_current_user)):
     }
 
 
-# ==================== QUIZ FITNESS ====================
-# Database di 65+ domande fitness DIFFICILI - cambiano ogni giorno!
-QUIZ_DOMANDE = [
-    {"id": 1, "domanda": "Qual e il pH ottimale del sangue durante l'esercizio intenso?", "risposte": ["6.8-7.0", "7.0-7.2", "7.35-7.45", "7.6-7.8"], "corretta": 2},
-    {"id": 2, "domanda": "Quanti ATP produce la fosforilazione ossidativa da una molecola di glucosio?", "risposte": ["2 ATP", "4 ATP", "30-32 ATP", "38 ATP"], "corretta": 2},
-    {"id": 3, "domanda": "Quale enzima limita la velocita della glicolisi?", "risposte": ["Esochinasi", "Fosfofruttochinasi-1", "Piruvato chinasi", "Lattato deidrogenasi"], "corretta": 1},
-    {"id": 4, "domanda": "Qual e la percentuale di fibre di tipo I nel muscolo soleo?", "risposte": ["25-30%", "40-50%", "60-70%", "80-90%"], "corretta": 3},
-    {"id": 5, "domanda": "A quale intensita (% VO2max) avviene la soglia anaerobica in un soggetto allenato?", "risposte": ["50-60%", "65-70%", "75-85%", "90-95%"], "corretta": 2},
-    {"id": 6, "domanda": "Quale ormone viene secreto dall'iposisi anteriore e stimola IGF-1?", "risposte": ["Cortisolo", "TSH", "GH (Somatotropina)", "ACTH"], "corretta": 2},
-    {"id": 7, "domanda": "Quanti grammi di glicogeno puo immagazzinare il fegato umano?", "risposte": ["30-50g", "80-110g", "200-250g", "400-500g"], "corretta": 1},
-    {"id": 8, "domanda": "Cos'e il deficit di ossigeno (EPOC)?", "risposte": ["Carenza di O2 nei muscoli", "Consumo extra di O2 post-esercizio", "Debito di CO2", "Ipossia da sforzo"], "corretta": 1},
-    {"id": 9, "domanda": "Quale proteina contrattile si lega al calcio nel muscolo scheletrico?", "risposte": ["Actina", "Miosina", "Troponina C", "Tropomiosina"], "corretta": 2},
-    {"id": 10, "domanda": "Qual e il periodo di supercompensazione ottimale dopo allenamento di forza?", "risposte": ["6-12 ore", "24-36 ore", "48-72 ore", "96-120 ore"], "corretta": 2},
-    {"id": 11, "domanda": "Quale substrato energetico predomina in uno sforzo al 30% VO2max?", "risposte": ["Glicogeno muscolare", "Acidi grassi liberi", "Fosfocreatina", "Aminoacidi ramificati"], "corretta": 1},
-    {"id": 12, "domanda": "Qual e il rapporto ottimale omega-6/omega-3 per la salute?", "risposte": ["1:1 a 4:1", "10:1 a 15:1", "20:1 a 25:1", "Non e importante"], "corretta": 0},
-    {"id": 13, "domanda": "Quale tipo di contrazione produce piu forza a parita di attivazione?", "risposte": ["Concentrica", "Isometrica", "Eccentrica", "Isotonica"], "corretta": 2},
-    {"id": 14, "domanda": "A quale percentuale di 1RM si ottiene il massimo reclutamento delle unita motorie?", "risposte": ["50-60%", "70-75%", "80-85%", "95-100%"], "corretta": 2},
-    {"id": 15, "domanda": "Quanto glicogeno muscolare totale contiene un adulto di 70kg?", "risposte": ["100-150g", "300-400g", "600-700g", "1000g+"], "corretta": 1},
-    {"id": 16, "domanda": "Quale aminoacido e il principale stimolatore di mTOR?", "risposte": ["Glutammina", "Leucina", "Valina", "Isoleucina"], "corretta": 1},
-    {"id": 17, "domanda": "In quale fase del sonno viene rilasciato il picco di GH?", "risposte": ["REM", "Fase 1 NREM", "Fase 3-4 NREM (sonno profondo)", "Fase 2 NREM"], "corretta": 2},
-    {"id": 18, "domanda": "Quale e il costo metabolico della sintesi proteica muscolare?", "risposte": ["1 kcal/g", "4 kcal/g", "7-8 kcal/g", "15 kcal/g"], "corretta": 2},
-    {"id": 19, "domanda": "Cosa indica un RER (quoziente respiratorio) di 0.70?", "risposte": ["Uso esclusivo di carboidrati", "Uso misto", "Uso prevalente di grassi", "Stato anaerobico"], "corretta": 2},
-    {"id": 20, "domanda": "Quanto tempo impiega la fosfocreatina a rigenerarsi al 95% dopo sforzo massimale?", "risposte": ["30 secondi", "1-2 minuti", "3-5 minuti", "8-10 minuti"], "corretta": 2},
-    {"id": 21, "domanda": "Quale percentuale della massa corporea e costituita da muscolo scheletrico in un uomo allenato?", "risposte": ["20-25%", "30-35%", "40-45%", "55-60%"], "corretta": 2},
-    {"id": 22, "domanda": "Cosa misura il test di Wingate?", "risposte": ["VO2max", "Soglia anaerobica", "Potenza anaerobica", "Flessibilita muscolare"], "corretta": 2},
-    {"id": 23, "domanda": "Quale e la velocita di sintesi proteica muscolare dopo l'allenamento?", "risposte": ["Aumenta del 25% per 4h", "Aumenta del 50% per 24-48h", "Aumenta del 100% per 12h", "Aumenta del 200% per 6h"], "corretta": 1},
-    {"id": 24, "domanda": "Quanti capillari per fibra muscolare ha un muscolo allenato vs sedentario?", "risposte": ["Uguale", "1.5x di piu", "2-3x di piu", "5x di piu"], "corretta": 2},
-    {"id": 25, "domanda": "Quale vitamina e essenziale per la sintesi del collagene nei tendini?", "risposte": ["Vitamina A", "Vitamina B12", "Vitamina C", "Vitamina K"], "corretta": 2},
-    {"id": 26, "domanda": "A quale temperatura corporea interna si rischia il colpo di calore?", "risposte": ["37.5 C", "38.5 C", "40+ C", "42 C"], "corretta": 2},
-    {"id": 27, "domanda": "Cos'e l'effetto Bohr nella fisiologia dell'esercizio?", "risposte": ["Aumento della pressione arteriosa", "Riduzione dell'affinita dell'emoglobina per O2 con aumento CO2", "Diminuzione della frequenza cardiaca", "Aumento della ventilazione polmonare"], "corretta": 1},
-    {"id": 28, "domanda": "Quale e la gittata cardiaca massima di un atleta di endurance d'elite?", "risposte": ["15-20 L/min", "25-30 L/min", "35-40 L/min", "45-50 L/min"], "corretta": 2},
-    {"id": 29, "domanda": "Quanto tempo serve per raddoppiare la densita mitocondriale con allenamento aerobico?", "risposte": ["1-2 settimane", "4-6 settimane", "3-4 mesi", "6-12 mesi"], "corretta": 1},
-    {"id": 30, "domanda": "Quale minerale e il piu abbondante nel corpo e cruciale per la contrazione muscolare?", "risposte": ["Ferro", "Zinco", "Calcio", "Magnesio"], "corretta": 2},
-    {"id": 31, "domanda": "Qual e il VO2max medio di un maratoneta d'elite?", "risposte": ["45-50 ml/kg/min", "55-60 ml/kg/min", "70-85 ml/kg/min", "90-100 ml/kg/min"], "corretta": 2},
-    {"id": 32, "domanda": "Cosa succede al lattato durante il recupero attivo?", "risposte": ["Viene eliminato con il sudore", "Viene riconvertito in glucosio nel fegato", "Viene espulso dai reni", "Si accumula nei muscoli"], "corretta": 1},
-    {"id": 33, "domanda": "Quante calorie costa sintetizzare 1 kg di tessuto muscolare?", "risposte": ["1.500-2.000 kcal", "5.000-7.000 kcal", "10.000-12.000 kcal", "20.000 kcal"], "corretta": 1},
-    {"id": 34, "domanda": "Quale e il range di carico ottimale per l'ipertrofia secondo la meta-analisi di Schoenfeld?", "risposte": ["30-50% 1RM", "60-80% 1RM", "85-95% 1RM", "Qualsiasi carico a cedimento"], "corretta": 3},
-    {"id": 35, "domanda": "Cos'e la 'finestra anabolica' secondo la ricerca attuale?", "risposte": ["30 min post-workout", "2 ore post-workout", "Si estende per 24-48 ore", "Non esiste"], "corretta": 2},
-    {"id": 36, "domanda": "Quale sistema energetico predomina in uno sprint di 10 secondi?", "risposte": ["Aerobico", "Glicolitico anaerobico", "Sistema ATP-CP", "Misto aerobico-anaerobico"], "corretta": 2},
-    {"id": 37, "domanda": "Quale e il tasso massimo di ossidazione dei grassi durante esercizio?", "risposte": ["0.2-0.3 g/min", "0.5-1.0 g/min", "1.5-2.0 g/min", "3.0 g/min"], "corretta": 1},
-    {"id": 38, "domanda": "Cosa indica il principio SAID nell'allenamento?", "risposte": ["Specific Adaptation to Imposed Demands", "Strength And Intensity Development", "Sequential Adaptation In Duration", "Systematic Approach to Individual Development"], "corretta": 0},
-    {"id": 39, "domanda": "Quale e la pressione sistolica massima accettabile durante esercizio?", "risposte": ["160 mmHg", "200 mmHg", "250 mmHg", "Non esiste un limite"], "corretta": 2},
-    {"id": 40, "domanda": "Quanti grammi di carboidrati/ora puo assorbire l'intestino con doppia fonte (glucosio+fruttosio)?", "risposte": ["30-40g", "60g", "90-100g", "120-150g"], "corretta": 2},
-    {"id": 41, "domanda": "Quale e il rapporto forza eccentrica/concentrica in un soggetto sano?", "risposte": ["0.8:1", "1:1", "1.2-1.4:1", "2:1"], "corretta": 2},
-    {"id": 42, "domanda": "Cos'e la legge di Henneman sul reclutamento muscolare?", "risposte": ["Unita motorie grandi prima", "Unita motorie piccole prima, poi grandi", "Reclutamento casuale", "Alternanza piccole-grandi"], "corretta": 1},
-    {"id": 43, "domanda": "Quale e la densita calorica del tessuto adiposo umano?", "risposte": ["3.500 kcal/kg", "5.000 kcal/kg", "7.700 kcal/kg", "9.000 kcal/kg"], "corretta": 2},
-    {"id": 44, "domanda": "A quale percentuale di disidratazione inizia il calo delle prestazioni?", "risposte": ["0.5%", "1-2%", "3-4%", "5%+"], "corretta": 1},
-    {"id": 45, "domanda": "Cosa sono le cellule satelliti nel muscolo?", "risposte": ["Fibre muscolari danneggiate", "Cellule staminali per rigenerazione muscolare", "Neuroni motori", "Cellule del tessuto connettivo"], "corretta": 1},
-    {"id": 46, "domanda": "Quale e il tempo sotto tensione (TUT) ideale per l'ipertrofia per serie?", "risposte": ["10-15 secondi", "20-30 secondi", "40-60 secondi", "90-120 secondi"], "corretta": 2},
-    {"id": 47, "domanda": "Quale tipo di fibra muscolare ha la maggiore capacita ossidativa?", "risposte": ["Tipo I", "Tipo IIa", "Tipo IIx", "Tipo IIb"], "corretta": 0},
-    {"id": 48, "domanda": "Cosa produce la via del pentoso fosfato nel muscolo?", "risposte": ["ATP", "NADPH e ribosio-5-fosfato", "Lattato", "Acetil-CoA"], "corretta": 1},
-    {"id": 49, "domanda": "Qual e il volume di allenamento settimanale ottimale per gruppo muscolare (serie)?", "risposte": ["5-8 serie", "10-20 serie", "25-30 serie", "35+ serie"], "corretta": 1},
-    {"id": 50, "domanda": "Quale e il deficit calorico massimo giornaliero senza perdita muscolare significativa?", "risposte": ["200-300 kcal", "500-700 kcal", "1000-1200 kcal", "Non esiste un limite"], "corretta": 1},
-    {"id": 51, "domanda": "Cos'e il 'repeated bout effect'?", "risposte": ["Overtraining da esercizi ripetuti", "Riduzione del DOMS dopo la prima esposizione", "Aumento progressivo della forza", "Adattamento cardiovascolare"], "corretta": 1},
-    {"id": 52, "domanda": "Quale neurotrasmettitore e responsabile della contrazione muscolare alla giunzione neuromuscolare?", "risposte": ["Dopamina", "Serotonina", "Acetilcolina", "Noradrenalina"], "corretta": 2},
-    {"id": 53, "domanda": "Quanti grammi di proteine puo assorbire il corpo in un singolo pasto?", "risposte": ["20-25g", "30-40g", "Non c'e un limite reale di assorbimento", "50g massimo"], "corretta": 2},
-    {"id": 54, "domanda": "Cosa misura la scala RPE di Borg modificata (CR-10)?", "risposte": ["Frequenza cardiaca", "Percezione soggettiva dello sforzo", "Velocita di recupero", "Livello di lattato"], "corretta": 1},
-    {"id": 55, "domanda": "Quale e la dose di creatina di mantenimento giornaliera raccomandata?", "risposte": ["1-2g", "3-5g", "10g", "20g"], "corretta": 1},
-    {"id": 56, "domanda": "Qual e il meccanismo principale dell'ipertrofia muscolare?", "risposte": ["Iperplasia delle fibre", "Tensione meccanica + danno metabolico", "Solo aumento delle miofibrille", "Ritenzione idrica intramuscolare"], "corretta": 1},
-    {"id": 57, "domanda": "Quale e la frequenza cardiaca massima reale media a 40 anni (formula Tanaka)?", "risposte": ["170 bpm", "175 bpm", "181 bpm", "186 bpm"], "corretta": 2},
-    {"id": 58, "domanda": "Cosa indica un aumento del CK sierico dopo l'allenamento?", "risposte": ["Buon recupero", "Danno muscolare", "Disidratazione", "Carenza di elettroliti"], "corretta": 1},
-    {"id": 59, "domanda": "Quale percentuale di energia a riposo proviene dai grassi?", "risposte": ["20-30%", "40-50%", "60-70%", "85-90%"], "corretta": 2},
-    {"id": 60, "domanda": "Cos'e la potenza critica (Critical Power)?", "risposte": ["La forza massima esprimibile", "L'intensita massima sostenibile senza accumulo progressivo di fatica", "La velocita di picco dello sprint", "Il carico dell'1RM"], "corretta": 1},
-    {"id": 61, "domanda": "Quale e l'effetto della caffeina sulla performance di endurance?", "risposte": ["Nessun effetto provato", "Migliora del 1-2%", "Migliora del 3-5%", "Migliora del 10-15%"], "corretta": 2},
-    {"id": 62, "domanda": "Quante fibre muscolari puo innervare un singolo motoneurone nel quadricipite?", "risposte": ["1-5 fibre", "50-100 fibre", "500-1000 fibre", "2000-5000 fibre"], "corretta": 2},
-    {"id": 63, "domanda": "Qual e il consumo di ossigeno a riposo (1 MET) in ml/kg/min?", "risposte": ["1.5 ml/kg/min", "3.5 ml/kg/min", "7.0 ml/kg/min", "10.5 ml/kg/min"], "corretta": 1},
-    {"id": 64, "domanda": "Cosa significa 'periodizzazione ondulata' nell'allenamento?", "risposte": ["Variare intensita ogni mese", "Variare volume e intensita nella stessa settimana", "Allenamento solo con onde d'urto", "Periodizzazione per sport acquatici"], "corretta": 1},
-    {"id": 65, "domanda": "Quale e il rapporto testostero/cortisolo che indica overtraining?", "risposte": ["Aumento >50%", "Diminuzione >30%", "Rimane invariato", "Non e un indicatore valido"], "corretta": 1},
-]
+# ==================== QUIZ A CATEGORIE ====================
+# 4 categorie: GOSSIP, CULTURA GENERALE, CINEMA & SERIE TV, MUSICA
+# Domande importate da quiz_domande.py
 
 @api_router.get("/quiz/today")
 async def get_quiz_today(current_user: dict = Depends(get_current_user)):
-    """
-    Quiz BONUS collegato alla ruota della fortuna!
-    - Vinci biglietti alla ruota → Quiz corretto = RADDOPPIA
-    - Perdi biglietti alla ruota → Quiz corretto = ANNULLA perdita
-    - Vinci 0 alla ruota → Quiz corretto = +1 biglietto
-    """
+    """Quiz BONUS con scelta categoria - collegato alla ruota!"""
     user_id = str(current_user["_id"])
     today = now_rome().strftime("%Y-%m-%d")
     
-    # PERFORMANCE FIX: Query parallele
-    existing_answer, spin_today = await asyncio.gather(
+    existing_answer, spin_today, category_choice = await asyncio.gather(
         db.quiz_answers.find_one({"user_id": user_id, "data": today}),
-        db.wheel_spins.find_one({"user_id": user_id, "data": today})
+        db.wheel_spins.find_one({"user_id": user_id, "data": today}),
+        db.quiz_category_choices.find_one({"user_id": user_id, "data": today})
     )
     
     if existing_answer:
-        # Ha già risposto - mostra risultato
-        day_of_year = now_rome().timetuple().tm_yday
-        quiz_index = hash(user_id + today) % len(QUIZ_DOMANDE)
-        domanda = QUIZ_DOMANDE[quiz_index]
+        cat = existing_answer.get("categoria", "cultura")
+        domande = QUIZ_PER_CATEGORIA.get(cat, QUIZ_PER_CATEGORIA["cultura"])
+        quiz_index = hash(user_id + today) % len(domande)
+        domanda = domande[quiz_index]
         return {
             "can_play": False,
             "reason": "already_answered",
@@ -4506,11 +4436,12 @@ async def get_quiz_today(current_user: dict = Depends(get_current_user)):
             "risposta_data": existing_answer.get("risposta_index"),
             "wheel_result": existing_answer.get("wheel_biglietti", 0),
             "bonus_type": existing_answer.get("bonus_type", "standard"),
-            "message": "Hai già risposto! Torna dopo il prossimo giro di ruota 🧠"
+            "categoria": cat,
+            "needs_category": False,
+            "message": "Hai gia risposto! Torna dopo il prossimo giro di ruota"
         }
     
     if not spin_today:
-        # Non ha girato la ruota - quiz bloccato
         return {
             "can_play": False,
             "reason": "no_spin",
@@ -4523,79 +4454,12 @@ async def get_quiz_today(current_user: dict = Depends(get_current_user)):
             "risposta_data": None,
             "wheel_result": 0,
             "bonus_type": None,
-            "message": "🎰 Gira prima la ruota per sbloccare il Quiz Bonus!"
+            "categoria": None,
+            "needs_category": False,
+            "message": "Gira prima la ruota per sbloccare il Quiz Bonus!"
         }
     
-    # Ha girato la ruota - quiz disponibile!
     wheel_biglietti = spin_today.get("biglietti", 0)
-    
-    # Determina il tipo di bonus
-    if wheel_biglietti > 0:
-        bonus_type = "raddoppia"  # Può raddoppiare la vincita
-        potential_bonus = wheel_biglietti  # Raddoppia = stessa quantità in più
-    elif wheel_biglietti < 0:
-        bonus_type = "annulla"  # Può annullare la perdita
-        potential_bonus = abs(wheel_biglietti)  # Recupera ciò che ha perso
-    else:
-        bonus_type = "standard"  # Bonus standard +1
-        potential_bonus = 1
-    
-    # Seleziona domanda unica per ogni utente (basata su user_id + data)
-    quiz_index = hash(user_id + today) % len(QUIZ_DOMANDE)
-    domanda = QUIZ_DOMANDE[quiz_index]
-    
-    return {
-        "can_play": True,
-        "domanda_id": domanda["id"],
-        "domanda": domanda["domanda"],
-        "risposte": domanda["risposte"],
-        "gia_risposto": False,
-        "risposta_corretta": None,
-        "biglietti_vinti": 0,
-        "risposta_data": None,
-        "wheel_result": wheel_biglietti,
-        "bonus_type": bonus_type,
-        "potential_bonus": potential_bonus,
-        "message": f"Quiz Bonus sbloccato! {'Raddoppia la vincita!' if bonus_type == 'raddoppia' else 'Annulla la perdita!' if bonus_type == 'annulla' else 'Vinci +1 biglietto!'} 🎯"
-    }
-
-@api_router.post("/quiz/answer")
-async def submit_quiz_answer(risposta_index: int, current_user: dict = Depends(get_current_user)):
-    """Rispondi al quiz bonus - effetto dipende dal risultato della ruota!"""
-    user_id = str(current_user["_id"])
-    today = now_rome().strftime("%Y-%m-%d")
-    current_month = now_rome().strftime("%Y-%m")
-    
-    # Controlla se ha già risposto oggi
-    existing = await db.quiz_answers.find_one({
-        "user_id": user_id,
-        "data": today
-    })
-    
-    if existing:
-        return {
-            "success": False,
-            "message": "Hai già risposto al quiz di oggi!",
-            "gia_risposto": True
-        }
-    
-    # Controlla se ha girato la ruota oggi
-    spin_today = await db.wheel_spins.find_one({
-        "user_id": user_id,
-        "data": today
-    })
-    
-    if not spin_today:
-        return {
-            "success": False,
-            "message": "Devi prima girare la ruota per rispondere al quiz!",
-            "gia_risposto": False
-        }
-    
-    # Ottieni risultato ruota
-    wheel_biglietti = spin_today.get("biglietti", 0)
-    
-    # Determina bonus type e quantità
     if wheel_biglietti > 0:
         bonus_type = "raddoppia"
         potential_bonus = wheel_biglietti
@@ -4606,36 +4470,166 @@ async def submit_quiz_answer(risposta_index: int, current_user: dict = Depends(g
         bonus_type = "standard"
         potential_bonus = 1
     
-    # Ottieni domanda unica per questo utente
-    quiz_index = hash(user_id + today) % len(QUIZ_DOMANDE)
-    domanda = QUIZ_DOMANDE[quiz_index]
+    if not category_choice:
+        return {
+            "can_play": True,
+            "needs_category": True,
+            "categorie": [
+                {**CATEGORIE_INFO[c], "key": c} for c in CATEGORIE
+            ],
+            "domanda_id": None,
+            "domanda": None,
+            "risposte": [],
+            "gia_risposto": False,
+            "risposta_corretta": None,
+            "biglietti_vinti": 0,
+            "risposta_data": None,
+            "wheel_result": wheel_biglietti,
+            "bonus_type": bonus_type,
+            "potential_bonus": potential_bonus,
+            "categoria": None,
+            "message": "Scegli una categoria per il Quiz Bonus!"
+        }
     
-    # Verifica risposta
+    cat = category_choice["categoria"]
+    domande = QUIZ_PER_CATEGORIA.get(cat, QUIZ_PER_CATEGORIA["cultura"])
+    quiz_index = hash(user_id + today) % len(domande)
+    domanda = domande[quiz_index]
+    
+    return {
+        "can_play": True,
+        "needs_category": False,
+        "domanda_id": domanda["id"],
+        "domanda": domanda["domanda"],
+        "risposte": domanda["risposte"],
+        "gia_risposto": False,
+        "risposta_corretta": None,
+        "biglietti_vinti": 0,
+        "risposta_data": None,
+        "wheel_result": wheel_biglietti,
+        "bonus_type": bonus_type,
+        "potential_bonus": potential_bonus,
+        "categoria": cat,
+        "message": f"Categoria: {CATEGORIE_INFO[cat]['nome']} {CATEGORIE_INFO[cat]['emoji']}"
+    }
+
+
+class SelectCategoryRequest(BaseModel):
+    categoria: str
+
+
+@api_router.post("/quiz/select-category")
+async def select_quiz_category(data: SelectCategoryRequest, current_user: dict = Depends(get_current_user)):
+    """Seleziona la categoria del quiz del giorno"""
+    user_id = str(current_user["_id"])
+    today = now_rome().strftime("%Y-%m-%d")
+    
+    if data.categoria not in CATEGORIE:
+        raise HTTPException(status_code=400, detail="Categoria non valida")
+    
+    existing = await db.quiz_category_choices.find_one({"user_id": user_id, "data": today})
+    if existing:
+        raise HTTPException(status_code=400, detail="Hai gia scelto la categoria oggi!")
+    
+    spin_today = await db.wheel_spins.find_one({"user_id": user_id, "data": today})
+    if not spin_today:
+        raise HTTPException(status_code=400, detail="Devi prima girare la ruota!")
+    
+    await db.quiz_category_choices.insert_one({
+        "user_id": user_id,
+        "data": today,
+        "categoria": data.categoria,
+        "created_at": now_rome()
+    })
+    
+    domande = QUIZ_PER_CATEGORIA[data.categoria]
+    quiz_index = hash(user_id + today) % len(domande)
+    domanda = domande[quiz_index]
+    
+    wheel_biglietti = spin_today.get("biglietti", 0)
+    if wheel_biglietti > 0:
+        bonus_type = "raddoppia"
+        potential_bonus = wheel_biglietti
+    elif wheel_biglietti < 0:
+        bonus_type = "annulla"
+        potential_bonus = abs(wheel_biglietti)
+    else:
+        bonus_type = "standard"
+        potential_bonus = 1
+    
+    return {
+        "success": True,
+        "categoria": data.categoria,
+        "domanda_id": domanda["id"],
+        "domanda": domanda["domanda"],
+        "risposte": domanda["risposte"],
+        "wheel_result": wheel_biglietti,
+        "bonus_type": bonus_type,
+        "potential_bonus": potential_bonus,
+        "message": f"Categoria {CATEGORIE_INFO[data.categoria]['nome']} selezionata!"
+    }
+
+
+@api_router.post("/quiz/answer")
+async def submit_quiz_answer(risposta_index: int, current_user: dict = Depends(get_current_user)):
+    """Rispondi al quiz bonus - effetto dipende dal risultato della ruota!"""
+    user_id = str(current_user["_id"])
+    today = now_rome().strftime("%Y-%m-%d")
+    current_month = now_rome().strftime("%Y-%m")
+    
+    existing = await db.quiz_answers.find_one({"user_id": user_id, "data": today})
+    if existing:
+        return {"success": False, "message": "Hai gia risposto al quiz di oggi!", "gia_risposto": True}
+    
+    spin_today = await db.wheel_spins.find_one({"user_id": user_id, "data": today})
+    if not spin_today:
+        return {"success": False, "message": "Devi prima girare la ruota!", "gia_risposto": False}
+    
+    category_choice = await db.quiz_category_choices.find_one({"user_id": user_id, "data": today})
+    if not category_choice:
+        return {"success": False, "message": "Devi prima scegliere una categoria!", "gia_risposto": False}
+    
+    cat = category_choice["categoria"]
+    wheel_biglietti = spin_today.get("biglietti", 0)
+    
+    if wheel_biglietti > 0:
+        bonus_type = "raddoppia"
+        potential_bonus = wheel_biglietti
+    elif wheel_biglietti < 0:
+        bonus_type = "annulla"
+        potential_bonus = abs(wheel_biglietti)
+    else:
+        bonus_type = "standard"
+        potential_bonus = 1
+    
+    domande = QUIZ_PER_CATEGORIA.get(cat, QUIZ_PER_CATEGORIA["cultura"])
+    quiz_index = hash(user_id + today) % len(domande)
+    domanda = domande[quiz_index]
+    
     is_correct = risposta_index == domanda["corretta"]
     
-    # Calcola biglietti in base al bonus type
     if is_correct:
         biglietti_vinti = potential_bonus
         if bonus_type == "raddoppia":
-            message = f"🎉 RADDOPPIO! +{biglietti_vinti} biglietti extra! Totale dal giro: {wheel_biglietti * 2}!"
+            message = f"RADDOPPIO! +{biglietti_vinti} biglietti extra!"
         elif bonus_type == "annulla":
-            message = f"💪 SALVATO! Hai recuperato {biglietti_vinti} biglietti! La perdita è annullata!"
+            message = f"SALVATO! Hai recuperato {biglietti_vinti} biglietti!"
         else:
-            message = f"✅ Corretto! +{biglietti_vinti} biglietto!"
+            message = f"Corretto! +{biglietti_vinti} biglietto!"
     else:
         biglietti_vinti = 0
         if bonus_type == "raddoppia":
-            message = f"😅 Peccato! Non hai raddoppiato... ma hai comunque vinto {wheel_biglietti} alla ruota!"
+            message = f"Peccato! Non hai raddoppiato... ma hai comunque vinto {wheel_biglietti} alla ruota!"
         elif bonus_type == "annulla":
-            message = f"😢 Risposta sbagliata... la perdita di {abs(wheel_biglietti)} biglietti resta. Riprova domani!"
+            message = f"Risposta sbagliata... la perdita di {abs(wheel_biglietti)} biglietti resta."
         else:
-            message = "❌ Sbagliato! Nessun biglietto bonus questa volta..."
+            message = "Sbagliato! Nessun biglietto bonus questa volta..."
     
-    # Salva risposta
     await db.quiz_answers.insert_one({
         "user_id": user_id,
         "data": today,
         "domanda_id": domanda["id"],
+        "categoria": cat,
         "risposta_index": risposta_index,
         "corretta": is_correct,
         "biglietti_vinti": biglietti_vinti,
@@ -4644,14 +4638,13 @@ async def submit_quiz_answer(risposta_index: int, current_user: dict = Depends(g
         "created_at": now_rome()
     })
     
-    # Se corretto, assegna biglietti bonus
     if is_correct and biglietti_vinti > 0:
         await db.wheel_tickets.update_one(
             {"user_id": user_id, "mese": current_month},
             {"$inc": {"biglietti": biglietti_vinti}},
             upsert=True
         )
-        logger.info(f"[QUIZ BONUS] {current_user['nome']} - {bonus_type}: +{biglietti_vinti} biglietti")
+        logger.info(f"[QUIZ BONUS] {current_user['nome']} - {bonus_type} - {cat}: +{biglietti_vinti} biglietti")
     
     return {
         "success": True,
@@ -4660,8 +4653,10 @@ async def submit_quiz_answer(risposta_index: int, current_user: dict = Depends(g
         "biglietti_vinti": biglietti_vinti,
         "bonus_type": bonus_type,
         "wheel_result": wheel_biglietti,
+        "categoria": cat,
         "message": message
     }
+
 
 
 @api_router.get("/lottery/winners")
