@@ -1124,6 +1124,45 @@ async def delete_subscription(subscription_id: str, admin_user: dict = Depends(g
         raise HTTPException(status_code=400, detail=str(e))
 
 
+
+# ======================== ALERT NUOVI ISCRITTI (ADMIN) ========================
+
+@api_router.get("/admin/new-registrations")
+async def get_new_registrations(admin_user: dict = Depends(get_admin_user)):
+    """Ritorna utenti registrati dopo l'ultimo controllo dell'admin"""
+    admin_id = str(admin_user["_id"])
+    
+    last_check = await db.admin_last_check.find_one({"admin_id": admin_id})
+    last_check_time = last_check["checked_at"] if last_check else admin_user.get("created_at", datetime(2020, 1, 1))
+    
+    new_users = await db.users.find(
+        {"created_at": {"$gt": last_check_time}, "role": {"$nin": ["admin"]}},
+        {"_id": 0, "nome": 1, "cognome": 1, "email": 1, "created_at": 1}
+    ).sort("created_at", -1).to_list(50)
+    
+    return {
+        "nuovi_utenti": [{
+            "nome": u.get("nome"),
+            "cognome": u.get("cognome"),
+            "email": u.get("email"),
+            "data_registrazione": u["created_at"].strftime("%d/%m/%Y %H:%M") if u.get("created_at") else None
+        } for u in new_users],
+        "count": len(new_users)
+    }
+
+
+@api_router.post("/admin/mark-registrations-seen")
+async def mark_registrations_seen(admin_user: dict = Depends(get_admin_user)):
+    """Segna le registrazioni come viste"""
+    admin_id = str(admin_user["_id"])
+    await db.admin_last_check.update_one(
+        {"admin_id": admin_id},
+        {"$set": {"admin_id": admin_id, "checked_at": now_rome()}},
+        upsert=True
+    )
+    return {"message": "Registrazioni segnate come viste"}
+
+
 # ======================== PROVA GRATUITA (TRIAL) ========================
 
 @api_router.post("/admin/activate-trial/{user_id}")
@@ -5160,7 +5199,7 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:8081",
         "http://localhost:19006",
-        "https://premi-system.preview.emergentagent.com",
+        "https://trial-lottery-system.preview.emergentagent.com",
     ],
     allow_methods=["*"],
     allow_headers=["*"],

@@ -194,6 +194,8 @@ export const apiService = {
   deleteUser: (userId: string) => api.delete(`/admin/users/${userId}`),
   activateTrial: (userId: string) => api.post(`/admin/activate-trial/${userId}`),
   deactivateTrial: (userId: string) => api.post(`/admin/deactivate-trial/${userId}`),
+  getNewRegistrations: () => api.get<{ nuovi_utenti: { nome: string; cognome: string; email: string; data_registrazione: string }[]; count: number }>('/admin/new-registrations'),
+  markRegistrationsSeen: () => api.post('/admin/mark-registrations-seen'),
   updateUser: (userId: string, data: {nome?: string; cognome?: string; soprannome?: string; telefono?: string}) => 
     api.put(`/admin/users/${userId}`, data),
   getDailyStats: (date: string) => api.get<DailyStats>(`/admin/daily-stats/${date}`),

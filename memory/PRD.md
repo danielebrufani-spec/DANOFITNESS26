@@ -102,6 +102,16 @@ App di fitness per la gestione di lezioni, prenotazioni, abbonamenti e gamificat
 - Email: danielebrufani@gmail.com
 - Password: Mariavittoria23
 
+## Alert Nuove Registrazioni Admin (26 Marzo 2026)
+- Popup modale al login admin se ci sono nuovi utenti registrati
+- Mostra nome e cognome di ogni nuovo iscritto
+- Pulsante "OK, VISTO!" per chiudere e marcare come visti
+- Endpoints: GET /admin/new-registrations, POST /admin/mark-registrations-seen
+
+## Bug Fix: Pulsante Prova 7gg non visibile (26 Marzo 2026)
+- Il pulsante "Prova 7gg" non appariva per utenti con ruolo "utente" (solo per "client")
+- Fix: condizione cambiata da `role === 'client'` a `role !== 'admin' && role !== 'istruttore'`
+
 ## Task Futuri
 ### P1
 - Sistema Notifiche In-App (icona campanella) per lezioni cancellate, abbonamenti in scadenza, classifica
@@ -112,3 +122,6 @@ App di fitness per la gestione di lezioni, prenotazioni, abbonamenti e gamificat
 - Integrazione Instagram per bonus
 - UI/UX: Dark/Light mode, calendario visuale, pagina statistiche personali
 - Aggiornamento dipendenze frontend outdated
+
+### P3
+- Modularizzazione server.py (~5400 righe) in router separati

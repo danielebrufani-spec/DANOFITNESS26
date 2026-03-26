@@ -1239,7 +1239,7 @@ export default function AdminScreen() {
                       <Ionicons name="archive-outline" size={16} color="#6366f1" />
                       <Text style={[styles.actionBtnText, { color: '#6366f1' }]}>Archivia</Text>
                     </TouchableOpacity>
-                    {user.role === 'client' && (
+                    {user.role !== 'admin' && user.role !== 'istruttore' && (
                       <TouchableOpacity 
                         style={[styles.actionBtnSmall, { backgroundColor: user.prova_attiva ? '#FF572220' : '#4CAF5020' }]}
                         onPress={() => handleToggleTrial(user)}

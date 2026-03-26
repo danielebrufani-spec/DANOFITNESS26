@@ -330,6 +330,8 @@ export default function HomeScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [newRegistrations, setNewRegistrations] = useState<{nome: string; cognome: string}[]>([]);
+  const [showNewUsersAlert, setShowNewUsersAlert] = useState(false);
   
   // Spinning logo animation - starts immediately
   const spinValue = useRef(new Animated.Value(0)).current;
@@ -596,10 +598,21 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      // Don't show loading if we already have data
       loadData(false);
     }, [isAdmin])
   );
+
+  // Check nuovi iscritti per admin
+  useEffect(() => {
+    if (isAdmin) {
+      apiService.getNewRegistrations().then(res => {
+        if (res.data.count > 0) {
+          setNewRegistrations(res.data.nuovi_utenti);
+          setShowNewUsersAlert(true);
+        }
+      }).catch(() => {});
+    }
+  }, [isAdmin]);
 
   // Rotazione frasi divertenti ogni 5 secondi
   useEffect(() => {
@@ -617,6 +630,13 @@ export default function HomeScreen() {
 
   const dismissNotification = (id: string) => {
     setDismissedNotifications(prev => [...prev, id]);
+  };
+
+  const handleDismissNewUsers = async () => {
+    setShowNewUsersAlert(false);
+    try {
+      await apiService.markRegistrationsSeen();
+    } catch {}
   };
 
   const visibleNotifications = notifications.filter(n => !dismissedNotifications.includes(n.id));
@@ -848,6 +868,31 @@ export default function HomeScreen() {
             </View>
           </Modal>
         </ScrollView>
+
+        {/* Modal Alert Nuovi Iscritti - Admin */}
+        <Modal visible={showNewUsersAlert} transparent animationType="fade" onRequestClose={handleDismissNewUsers}>
+          <View style={styles.newUserOverlay}>
+            <View style={styles.newUserModal}>
+              <View style={styles.newUserHeader}>
+                <Ionicons name="person-add" size={28} color="#4CAF50" />
+                <Text style={styles.newUserTitle}>
+                  {newRegistrations.length === 1 ? 'NUOVO ISCRITTO!' : `${newRegistrations.length} NUOVI ISCRITTI!`}
+                </Text>
+              </View>
+              <View style={styles.newUserList}>
+                {newRegistrations.map((u, i) => (
+                  <View key={i} style={styles.newUserItem}>
+                    <Ionicons name="person-circle" size={20} color={COLORS.primary} />
+                    <Text style={styles.newUserName}>{u.nome} {u.cognome}</Text>
+                  </View>
+                ))}
+              </View>
+              <TouchableOpacity style={styles.newUserDismissBtn} onPress={handleDismissNewUsers} data-testid="dismiss-new-users">
+                <Text style={styles.newUserDismissText}>OK, VISTO!</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     );
   }
@@ -1438,5 +1483,63 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     flex: 1,
     fontWeight: '500',
+  },
+  // New User Alert Modal
+  newUserOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  newUserModal: {
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    borderWidth: 2,
+    borderColor: '#4CAF5040',
+  },
+  newUserHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 18,
+  },
+  newUserTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+    flex: 1,
+  },
+  newUserList: {
+    gap: 10,
+    marginBottom: 20,
+  },
+  newUserItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+    padding: 12,
+  },
+  newUserName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  newUserDismissBtn: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center',
+  },
+  newUserDismissText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFF',
+    letterSpacing: 1,
   },
 });
