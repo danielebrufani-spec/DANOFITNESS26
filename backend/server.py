@@ -4486,11 +4486,22 @@ async def get_lottery_status(current_user: dict = Depends(get_current_user)):
     # Totale biglietti = allenamenti + bonus ruota
     biglietti = biglietti_allenamenti + biglietti_ruota
     
-    # Calcola prossima estrazione (1° del prossimo mese alle 12:00)
-    if now.month == 12:
-        next_extraction = datetime(now.year + 1, 1, 1, 12, 0, 0, tzinfo=ROME_TZ)
+    # Calcola prossima estrazione (1° del mese alle 12:00)
+    if winner_data:
+        # Estrazione già fatta questo mese - prossima è il 1° del mese successivo
+        if now.month == 12:
+            next_extraction = datetime(now.year + 1, 1, 1, 12, 0, 0, tzinfo=ROME_TZ)
+        else:
+            next_extraction = datetime(now.year, now.month + 1, 1, 12, 0, 0, tzinfo=ROME_TZ)
+    elif now.day == 1 and now.hour < 12:
+        # Giorno dell'estrazione, prima delle 12:00 - countdown a OGGI ore 12:00
+        next_extraction = datetime(now.year, now.month, 1, 12, 0, 0, tzinfo=ROME_TZ)
     else:
-        next_extraction = datetime(now.year, now.month + 1, 1, 12, 0, 0, tzinfo=ROME_TZ)
+        # Countdown al 1° del prossimo mese alle 12:00
+        if now.month == 12:
+            next_extraction = datetime(now.year + 1, 1, 1, 12, 0, 0, tzinfo=ROME_TZ)
+        else:
+            next_extraction = datetime(now.year, now.month + 1, 1, 12, 0, 0, tzinfo=ROME_TZ)
     
     seconds_to_extraction = int((next_extraction - now).total_seconds())
     

@@ -653,7 +653,9 @@ export default function PremiScreen() {
               <Text style={styles.countdownUnit}>SEC</Text>
             </View>
           </View>
-          <Text style={styles.countdownInfo}>1° del mese alle ore 12:00</Text>
+          <Text style={styles.countdownInfo}>
+            {countdown.days === 0 ? 'OGGI alle ore 12:00!' : '1° del mese alle ore 12:00'}
+          </Text>
         </View>
 
         {/* Avviso partecipazione - ben visibile */}
