@@ -1182,11 +1182,6 @@ export default function PremiScreen() {
                 {/* Statistiche estrazione */}
                 <View style={styles.winnerStatsRow}>
                   <View style={styles.winnerStatItem}>
-                    <Text style={styles.statNumber}>{status.totale_partecipanti}</Text>
-                    <Text style={styles.statLabel}>partecipanti</Text>
-                  </View>
-                  <View style={styles.winnerStatDivider} />
-                  <View style={styles.winnerStatItem}>
                     <Text style={styles.statNumber}>{status.totale_biglietti || '-'}</Text>
                     <Text style={styles.statLabel}>biglietti totali</Text>
                   </View>
