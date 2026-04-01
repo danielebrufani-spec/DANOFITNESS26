@@ -4266,8 +4266,8 @@ async def get_users_with_active_subscription() -> set:
     now = now_rome()
     active_user_ids = set()
     
-    # Ottieni tutti gli abbonamenti attivi
-    subscriptions = await db.subscriptions.find({"attivo": True}).to_list(1000)
+    # Ottieni tutti gli abbonamenti attivi (escludi prova_7gg - la prova non partecipa alla lotteria)
+    subscriptions = await db.subscriptions.find({"attivo": True, "tipo": {"$ne": "prova_7gg"}}).to_list(1000)
     
     # Filtra abbonamenti non scaduti
     candidate_user_ids = set()
