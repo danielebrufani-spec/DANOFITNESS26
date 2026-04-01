@@ -4455,31 +4455,46 @@ async def get_lottery_status(current_user: dict = Depends(get_current_user)):
     """Ottieni stato lotteria: biglietti utente, 3 vincitori"""
     now = datetime.now(ROME_TZ)
     current_month = now.strftime("%Y-%m")
+    user_id = str(current_user["_id"])
     
     # ESTRAZIONE AUTOMATICA: Controlla se è il momento e esegui se necessario
     await check_and_run_lottery()
     
-    # Calcola biglietti utente nel mese corrente
-    start_date = f"{current_month}-01"
-    next_month = now.month + 1 if now.month < 12 else 1
-    next_year = now.year if now.month < 12 else now.year + 1
-    end_date = f"{next_year}-{next_month:02d}-01"
+    # Prima recupera i dati vincitori e abbonamento
+    winner_data = await db.lottery_winners.find_one({"mese": current_month})
+    ha_abbonamento_attivo = await check_user_has_active_subscription(user_id)
     
-    user_id = str(current_user["_id"])
-    
-    # PERFORMANCE FIX: Parallel queries per biglietti, ruota, abbonamento e vincitori
-    biglietti_task = db.bookings.count_documents({
-        "user_id": user_id,
-        "data_lezione": {"$gte": start_date, "$lt": end_date},
-        "lezione_scalata": True
-    })
-    wheel_task = db.wheel_tickets.find_one({"user_id": user_id, "mese": current_month})
-    sub_task = check_user_has_active_subscription(user_id)
-    winner_task = db.lottery_winners.find_one({"mese": current_month})
-    
-    biglietti_allenamenti, wheel_doc, ha_abbonamento_attivo, winner_data = await asyncio.gather(
-        biglietti_task, wheel_task, sub_task, winner_task
-    )
+    # Calcola biglietti utente
+    # Se è il giorno dell'estrazione (1° del mese) e l'estrazione NON è ancora fatta,
+    # mostra i biglietti del mese PRECEDENTE (quelli che verranno usati per l'estrazione)
+    if now.day == 1 and now.hour < 12 and not winner_data:
+        # Mostra biglietti del mese precedente
+        if now.month == 1:
+            prev_month_str_calc = f"{now.year - 1}-12"
+        else:
+            prev_month_str_calc = f"{now.year}-{now.month - 1:02d}"
+        start_date = f"{prev_month_str_calc}-01"
+        end_date = f"{current_month}-01"
+        
+        biglietti_allenamenti = await db.bookings.count_documents({
+            "user_id": user_id,
+            "data_lezione": {"$gte": start_date, "$lt": end_date},
+            "lezione_scalata": True
+        })
+        wheel_doc = await db.wheel_tickets.find_one({"user_id": user_id, "mese": prev_month_str_calc})
+    else:
+        # Mostra biglietti del mese corrente (dopo estrazione = 0)
+        start_date = f"{current_month}-01"
+        next_month = now.month + 1 if now.month < 12 else 1
+        next_year = now.year if now.month < 12 else now.year + 1
+        end_date = f"{next_year}-{next_month:02d}-01"
+        
+        biglietti_allenamenti = await db.bookings.count_documents({
+            "user_id": user_id,
+            "data_lezione": {"$gte": start_date, "$lt": end_date},
+            "lezione_scalata": True
+        })
+        wheel_doc = await db.wheel_tickets.find_one({"user_id": user_id, "mese": current_month})
     
     biglietti_ruota = wheel_doc.get("biglietti", 0) if wheel_doc else 0
     
