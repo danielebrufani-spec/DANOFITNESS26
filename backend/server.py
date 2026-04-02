@@ -159,6 +159,10 @@ class UserResponse(BaseModel):
     prova_attiva: Optional[bool] = False
     prova_inizio: Optional[str] = None
     prova_scadenza: Optional[str] = None
+    ultimo_abb_tipo: Optional[str] = None
+    ultimo_abb_inizio: Optional[str] = None
+    ultimo_abb_scadenza: Optional[str] = None
+    ultimo_abb_pagato: Optional[bool] = None
 
 class SubscriptionCreate(BaseModel):
     user_id: str
@@ -1875,12 +1879,25 @@ async def get_bookings_by_date(day_date: str, admin_user: dict = Depends(get_adm
 
 @api_router.get("/admin/users", response_model=List[UserResponse])
 async def get_all_users(admin_user: dict = Depends(get_admin_user)):
-    # PERFORMANCE FIX: Exclude profile_image from bulk user query
     # Escludi utenti archiviati dalla lista principale
     users = await db.users.find({"archived": {"$ne": True}}, {"profile_image": 0}).to_list(1000)
-    return [
-        UserResponse(
-            id=str(user["_id"]),
+    
+    # Recupera l'ultimo abbonamento per ogni utente (ordinato per data creazione desc)
+    all_subs = await db.subscriptions.find({}, {"_id": 0, "user_id": 1, "tipo": 1, "data_inizio": 1, "data_scadenza": 1, "pagato": 1, "created_at": 1}).sort("created_at", -1).to_list(5000)
+    
+    # Mappa: user_id -> ultimo abbonamento
+    last_sub_map = {}
+    for sub in all_subs:
+        uid = sub["user_id"]
+        if uid not in last_sub_map:
+            last_sub_map[uid] = sub
+    
+    result = []
+    for user in users:
+        uid = str(user["_id"])
+        last_sub = last_sub_map.get(uid)
+        result.append(UserResponse(
+            id=uid,
             email=user["email"],
             nome=user["nome"],
             cognome=user["cognome"],
@@ -1889,13 +1906,17 @@ async def get_all_users(admin_user: dict = Depends(get_admin_user)):
             role=user["role"],
             created_at=user["created_at"],
             push_token=user.get("push_token"),
-            profile_image=None,  # Excluded for performance
+            profile_image=None,
             archived=user.get("archived", False),
             prova_attiva=user.get("prova_attiva", False),
             prova_inizio=user.get("prova_inizio"),
-            prova_scadenza=user.get("prova_scadenza")
-        ) for user in users
-    ]
+            prova_scadenza=user.get("prova_scadenza"),
+            ultimo_abb_tipo=last_sub["tipo"] if last_sub else None,
+            ultimo_abb_inizio=last_sub["data_inizio"].strftime("%Y-%m-%d") if last_sub and last_sub.get("data_inizio") else None,
+            ultimo_abb_scadenza=last_sub["data_scadenza"].strftime("%Y-%m-%d") if last_sub and last_sub.get("data_scadenza") else None,
+            ultimo_abb_pagato=last_sub.get("pagato") if last_sub else None,
+        ))
+    return result
 
 
 @api_router.get("/admin/users/archived", response_model=List[UserResponse])

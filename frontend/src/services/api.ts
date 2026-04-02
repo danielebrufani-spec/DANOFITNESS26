@@ -91,6 +91,10 @@ export interface User {
   prova_attiva?: boolean;
   prova_inizio?: string;
   prova_scadenza?: string;
+  ultimo_abb_tipo?: string;
+  ultimo_abb_inizio?: string;
+  ultimo_abb_scadenza?: string;
+  ultimo_abb_pagato?: boolean;
 }
 
 export interface Reply {

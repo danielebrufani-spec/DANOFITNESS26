@@ -272,6 +272,27 @@ export default function AdminScreen() {
       return;
     }
     
+    // Trova nome utente per la conferma
+    const selectedUserObj = users.find(u => u.id === selectedUser);
+    const userName = selectedUserObj ? `${selectedUserObj.nome} ${selectedUserObj.cognome}` : '';
+    const tipoInfo = ABBONAMENTO_INFO[selectedType];
+    const tipoLabel = tipoInfo ? `${tipoInfo.nome} (${tipoInfo.prezzo})` : selectedType;
+    
+    // Popup di conferma
+    const confirmMessage = `Confermi abbonamento ${tipoLabel} per ${userName}?`;
+    
+    if (Platform.OS === 'web') {
+      if (!window.confirm(confirmMessage)) return;
+      await executeAddSubscription();
+    } else {
+      Alert.alert('Conferma', confirmMessage, [
+        { text: 'Annulla', style: 'cancel' },
+        { text: 'Conferma', onPress: () => executeAddSubscription() }
+      ]);
+    }
+  };
+
+  const executeAddSubscription = async () => {
     setAddingSubscription(true);
     try {
       const data: any = {
@@ -1045,18 +1066,8 @@ export default function AdminScreen() {
                       {sub.user_nome} {sub.user_cognome}
                     </Text>
                     <Text style={styles.subscriptionType}>{info.nome}</Text>
-                    {sub.lezioni_rimanenti !== null && (
-                      <Text style={styles.subscriptionLessons}>
-                        {sub.lezioni_rimanenti} lezioni rimanenti
-                      </Text>
-                    )}
-                    {isTimeBasedSub && sub.lezioni_fatte !== undefined && (
-                      <Text style={[styles.subscriptionLessons, { color: COLORS.success }]}>
-                        {sub.lezioni_fatte} lezioni effettuate
-                      </Text>
-                    )}
                     <Text style={styles.subscriptionExpiry}>
-                      Scadenza: {formatDate(sub.data_scadenza)}
+                      Inizio: {formatDate(sub.data_inizio)} → Scadenza: {formatDate(sub.data_scadenza)}
                     </Text>
                     {sub.scaduto && (
                       <Text style={styles.expiredBadge}>SCADUTO</Text>
@@ -1188,6 +1199,19 @@ export default function AdminScreen() {
                       {user.soprannome ? `"${user.soprannome}" ` : ''}{user.nome} {user.cognome}
                     </Text>
                     <Text style={styles.userEmail} numberOfLines={1}>{user.email}</Text>
+                    {user.ultimo_abb_tipo && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
+                        <Ionicons name="card-outline" size={12} color={COLORS.textSecondary} />
+                        <Text style={{ fontSize: 11, color: COLORS.textSecondary }} numberOfLines={1}>
+                          {ABBONAMENTO_INFO[user.ultimo_abb_tipo]?.nome || user.ultimo_abb_tipo}
+                          {' · '}
+                          {user.ultimo_abb_inizio ? new Date(user.ultimo_abb_inizio).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' }) : '?'}
+                          {' → '}
+                          {user.ultimo_abb_scadenza ? new Date(user.ultimo_abb_scadenza).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: '2-digit' }) : '?'}
+                          {user.ultimo_abb_pagato === false ? ' · DA SALDARE' : ''}
+                        </Text>
+                      </View>
+                    )}
                   </View>
                   {user.role === 'admin' ? (
                     <View style={styles.adminBadgeSmall}>
