@@ -1,0 +1,137 @@
+{
+  "theme_and_archetype": {
+    "theme": "DARK",
+    "archetype": "Archetype 2: The Performance Pro",
+    "rationale": "High energy, tactical, command-center feel specifically requested for a functional training/CrossFit aesthetic. Heavy contrasts with Kinetic Orange/Red to simulate adrenaline and heat, abandoning the old casino look."
+  },
+  "color_palette": {
+    "background": "#0A0A0A",
+    "surface": "#121212",
+    "surface_elevated": "#1C1C1E",
+    "primary": "#FF4500",
+    "secondary": "#2C2C2E",
+    "accent": "#00E676",
+    "text_primary": "#FFFFFF",
+    "text_secondary": "#A0A0A5",
+    "danger": "#FF3B30",
+    "success": "#00E676",
+    "border": "#2C2C2E"
+  },
+  "typography": {
+    "fonts": [
+      {
+        "family": "Bebas Neue",
+        "usage": "Headlines, Hero Banners, Numbers, KPIs",
+        "rationale": "Heavy, condensed weight typical of high-end functional training aesthetics. Imparts power and urgency."
+      },
+      {
+        "family": "Montserrat",
+        "usage": "Body text, small buttons, labels",
+        "rationale": "Geometric and highly readable, contrasts perfectly with condensed headers."
+      }
+    ],
+    "scales": {
+      "h1": "48px, tracking: tight",
+      "h2": "36px, tracking: tight",
+      "h3": "24px",
+      "body": "16px",
+      "small": "14px, uppercase, tracking: wide"
+    }
+  },
+  "image_urls": [
+    {
+      "category": "hero",
+      "url": "https://images.pexels.com/photos/6389507/pexels-photo-6389507.jpeg",
+      "description": "Intense woman working out in dark gym with fog. Use for Client Home banner."
+    },
+    {
+      "category": "lesson_circuit",
+      "url": "https://images.pexels.com/photos/9958668/pexels-photo-9958668.jpeg",
+      "description": "Industrial gym with barbells. Use for Circuito class."
+    },
+    {
+      "category": "lesson_functional",
+      "url": "https://images.unsplash.com/photo-1578762560042-46ad127c95ea",
+      "description": "Black metal kettlebell. Use for Funzionale class."
+    },
+    {
+      "category": "lesson_pilates",
+      "url": "https://images.pexels.com/photos/35553893/pexels-photo-35553893.jpeg",
+      "description": "Pilates reformer in dark studio."
+    },
+    {
+      "category": "lesson_yoga",
+      "url": "https://images.unsplash.com/photo-1590915202637-31dbc5528371",
+      "description": "Yoga bending in dark studio."
+    },
+    {
+      "category": "background_abstract",
+      "url": "https://images.unsplash.com/photo-1770513649465-2c60c8039806",
+      "description": "Dark gym background for admin or profile pages (apply heavy black overlay)."
+    }
+  ],
+  "animations": {
+    "libraries": [
+      "react-native Animated API (primary for layout and taps)",
+      "canvas-confetti (for web lottery win) or react-native-confetti-cannon (native)"
+    ],
+    "specs": [
+      {
+        "flow": "Entrance Home",
+        "technique": "Parallax + Fade In",
+        "description": "Hero background scales from 1.1 to 1.0 slowly on mount. Elements fade in staggered by 100ms."
+      },
+      {
+        "flow": "Tap Interaction (Buttons/Cards)",
+        "technique": "Spring Scale",
+        "code_snippet": "Animated.spring(scaleAnim, { toValue: 0.95, friction: 5, tension: 100, useNativeDriver: true }).start();"
+      },
+      {
+        "flow": "Streak Flame",
+        "technique": "Pulse Animation",
+        "code_snippet": "Animated.loop(Animated.sequence([Animated.timing(scaleAnim, {toValue: 1.2, duration: 600, useNativeDriver: true}), Animated.timing(scaleAnim, {toValue: 1.0, duration: 600, useNativeDriver: true})])).start();"
+      },
+      {
+        "flow": "KPI Counter (Admin)",
+        "technique": "Count Up",
+        "description": "Use setInterval or a hook to rapidly step numbers from 0 to target value upon mount."
+      },
+      {
+        "flow": "Lottery Win",
+        "technique": "Confetti overlay",
+        "description": "Full screen confetti using canvas-confetti triggered on wheel stop."
+      },
+      {
+        "flow": "Wheel Glow",
+        "technique": "Breathing DropShadow",
+        "description": "Animate the drop-shadow opacity and radius from 10px to 20px over 1000ms loop."
+      }
+    ]
+  },
+  "component_guidelines": [
+    {
+      "name": "Standard Fitness Card",
+      "styling": "Background #121212, Border 1px solid #2C2C2E, Border Radius 8px. Dark overlay gradient if image background."
+    },
+    {
+      "name": "Primary Button",
+      "styling": "Background #FF4500 (Kinetic Orange). Text Bebas Neue, uppercase, pure white. Sharp athletic look (border-radius 4px). Use scale down on press."
+    },
+    {
+      "name": "Progress Bar",
+      "styling": "Track #1C1C1E, Fill #00E676 (Neon Green) for health/streak. Height 8px, sharp edges."
+    }
+  ],
+  "page_mapping": {
+    "home_client": "Hero image with dark gradient overlay (bg-black/60). Greeting in Bebas Neue. Pulse flame on streak. Staggered fade in for recipe and plan cards.",
+    "home_admin": "Tactical grid layout. Count-up animations for KPIs. #121212 cards with 1px #2C2C2E borders. Red #FF3B30 for expired subs.",
+    "prenota_lezioni": "4 grid cards with the specific lesson images. Each card scales down on press. Dark overlay on images so text pops.",
+    "abbonamento": "Pricing cards. Selected card gets a 2px solid #FF4500 border and subtle inner glow. Features listed with Bebas Neue headers.",
+    "alimentazione": "Clean, structured. Use #1C1C1E for macro breakdown boxes. Neon Green for protein metrics to look like a game stamina bar.",
+    "premi_lotteria": "Completely remove 'Vegas' look. Make it look like 'Rogue Fitness Games' prize pool. Dark carbon background. Wheel is industrial looking with #FF4500 and #121212 slices.",
+    "classifica_settimanale": "Leaderboard. Rank 1 gets a Kinetic Orange #FF4500 badge. Others get grey #A0A0A5. List items slide in from right sequentially.",
+    "profilo": "Dark abstract gym background with #0A0A0A/80 overlay. User stats displayed like RPG game stats.",
+    "admin_dashboard": "Dense data view. Strip away all decor. Pure functional grid (Archetype 2 Control Room). Small font sizes (14px) for data tables."
+  },
+  "instructions_to_main_agent": "Ensure all interactive elements have data-testid attributes. Apply the new color palette via constants.ts. Use pure React Native components (View, Text, Pressable). Use Expo Font to load Bebas Neue and Montserrat. Do NOT use Inter. Use the Animated API for the requested interactions. For images, apply StyleSheet.absoluteFillObject with a dark semi-transparent View over them to ensure text contrast."
+}
