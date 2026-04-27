@@ -64,6 +64,22 @@ interface Vincitore {
   is_me: boolean;
 }
 
+interface BozzaInAttesa {
+  mese: string;
+  mese_riferimento?: string;
+  data_estrazione?: string;
+  totale_partecipanti: number;
+  totale_biglietti: number;
+  vincitori: {
+    posizione: number;
+    nome?: string;
+    cognome?: string;
+    soprannome?: string;
+    biglietti?: number;
+    premio?: string;
+  }[];
+}
+
 interface LotteryStatus {
   biglietti_utente: number;
   mese_corrente: string;
@@ -80,6 +96,8 @@ interface LotteryStatus {
   prossima_estrazione: string;
   secondi_a_estrazione: number;
   estrazione_fatta: boolean;
+  is_admin?: boolean;
+  bozza_in_attesa?: BozzaInAttesa | null;
 }
 
 interface Winner {
@@ -118,6 +136,8 @@ export default function PremiScreen() {
   const [newPrize2, setNewPrize2] = useState('');
   const [newPrize3, setNewPrize3] = useState('');
   const [savingPrize, setSavingPrize] = useState(false);
+  const [publishingBozza, setPublishingBozza] = useState(false);
+  const [reExtracting, setReExtracting] = useState(false);
 
   // Ruota della Fortuna
   const [wheelStatus, setWheelStatus] = useState<WheelStatus | null>(null);
@@ -490,6 +510,46 @@ export default function PremiScreen() {
       Alert.alert('Errore', error.response?.data?.detail || 'Errore');
     } finally {
       setSavingPrize(false);
+    }
+  };
+
+  // Admin: Pubblica la bozza in attesa
+  const handlePublishBozza = async () => {
+    if (!status?.bozza_in_attesa) return;
+    const mese = status.bozza_in_attesa.mese;
+    const confirmMsg = `Pubblicare l'estrazione di ${mese}? Tutti gli utenti vedranno i vincitori!`;
+    if (typeof window !== 'undefined' && window.confirm) {
+      if (!window.confirm(confirmMsg)) return;
+    }
+    setPublishingBozza(true);
+    try {
+      await apiService.publishLottery(mese);
+      Alert.alert('Pubblicato!', 'I vincitori sono ora visibili a tutti gli utenti.');
+      await loadData();
+    } catch (error: any) {
+      Alert.alert('Errore', error.response?.data?.detail || 'Errore pubblicazione');
+    } finally {
+      setPublishingBozza(false);
+    }
+  };
+
+  // Admin: Ri-estrai i vincitori (cancella bozza e rilancia estrazione)
+  const handleReExtract = async () => {
+    if (!status?.bozza_in_attesa) return;
+    const mese = status.bozza_in_attesa.mese;
+    const confirmMsg = `Ri-estrarre i vincitori di ${mese}? La bozza attuale verrà cancellata e verranno estratti nuovi vincitori casuali.`;
+    if (typeof window !== 'undefined' && window.confirm) {
+      if (!window.confirm(confirmMsg)) return;
+    }
+    setReExtracting(true);
+    try {
+      await apiService.reExtractLottery(mese);
+      Alert.alert('Ri-estratto!', 'Nuova bozza di vincitori generata.');
+      await loadData();
+    } catch (error: any) {
+      Alert.alert('Errore', error.response?.data?.detail || 'Errore ri-estrazione');
+    } finally {
+      setReExtracting(false);
     }
   };
 
@@ -1114,6 +1174,79 @@ export default function PremiScreen() {
             <Text style={styles.quizInfo}>
               Si sblocca dopo la ruota • Bonus dipende dal risultato! 🎰
             </Text>
+          </View>
+        )}
+
+        {/* ===== ADMIN: BOZZA ESTRAZIONE IN ATTESA DI PUBBLICAZIONE ===== */}
+        {isAdmin && status?.bozza_in_attesa && (
+          <View style={styles.bozzaCard} data-testid="bozza-admin-card">
+            <View style={styles.bozzaHeader}>
+              <Ionicons name="hourglass" size={22} color="#FFD700" />
+              <Text style={styles.bozzaTitle}>BOZZA ESTRAZIONE</Text>
+              <View style={styles.bozzaBadge}>
+                <Text style={styles.bozzaBadgeText}>NON PUBBLICATA</Text>
+              </View>
+            </View>
+            <Text style={styles.bozzaSubtitle}>
+              Solo tu vedi questi vincitori. Pubblica per renderli visibili a tutti i clienti.
+            </Text>
+            <Text style={styles.bozzaMeta}>
+              📅 Mese: <Text style={styles.bozzaMetaBold}>{status.bozza_in_attesa.mese}</Text>
+              {'  •  '}
+              👥 {status.bozza_in_attesa.totale_partecipanti} partecipanti
+              {'  •  '}
+              🎟️ {status.bozza_in_attesa.totale_biglietti} biglietti
+            </Text>
+
+            {status.bozza_in_attesa.vincitori.map((v, idx) => (
+              <View key={idx} style={styles.bozzaWinnerRow}>
+                <Text style={styles.bozzaMedal}>
+                  {v.posizione === 1 ? '🥇' : v.posizione === 2 ? '🥈' : '🥉'}
+                </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.bozzaWinnerName}>
+                    {v.soprannome || `${v.nome || ''} ${v.cognome || ''}`.trim() || '—'}
+                  </Text>
+                  {v.premio ? (
+                    <Text style={styles.bozzaWinnerPrize}>🎁 {v.premio}</Text>
+                  ) : null}
+                </View>
+                <Text style={styles.bozzaWinnerTickets}>{v.biglietti} 🎟️</Text>
+              </View>
+            ))}
+
+            <View style={styles.bozzaActions}>
+              <TouchableOpacity
+                style={[styles.bozzaBtnSecondary, reExtracting && styles.bozzaBtnDisabled]}
+                onPress={handleReExtract}
+                disabled={reExtracting || publishingBozza}
+                data-testid="bozza-re-extract-btn"
+              >
+                {reExtracting ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <>
+                    <Ionicons name="refresh" size={18} color="#fff" />
+                    <Text style={styles.bozzaBtnText}>RI-ESTRAI</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.bozzaBtnPrimary, publishingBozza && styles.bozzaBtnDisabled]}
+                onPress={handlePublishBozza}
+                disabled={publishingBozza || reExtracting}
+                data-testid="bozza-publish-btn"
+              >
+                {publishingBozza ? (
+                  <ActivityIndicator color="#1a1a1a" />
+                ) : (
+                  <>
+                    <Ionicons name="megaphone" size={18} color="#1a1a1a" />
+                    <Text style={styles.bozzaBtnTextDark}>PUBBLICA</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
@@ -1942,6 +2075,128 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
   },
+
+  // Admin: Bozza estrazione
+  bozzaCard: {
+    backgroundColor: 'rgba(255, 215, 0, 0.08)',
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#FFD700',
+    borderStyle: 'dashed',
+    padding: 18,
+    marginBottom: 20,
+  },
+  bozzaHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 8,
+  },
+  bozzaTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#FFD700',
+    letterSpacing: 1.2,
+    flex: 1,
+  },
+  bozzaBadge: {
+    backgroundColor: '#FF6B6B',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  bozzaBadgeText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#fff',
+    letterSpacing: 0.5,
+  },
+  bozzaSubtitle: {
+    fontSize: 12,
+    color: '#ccc',
+    marginBottom: 8,
+    fontStyle: 'italic',
+  },
+  bozzaMeta: {
+    fontSize: 12,
+    color: '#bbb',
+    marginBottom: 14,
+  },
+  bozzaMetaBold: {
+    color: '#FFD700',
+    fontWeight: '700',
+  },
+  bozzaWinnerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    marginBottom: 8,
+    gap: 10,
+  },
+  bozzaMedal: {
+    fontSize: 24,
+  },
+  bozzaWinnerName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  bozzaWinnerPrize: {
+    fontSize: 12,
+    color: '#FFD700',
+    marginTop: 2,
+  },
+  bozzaWinnerTickets: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  bozzaActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 12,
+  },
+  bozzaBtnPrimary: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFD700',
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 6,
+  },
+  bozzaBtnSecondary: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 6,
+  },
+  bozzaBtnDisabled: {
+    opacity: 0.5,
+  },
+  bozzaBtnText: {
+    color: '#fff',
+    fontWeight: '800',
+    fontSize: 14,
+    letterSpacing: 0.8,
+  },
+  bozzaBtnTextDark: {
+    color: '#1a1a1a',
+    fontWeight: '900',
+    fontSize: 14,
+    letterSpacing: 0.8,
+  },
+
   hofTitle: {
     fontSize: 16,
     fontWeight: 'bold',

@@ -4460,10 +4460,11 @@ async def run_lottery_extraction():
             "premio_2": premi[1] if len(premi) > 1 else premi[0],
             "premio_3": premi[2] if len(premi) > 2 else premi[0],
             "premi_ritirati": [False, False, False],
-            "estrazione_automatica": True
+            "estrazione_automatica": True,
+            "pubblicato": False
         }
         await db.lottery_winners.insert_one(winner_data)
-        logger.info(f"[LOTTERY] ESTRAZIONE COMPLETATA: {len(vincitori_data)} vincitori su {len(pool)} biglietti totali")
+        logger.info(f"[LOTTERY] ESTRAZIONE BOZZA COMPLETATA: {len(vincitori_data)} vincitori su {len(pool)} biglietti totali (in attesa di pubblicazione admin)")
         return winner_data
     
     return None
@@ -4491,13 +4492,20 @@ async def get_lottery_status(current_user: dict = Depends(get_current_user)):
     await check_and_run_lottery()
     
     # Prima recupera i dati vincitori e abbonamento
-    winner_data = await db.lottery_winners.find_one({"mese": current_month})
+    # raw_winner_data = dati grezzi (anche se non pubblicati) -- usato per countdown/biglietti
+    raw_winner_data = await db.lottery_winners.find_one({"mese": current_month})
+    is_admin = current_user.get("role") == "admin"
+    # Per non-admin: mostra vincitori solo se pubblicati (o se manca il campo = legacy = visibile)
+    if raw_winner_data and not is_admin and raw_winner_data.get("pubblicato", True) is False:
+        winner_data = None  # utente non vede vincitori in bozza
+    else:
+        winner_data = raw_winner_data
     ha_abbonamento_attivo = await check_user_has_active_subscription(user_id)
     
     # Calcola biglietti utente
     # Se è il giorno dell'estrazione (1° del mese) e l'estrazione NON è ancora fatta,
     # mostra i biglietti del mese PRECEDENTE (quelli che verranno usati per l'estrazione)
-    if now.day == 1 and now.hour < 12 and not winner_data:
+    if now.day == 1 and now.hour < 12 and not raw_winner_data:
         # Mostra biglietti del mese precedente
         if now.month == 1:
             prev_month_str_calc = f"{now.year - 1}-12"
@@ -4532,7 +4540,7 @@ async def get_lottery_status(current_user: dict = Depends(get_current_user)):
     biglietti = biglietti_allenamenti + biglietti_ruota
     
     # Calcola prossima estrazione (1° del mese alle 12:00)
-    if winner_data:
+    if raw_winner_data:
         # Estrazione già fatta questo mese - prossima è il 1° del mese successivo
         if now.month == 12:
             next_extraction = datetime(now.year + 1, 1, 1, 12, 0, 0, tzinfo=ROME_TZ)
@@ -4590,6 +4598,27 @@ async def get_lottery_status(current_user: dict = Depends(get_current_user)):
     premio_2 = winner_data.get("premio_2") if winner_data else None
     premio_3 = winner_data.get("premio_3") if winner_data else None
     
+    # Info per admin: c'è una bozza in attesa di pubblicazione?
+    pending_bozza = None
+    if is_admin and raw_winner_data and raw_winner_data.get("pubblicato", True) is False:
+        pending_bozza = {
+            "mese": raw_winner_data.get("mese"),
+            "mese_riferimento": raw_winner_data.get("mese_riferimento"),
+            "data_estrazione": raw_winner_data.get("data_estrazione").isoformat() if raw_winner_data.get("data_estrazione") else None,
+            "totale_partecipanti": raw_winner_data.get("totale_partecipanti", 0),
+            "totale_biglietti": raw_winner_data.get("totale_biglietti", 0),
+            "vincitori": [
+                {
+                    "posizione": v.get("posizione"),
+                    "nome": v.get("nome"),
+                    "cognome": v.get("cognome"),
+                    "soprannome": v.get("soprannome"),
+                    "biglietti": v.get("biglietti"),
+                    "premio": v.get("premio"),
+                } for v in raw_winner_data.get("vincitori", [])
+            ],
+        }
+
     return {
         "biglietti_utente": biglietti,
         "mese_corrente": current_month,
@@ -4605,7 +4634,9 @@ async def get_lottery_status(current_user: dict = Depends(get_current_user)):
         "is_me_winner": is_me_winner,
         "prossima_estrazione": next_extraction.isoformat(),
         "secondi_a_estrazione": max(0, seconds_to_extraction),
-        "estrazione_fatta": winner_data is not None
+        "estrazione_fatta": winner_data is not None,
+        "is_admin": is_admin,
+        "bozza_in_attesa": pending_bozza,
     }
 
 
@@ -4867,8 +4898,11 @@ async def submit_quiz_answer(risposta_index: int, current_user: dict = Depends(g
 
 @api_router.get("/lottery/winners")
 async def get_lottery_winners(current_user: dict = Depends(get_current_user)):
-    """Ottieni storico vincitori con 3 posti"""
-    winners = await db.lottery_winners.find().sort("data_estrazione", -1).to_list(12)
+    """Ottieni storico vincitori con 3 posti (filtra bozze non pubblicate per non-admin)"""
+    is_admin = current_user.get("role") == "admin"
+    # Per non-admin: mostra solo estrazioni pubblicate (o legacy senza campo)
+    query = {} if is_admin else {"$or": [{"pubblicato": True}, {"pubblicato": {"$exists": False}}]}
+    winners = await db.lottery_winners.find(query).sort("data_estrazione", -1).to_list(12)
     result = []
     for w in winners:
         vincitori = w.get("vincitori", [])
@@ -5034,10 +5068,11 @@ async def extract_winner(admin_user: dict = Depends(get_admin_user)):
         "premio_3": premi[2],
         "premi_ritirati": [False, False, False],
         "estratto_da": str(admin_user["_id"]),
-        "estrazione_automatica": False
+        "estrazione_automatica": False,
+        "pubblicato": False
     }
     await db.lottery_winners.insert_one(winner_data)
-    logger.info(f"[LOTTERY] 3 Vincitori estratti MANUALMENTE da admin")
+    logger.info(f"[LOTTERY] 3 Vincitori estratti MANUALMENTE da admin (in attesa di pubblicazione)")
     
     return {
         "message": f"Estrazione completata! {len(vincitori_data)} vincitori!",
@@ -5051,6 +5086,59 @@ async def extract_winner(admin_user: dict = Depends(get_admin_user)):
         "totale_partecipanti": len(partecipanti),
         "totale_biglietti": len(pool)
     }
+
+
+@api_router.post("/admin/lottery/publish/{mese}")
+async def publish_lottery(mese: str, admin_user: dict = Depends(get_admin_user)):
+    """Pubblica un'estrazione in bozza: i vincitori diventano visibili a tutti gli utenti"""
+    doc = await db.lottery_winners.find_one({"mese": mese})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Nessuna estrazione trovata per questo mese")
+    if doc.get("pubblicato", True) is True:
+        raise HTTPException(status_code=400, detail="Estrazione già pubblicata")
+    await db.lottery_winners.update_one(
+        {"mese": mese},
+        {"$set": {"pubblicato": True, "data_pubblicazione": now_rome(), "pubblicato_da": str(admin_user["_id"])}}
+    )
+    logger.info(f"[LOTTERY] Estrazione {mese} PUBBLICATA da admin {admin_user.get('nome')}")
+    return {"message": f"Estrazione di {mese} pubblicata! Ora è visibile a tutti gli utenti."}
+
+
+@api_router.post("/admin/lottery/re-extract/{mese}")
+async def re_extract_lottery(mese: str, admin_user: dict = Depends(get_admin_user)):
+    """Cancella la bozza e ri-esegue l'estrazione (solo per il mese corrente e bozze non pubblicate)"""
+    now = datetime.now(ROME_TZ)
+    current_month = now.strftime("%Y-%m")
+    if mese != current_month:
+        raise HTTPException(status_code=400, detail="Si può ri-estrarre solo per il mese corrente")
+    
+    doc = await db.lottery_winners.find_one({"mese": mese})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Nessuna estrazione da ri-eseguire per questo mese")
+    if doc.get("pubblicato", True) is True:
+        raise HTTPException(status_code=400, detail="Impossibile ri-estrarre: estrazione già pubblicata")
+    
+    # Cancella la bozza e ri-estrai
+    await db.lottery_winners.delete_one({"mese": mese})
+    logger.info(f"[LOTTERY] Ri-estrazione richiesta da admin {admin_user.get('nome')} per {mese} - bozza cancellata")
+    
+    new_draft = await run_lottery_extraction()
+    if not new_draft:
+        raise HTTPException(status_code=400, detail="Ri-estrazione fallita: nessun partecipante valido")
+    
+    return {
+        "message": "Ri-estrazione completata! Nuovi vincitori in bozza.",
+        "vincitori": [{
+            "posizione": v["posizione"],
+            "nome": v.get("nome"),
+            "cognome": v.get("cognome"),
+            "soprannome": v.get("soprannome"),
+            "biglietti": v.get("biglietti"),
+            "premio": v.get("premio"),
+        } for v in new_draft.get("vincitori", [])],
+    }
+
+
 
 
 @api_router.post("/admin/lottery/mark-prize-collected/{mese}/{posizione}")
@@ -5131,6 +5219,10 @@ async def get_current_winner(current_user: dict = Depends(get_current_user)):
     await check_and_run_lottery()
     
     winner = await db.lottery_winners.find_one({"mese": current_month})
+    
+    # Per non-admin: nascondi bozze non pubblicate
+    if winner and current_user.get("role") != "admin" and winner.get("pubblicato", True) is False:
+        winner = None
     
     if winner:
         return {

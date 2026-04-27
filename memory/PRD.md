@@ -120,6 +120,15 @@ App di fitness per la gestione di lezioni, prenotazioni, abbonamenti e gamificat
 - Rimosso pulsante "Prova 7gg" dal tab Utenti (non più necessario)
 - Test: Backend 6/6 passati, Frontend code review OK
 
+## Modalità Bozza + Pubblicazione Lotteria (27 Aprile 2026)
+- L'estrazione (auto il 1° del mese ore 12:00, o manuale admin) salva con `pubblicato: false`
+- Solo l'admin vede i vincitori in bozza (campo `bozza_in_attesa` in `/lottery/status`)
+- Nuovo box UI admin nella pagina Premi: mostra vincitori, premi, partecipanti + pulsanti PUBBLICA / RI-ESTRAI
+- Endpoint: `POST /admin/lottery/publish/{mese}` rende visibili i vincitori a tutti
+- Endpoint: `POST /admin/lottery/re-extract/{mese}` cancella la bozza e ri-estrae (solo su mese corrente non pubblicato)
+- Retrocompatibilità: estrazioni esistenti senza campo `pubblicato` sono considerate pubblicate
+- Test end-to-end: admin vede bozza, cliente NO; dopo publish cliente vede tutto ✅
+
 ## Esclusione Vincitori Mese Precedente (27 Aprile 2026)
 - I 3 vincitori del mese precedente (1°, 2°, 3°) vengono esclusi dall'estrazione successiva
 - Applicato sia all'estrazione automatica (`run_lottery_extraction`) che manuale admin (`/admin/lottery/extract-winner`)
