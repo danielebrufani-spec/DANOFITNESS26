@@ -120,6 +120,12 @@ App di fitness per la gestione di lezioni, prenotazioni, abbonamenti e gamificat
 - Rimosso pulsante "Prova 7gg" dal tab Utenti (non più necessario)
 - Test: Backend 6/6 passati, Frontend code review OK
 
+## Esclusione Vincitori Mese Precedente (27 Aprile 2026)
+- I 3 vincitori del mese precedente (1°, 2°, 3°) vengono esclusi dall'estrazione successiva
+- Applicato sia all'estrazione automatica (`run_lottery_extraction`) che manuale admin (`/admin/lottery/extract-winner`)
+- Aggiornato regolamento lotteria in premi.tsx per comunicare la regola agli utenti
+- Testato: su 5 utenti, 3 ex-vincitori correttamente esclusi, solo 2 nuovi ammessi
+
 ## Task Futuri
 ### P1
 - Sistema Notifiche In-App (icona campanella) per lezioni cancellate, abbonamenti in scadenza, classifica

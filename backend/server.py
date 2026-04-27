@@ -4382,6 +4382,15 @@ async def run_lottery_extraction():
             elif bonus > 0:  # Se ha solo biglietti bonus (senza allenamenti)
                 biglietti_per_utente[uid] = bonus
     
+    # ESCLUDI I VINCITORI DEL MESE PRECEDENTE (richiesta admin)
+    prev_extraction = await db.lottery_winners.find_one({"mese": prev_month_str})
+    if prev_extraction and "vincitori" in prev_extraction:
+        excluded_ids = {v.get("user_id") for v in prev_extraction["vincitori"] if v.get("user_id")}
+        if excluded_ids:
+            logger.info(f"[LOTTERY] Esclusi {len(excluded_ids)} vincitori del mese precedente ({prev_month_str})")
+            for uid in excluded_ids:
+                biglietti_per_utente.pop(uid, None)
+
     # Filtra chi ha almeno 1 biglietto
     partecipanti = [{"_id": uid, "biglietti": b} for uid, b in biglietti_per_utente.items() if b >= 1]
     
@@ -4951,6 +4960,15 @@ async def extract_winner(admin_user: dict = Depends(get_admin_user)):
             elif bonus > 0:
                 biglietti_per_utente[uid] = bonus
     
+    # ESCLUDI I VINCITORI DEL MESE PRECEDENTE (richiesta admin)
+    prev_extraction = await db.lottery_winners.find_one({"mese": prev_month_str})
+    if prev_extraction and "vincitori" in prev_extraction:
+        excluded_ids = {v.get("user_id") for v in prev_extraction["vincitori"] if v.get("user_id")}
+        if excluded_ids:
+            logger.info(f"[LOTTERY] Esclusi {len(excluded_ids)} vincitori del mese precedente ({prev_month_str})")
+            for uid in excluded_ids:
+                biglietti_per_utente.pop(uid, None)
+
     # Filtra chi ha almeno 1 biglietto
     partecipanti = [{"_id": uid, "biglietti": b} for uid, b in biglietti_per_utente.items() if b >= 1]
     

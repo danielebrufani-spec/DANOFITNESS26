@@ -1294,7 +1294,8 @@ export default function PremiScreen() {
 
               <Text style={styles.ruleTitle}>🎫 CHI PUÒ PARTECIPARE?</Text>
               <Text style={styles.ruleText}>
-                Solo i clienti con ABBONAMENTO ATTIVO partecipano all'estrazione. Assicurati di avere un abbonamento valido!
+                Solo i clienti con ABBONAMENTO ATTIVO partecipano all'estrazione. Assicurati di avere un abbonamento valido!{'\n\n'}
+                ⚠️ I VINCITORI del mese precedente (1°, 2° e 3° posto) vengono ESCLUSI dall'estrazione successiva per dare a tutti la stessa possibilità di vincere! 🎲
               </Text>
 
               <Text style={styles.ruleTitle}>🎯 COME FUNZIONA L'ESTRAZIONE?</Text>
