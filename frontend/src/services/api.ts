@@ -233,6 +233,9 @@ export const apiService = {
   publishLottery: (mese: string) => api.post(`/admin/lottery/publish/${mese}`),
   reExtractLottery: (mese: string) => api.post(`/admin/lottery/re-extract/${mese}`),
 
+  // Streak bonus settimanale
+  getStreakStatus: () => api.get('/streak/status'),
+
   // Ruota della Fortuna
   getWheelStatus: () => api.get('/wheel/status'),
   spinWheel: () => api.post('/wheel/spin'),

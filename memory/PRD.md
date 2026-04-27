@@ -120,6 +120,27 @@ App di fitness per la gestione di lezioni, prenotazioni, abbonamenti e gamificat
 - Rimosso pulsante "Prova 7gg" dal tab Utenti (non più necessario)
 - Test: Backend 6/6 passati, Frontend code review OK
 
+## Bonus Streak Settimanale (27 Aprile 2026)
+- Nuovo sistema di bonus biglietti lotteria per allenamenti consecutivi
+- Settimana ISO Lunedì → Domenica, reset automatico ogni lunedì
+- 3 giorni consecutivi di allenamento → +3 biglietti (una volta/settimana)
+- 5 giorni consecutivi → +3 biglietti extra (aggiuntivi, una volta/settimana)
+- Skip di un giorno → streak azzerata (ricomincia da 1)
+- Funzione `check_and_award_streak_bonus` agganciata ai 3 hook di `lezione_scalata: True`:
+  - confirm-presence (admin)
+  - process-day (auto)
+  - process-started-lessons (cron)
+- Nuovo endpoint `GET /api/streak/status`: ritorna streak corrente, giorni allenati, soglie, biglietti ottenuti
+- Collection `streak_bonuses`: `{user_id, settimana (ISO), streak_attuale, bonus_3_dato, bonus_5_dato, mese}`
+- I biglietti bonus vengono aggiunti al mese corrente in `wheel_tickets` (contano per la lotteria)
+- Nuovo componente frontend `StreakBanner.tsx` nella Home cliente:
+  - Card fiamma 🔥 animata con streak corrente
+  - Pallini giorni settimana (Lun-Dom) con ✓ sui giorni allenati
+  - 2 badge soglia (3gg +3🎟️ / 5gg +3🎟️) che diventano verdi quando raggiunti
+  - Progress bar verso la prossima soglia
+  - Modal "Come funziona?" con spiegazione dettagliata + esempio
+- Test backend: tutte le casistiche passate ✅
+
 ## Modalità Bozza + Pubblicazione Lotteria (27 Aprile 2026)
 - L'estrazione (auto il 1° del mese ore 12:00, o manuale admin) salva con `pubblicato: false`
 - Solo l'admin vede i vincitori in bozza (campo `bozza_in_attesa` in `/lottery/status`)

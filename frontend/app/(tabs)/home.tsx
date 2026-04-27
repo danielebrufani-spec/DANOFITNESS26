@@ -19,6 +19,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { apiService } from '../../src/services/api';
 import { COLORS, ABBONAMENTO_INFO } from '../../src/utils/constants';
+import { StreakBanner } from '../../src/components/StreakBanner';
 
 const FRASI_DIVERTENTI = [
   "Il mio sport preferito? Correre... verso il frigorifero! 🏃",
@@ -983,6 +984,9 @@ export default function HomeScreen() {
             <Ionicons name="chevron-forward" size={22} color="#FF6B6B" />
           </TouchableOpacity>
         )}
+
+        {/* BANNER STREAK SETTIMANALE - Bonus biglietti lotteria per allenamenti consecutivi */}
+        {!isAdmin && <StreakBanner />}
 
         {/* NOTIFICHE IN-APP */}
         {visibleNotifications.length > 0 && (

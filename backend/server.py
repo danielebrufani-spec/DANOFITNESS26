@@ -10,7 +10,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from zoneinfo import ZoneInfo
 import bcrypt as _bcrypt_lib
 import jwt
@@ -1785,6 +1785,13 @@ async def confirm_presence_and_deduct(booking_id: str, admin_user: dict = Depend
             raise HTTPException(status_code=400, detail="Utente senza abbonamento valido")
     
     logger.info(f"[CONFIRM] Presenza confermata per booking {booking_id}, user {user_id}")
+    # Valuta streak bonus settimanale dopo la conferma
+    try:
+        streak_res = await check_and_award_streak_bonus(user_id, booking["data_lezione"])
+        if streak_res.get("bonus_awarded", 0) > 0:
+            result["streak_bonus"] = streak_res
+    except Exception as exc:
+        logger.warning(f"[STREAK] Errore streak bonus per {user_id}: {exc}")
     return result
 
 # Endpoint per vedere i partecipanti di una lezione (pubblico per utenti autenticati)
@@ -2091,6 +2098,11 @@ async def process_end_of_day(process_date: str, admin_user: dict = Depends(get_a
             )
             
             processed += 1
+            # Bonus streak settimanale
+            try:
+                await check_and_award_streak_bonus(user_id, booking.get("data_lezione"))
+            except Exception as exc:
+                logger.warning(f"[STREAK] {exc}")
             
             # Check if subscription is now empty
             updated_sub = await db.subscriptions.find_one({"_id": sub["_id"]})
@@ -2274,6 +2286,10 @@ async def force_process_lessons(admin_user: dict = Depends(get_admin_user)):
                 {"$set": {"lezione_scalata": True, "subscription_id": str(sub_pacchetto["_id"])}}
             )
             processed += 1
+            try:
+                await check_and_award_streak_bonus(user_id, booking.get("data_lezione"))
+            except Exception as exc:
+                logger.warning(f"[STREAK] {exc}")
         else:
             sub_tempo = await db.subscriptions.find_one({
                 "user_id": user_id, "attivo": True,
@@ -2286,6 +2302,10 @@ async def force_process_lessons(admin_user: dict = Depends(get_admin_user)):
                     {"$set": {"lezione_scalata": True, "subscription_id": str(sub_tempo["_id"])}}
                 )
                 processed += 1
+                try:
+                    await check_and_award_streak_bonus(user_id, booking.get("data_lezione"))
+                except Exception as exc:
+                    logger.warning(f"[STREAK] {exc}")
     
     return {"message": f"Processate {processed} prenotazioni su {len(bookings)} trovate"}
 
@@ -4319,6 +4339,185 @@ async def get_users_with_active_subscription() -> set:
             logger.info(f"[LOTTERY] Utente test escluso: {user.get('nome')} {user.get('cognome')}")
     
     return active_user_ids
+
+
+# ==================== STREAK BONUS SETTIMANALE ====================
+# Bonus biglietti per allenamenti consecutivi in una stessa settimana (Lun-Dom)
+#   • 3 giorni consecutivi in settimana → +3 biglietti (una sola volta/settimana)
+#   • 5 giorni consecutivi in settimana → +3 biglietti (aggiuntivi, una sola volta/settimana)
+# Se l'utente salta un giorno la streak si azzera (ricomincia da zero).
+# A fine settimana (nuova settimana ISO) il conteggio riparte da zero.
+
+STREAK_BONUS_3_TICKETS = 3
+STREAK_BONUS_5_TICKETS = 3
+
+
+def _week_bounds(d: date) -> tuple[date, date, str]:
+    """Restituisce (lunedì, domenica, chiave_settimana_ISO) per la data data."""
+    monday = d - timedelta(days=d.weekday())
+    sunday = monday + timedelta(days=6)
+    iso_year, iso_week, _ = d.isocalendar()
+    return monday, sunday, f"{iso_year}-W{iso_week:02d}"
+
+
+async def compute_user_streak(user_id: str, ref_date: date) -> dict:
+    """Calcola streak corrente e stato bonus per user_id nella settimana di ref_date.
+
+    Restituisce:
+      { settimana, streak_corrente, max_streak, bonus_3_dato, bonus_5_dato,
+        giorni_allenati: [date ISO sorted], max_consecutivi }
+    """
+    monday, sunday, week_key = _week_bounds(ref_date)
+    bookings_week = await db.bookings.find(
+        {
+            "user_id": user_id,
+            "lezione_scalata": True,
+            "data_lezione": {"$gte": monday.isoformat(), "$lte": sunday.isoformat()},
+        },
+        {"data_lezione": 1, "_id": 0},
+    ).to_list(50)
+
+    dates_trained = sorted({b["data_lezione"] for b in bookings_week})
+
+    # streak che INCLUDE ref_date (solo giorni consecutivi CONTIGUI a ref_date)
+    trained_set = set(dates_trained)
+    streak_corrente = 0
+    if ref_date.isoformat() in trained_set:
+        streak_corrente = 1
+        cur = ref_date
+        while True:
+            prev = cur - timedelta(days=1)
+            if prev < monday or prev.isoformat() not in trained_set:
+                break
+            streak_corrente += 1
+            cur = prev
+
+    # max streak nella settimana
+    max_consecutivi = 0
+    if dates_trained:
+        run = 1
+        max_consecutivi = 1
+        for i in range(1, len(dates_trained)):
+            prev_d = date.fromisoformat(dates_trained[i - 1])
+            cur_d = date.fromisoformat(dates_trained[i])
+            if (cur_d - prev_d).days == 1:
+                run += 1
+                max_consecutivi = max(max_consecutivi, run)
+            else:
+                run = 1
+
+    state = await db.streak_bonuses.find_one({"user_id": user_id, "settimana": week_key}) or {}
+
+    return {
+        "settimana": week_key,
+        "lunedi": monday.isoformat(),
+        "domenica": sunday.isoformat(),
+        "streak_corrente": streak_corrente,
+        "max_consecutivi": max_consecutivi,
+        "bonus_3_dato": state.get("bonus_3_dato", False),
+        "bonus_5_dato": state.get("bonus_5_dato", False),
+        "giorni_allenati": dates_trained,
+    }
+
+
+async def check_and_award_streak_bonus(user_id: str, data_lezione_str: str) -> dict:
+    """Valuta la streak dopo una lezione completata e assegna eventuali bonus."""
+    try:
+        ref = date.fromisoformat(data_lezione_str)
+    except Exception:
+        return {"bonus_awarded": 0}
+
+    info = await compute_user_streak(user_id, ref)
+    streak = info["streak_corrente"]
+    bonus_3_dato = info["bonus_3_dato"]
+    bonus_5_dato = info["bonus_5_dato"]
+    bonus_awarded = 0
+
+    if streak >= 3 and not bonus_3_dato:
+        bonus_awarded += STREAK_BONUS_3_TICKETS
+        bonus_3_dato = True
+    if streak >= 5 and not bonus_5_dato:
+        bonus_awarded += STREAK_BONUS_5_TICKETS
+        bonus_5_dato = True
+
+    mese_corrente = ref.strftime("%Y-%m")
+    await db.streak_bonuses.update_one(
+        {"user_id": user_id, "settimana": info["settimana"]},
+        {
+            "$set": {
+                "user_id": user_id,
+                "settimana": info["settimana"],
+                "streak_attuale": streak,
+                "max_consecutivi": max(streak, info["max_consecutivi"]),
+                "bonus_3_dato": bonus_3_dato,
+                "bonus_5_dato": bonus_5_dato,
+                "ultima_data": ref.isoformat(),
+                "mese": mese_corrente,
+                "updated_at": now_rome(),
+            }
+        },
+        upsert=True,
+    )
+
+    if bonus_awarded > 0:
+        await db.wheel_tickets.update_one(
+            {"user_id": user_id, "mese": mese_corrente},
+            {"$inc": {"biglietti": bonus_awarded}},
+            upsert=True,
+        )
+        logger.info(
+            f"[STREAK] user={user_id} streak={streak} bonus=+{bonus_awarded} biglietti (settimana={info['settimana']})"
+        )
+
+    return {
+        "bonus_awarded": bonus_awarded,
+        "streak": streak,
+        "bonus_3_dato": bonus_3_dato,
+        "bonus_5_dato": bonus_5_dato,
+    }
+
+
+@api_router.get("/streak/status")
+async def get_streak_status(current_user: dict = Depends(get_current_user)):
+    """Stato streak settimanale dell'utente + prossima soglia."""
+    user_id = str(current_user["_id"])
+    today = now_rome().date()
+    info = await compute_user_streak(user_id, today)
+
+    streak = info["streak_corrente"]
+    if streak < 3:
+        prossima_soglia = 3
+        biglietti_prossima = STREAK_BONUS_3_TICKETS
+    elif streak < 5:
+        prossima_soglia = 5
+        biglietti_prossima = STREAK_BONUS_5_TICKETS
+    else:
+        prossima_soglia = None
+        biglietti_prossima = 0
+
+    biglietti_ottenuti = (
+        (STREAK_BONUS_3_TICKETS if info["bonus_3_dato"] else 0)
+        + (STREAK_BONUS_5_TICKETS if info["bonus_5_dato"] else 0)
+    )
+
+    return {
+        "settimana": info["settimana"],
+        "lunedi": info["lunedi"],
+        "domenica": info["domenica"],
+        "oggi": today.isoformat(),
+        "streak_corrente": streak,
+        "max_consecutivi": info["max_consecutivi"],
+        "giorni_allenati": info["giorni_allenati"],
+        "bonus_3_dato": info["bonus_3_dato"],
+        "bonus_5_dato": info["bonus_5_dato"],
+        "biglietti_ottenuti": biglietti_ottenuti,
+        "prossima_soglia": prossima_soglia,
+        "biglietti_prossima_soglia": biglietti_prossima,
+        "soglia_3": {"giorni": 3, "biglietti": STREAK_BONUS_3_TICKETS},
+        "soglia_5": {"giorni": 5, "biglietti": STREAK_BONUS_5_TICKETS},
+    }
+
+
 
 
 async def run_lottery_extraction():
