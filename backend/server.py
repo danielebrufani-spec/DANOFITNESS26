@@ -4619,6 +4619,12 @@ async def get_lottery_status(current_user: dict = Depends(get_current_user)):
             ],
         }
 
+    # Flag per i clienti: l'estrazione è stata fatta ma admin non ha ancora pubblicato
+    in_attesa_pubblicazione = (
+        raw_winner_data is not None
+        and raw_winner_data.get("pubblicato", True) is False
+    )
+
     return {
         "biglietti_utente": biglietti,
         "mese_corrente": current_month,
@@ -4637,6 +4643,7 @@ async def get_lottery_status(current_user: dict = Depends(get_current_user)):
         "estrazione_fatta": winner_data is not None,
         "is_admin": is_admin,
         "bozza_in_attesa": pending_bozza,
+        "in_attesa_pubblicazione": in_attesa_pubblicazione,
     }
 
 

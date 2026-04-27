@@ -98,6 +98,7 @@ interface LotteryStatus {
   estrazione_fatta: boolean;
   is_admin?: boolean;
   bozza_in_attesa?: BozzaInAttesa | null;
+  in_attesa_pubblicazione?: boolean;
 }
 
 interface Winner {
@@ -1177,6 +1178,20 @@ export default function PremiScreen() {
           </View>
         )}
 
+        {/* ===== CLIENTI: Messaggio "estrazione in attesa di pubblicazione" ===== */}
+        {!isAdmin && status?.in_attesa_pubblicazione && (!status?.vincitori || status.vincitori.length === 0) && (
+          <Animated.View style={[styles.pendingAnnouncementCard, { transform: [{ scale: pulseAnim }] }]} data-testid="pending-announcement-card">
+            <Text style={styles.pendingAnnouncementEmoji}>🥁🥁🥁</Text>
+            <Text style={styles.pendingAnnouncementTitle}>ESTRAZIONE IN CORSO</Text>
+            <Text style={styles.pendingAnnouncementSubtitle}>
+              Il Maestro sta per annunciare i vincitori del mese!
+            </Text>
+            <Text style={styles.pendingAnnouncementHint}>
+              Torna tra poco per scoprire chi ha vinto... 🍀
+            </Text>
+          </Animated.View>
+        )}
+
         {/* ===== ADMIN: BOZZA ESTRAZIONE IN ATTESA DI PUBBLICAZIONE ===== */}
         {isAdmin && status?.bozza_in_attesa && (
           <View style={styles.bozzaCard} data-testid="bozza-admin-card">
@@ -2074,6 +2089,43 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
+  },
+
+  // Cliente: messaggio "estrazione in attesa di pubblicazione"
+  pendingAnnouncementCard: {
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#FFD700',
+    padding: 24,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  pendingAnnouncementEmoji: {
+    fontSize: 38,
+    marginBottom: 6,
+    letterSpacing: 8,
+  },
+  pendingAnnouncementTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#FFD700',
+    letterSpacing: 2,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  pendingAnnouncementSubtitle: {
+    fontSize: 15,
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 6,
+    fontWeight: '600',
+  },
+  pendingAnnouncementHint: {
+    fontSize: 13,
+    color: '#ccc',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 
   // Admin: Bozza estrazione
