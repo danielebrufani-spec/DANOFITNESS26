@@ -5274,7 +5274,7 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:8081",
         "http://localhost:19006",
-        "https://trial-lottery-system.preview.emergentagent.com",
+        "https://lottery-booking-app.preview.emergentagent.com",
     ],
     allow_methods=["*"],
     allow_headers=["*"],

@@ -18,7 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { apiService } from '../../src/services/api';
-import { COLORS } from '../../src/utils/constants';
+import { COLORS, ABBONAMENTO_INFO } from '../../src/utils/constants';
 
 const FRASI_DIVERTENTI = [
   "Il mio sport preferito? Correre... verso il frigorifero! 🏃",
@@ -758,9 +758,16 @@ export default function HomeScreen() {
                 >
                   <View style={styles.expiredInfo}>
                     <Ionicons name="alert-circle" size={20} color={COLORS.error} />
-                    <Text style={styles.expiredName}>
-                      {sub.user_nome || 'Cliente'} {sub.user_cognome || ''}
-                    </Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.expiredName}>
+                        {sub.user_nome || 'Cliente'} {sub.user_cognome || ''}
+                      </Text>
+                      <Text style={{ fontSize: 12, color: COLORS.textSecondary, marginTop: 2 }}>
+                        {ABBONAMENTO_INFO[sub.tipo]?.nome || sub.tipo}
+                        {' · Scaduto: '}
+                        {new Date(sub.data_scadenza).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: '2-digit' })}
+                      </Text>
+                    </View>
                   </View>
                   <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
                 </TouchableOpacity>
