@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
-    BASE_URL = "https://lottery-booking-app.preview.emergentagent.com"
+    BASE_URL = "https://gamification-phase2-1.preview.emergentagent.com"
 
 # Test credentials
 ADMIN_EMAIL = "danielebrufani@gmail.com"
