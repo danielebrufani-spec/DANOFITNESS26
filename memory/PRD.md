@@ -175,6 +175,16 @@ App di fitness per la gestione di lezioni, prenotazioni, abbonamenti e gamificat
 - Aggiornato regolamento lotteria in premi.tsx per comunicare la regola agli utenti
 - Testato: su 5 utenti, 3 ex-vincitori correttamente esclusi, solo 2 nuovi ammessi
 
+## UI/UX Redesign FASE 2 (27 Aprile 2026)
+Applicato il design system Tactical Obsidian / Kinetic Orange a TUTTE le pagine principali rimanenti:
+- **`prenota.tsx`**: titoli in Bebas Neue (PRENOTA LEZIONE 38px), date selector con bordo Obsidian, lesson cards con border 1px #2C2C2E + barra colore 4px, button "PRENOTA" Montserrat Black uppercase, "MIE PRENOTAZIONI" banner Bebas Neue
+- **`admin.tsx`**: title 38px Bebas Neue, tab pills uppercase Montserrat, statsCard con borderLeft 4px primary, KPI numbers Bebas Neue 32px, dayName uppercase, lessonTime Bebas Neue 18px, sectionTitle Bebas Neue 22px, subscription cards con bordo + borderLeft on expired
+- **`profilo.tsx`**: PROFILO 38px Bebas Neue, userCard con border-top 4px orange, userName Bebas Neue uppercase, sectionTitle Bebas Neue, infoCard con border 1px, AMMINISTRATORE pill Montserrat Black uppercase, contactNumber Bebas Neue, ESCI button outline rosso
+- **`alimentazione.tsx`**: rimosso COLORS locale (teal #4ECDC4) — ora usa COLORS globale (orange), header Bebas Neue 38px, infoCard con borderLeft 4px primary, calcCard con borderLeft 4px success (Neon Green) per macro values, button text bianco Montserrat Black uppercase
+- Mantenuta retrocompatibilità: tutti i ref a COLORS.card e COLORS.cardLight continuano a funzionare (alias in constants.ts)
+- Verificato via screenshot: home/profilo/admin/dieta tutti renderizzano col nuovo theme; bundler OK senza errori
+
+
 ## Task Futuri
 ### P1
 - Sistema Notifiche In-App (icona campanella) per lezioni cancellate, abbonamenti in scadenza, classifica

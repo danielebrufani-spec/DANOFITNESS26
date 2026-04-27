@@ -6,25 +6,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
 import { apiService } from '../../src/services/api';
-
-const COLORS = {
-  background: '#0a0a0a',
-  card: '#1a1a1a',
-  cardLight: '#252525',
-  primary: '#4ECDC4',
-  text: '#FFFFFF',
-  textSecondary: '#9CA3AF',
-  border: '#333333',
-  success: '#22C55E',
-  error: '#EF4444',
-  warning: '#F59E0B',
-  accent: '#FF6B6B',
-};
+import { COLORS } from '../../src/utils/constants';
+import { FONTS } from '../../src/theme';
 
 const OBIETTIVI = [
-  { key: 'dimagrire', label: 'Perdere Peso', icon: 'trending-down-outline' as const, color: '#4ECDC4' },
-  { key: 'mantenimento', label: 'Mantenimento', icon: 'swap-horizontal-outline' as const, color: '#F59E0B' },
-  { key: 'massa', label: 'Massa Muscolare', icon: 'trending-up-outline' as const, color: '#FF6B6B' },
+  { key: 'dimagrire', label: 'Perdere Peso', icon: 'trending-down-outline' as const, color: COLORS.accent },
+  { key: 'mantenimento', label: 'Mantenimento', icon: 'swap-horizontal-outline' as const, color: COLORS.warning },
+  { key: 'massa', label: 'Massa Muscolare', icon: 'trending-up-outline' as const, color: COLORS.primary },
 ];
 
 const INTOLLERANZE_OPTIONS = ['Glutine', 'Lattosio', 'Uova', 'Frutta secca', 'Vegano', 'Vegetariano'];
@@ -661,77 +649,77 @@ export default function AlimentazioneScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   scrollContent: { padding: 16, paddingBottom: 40 },
-  header: { fontSize: 28, fontWeight: 'bold', color: COLORS.text, marginTop: 10 },
-  subheader: { fontSize: 14, color: COLORS.textSecondary, marginBottom: 20 },
+  header: { fontFamily: FONTS.headline, fontSize: 38, color: COLORS.text, marginTop: 10, letterSpacing: 2, textTransform: 'uppercase' },
+  subheader: { fontFamily: FONTS.bodySemi, fontSize: 12, color: COLORS.primary, marginBottom: 20, letterSpacing: 1.5, textTransform: 'uppercase' },
   
   // Locked
   lockedContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32, gap: 12 },
-  lockedTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.text },
-  lockedText: { fontSize: 14, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 22 },
+  lockedTitle: { fontFamily: FONTS.headline, fontSize: 24, color: COLORS.text, letterSpacing: 1.5, textTransform: 'uppercase' },
+  lockedText: { fontFamily: FONTS.body, fontSize: 14, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 22 },
 
   // Info card
-  infoCard: { backgroundColor: COLORS.card, borderRadius: 16, padding: 20, gap: 14, borderWidth: 1, borderColor: COLORS.border },
-  infoTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.primary, marginBottom: 4 },
+  infoCard: { backgroundColor: COLORS.surface, borderRadius: 8, padding: 20, gap: 14, borderWidth: 1, borderColor: COLORS.border, borderLeftWidth: 4, borderLeftColor: COLORS.primary },
+  infoTitle: { fontFamily: FONTS.headline, fontSize: 22, color: COLORS.primary, marginBottom: 4, letterSpacing: 1.5, textTransform: 'uppercase' },
   infoStep: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  stepCircle: { width: 28, height: 28, borderRadius: 14, backgroundColor: COLORS.primary + '20', justifyContent: 'center', alignItems: 'center' },
-  stepNum: { fontSize: 14, fontWeight: 'bold', color: COLORS.primary },
-  stepText: { flex: 1, fontSize: 13, color: COLORS.textSecondary, lineHeight: 20 },
-  bold: { fontWeight: 'bold', color: COLORS.text },
-  startButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: COLORS.primary, padding: 14, borderRadius: 12, marginTop: 6 },
-  startButtonText: { fontSize: 16, fontWeight: 'bold', color: '#000' },
+  stepCircle: { width: 32, height: 32, borderRadius: 4, backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center' },
+  stepNum: { fontFamily: FONTS.bodyBlack, fontSize: 14, color: '#fff' },
+  stepText: { flex: 1, fontFamily: FONTS.body, fontSize: 13, color: COLORS.textSecondary, lineHeight: 20 },
+  bold: { fontFamily: FONTS.bodyBold, color: COLORS.text },
+  startButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: COLORS.primary, padding: 14, borderRadius: 6, marginTop: 6 },
+  startButtonText: { fontFamily: FONTS.bodyBlack, fontSize: 15, color: '#FFF', textTransform: 'uppercase', letterSpacing: 1.2 },
 
   // Form
-  formCard: { backgroundColor: COLORS.card, borderRadius: 16, padding: 20, borderWidth: 1, borderColor: COLORS.border },
-  formTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text, marginBottom: 16 },
-  label: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary, marginBottom: 6, marginTop: 12 },
+  formCard: { backgroundColor: COLORS.surface, borderRadius: 8, padding: 20, borderWidth: 1, borderColor: COLORS.border },
+  formTitle: { fontFamily: FONTS.headline, fontSize: 22, color: COLORS.text, marginBottom: 16, letterSpacing: 1.5, textTransform: 'uppercase' },
+  label: { fontFamily: FONTS.bodyBold, fontSize: 11, color: COLORS.textSecondary, marginBottom: 6, marginTop: 12, textTransform: 'uppercase', letterSpacing: 1 },
   toggleRow: { flexDirection: 'row', gap: 10 },
-  toggleBtn: { flex: 1, padding: 12, borderRadius: 10, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' },
+  toggleBtn: { flex: 1, padding: 12, borderRadius: 6, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center', backgroundColor: COLORS.surfaceElevated },
   toggleActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primary + '20' },
-  toggleText: { fontSize: 15, color: COLORS.textSecondary, fontWeight: '600' },
+  toggleText: { fontFamily: FONTS.bodyBold, fontSize: 13, color: COLORS.textSecondary, textTransform: 'uppercase', letterSpacing: 1 },
   toggleTextActive: { color: COLORS.primary },
   inputRow: { flexDirection: 'row', gap: 10 },
   inputGroup: { flex: 1 },
-  input: { backgroundColor: COLORS.cardLight, borderRadius: 10, padding: 12, fontSize: 16, color: COLORS.text, borderWidth: 1, borderColor: COLORS.border },
+  input: { backgroundColor: COLORS.surfaceElevated, borderRadius: 6, padding: 12, fontFamily: FONTS.body, fontSize: 15, color: COLORS.text, borderWidth: 1, borderColor: COLORS.border },
   obiettivi: { gap: 8 },
-  obiettivoBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 12, borderWidth: 2, borderColor: COLORS.border },
-  obiettivoText: { fontSize: 15, fontWeight: '600', color: COLORS.textSecondary },
+  obiettivoBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 6, borderWidth: 2, borderColor: COLORS.border, backgroundColor: COLORS.surfaceElevated },
+  obiettivoText: { fontFamily: FONTS.bodyBold, fontSize: 13, color: COLORS.textSecondary, textTransform: 'uppercase', letterSpacing: 1 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.cardLight },
+  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 4, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.surfaceElevated },
   chipActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primary + '20' },
-  chipText: { fontSize: 13, color: COLORS.textSecondary },
-  chipTextActive: { color: COLORS.primary, fontWeight: '600' },
-  textArea: { backgroundColor: COLORS.cardLight, borderRadius: 10, padding: 12, fontSize: 14, color: COLORS.text, borderWidth: 1, borderColor: COLORS.border, minHeight: 60, textAlignVertical: 'top' },
-  saveButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: COLORS.primary, padding: 14, borderRadius: 12, marginTop: 20 },
-  saveButtonText: { fontSize: 16, fontWeight: 'bold', color: '#000' },
+  chipText: { fontFamily: FONTS.bodySemi, fontSize: 12, color: COLORS.textSecondary, textTransform: 'uppercase', letterSpacing: 0.8 },
+  chipTextActive: { color: COLORS.primary, fontFamily: FONTS.bodyBlack },
+  textArea: { backgroundColor: COLORS.surfaceElevated, borderRadius: 6, padding: 12, fontFamily: FONTS.body, fontSize: 14, color: COLORS.text, borderWidth: 1, borderColor: COLORS.border, minHeight: 60, textAlignVertical: 'top' },
+  saveButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: COLORS.primary, padding: 14, borderRadius: 6, marginTop: 20 },
+  saveButtonText: { fontFamily: FONTS.bodyBlack, fontSize: 15, color: '#FFF', textTransform: 'uppercase', letterSpacing: 1.2 },
 
   // Calcolo
-  calcCard: { backgroundColor: COLORS.card, borderRadius: 16, padding: 18, borderWidth: 1, borderColor: COLORS.border, marginBottom: 14 },
+  calcCard: { backgroundColor: COLORS.surface, borderRadius: 8, padding: 18, borderWidth: 1, borderColor: COLORS.border, marginBottom: 14, borderLeftWidth: 4, borderLeftColor: COLORS.success },
   calcHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  calcTitle: { fontSize: 17, fontWeight: 'bold', color: COLORS.text },
+  calcTitle: { fontFamily: FONTS.headline, fontSize: 20, color: COLORS.text, letterSpacing: 1.5, textTransform: 'uppercase' },
   calcGrid: { flexDirection: 'row', justifyContent: 'space-around' },
   calcItem: { alignItems: 'center', gap: 4 },
-  calcValue: { fontSize: 22, fontWeight: 'bold', color: COLORS.primary },
-  calcLabel: { fontSize: 11, color: COLORS.textSecondary },
-  lessonAdvice: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: COLORS.primary + '15', padding: 12, borderRadius: 10, marginTop: 14 },
-  lessonAdviceText: { flex: 1, fontSize: 13, color: COLORS.textSecondary, lineHeight: 18 },
+  calcValue: { fontFamily: FONTS.headline, fontSize: 28, color: COLORS.success, letterSpacing: 1 },
+  calcLabel: { fontFamily: FONTS.bodyBold, fontSize: 10, color: COLORS.textSecondary, textTransform: 'uppercase', letterSpacing: 1 },
+  lessonAdvice: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: COLORS.primary + '15', padding: 12, borderRadius: 6, marginTop: 14 },
+  lessonAdviceText: { flex: 1, fontFamily: FONTS.body, fontSize: 13, color: COLORS.textSecondary, lineHeight: 18 },
 
   // Generate button
-  trialDietWarning: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: '#FF980015', borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#FF980040' },
-  trialDietWarningText: { flex: 1, fontSize: 13, color: '#FF9800', lineHeight: 20, fontWeight: '600' },
-  generateButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: COLORS.primary, padding: 18, borderRadius: 16 },
-  generateButtonText: { fontSize: 17, fontWeight: 'bold', color: '#000' },
+  trialDietWarning: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: '#FFAB0015', borderRadius: 6, padding: 16, marginBottom: 16, borderLeftWidth: 4, borderLeftColor: COLORS.warning, borderTopWidth: 1, borderRightWidth: 1, borderBottomWidth: 1, borderColor: COLORS.border },
+  trialDietWarningText: { flex: 1, fontFamily: FONTS.bodyBold, fontSize: 13, color: COLORS.warning, lineHeight: 20 },
+  generateButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: COLORS.primary, padding: 18, borderRadius: 6 },
+  generateButtonText: { fontFamily: FONTS.bodyBlack, fontSize: 16, color: '#FFF', textTransform: 'uppercase', letterSpacing: 1.5 },
   generatingContent: { alignItems: 'center', gap: 6 },
-  generatingSubtext: { fontSize: 12, color: '#000', opacity: 0.6 },
+  generatingSubtext: { fontFamily: FONTS.body, fontSize: 12, color: '#FFF', opacity: 0.7 },
 
   // Plan
-  planCard: { backgroundColor: COLORS.card, borderRadius: 16, padding: 18, borderWidth: 1, borderColor: COLORS.border },
+  planCard: { backgroundColor: COLORS.surface, borderRadius: 8, padding: 18, borderWidth: 1, borderColor: COLORS.border },
   planHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
-  planTitle: { fontSize: 17, fontWeight: 'bold', color: COLORS.text },
-  planContent: { fontSize: 14, color: COLORS.textSecondary, lineHeight: 22 },
-  resetButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 20, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: '#FF6B6B40', backgroundColor: '#FF6B6B10' },
-  resetButtonText: { fontSize: 14, fontWeight: '600', color: '#FF6B6B' },
+  planTitle: { fontFamily: FONTS.headline, fontSize: 22, color: COLORS.text, letterSpacing: 1.5, textTransform: 'uppercase' },
+  planContent: { fontFamily: FONTS.body, fontSize: 14, color: COLORS.textSecondary, lineHeight: 22 },
+  resetButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 20, padding: 14, borderRadius: 6, borderWidth: 1, borderColor: COLORS.error, backgroundColor: 'transparent' },
+  resetButtonText: { fontFamily: FONTS.bodyBlack, fontSize: 13, color: COLORS.error, textTransform: 'uppercase', letterSpacing: 1.2 },
 
   // Copy & Print
-  copyButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: COLORS.primary, padding: 12, borderRadius: 12 },
-  copyButtonText: { fontSize: 14, fontWeight: '600', color: '#000' },
+  copyButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: COLORS.primary, padding: 12, borderRadius: 6 },
+  copyButtonText: { fontFamily: FONTS.bodyBlack, fontSize: 13, color: '#FFF', textTransform: 'uppercase', letterSpacing: 1.2 },
 });
