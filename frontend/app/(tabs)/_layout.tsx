@@ -93,10 +93,10 @@ export default function TabsLayout() {
             <Ionicons 
               name={focused ? "nutrition" : "nutrition-outline"} 
               size={size + 4} 
-              color={focused ? '#FF6B6B' : color} 
+              color={focused ? COLORS.primary : color} 
             />
           ),
-          tabBarActiveTintColor: '#FF6B6B',
+          tabBarActiveTintColor: COLORS.primary,
           tabBarLabelStyle: {
             fontSize: 11,
             fontWeight: '700',
@@ -173,10 +173,10 @@ export default function TabsLayout() {
             <Ionicons 
               name={focused ? "gift" : "gift-outline"} 
               size={size} 
-              color={focused ? '#FFD700' : color} 
+              color={focused ? COLORS.primary : color} 
             />
           ),
-          tabBarActiveTintColor: '#FFD700',
+          tabBarActiveTintColor: COLORS.primary,
         }}
       />
       <Tabs.Screen
@@ -188,10 +188,10 @@ export default function TabsLayout() {
             <Ionicons 
               name={focused ? "trophy" : "trophy-outline"} 
               size={size} 
-              color={focused ? '#FFD700' : color} 
+              color={focused ? COLORS.secondary : color} 
             />
           ),
-          tabBarActiveTintColor: '#FFD700',
+          tabBarActiveTintColor: COLORS.secondary,
         }}
       />
       <Tabs.Screen

@@ -120,6 +120,25 @@ App di fitness per la gestione di lezioni, prenotazioni, abbonamenti e gamificat
 - Rimosso pulsante "Prova 7gg" dal tab Utenti (non più necessario)
 - Test: Backend 6/6 passati, Frontend code review OK
 
+## Redesign Completo - Tactical Obsidian / Kinetic Orange (27 Aprile 2026)
+- Chiamato `design_agent_full_stack` per blueprint completo (salvato in `/app/design_guidelines.json`)
+- **Nuova palette**: Obsidian #0A0A0A + Kinetic Orange #FF4500 (primary) + Neon Green #00E676 (streak/success) + Electric Blue #00B0FF (accent) — tema Functional/CrossFit
+- **Font custom caricati**: `BebasNeue_400Regular` (headlines) + `Montserrat_{400,600,700,800,900}` (body) via `@expo-google-fonts/*`
+- `app/_layout.tsx` rifatto per caricare font con splash `ActivityIndicator`
+- `src/utils/constants.ts`: COLORS ampliati (primary/secondary/accent/surface/glow/…) + export `FITNESS_IMAGES` (6 URL Pexels/Unsplash per hero, circuito, funzionale, pilates, yoga, sfondo astratto)
+- Aggiornati colori delle lezioni in `ATTIVITA_INFO` con immagini Pexels/Unsplash
+- Creato `src/theme.ts` con FONTS, SPACING, RADII, glow helper cross-platform
+- Nuovi componenti riusabili:
+  - `FitButton.tsx` - pulsante con spring-scale on press + glow, 5 varianti
+  - `FitCard.tsx` - card animata (fade-in + slide-up staggered)
+  - `CountUp.tsx` - numeri animati per KPI (requestAnimationFrame easeOutCubic)
+  - `ConfettiBurst.tsx` - coriandoli full-screen via canvas-confetti (CDN lazy-load)
+- **Home cliente**: hero image con overlay scuro + kicker + greeting Bebas Neue + accent bar + quote (sostituisce la vecchia "Star Wars card")
+- **Home admin**: KPI cards con CountUp animation + bordo sinistro colorato (primary/success/accent) + font Bebas Neue
+- **Pagina Premi**: colori "VEGAS_COLORS" riallineati al Functional theme (Gold → Kinetic Orange). Confetti esplode quando si vincono biglietti alla ruota
+- **Bottom tab bar**: colori tab Dieta/Premi/Classifica ricollegati a COLORS.primary/secondary
+- Verificato via bundle: `FF4500`, `BebasNeue`, `Montserrat` presenti nell'HTML/JS finali
+
 ## Bonus Streak Settimanale (27 Aprile 2026)
 - Nuovo sistema di bonus biglietti lotteria per allenamenti consecutivi
 - Settimana ISO Lunedì → Domenica, reset automatico ogni lunedì

@@ -21,18 +21,19 @@ import { useFocusEffect } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { apiService } from '../../src/services/api';
 import { Audio } from 'expo-av';
+import { ConfettiBurst } from '../../src/components/ConfettiBurst';
 
-// Colori Las Vegas
+// Colori Tactical Obsidian (Functional/CrossFit theme)
 const VEGAS_COLORS = {
-  background: '#1a0a0a',
-  card: '#2d1515',
-  gold: '#FFD700',
-  red: '#dc2626',
+  background: '#0A0A0A',
+  card: '#121212',
+  gold: '#FF4500',        // Kinetic Orange (was gold)
+  red: '#FF3B30',
   darkRed: '#7f1d1d',
-  neonPink: '#ff1493',
-  neonBlue: '#00bfff',
+  neonPink: '#FF6B00',
+  neonBlue: '#00B0FF',
   text: '#ffffff',
-  textSecondary: '#d4a574',
+  textSecondary: '#A0A0A5',
 };
 
 // Premi della ruota
@@ -145,6 +146,7 @@ export default function PremiScreen() {
   const [isSpinning, setIsSpinning] = useState(false);
   const [wheelResult, setWheelResult] = useState<any>(null);
   const [showWheelResult, setShowWheelResult] = useState(false);
+  const [confettiTrigger, setConfettiTrigger] = useState(0);
   const wheelRotation = useRef(new Animated.Value(0)).current;
   const resultScale = useRef(new Animated.Value(0)).current;
 
@@ -458,6 +460,8 @@ export default function PremiScreen() {
         // Mostra risultato con animazione
         setWheelResult(result.premio);
         setShowWheelResult(true);
+        // Trigger confetti se si vince
+        if (isWin) setConfettiTrigger((v) => v + 1);
         
         // Animazione popup risultato
         resultScale.setValue(0);
@@ -625,6 +629,7 @@ export default function PremiScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <ConfettiBurst trigger={confettiTrigger} />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}

@@ -18,8 +18,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { apiService } from '../../src/services/api';
-import { COLORS, ABBONAMENTO_INFO } from '../../src/utils/constants';
+import { COLORS, ABBONAMENTO_INFO, FITNESS_IMAGES } from '../../src/utils/constants';
 import { StreakBanner } from '../../src/components/StreakBanner';
+import { FONTS, glow } from '../../src/theme';
+import { CountUp } from '../../src/components/CountUp';
 
 const FRASI_DIVERTENTI = [
   "Il mio sport preferito? Correre... verso il frigorifero! 🏃",
@@ -710,22 +712,22 @@ export default function HomeScreen() {
             </View>
           ))}
 
-          {/* Stats Cards */}
+          {/* Stats Cards - Tactical KPI grid */}
           <View style={styles.statsGrid}>
-            <View style={[styles.statCard, { backgroundColor: '#00E676' }]}>
-              <Ionicons name="people" size={24} color="#FFF" />
-              <Text style={styles.statNumber}>{dashboard.stats.total_users}</Text>
-              <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>Clienti</Text>
+            <View style={[styles.statCard, styles.statCardPrimary]}>
+              <Ionicons name="people" size={22} color={COLORS.primary} />
+              <CountUp to={dashboard.stats.total_users} style={styles.statNumberKinetic} />
+              <Text style={styles.statLabelKinetic} numberOfLines={1}>CLIENTI</Text>
             </View>
-            <View style={[styles.statCard, { backgroundColor: '#00BCD4' }]}>
-              <Ionicons name="card" size={24} color="#FFF" />
-              <Text style={styles.statNumber}>{dashboard.stats.active_subscriptions}</Text>
-              <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>Abb. Attivi</Text>
+            <View style={[styles.statCard, styles.statCardSuccess]}>
+              <Ionicons name="card" size={22} color={COLORS.success} />
+              <CountUp to={dashboard.stats.active_subscriptions} style={styles.statNumberKinetic} />
+              <Text style={styles.statLabelKinetic} numberOfLines={1}>ABB. ATTIVI</Text>
             </View>
-            <View style={[styles.statCard, { backgroundColor: '#8B5CF6' }]}>
-              <Ionicons name="calendar" size={24} color="#FFF" />
-              <Text style={styles.statNumber}>{dashboard.stats.bookings_today}</Text>
-              <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>Oggi</Text>
+            <View style={[styles.statCard, styles.statCardAccent]}>
+              <Ionicons name="calendar" size={22} color={COLORS.accent} />
+              <CountUp to={dashboard.stats.bookings_today} style={styles.statNumberKinetic} />
+              <Text style={styles.statLabelKinetic} numberOfLines={1}>OGGI</Text>
             </View>
           </View>
 
@@ -915,20 +917,15 @@ export default function HomeScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Star Wars Greeting Card */}
-        <View style={styles.starWarsCard}>
-          <View style={styles.starWarsGlow} />
-          <View style={styles.starWarsContent}>
-            <View style={styles.starWarsHeader}>
-              <Text style={styles.starWarsGreeting}>Ciao, {user?.nome}</Text>
-              <Image source={require('../../assets/images/logo.jpg')} style={styles.starWarsLogo} resizeMode="contain" />
-            </View>
-            <Text style={styles.starWarsQuote}>✦ May the Force be with you ✦</Text>
-          </View>
-          <View style={styles.starWarsStars}>
-            {[...Array(8)].map((_, i) => (
-              <View key={i} style={[styles.star, { left: `${10 + i * 12}%`, top: `${15 + (i % 3) * 25}%` }]} />
-            ))}
+        {/* HERO - Functional training image + greeting */}
+        <View style={styles.heroCard}>
+          <Image source={{ uri: FITNESS_IMAGES.hero }} style={styles.heroImage} resizeMode="cover" />
+          <View style={styles.heroOverlay} />
+          <View style={styles.heroContent}>
+            <Text style={styles.heroKicker}>TRAIN HARD • STAY STRONG</Text>
+            <Text style={styles.heroGreeting}>CIAO, {user?.nome?.toUpperCase()}</Text>
+            <View style={styles.heroAccentBar} />
+            <Text style={styles.heroQuote}>"No excuses. Just results."</Text>
           </View>
         </View>
 
@@ -1109,6 +1106,62 @@ const styles = StyleSheet.create({
   },
   
   // Star Wars Card
+  // Hero Card (Functional / CrossFit)
+  heroCard: {
+    height: 210,
+    borderRadius: 18,
+    marginBottom: 16,
+    overflow: 'hidden',
+    position: 'relative',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  heroImage: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    width: '100%',
+    height: '100%',
+  },
+  heroOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(10,10,10,0.55)',
+  },
+  heroContent: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    padding: 22,
+    justifyContent: 'flex-end',
+  },
+  heroKicker: {
+    fontFamily: FONTS.bodyBold,
+    fontSize: 11,
+    color: COLORS.primary,
+    letterSpacing: 3,
+    marginBottom: 6,
+  },
+  heroGreeting: {
+    fontFamily: FONTS.headline,
+    fontSize: 42,
+    color: '#fff',
+    letterSpacing: 2,
+    lineHeight: 44,
+  },
+  heroAccentBar: {
+    width: 48,
+    height: 4,
+    backgroundColor: COLORS.primary,
+    marginVertical: 10,
+    borderRadius: 2,
+  },
+  heroQuote: {
+    fontFamily: FONTS.bodySemi,
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    fontStyle: 'italic',
+    letterSpacing: 0.5,
+  },
+
   starWarsCard: {
     backgroundColor: '#0a0a1a',
     borderRadius: 16,
@@ -1183,10 +1236,39 @@ const styles = StyleSheet.create({
   logoImage: { width: 90, height: 90, borderRadius: 45 },
 
   // Stats Grid (Admin)
-  statsGrid: { flexDirection: 'row', gap: 6, marginBottom: 16 },
-  statCard: { flex: 1, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 8, alignItems: 'center', minHeight: 95, justifyContent: 'center' },
+  statsGrid: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  statCard: {
+    flex: 1,
+    borderRadius: 14,
+    paddingVertical: 18,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    minHeight: 110,
+    justifyContent: 'center',
+    backgroundColor: COLORS.surfaceElevated,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    gap: 6,
+  },
+  statCardPrimary: { borderColor: COLORS.primary, borderLeftWidth: 3 },
+  statCardSuccess: { borderColor: COLORS.success, borderLeftWidth: 3 },
+  statCardAccent: { borderColor: COLORS.accent, borderLeftWidth: 3 },
   statNumber: { fontSize: 28, fontWeight: 'bold', color: '#FFF', marginTop: 4 },
+  statNumberKinetic: {
+    fontFamily: FONTS.headline,
+    fontSize: 34,
+    color: COLORS.text,
+    letterSpacing: 1,
+    lineHeight: 36,
+  },
   statLabel: { fontSize: 11, color: '#FFF', opacity: 0.95, marginTop: 4, textAlign: 'center', flexShrink: 0 },
+  statLabelKinetic: {
+    fontFamily: FONTS.bodyBold,
+    fontSize: 10,
+    color: COLORS.textSecondary,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
 
   // Weekly Summary
   weeklySummary: {

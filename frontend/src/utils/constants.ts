@@ -11,27 +11,31 @@ export const GIORNI_DISPLAY: { [key: string]: string } = {
   'domenica': 'Domenica',
 };
 
-// Activity type display names and icons
-export const ATTIVITA_INFO: { [key: string]: { nome: string; icona: string; colore: string } } = {
+// Activity type display names and icons - Functional/CrossFit palette
+export const ATTIVITA_INFO: { [key: string]: { nome: string; icona: string; colore: string; image?: string } } = {
   'circuito': {
     nome: 'Circuito',
     icona: 'refresh',
-    colore: '#FF6B6B'
+    colore: '#FF4500',
+    image: 'https://images.pexels.com/photos/9958668/pexels-photo-9958668.jpeg'
   },
   'funzionale': {
     nome: 'Workout Funzionale',
     icona: 'fitness-center',
-    colore: '#4ECDC4'
+    colore: '#FF6B00',
+    image: 'https://images.unsplash.com/photo-1578762560042-46ad127c95ea'
   },
   'pilates': {
     nome: 'Pilates',
     icona: 'self-improvement',
-    colore: '#9B59B6'
+    colore: '#00E676',
+    image: 'https://images.pexels.com/photos/35553893/pexels-photo-35553893.jpeg'
   },
   'yoga': {
     nome: 'Yoga',
     icona: 'spa',
-    colore: '#3498DB'
+    colore: '#00B0FF',
+    image: 'https://images.unsplash.com/photo-1590915202637-31dbc5528371'
   },
 };
 
@@ -111,18 +115,40 @@ export const getDayNameFromDate = (dateString: string): string => {
   return GIORNI[dayIndex];
 };
 
-// Colors - Green Energy Theme
+// Colors - Tactical Obsidian & Kinetic Orange (Functional/CrossFit theme)
 export const COLORS = {
-  primary: '#00E676',       // Verde lime brillante
-  primaryDark: '#00C853',   // Verde scuro
-  secondary: '#121212',     // Nero/Grigio scuro
-  background: '#0A0A0A',    // Nero puro
-  card: '#1A1A1A',          // Grigio scuro
-  cardLight: '#252525',     // Grigio medio
-  text: '#FFFFFF',          // Bianco
-  textSecondary: '#9E9E9E', // Grigio chiaro
-  success: '#00E676',       // Verde (stesso del primary)
-  warning: '#FFCA28',       // Giallo ambra
-  error: '#FF5252',         // Rosso
-  border: '#333333',        // Grigio bordi
+  primary: '#FF4500',         // Kinetic Orange - main accent
+  primaryDark: '#CC3800',     // Darker orange (hover/pressed)
+  primaryLight: '#FF6B3D',    // Lighter orange (highlights)
+  secondary: '#00E676',       // Neon Green - streaks / success / HP bars
+  secondaryDark: '#00B359',
+  accent: '#00B0FF',          // Electric Blue - info / links
+  background: '#0A0A0A',      // Obsidian - main BG
+  surface: '#121212',          // Cards
+  surfaceElevated: '#1C1C1E', // Elevated cards
+  surfaceHover: '#2A2A2C',
+  card: '#121212',             // Alias for backwards compat
+  cardLight: '#1C1C1E',        // Alias
+  text: '#FFFFFF',
+  textSecondary: '#A0A0A5',
+  textMuted: '#6B6B70',
+  success: '#00E676',
+  warning: '#FFAB00',
+  error: '#FF3B30',
+  danger: '#FF3B30',
+  border: '#2C2C2E',
+  borderStrong: '#3A3A3C',
+  overlay: 'rgba(10,10,10,0.75)',
+  glowOrange: 'rgba(255,69,0,0.35)',
+  glowGreen: 'rgba(0,230,118,0.3)',
+};
+
+// Fitness images (from design guidelines - Pexels/Unsplash)
+export const FITNESS_IMAGES = {
+  hero: 'https://images.pexels.com/photos/6389507/pexels-photo-6389507.jpeg',
+  abstractGym: 'https://images.unsplash.com/photo-1770513649465-2c60c8039806',
+  circuit: 'https://images.pexels.com/photos/9958668/pexels-photo-9958668.jpeg',
+  functional: 'https://images.unsplash.com/photo-1578762560042-46ad127c95ea',
+  pilates: 'https://images.pexels.com/photos/35553893/pexels-photo-35553893.jpeg',
+  yoga: 'https://images.unsplash.com/photo-1590915202637-31dbc5528371',
 };
