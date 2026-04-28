@@ -169,6 +169,12 @@ App di fitness per la gestione di lezioni, prenotazioni, abbonamenti e gamificat
 - Retrocompatibilità: estrazioni esistenti senza campo `pubblicato` sono considerate pubblicate
 - Test end-to-end: admin vede bozza, cliente NO; dopo publish cliente vede tutto ✅
 
+## Fix Layout Partecipanti Prenota (28 Aprile 2026)
+- Bug: quando si espandeva il dropdown "Chi partecipa?" in una lezione prenotata, il card si deformava (la sezione partecipanti era il 4° figlio di un container `flexDirection: row` e si allargava di lato anziché in basso)
+- Fix: `lessonCard` passa da `flexDirection: row` a `column`; introdotto nuovo contenitore `lessonRow` (row) che raggruppa colorBar + lessonContent + bookButton; la `participantsSection` è ora full-width sotto la riga principale
+- `participantsToggle` con borderTop per separazione visuale; `participantsList` con padding interno uniforme
+- Risultato: l'espansione del dropdown cresce verticalmente senza alterare la griglia della card
+
 ## Esclusione Vincitori Mese Precedente (27 Aprile 2026)
 - I 3 vincitori del mese precedente (1°, 2°, 3°) vengono esclusi dall'estrazione successiva
 - Applicato sia all'estrazione automatica (`run_lottery_extraction`) che manuale admin (`/admin/lottery/extract-winner`)

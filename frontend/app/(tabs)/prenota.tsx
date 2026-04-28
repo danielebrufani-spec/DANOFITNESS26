@@ -725,66 +725,68 @@ export default function PrenotaScreen() {
 
             return (
               <View key={lesson.id} style={[styles.lessonCard, (isPassed || isCancelled) && styles.lessonCardPassed]}>
-                <View
-                  style={[
-                    styles.lessonColorBar,
-                    { backgroundColor: isCancelled ? '#EF4444' : (info.colore || COLORS.primary) },
-                  ]}
-                />
-                <View style={styles.lessonContent}>
-                  <View style={styles.lessonHeader}>
-                    <Text style={[styles.lessonTime, (isPassed || isCancelled) && styles.lessonTimePassed]}>{lesson.orario}</Text>
-                    <View style={styles.lessonTypeContainer}>
-                      <Text style={[styles.lessonType, { color: (isPassed || isCancelled) ? COLORS.textSecondary : (info.colore || COLORS.primary) }]}>
-                        {info.nome || lesson.tipo_attivita}
-                      </Text>
-                      {isCancelled ? (
-                        <Text style={{ color: '#EF4444', fontSize: 11, fontWeight: 'bold' }}>ANNULLATA{cancelInfo?.motivo ? ` - ${cancelInfo.motivo}` : ''}</Text>
-                      ) : lesson.coach ? (
-                        <Text style={[styles.coachName, isPassed && styles.coachNamePassed]}>
-                          Coach {lesson.coach}
+                <View style={styles.lessonRow}>
+                  <View
+                    style={[
+                      styles.lessonColorBar,
+                      { backgroundColor: isCancelled ? '#EF4444' : (info.colore || COLORS.primary) },
+                    ]}
+                  />
+                  <View style={styles.lessonContent}>
+                    <View style={styles.lessonHeader}>
+                      <Text style={[styles.lessonTime, (isPassed || isCancelled) && styles.lessonTimePassed]}>{lesson.orario}</Text>
+                      <View style={styles.lessonTypeContainer}>
+                        <Text style={[styles.lessonType, { color: (isPassed || isCancelled) ? COLORS.textSecondary : (info.colore || COLORS.primary) }]}>
+                          {info.nome || lesson.tipo_attivita}
                         </Text>
-                      ) : null}
+                        {isCancelled ? (
+                          <Text style={{ color: '#EF4444', fontSize: 11, fontWeight: 'bold' }}>ANNULLATA{cancelInfo?.motivo ? ` - ${cancelInfo.motivo}` : ''}</Text>
+                        ) : lesson.coach ? (
+                          <Text style={[styles.coachName, isPassed && styles.coachNamePassed]}>
+                            Coach {lesson.coach}
+                          </Text>
+                        ) : null}
+                      </View>
                     </View>
                   </View>
+                  {isCancelled ? (
+                    <View style={[styles.bookButton, { backgroundColor: '#EF444420', borderColor: '#EF444450' }]}>
+                      <Ionicons name="close-circle" size={24} color="#EF4444" />
+                      <Text style={[styles.bookButtonText, { color: '#EF4444' }]}>Annullata</Text>
+                    </View>
+                  ) : !isPassed ? (
+                    <TouchableOpacity
+                      style={[
+                        styles.bookButton,
+                        booked && styles.bookedButton,
+                        !canBook && styles.disabledButton,
+                      ]}
+                      onPress={() => booked ? handleCancel(lesson.id) : handleBook(lesson.id)}
+                      disabled={isLoadingThis || !canBook}
+                    >
+                      {isLoadingThis ? (
+                        <ActivityIndicator size="small" color={COLORS.text} />
+                      ) : (
+                        <>
+                          <Ionicons
+                            name={booked ? 'close-circle' : 'add-circle-outline'}
+                            size={24}
+                            color={COLORS.text}
+                          />
+                          <Text style={styles.bookButtonText}>
+                            {booked ? 'Cancella' : 'Prenota'}
+                          </Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={styles.passedIndicator}>
+                      <Text style={styles.passedIndicatorText}>Non prenotabile</Text>
+                    </View>
+                  )}
                 </View>
-                {isCancelled ? (
-                  <View style={[styles.bookButton, { backgroundColor: '#EF444420', borderColor: '#EF444450' }]}>
-                    <Ionicons name="close-circle" size={24} color="#EF4444" />
-                    <Text style={[styles.bookButtonText, { color: '#EF4444' }]}>Annullata</Text>
-                  </View>
-                ) : !isPassed ? (
-                  <TouchableOpacity
-                    style={[
-                      styles.bookButton,
-                      booked && styles.bookedButton,
-                      !canBook && styles.disabledButton,
-                    ]}
-                    onPress={() => booked ? handleCancel(lesson.id) : handleBook(lesson.id)}
-                    disabled={isLoadingThis || !canBook}
-                  >
-                    {isLoadingThis ? (
-                      <ActivityIndicator size="small" color={COLORS.text} />
-                    ) : (
-                      <>
-                        <Ionicons
-                          name={booked ? 'close-circle' : 'add-circle-outline'}
-                          size={24}
-                          color={COLORS.text}
-                        />
-                        <Text style={styles.bookButtonText}>
-                          {booked ? 'Cancella' : 'Prenota'}
-                        </Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                ) : (
-                  <View style={styles.passedIndicator}>
-                    <Text style={styles.passedIndicatorText}>Non prenotabile</Text>
-                  </View>
-                )}
 
-                {/* Lista Partecipanti - Solo se prenotato */}
+                {/* Lista Partecipanti - Solo se prenotato (full-width sotto la riga) */}
                 {booked && (
                   <View style={styles.participantsSection}>
                     <TouchableOpacity 
@@ -1148,9 +1150,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 10,
     overflow: 'hidden',
-    flexDirection: 'row',
+    flexDirection: 'column',
     borderWidth: 1,
     borderColor: COLORS.border,
+  },
+  lessonRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
   },
   lessonCardPassed: {
     opacity: 0.5,
@@ -1198,14 +1204,14 @@ const styles = StyleSheet.create({
   participantsToggle: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
-    paddingTop: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
     gap: 6,
   },
   participantsSection: {
-    marginTop: 10,
+    // full-width section below the lesson row
   },
   participantItem: {
     flexDirection: 'row',
@@ -1227,12 +1233,10 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   participantsList: {
-    marginTop: 8,
-    padding: 10,
+    paddingHorizontal: 14,
+    paddingTop: 4,
+    paddingBottom: 12,
     backgroundColor: COLORS.background,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: COLORS.border,
   },
   participantsCount: {
     fontFamily: FONTS.bodyBold,
