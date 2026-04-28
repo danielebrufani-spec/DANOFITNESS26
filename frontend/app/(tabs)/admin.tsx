@@ -124,6 +124,116 @@ export default function AdminScreen() {
   // Expanded days
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
 
+  // ===== Manual booking management (admin force add/remove) =====
+  // Key format: `${data}-${lesson_id}` to identify a specific lesson instance
+  const [expandedLessonKey, setExpandedLessonKey] = useState<string | null>(null);
+  const [lessonParticipants, setLessonParticipants] = useState<Record<string, Array<{nome: string; booking_id?: string; user_id?: string; lezione_scalata?: boolean}>>>({});
+  const [loadingParticipants, setLoadingParticipants] = useState<string | null>(null);
+  // Add participant modal
+  const [showAddParticipant, setShowAddParticipant] = useState(false);
+  const [addParticipantTarget, setAddParticipantTarget] = useState<{lesson_id: string; data_lezione: string; orario: string; tipo: string} | null>(null);
+  const [addParticipantUserId, setAddParticipantUserId] = useState<string>('');
+  const [addParticipantSearch, setAddParticipantSearch] = useState<string>('');
+  const [addParticipantScala, setAddParticipantScala] = useState<boolean>(true);
+  const [savingAddParticipant, setSavingAddParticipant] = useState(false);
+
+  const loadLessonParticipants = async (lesson_id: string, data_lezione: string) => {
+    const key = `${data_lezione}-${lesson_id}`;
+    setLoadingParticipants(key);
+    try {
+      const res = await apiService.getLessonParticipants(lesson_id, data_lezione);
+      setLessonParticipants(prev => ({ ...prev, [key]: res.data.participants }));
+    } catch (e) {
+      console.error('Error loading participants', e);
+    } finally {
+      setLoadingParticipants(null);
+    }
+  };
+
+  const toggleLessonExpand = async (lesson_id: string, data_lezione: string) => {
+    const key = `${data_lezione}-${lesson_id}`;
+    if (expandedLessonKey === key) {
+      setExpandedLessonKey(null);
+    } else {
+      setExpandedLessonKey(key);
+      if (!lessonParticipants[key]) {
+        await loadLessonParticipants(lesson_id, data_lezione);
+      }
+    }
+  };
+
+  const openAddParticipantModal = (lesson_id: string, data_lezione: string, orario: string, tipo: string) => {
+    setAddParticipantTarget({ lesson_id, data_lezione, orario, tipo });
+    setAddParticipantUserId('');
+    setAddParticipantSearch('');
+    setAddParticipantScala(true);
+    setShowAddParticipant(true);
+  };
+
+  const handleConfirmAddParticipant = async () => {
+    if (!addParticipantTarget || !addParticipantUserId) {
+      if (typeof window !== 'undefined') window.alert('Seleziona un cliente');
+      return;
+    }
+    setSavingAddParticipant(true);
+    try {
+      const res = await apiService.adminForceAddBooking({
+        user_id: addParticipantUserId,
+        lesson_id: addParticipantTarget.lesson_id,
+        data_lezione: addParticipantTarget.data_lezione,
+        scala_lezione: addParticipantScala,
+      });
+      const scaled = res.data.scaled;
+      let msg = 'Cliente aggiunto alla lezione';
+      if (addParticipantScala) {
+        msg += scaled.scalata
+          ? ` — Lezione scalata (${scaled.lezioni_rimanenti ?? 0} residue)`
+          : ' — Nessun pacchetto attivo da scalare';
+      }
+      if (typeof window !== 'undefined') window.alert(msg);
+      // Reload participants for this lesson
+      const key = `${addParticipantTarget.data_lezione}-${addParticipantTarget.lesson_id}`;
+      setLessonParticipants(prev => ({ ...prev, [key]: [] }));
+      await loadLessonParticipants(addParticipantTarget.lesson_id, addParticipantTarget.data_lezione);
+      loadData(false);
+      setShowAddParticipant(false);
+    } catch (e: any) {
+      const detail = e?.response?.data?.detail || 'Impossibile aggiungere il cliente';
+      if (typeof window !== 'undefined') window.alert('Errore: ' + detail);
+    } finally {
+      setSavingAddParticipant(false);
+    }
+  };
+
+  const handleRemoveParticipant = async (booking_id: string, was_scaled: boolean, lesson_id: string, data_lezione: string, nome: string) => {
+    if (typeof window === 'undefined') return;
+    if (!window.confirm(`Rimuovere ${nome} dalla lezione?`)) return;
+    let riaccredita = false;
+    if (was_scaled) {
+      riaccredita = window.confirm('La lezione era stata scalata.\n\nVuoi RIACCREDITARE +1 lezione al pacchetto?\n\nOK = Sì riaccredita\nAnnulla = No, mantieni scalata');
+    }
+    try {
+      const res = await apiService.adminRemoveBooking(booking_id, riaccredita);
+      const credit = res.data.credit;
+      let msg = 'Cliente rimosso dalla lezione';
+      if (riaccredita) {
+        msg += credit.riaccreditata
+          ? ` — Lezione riaccreditata (${credit.lezioni_rimanenti ?? 0} residue)`
+          : ' — Nessun pacchetto attivo da riaccreditare';
+      }
+      window.alert(msg);
+      const key = `${data_lezione}-${lesson_id}`;
+      setLessonParticipants(prev => ({ ...prev, [key]: [] }));
+      await loadLessonParticipants(lesson_id, data_lezione);
+      loadData(false);
+    } catch (e: any) {
+      const detail = e?.response?.data?.detail || 'Impossibile rimuovere il cliente';
+      window.alert('Errore: ' + detail);
+    }
+  };
+  // ===== End manual booking management =====
+
+
   // Filtered users based on search
   const filteredUsers = users.filter(user => {
     if (!userSearchQuery.trim()) return true;
@@ -909,16 +1019,11 @@ export default function AdminScreen() {
                   const content = weeklyBookings.giorni.map((giorno) => {
                     if (!giorno.lezioni || giorno.lezioni.length === 0) return null;
                     const isPast = giorno.data < today;
-                    if (isPast) return null;
                     const isToday = giorno.data === today;
 
-                    // Filtra: se è oggi, mostra solo lezioni non ancora iniziate
-                    const activeLessons = isToday
-                      ? giorno.lezioni.filter((l) => {
-                          const [h, m] = l.orario.split(':').map(Number);
-                          return h * 60 + m > nowMinutes;
-                        })
-                      : giorno.lezioni;
+                    // Mostra TUTTE le lezioni della settimana (anche passate e già iniziate)
+                    // così l'admin può aggiungere/rimuovere clienti retroattivamente
+                    const activeLessons = giorno.lezioni;
 
                     if (activeLessons.length === 0) return null;
                     hasAny = true;
@@ -939,69 +1044,122 @@ export default function AdminScreen() {
                           const cancelInfo = cancelledLessons.find(
                             (c: any) => c.lesson_id === lesson.lesson_id && c.data_lezione === giorno.data
                           );
+                          const lessonKey = `${giorno.data}-${lesson.lesson_id}`;
+                          const isExpanded = expandedLessonKey === lessonKey;
+                          const participants = lessonParticipants[lessonKey] || [];
                           return (
                             <View key={`${giorno.data}-${lesson.lesson_id}`}
                               data-testid={`manage-lesson-${giorno.data}-${lesson.lesson_id}`}
-                              style={[styles.lessonStatCard, isCancelled && { opacity: 0.6, borderColor: '#EF444450' }]}>
-                              <View style={[styles.lessonStatColor, { backgroundColor: isCancelled ? '#EF4444' : (info.colore || COLORS.primary) }]} />
-                              <View style={{ flex: 1 }}>
-                                <Text style={styles.lessonStatTime}>{lesson.orario} - {info.nome || lesson.tipo_attivita}</Text>
-                                {isCancelled && (
-                                  <Text style={{ color: '#EF4444', fontSize: 11, fontWeight: 'bold' }}>
-                                    ANNULLATA: {cancelInfo?.motivo}
-                                  </Text>
+                              style={{ marginBottom: 6 }}>
+                              <View style={[styles.lessonStatCard, isCancelled && { opacity: 0.6, borderColor: '#EF444450' }]}>
+                                <View style={[styles.lessonStatColor, { backgroundColor: isCancelled ? '#EF4444' : (info.colore || COLORS.primary) }]} />
+                                <TouchableOpacity
+                                  style={{ flex: 1 }}
+                                  onPress={() => !isCancelled && toggleLessonExpand(lesson.lesson_id, giorno.data)}
+                                  disabled={isCancelled}
+                                >
+                                  <Text style={styles.lessonStatTime}>{lesson.orario} - {info.nome || lesson.tipo_attivita}</Text>
+                                  {isCancelled && (
+                                    <Text style={{ color: '#EF4444', fontSize: 11, fontWeight: 'bold' }}>
+                                      ANNULLATA: {cancelInfo?.motivo}
+                                    </Text>
+                                  )}
+                                  {!isCancelled && (
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                                      <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={COLORS.textSecondary} />
+                                      <Text style={{ color: COLORS.textSecondary, fontSize: 11 }}>
+                                        {lesson.totale_iscritti} iscritti
+                                      </Text>
+                                    </View>
+                                  )}
+                                </TouchableOpacity>
+                                {!isCancelled && (
+                                  <TouchableOpacity
+                                    data-testid={`add-participant-${giorno.data}-${lesson.lesson_id}`}
+                                    style={{ backgroundColor: COLORS.primary, borderRadius: 6, padding: 8, flexDirection: 'row', alignItems: 'center', gap: 4, marginRight: 6 }}
+                                    onPress={() => openAddParticipantModal(lesson.lesson_id, giorno.data, lesson.orario, info.nome || lesson.tipo_attivita)}
+                                  >
+                                    <Ionicons name="add" size={18} color="#fff" />
+                                  </TouchableOpacity>
                                 )}
-                                {!isCancelled && lesson.totale_iscritti > 0 && (
-                                  <Text style={{ color: COLORS.textSecondary, fontSize: 11 }}>
-                                    {lesson.totale_iscritti} iscritti
-                                  </Text>
+                                {isCancelled ? (
+                                  <TouchableOpacity
+                                    data-testid={`restore-lesson-${giorno.data}-${lesson.lesson_id}`}
+                                    style={{ backgroundColor: '#22c55e20', borderWidth: 1, borderColor: '#22c55e50', borderRadius: 8, padding: 8, flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                                    onPress={async () => {
+                                      const ok = typeof window !== 'undefined'
+                                        ? window.confirm('Ripristinare questa lezione?')
+                                        : true;
+                                      if (!ok) return;
+                                      try {
+                                        await apiService.restoreLesson(lesson.lesson_id, giorno.data);
+                                        if (typeof window !== 'undefined') window.alert('Lezione ripristinata!');
+                                        loadData(false);
+                                      } catch (e: any) {
+                                        if (typeof window !== 'undefined') window.alert('Errore: ' + (e.response?.data?.detail || 'Impossibile ripristinare'));
+                                      }
+                                    }}
+                                  >
+                                    <Ionicons name="checkmark-circle" size={16} color="#22c55e" />
+                                    <Text style={{ color: '#22c55e', fontSize: 12, fontWeight: '600' }}>Ripristina</Text>
+                                  </TouchableOpacity>
+                                ) : (
+                                  <TouchableOpacity
+                                    data-testid={`cancel-lesson-${giorno.data}-${lesson.lesson_id}`}
+                                    style={{ backgroundColor: '#EF444410', borderWidth: 1, borderColor: '#EF444430', borderRadius: 8, padding: 8, flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                                    onPress={async () => {
+                                      const motivo = typeof window !== 'undefined'
+                                        ? window.prompt(`Motivo annullamento ${info.nome || lesson.tipo_attivita} ${lesson.orario} (${GIORNI_LABEL[giorno.giorno] || giorno.giorno}):`, 'Istruttore assente')
+                                        : 'Istruttore assente';
+                                      if (!motivo) return;
+                                      try {
+                                        const res = await apiService.cancelLesson(lesson.lesson_id, giorno.data, motivo);
+                                        const msg = res.data.prenotazioni_cancellate > 0
+                                          ? `Lezione annullata! ${res.data.prenotazioni_cancellate} prenotazioni cancellate.`
+                                          : 'Lezione annullata!';
+                                        if (typeof window !== 'undefined') window.alert(msg);
+                                        loadData(false);
+                                      } catch (e: any) {
+                                        if (typeof window !== 'undefined') window.alert('Errore: ' + (e.response?.data?.detail || 'Impossibile annullare'));
+                                      }
+                                    }}
+                                  >
+                                    <Ionicons name="close-circle" size={16} color="#EF4444" />
+                                    <Text style={{ color: '#EF4444', fontSize: 12, fontWeight: '600' }}>Annulla</Text>
+                                  </TouchableOpacity>
                                 )}
                               </View>
-                              {isCancelled ? (
-                                <TouchableOpacity
-                                  data-testid={`restore-lesson-${giorno.data}-${lesson.lesson_id}`}
-                                  style={{ backgroundColor: '#22c55e20', borderWidth: 1, borderColor: '#22c55e50', borderRadius: 8, padding: 8, flexDirection: 'row', alignItems: 'center', gap: 4 }}
-                                  onPress={async () => {
-                                    const ok = typeof window !== 'undefined'
-                                      ? window.confirm('Ripristinare questa lezione?')
-                                      : true;
-                                    if (!ok) return;
-                                    try {
-                                      await apiService.restoreLesson(lesson.lesson_id, giorno.data);
-                                      if (typeof window !== 'undefined') window.alert('Lezione ripristinata!');
-                                      loadData(false);
-                                    } catch (e: any) {
-                                      if (typeof window !== 'undefined') window.alert('Errore: ' + (e.response?.data?.detail || 'Impossibile ripristinare'));
-                                    }
-                                  }}
-                                >
-                                  <Ionicons name="checkmark-circle" size={16} color="#22c55e" />
-                                  <Text style={{ color: '#22c55e', fontSize: 12, fontWeight: '600' }}>Ripristina</Text>
-                                </TouchableOpacity>
-                              ) : (
-                                <TouchableOpacity
-                                  data-testid={`cancel-lesson-${giorno.data}-${lesson.lesson_id}`}
-                                  style={{ backgroundColor: '#EF444410', borderWidth: 1, borderColor: '#EF444430', borderRadius: 8, padding: 8, flexDirection: 'row', alignItems: 'center', gap: 4 }}
-                                  onPress={async () => {
-                                    const motivo = typeof window !== 'undefined'
-                                      ? window.prompt(`Motivo annullamento ${info.nome || lesson.tipo_attivita} ${lesson.orario} (${GIORNI_LABEL[giorno.giorno] || giorno.giorno}):`, 'Istruttore assente')
-                                      : 'Istruttore assente';
-                                    if (!motivo) return;
-                                    try {
-                                      const res = await apiService.cancelLesson(lesson.lesson_id, giorno.data, motivo);
-                                      const msg = res.data.prenotazioni_cancellate > 0
-                                        ? `Lezione annullata! ${res.data.prenotazioni_cancellate} prenotazioni cancellate.`
-                                        : 'Lezione annullata!';
-                                      if (typeof window !== 'undefined') window.alert(msg);
-                                      loadData(false);
-                                    } catch (e: any) {
-                                      if (typeof window !== 'undefined') window.alert('Errore: ' + (e.response?.data?.detail || 'Impossibile annullare'));
-                                    }
-                                  }}
-                                >
-                                  <Ionicons name="close-circle" size={16} color="#EF4444" />
-                                  <Text style={{ color: '#EF4444', fontSize: 12, fontWeight: '600' }}>Annulla</Text>
-                                </TouchableOpacity>
+                              {/* Participants list (expanded) */}
+                              {isExpanded && !isCancelled && (
+                                <View style={{ backgroundColor: COLORS.background, marginTop: 4, padding: 10, borderRadius: 6, borderWidth: 1, borderColor: COLORS.border }}>
+                                  {loadingParticipants === lessonKey ? (
+                                    <ActivityIndicator size="small" color={COLORS.primary} />
+                                  ) : participants.length === 0 ? (
+                                    <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontStyle: 'italic', textAlign: 'center' }}>Nessun partecipante</Text>
+                                  ) : (
+                                    participants.map((p, idx) => (
+                                      <View key={p.booking_id || idx} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6, borderBottomWidth: idx < participants.length - 1 ? 1 : 0, borderBottomColor: COLORS.border }}>
+                                        <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 12, color: COLORS.textSecondary, width: 22 }}>{idx + 1}.</Text>
+                                        <Ionicons name="person" size={14} color={COLORS.textSecondary} />
+                                        <Text style={{ flex: 1, fontFamily: FONTS.body, fontSize: 13, color: COLORS.text }}>{p.nome}</Text>
+                                        {p.lezione_scalata && (
+                                          <View style={{ backgroundColor: COLORS.success + '25', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                                            <Text style={{ color: COLORS.success, fontFamily: FONTS.bodyBold, fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.8 }}>Scalata</Text>
+                                          </View>
+                                        )}
+                                        {p.booking_id && (
+                                          <TouchableOpacity
+                                            data-testid={`remove-participant-${p.booking_id}`}
+                                            style={{ backgroundColor: COLORS.error, borderRadius: 6, padding: 6 }}
+                                            onPress={() => handleRemoveParticipant(p.booking_id!, !!p.lezione_scalata, lesson.lesson_id, giorno.data, p.nome)}
+                                          >
+                                            <Ionicons name="remove" size={16} color="#fff" />
+                                          </TouchableOpacity>
+                                        )}
+                                      </View>
+                                    ))
+                                  )}
+                                </View>
                               )}
                             </View>
                           );
@@ -1838,6 +1996,108 @@ export default function AdminScreen() {
                 <ActivityIndicator color="#FFF" />
               ) : (
                 <Text style={styles.modalButtonText}>Resetta Password</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ===== ADD PARTICIPANT MODAL (admin force-add) ===== */}
+      <Modal
+        visible={showAddParticipant}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowAddParticipant(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Aggiungi Cliente</Text>
+              <TouchableOpacity onPress={() => setShowAddParticipant(false)}>
+                <Ionicons name="close" size={24} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
+
+            {addParticipantTarget && (
+              <Text style={{ color: COLORS.textSecondary, fontSize: 13, marginBottom: 12 }}>
+                {addParticipantTarget.tipo} · {addParticipantTarget.orario} · {addParticipantTarget.data_lezione}
+              </Text>
+            )}
+
+            <Text style={styles.modalLabel}>Cerca Cliente</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="search" size={18} color={COLORS.textSecondary} />
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Nome o cognome..."
+                placeholderTextColor={COLORS.textSecondary}
+                value={addParticipantSearch}
+                onChangeText={setAddParticipantSearch}
+              />
+            </View>
+
+            <ScrollView style={{ maxHeight: 240, marginTop: 8 }}>
+              {users
+                .filter(u => {
+                  if (u.role === 'admin') return false;
+                  if (!addParticipantSearch.trim()) return true;
+                  const q = addParticipantSearch.toLowerCase();
+                  return (u.nome || '').toLowerCase().includes(q) || (u.cognome || '').toLowerCase().includes(q);
+                })
+                .slice(0, 50)
+                .map(u => (
+                  <TouchableOpacity
+                    key={u.id}
+                    data-testid={`pick-user-${u.id}`}
+                    style={{
+                      padding: 12,
+                      borderRadius: 6,
+                      borderWidth: 1,
+                      borderColor: addParticipantUserId === u.id ? COLORS.primary : COLORS.border,
+                      backgroundColor: addParticipantUserId === u.id ? COLORS.primary + '20' : COLORS.surface,
+                      marginBottom: 6,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 8,
+                    }}
+                    onPress={() => setAddParticipantUserId(u.id)}
+                  >
+                    <Ionicons name="person-circle-outline" size={20} color={addParticipantUserId === u.id ? COLORS.primary : COLORS.textSecondary} />
+                    <Text style={{ flex: 1, color: COLORS.text, fontFamily: FONTS.bodySemi, fontSize: 14 }}>
+                      {u.nome} {u.cognome}
+                    </Text>
+                    {addParticipantUserId === u.id && <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} />}
+                  </TouchableOpacity>
+                ))}
+            </ScrollView>
+
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, marginTop: 8, borderRadius: 6, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.surface }}
+              onPress={() => setAddParticipantScala(!addParticipantScala)}
+            >
+              <Ionicons
+                name={addParticipantScala ? 'checkbox' : 'square-outline'}
+                size={22}
+                color={addParticipantScala ? COLORS.primary : COLORS.textSecondary}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: COLORS.text, fontFamily: FONTS.bodyBold, fontSize: 13 }}>Scala lezione dall'abbonamento</Text>
+                <Text style={{ color: COLORS.textSecondary, fontSize: 11, marginTop: 2 }}>
+                  Se attivo, scala 1 lezione dal pacchetto attivo del cliente
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              data-testid="confirm-add-participant"
+              style={[styles.modalButton, savingAddParticipant && styles.modalButtonDisabled, { marginTop: 16 }]}
+              onPress={handleConfirmAddParticipant}
+              disabled={savingAddParticipant || !addParticipantUserId}
+            >
+              {savingAddParticipant ? (
+                <ActivityIndicator color={COLORS.text} />
+              ) : (
+                <Text style={styles.modalButtonText}>Aggiungi alla Lezione</Text>
               )}
             </TouchableOpacity>
           </View>

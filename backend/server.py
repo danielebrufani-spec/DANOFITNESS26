@@ -1820,15 +1820,20 @@ async def get_lesson_participants(lesson_id: str, lesson_date: str, current_user
         except Exception as e:
             logging.error(f"Error loading users for participants: {e}")
     
+    is_admin = current_user.get("role") == UserRole.ADMIN
     participants = []
     for booking in bookings:
         user = users_cache.get(booking["user_id"])
         if user:
             # Usa soprannome se presente, altrimenti nome completo
             display_name = user.get("soprannome") if user.get("soprannome") else f"{user.get('nome', '')} {user.get('cognome', '')}"
-            participants.append({
-                "nome": display_name.strip()
-            })
+            entry = {"nome": display_name.strip()}
+            # Espone i campi gestionali solo all'admin
+            if is_admin:
+                entry["booking_id"] = str(booking["_id"])
+                entry["user_id"] = booking["user_id"]
+                entry["lezione_scalata"] = booking.get("lezione_scalata", False)
+            participants.append(entry)
     
     return {
         "lesson_id": lesson_id,
@@ -1836,6 +1841,136 @@ async def get_lesson_participants(lesson_id: str, lesson_date: str, current_user
         "participants": participants,
         "count": len(participants)
     }
+
+
+# ===== ADMIN: Gestione manuale prenotazioni =====
+
+class AdminForceBookingCreate(BaseModel):
+    user_id: str
+    lesson_id: str
+    data_lezione: str
+    scala_lezione: bool = True
+
+
+@api_router.post("/admin/bookings/force-add")
+async def admin_force_add_booking(data: AdminForceBookingCreate, admin_user: dict = Depends(get_admin_user)):
+    """Admin-only: aggiunge un cliente a una lezione senza i normali controlli (settimana, ora, ecc).
+    Se scala_lezione=True, scala 1 lezione dal pacchetto attivo (se presente)."""
+    try:
+        user = await db.users.find_one({"_id": ObjectId(data.user_id)})
+    except:
+        raise HTTPException(status_code=404, detail="Utente non trovato")
+    if not user:
+        raise HTTPException(status_code=404, detail="Utente non trovato")
+
+    try:
+        lesson = await db.lessons.find_one({"_id": ObjectId(data.lesson_id)})
+    except:
+        raise HTTPException(status_code=404, detail="Lezione non trovata")
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Lezione non trovata")
+
+    existing = await db.bookings.find_one({
+        "user_id": data.user_id,
+        "lesson_id": data.lesson_id,
+        "data_lezione": data.data_lezione
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail="Cliente già prenotato a questa lezione")
+
+    booking = {
+        "user_id": data.user_id,
+        "lesson_id": data.lesson_id,
+        "data_lezione": data.data_lezione,
+        "abbonamento_scaduto": False,
+        "confermata": True,
+        "lezione_scalata": False,
+        "created_at": now_rome(),
+        "added_by_admin": True,
+        "lesson_data": {
+            "giorno": lesson["giorno"],
+            "orario": lesson["orario"],
+            "tipo_attivita": lesson["tipo_attivita"],
+            "coach": lesson.get("coach", "Daniele")
+        }
+    }
+    result = await db.bookings.insert_one(booking)
+    booking_id = str(result.inserted_id)
+
+    scaled_info = {"scalata": False, "tipo": None, "lezioni_rimanenti": None}
+    if data.scala_lezione:
+        sub_pacchetto = await db.subscriptions.find_one({
+            "user_id": data.user_id,
+            "attivo": True,
+            "tipo": {"$in": ["lezione_singola", "lezioni_8", "lezioni_16"]},
+            "lezioni_rimanenti": {"$gt": 0}
+        })
+        if sub_pacchetto:
+            await db.subscriptions.update_one(
+                {"_id": sub_pacchetto["_id"]},
+                {"$inc": {"lezioni_rimanenti": -1}}
+            )
+            await db.bookings.update_one(
+                {"_id": ObjectId(booking_id)},
+                {"$set": {"lezione_scalata": True}}
+            )
+            updated = await db.subscriptions.find_one({"_id": sub_pacchetto["_id"]})
+            scaled_info = {
+                "scalata": True,
+                "tipo": sub_pacchetto["tipo"],
+                "lezioni_rimanenti": updated["lezioni_rimanenti"]
+            }
+
+    return {
+        "message": "Cliente aggiunto alla lezione",
+        "booking_id": booking_id,
+        "scaled": scaled_info
+    }
+
+
+@api_router.delete("/admin/bookings/{booking_id}/admin-remove")
+async def admin_remove_booking(booking_id: str, riaccredita: bool = False, admin_user: dict = Depends(get_admin_user)):
+    """Admin-only: rimuove una prenotazione. Se riaccredita=True e la lezione era stata scalata, riaccredita +1 al pacchetto attivo più recente."""
+    try:
+        booking = await db.bookings.find_one({"_id": ObjectId(booking_id)})
+    except:
+        raise HTTPException(status_code=404, detail="Prenotazione non trovata")
+    if not booking:
+        raise HTTPException(status_code=404, detail="Prenotazione non trovata")
+
+    user_id = booking["user_id"]
+    was_scaled = booking.get("lezione_scalata", False)
+    credit_info = {"riaccreditata": False, "tipo": None, "lezioni_rimanenti": None}
+
+    if riaccredita and was_scaled:
+        sub = await db.subscriptions.find_one(
+            {
+                "user_id": user_id,
+                "attivo": True,
+                "tipo": {"$in": ["lezione_singola", "lezioni_8", "lezioni_16"]},
+                "lezioni_rimanenti": {"$ne": None}
+            },
+            sort=[("data_inizio", -1)]
+        )
+        if sub:
+            await db.subscriptions.update_one(
+                {"_id": sub["_id"]},
+                {"$inc": {"lezioni_rimanenti": 1}}
+            )
+            updated = await db.subscriptions.find_one({"_id": sub["_id"]})
+            credit_info = {
+                "riaccreditata": True,
+                "tipo": sub["tipo"],
+                "lezioni_rimanenti": updated["lezioni_rimanenti"]
+            }
+
+    await db.bookings.delete_one({"_id": ObjectId(booking_id)})
+    return {
+        "message": "Prenotazione rimossa",
+        "was_scaled": was_scaled,
+        "credit": credit_info
+    }
+
 
 @api_router.get("/bookings/day/{day_date}", response_model=List[BookingResponse])
 async def get_bookings_by_date(day_date: str, admin_user: dict = Depends(get_admin_user)):

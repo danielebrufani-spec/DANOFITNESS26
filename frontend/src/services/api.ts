@@ -153,7 +153,13 @@ export const apiService = {
   cancelBooking: (id: string) => api.delete(`/bookings/${id}`),
   getBookingHistory: () => api.get<{id: string; data: string; orario: string; tipo_attivita: string; coach: string}[]>('/bookings/history'),
   getLessonParticipants: (lessonId: string, date: string) => 
-    api.get<{lesson_id: string; date: string; participants: {nome: string}[]; count: number}>(`/lessons/${lessonId}/participants/${date}`),
+    api.get<{lesson_id: string; date: string; participants: {nome: string; booking_id?: string; user_id?: string; lezione_scalata?: boolean}[]; count: number}>(`/lessons/${lessonId}/participants/${date}`),
+
+  // Admin: gestione manuale prenotazioni
+  adminForceAddBooking: (data: { user_id: string; lesson_id: string; data_lezione: string; scala_lezione: boolean }) =>
+    api.post<{ message: string; booking_id: string; scaled: { scalata: boolean; tipo: string | null; lezioni_rimanenti: number | null } }>('/admin/bookings/force-add', data),
+  adminRemoveBooking: (bookingId: string, riaccredita: boolean) =>
+    api.delete<{ message: string; was_scaled: boolean; credit: { riaccreditata: boolean; tipo: string | null; lezioni_rimanenti: number | null } }>(`/admin/bookings/${bookingId}/admin-remove?riaccredita=${riaccredita}`),
 
   // Livello Settimanale
   getUserLivello: () => api.get<{

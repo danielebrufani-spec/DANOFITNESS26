@@ -169,6 +169,24 @@ App di fitness per la gestione di lezioni, prenotazioni, abbonamenti e gamificat
 - Retrocompatibilità: estrazioni esistenti senza campo `pubblicato` sono considerate pubblicate
 - Test end-to-end: admin vede bozza, cliente NO; dopo publish cliente vede tutto ✅
 
+## Aggiunta/Rimozione Manuale Clienti su Lezioni — Admin (28 Aprile 2026)
+Permette all'admin di gestire retroattivamente le prenotazioni (bypass dei controlli normali) per:
+- aggiungere un cliente che si è dimenticato di prenotare (anche a lezione iniziata)
+- rimuovere un cliente e riaccreditargli la lezione se erroneamente scalata
+
+**Backend (`server.py`):**
+- `GET /lessons/{lesson_id}/participants/{lesson_date}` ora include `booking_id`, `user_id`, `lezione_scalata` solo se chi chiama è admin (campi nascosti ai client)
+- `POST /admin/bookings/force-add` body `{user_id, lesson_id, data_lezione, scala_lezione}` → crea booking bypassando validazioni (settimana, ora, abbonamento). Se `scala_lezione=true`, scala 1 lezione dal pacchetto attivo (`lezione_singola`/`lezioni_8`/`lezioni_16`)
+- `DELETE /admin/bookings/{booking_id}/admin-remove?riaccredita=bool` → rimuove booking. Se `riaccredita=true` e la prenotazione era `lezione_scalata=true`, riaccredita +1 al pacchetto più recente
+
+**Frontend (`admin.tsx` tab Riepilogo → Gestione Lezioni Attive):**
+- Mostrate ora TUTTE le lezioni della settimana (passate + oggi + future) — prima erano filtrate solo le future
+- Card lezione: tap sull'header → espande lista partecipanti (con badge "SCALATA" verde se la lezione era stata scalata)
+- ➕ arancione → modale "Aggiungi Cliente": ricerca cliente + checkbox "Scala lezione"
+- ➖ rosso accanto a ogni partecipante → conferma rimozione, poi (se era scalata) chiede se riaccreditare
+
+**Testato via curl:** force-add e admin-remove funzionano correttamente, scala/riaccredito coerenti ✅
+
 ## Fix Reset Giorno Selezionato dopo Prenotazione (28 Aprile 2026)
 - `useEffect` con dipendenza `[lessons]` re-triggerava `setSelectedDate(firstAvailableDay)` dopo ogni reload — il cliente tornava al primo giorno disponibile dopo ogni prenotazione
 - Fix: guardia `selectedDate === null` → auto-select solo al primo caricamento; la scelta dell'utente viene preservata dopo prenotazione/cancellazione
