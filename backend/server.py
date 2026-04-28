@@ -112,6 +112,7 @@ logger = logging.getLogger(__name__)
 # ======================== ENUMS ========================
 
 class SubscriptionType(str, Enum):
+    LEZIONE_SINGOLA = "lezione_singola"
     LEZIONI_8 = "lezioni_8"
     LEZIONI_16 = "lezioni_16"
     MENSILE = "mensile"
@@ -373,8 +374,8 @@ async def get_admin_user(current_user: dict = Depends(get_current_user)):
 def calculate_expiry_date(tipo: SubscriptionType, start_date: datetime) -> datetime:
     if tipo == SubscriptionType.PROVA_7GG:
         return start_date + timedelta(days=7)
-    elif tipo == SubscriptionType.LEZIONI_8 or tipo == SubscriptionType.LEZIONI_16:
-        # Validità annuale per abbonamenti a lezioni
+    elif tipo == SubscriptionType.LEZIONE_SINGOLA or tipo == SubscriptionType.LEZIONI_8 or tipo == SubscriptionType.LEZIONI_16:
+        # Validità annuale per abbonamenti a lezioni (inclusa lezione singola)
         return start_date + timedelta(days=365)
     elif tipo == SubscriptionType.MENSILE:
         # Stesso giorno del mese successivo (es. 16/3 -> 16/4)
@@ -402,6 +403,8 @@ def calculate_expiry_date(tipo: SubscriptionType, start_date: datetime) -> datet
     return start_date
 
 def get_initial_lessons(tipo: SubscriptionType) -> Optional[int]:
+    if tipo == SubscriptionType.LEZIONE_SINGOLA:
+        return 1
     if tipo == SubscriptionType.LEZIONI_8:
         return 8
     elif tipo == SubscriptionType.LEZIONI_16:
@@ -1729,7 +1732,7 @@ async def confirm_presence_and_deduct(booking_id: str, admin_user: dict = Depend
     sub_pacchetto = await db.subscriptions.find_one({
         "user_id": user_id,
         "attivo": True,
-        "tipo": {"$in": ["lezioni_8", "lezioni_16"]},
+        "tipo": {"$in": ["lezione_singola", "lezioni_8", "lezioni_16"]},
         "lezioni_rimanenti": {"$gt": 0}
     })
     
@@ -2015,7 +2018,7 @@ async def get_daily_stats(stats_date: str, admin_user: dict = Depends(get_admin_
         pacchetto_subs = await db.subscriptions.find({
             "user_id": {"$in": user_ids},
             "attivo": True,
-            "tipo": {"$in": ["lezioni_8", "lezioni_16"]}
+            "tipo": {"$in": ["lezione_singola", "lezioni_8", "lezioni_16"]}
         }).to_list(1000)
         pacchetto_users = set(s["user_id"] for s in pacchetto_subs)
     
@@ -2080,7 +2083,7 @@ async def process_end_of_day(process_date: str, admin_user: dict = Depends(get_a
         sub = await db.subscriptions.find_one({
             "user_id": user_id,
             "attivo": True,
-            "tipo": {"$in": ["lezioni_8", "lezioni_16"]},
+            "tipo": {"$in": ["lezione_singola", "lezioni_8", "lezioni_16"]},
             "lezioni_rimanenti": {"$gt": 0}
         })
         
@@ -2177,7 +2180,7 @@ async def process_started_lessons(admin_user: dict = Depends(get_admin_user)):
         sub_pacchetto = await db.subscriptions.find_one({
             "user_id": user_id,
             "attivo": True,
-            "tipo": {"$in": ["lezioni_8", "lezioni_16"]},
+            "tipo": {"$in": ["lezione_singola", "lezioni_8", "lezioni_16"]},
             "lezioni_rimanenti": {"$gt": 0}
         })
         
@@ -2272,7 +2275,7 @@ async def force_process_lessons(admin_user: dict = Depends(get_admin_user)):
         
         sub_pacchetto = await db.subscriptions.find_one({
             "user_id": user_id, "attivo": True,
-            "tipo": {"$in": ["lezioni_8", "lezioni_16"]},
+            "tipo": {"$in": ["lezione_singola", "lezioni_8", "lezioni_16"]},
             "lezioni_rimanenti": {"$gt": 0}
         })
         
@@ -3161,7 +3164,7 @@ async def process_lessons_after_30min():
                 sub = await db.subscriptions.find_one({
                     "user_id": user_id,
                     "attivo": True,
-                    "tipo": {"$in": ["lezioni_8", "lezioni_16"]},
+                    "tipo": {"$in": ["lezione_singola", "lezioni_8", "lezioni_16"]},
                     "lezioni_rimanenti": {"$gt": 0}
                 })
                 
@@ -3213,7 +3216,7 @@ async def process_day_automatically():
         sub = await db.subscriptions.find_one({
             "user_id": user_id,
             "attivo": True,
-            "tipo": {"$in": ["lezioni_8", "lezioni_16"]},
+            "tipo": {"$in": ["lezione_singola", "lezioni_8", "lezioni_16"]},
             "lezioni_rimanenti": {"$gt": 0}
         })
         
@@ -4030,7 +4033,7 @@ async def check_expiring_subscriptions():
     
     # Check lesson-based subscriptions (8, 16 lezioni) - 2 lessons remaining
     lesson_based_subs = await db.subscriptions.find({
-        "tipo": {"$in": ["lezioni_8", "lezioni_16"]},
+        "tipo": {"$in": ["lezione_singola", "lezioni_8", "lezioni_16"]},
         "attivo": True,
         "lezioni_rimanenti": {"$lte": 2, "$gt": 0},
         "notifica_lezioni_inviata": {"$ne": True}
@@ -5716,7 +5719,7 @@ async def auto_process_lessons_task():
                 sub_pacchetto = await db.subscriptions.find_one({
                     "user_id": user_id,
                     "attivo": True,
-                    "tipo": {"$in": ["lezioni_8", "lezioni_16"]},
+                    "tipo": {"$in": ["lezione_singola", "lezioni_8", "lezioni_16"]},
                     "lezioni_rimanenti": {"$gt": 0}
                 })
                 

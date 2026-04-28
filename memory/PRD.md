@@ -169,6 +169,20 @@ App di fitness per la gestione di lezioni, prenotazioni, abbonamenti e gamificat
 - Retrocompatibilità: estrazioni esistenti senza campo `pubblicato` sono considerate pubblicate
 - Test end-to-end: admin vede bozza, cliente NO; dopo publish cliente vede tutto ✅
 
+## Fix Reset Giorno Selezionato dopo Prenotazione (28 Aprile 2026)
+- `useEffect` con dipendenza `[lessons]` re-triggerava `setSelectedDate(firstAvailableDay)` dopo ogni reload — il cliente tornava al primo giorno disponibile dopo ogni prenotazione
+- Fix: guardia `selectedDate === null` → auto-select solo al primo caricamento; la scelta dell'utente viene preservata dopo prenotazione/cancellazione
+
+## Lezione Singola + Card Riepilogo Migliorata (28 Aprile 2026)
+- Nuovo tipo abbonamento `lezione_singola` (1 lezione, 10€, validità 365gg)
+  - Backend: aggiunto a `SubscriptionType` enum, `calculate_expiry_date`, `get_initial_lessons`; tutte le query `{"$in": ["lezioni_8","lezioni_16"]}` aggiornate per includerlo
+  - Frontend: voce nel modale di creazione admin (`admin.tsx`) e nel rinnovo rapido dalla Home (`home.tsx`)
+- Card riepilogo abbonamenti (tab Abbon. admin):
+  - Mensile / Trimestrale → mostra solo `Scadenza: DD/MM/YYYY`
+  - Lezione Singola / 8 Lezioni / 16 Lezioni → mostra `Lezioni residue: X/N`
+  - Prova 7gg → mostra la scadenza
+- Testato via API: `POST /api/subscriptions` con tipo `lezione_singola` ritorna `lezioni_rimanenti: 1` e scadenza +365gg ✅
+
 ## Fix Layout Partecipanti Prenota (28 Aprile 2026)
 - Bug: quando si espandeva il dropdown "Chi partecipa?" in una lezione prenotata, il card si deformava (la sezione partecipanti era il 4° figlio di un container `flexDirection: row` e si allargava di lato anziché in basso)
 - Fix: `lessonCard` passa da `flexDirection: row` a `column`; introdotto nuovo contenitore `lessonRow` (row) che raggruppa colorBar + lessonContent + bookButton; la `participantsSection` è ora full-width sotto la riga principale

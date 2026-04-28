@@ -1057,6 +1057,8 @@ export default function AdminScreen() {
               filteredSubscriptions.map((sub) => {
               const info = ABBONAMENTO_INFO[sub.tipo] || { nome: sub.tipo };
               const isTimeBasedSub = sub.tipo === 'mensile' || sub.tipo === 'trimestrale';
+              const isLessonBasedSub = sub.tipo === 'lezione_singola' || sub.tipo === 'lezioni_8' || sub.tipo === 'lezioni_16';
+              const initialLessons = sub.tipo === 'lezione_singola' ? 1 : (sub.tipo === 'lezioni_8' ? 8 : 16);
               return (
                 <View
                   key={sub.id}
@@ -1067,9 +1069,21 @@ export default function AdminScreen() {
                       {sub.user_nome} {sub.user_cognome}
                     </Text>
                     <Text style={styles.subscriptionType}>{info.nome}</Text>
-                    <Text style={styles.subscriptionExpiry}>
-                      Inizio: {formatDate(sub.data_inizio)} → Scadenza: {formatDate(sub.data_scadenza)}
-                    </Text>
+                    {isTimeBasedSub && (
+                      <Text style={styles.subscriptionExpiry}>
+                        Scadenza: {formatDate(sub.data_scadenza)}
+                      </Text>
+                    )}
+                    {isLessonBasedSub && (
+                      <Text style={styles.subscriptionLessons}>
+                        Lezioni residue: {sub.lezioni_rimanenti ?? 0}/{initialLessons}
+                      </Text>
+                    )}
+                    {sub.tipo === 'prova_7gg' && (
+                      <Text style={styles.subscriptionExpiry}>
+                        Scadenza: {formatDate(sub.data_scadenza)}
+                      </Text>
+                    )}
                     {sub.scaduto && (
                       <Text style={styles.expiredBadge}>SCADUTO</Text>
                     )}

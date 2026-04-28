@@ -815,6 +815,14 @@ export default function HomeScreen() {
                 <View style={styles.modalOptions}>
                   <TouchableOpacity 
                     style={styles.modalOption}
+                    onPress={() => assignSubscription('lezione_singola')}
+                  >
+                    <Text style={styles.modalOptionText}>Lezione Singola</Text>
+                    <Text style={styles.modalOptionPrice}>10 €</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.modalOption}
                     onPress={() => assignSubscription('lezioni_8')}
                   >
                     <Text style={styles.modalOptionText}>8 Lezioni</Text>

@@ -41,6 +41,10 @@ export const ATTIVITA_INFO: { [key: string]: { nome: string; icona: string; colo
 
 // Subscription type display
 export const ABBONAMENTO_INFO: { [key: string]: { nome: string; prezzo: string } } = {
+  'lezione_singola': {
+    nome: 'Lezione Singola',
+    prezzo: '10 €'
+  },
   'lezioni_8': {
     nome: '8 Lezioni',
     prezzo: '55 €'
