@@ -259,13 +259,13 @@ export default function PrenotaScreen() {
     setBookingStatus(areBookingsOpen());
   }, []);
 
-  // Auto-select first available day when lessons change
+  // Auto-select first available day ONLY on first load (don't reset after booking/cancel)
   useEffect(() => {
-    if (lessons.length > 0) {
+    if (lessons.length > 0 && selectedDate === null) {
       const availableDay = findFirstAvailableDay(lessons);
       setSelectedDate(availableDay);
     }
-  }, [lessons]);
+  }, [lessons, selectedDate]);
 
   const loadData = async (showLoading = true) => {
     try {
