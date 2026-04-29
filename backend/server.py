@@ -853,6 +853,17 @@ async def create_subscription(data: SubscriptionCreate, admin_user: dict = Depen
             }}
         )
         logger.info(f"[TRIAL] Prova attivata via abbonamento per {user.get('nome')} {user.get('cognome')} - scade {expiry_date.strftime('%Y-%m-%d')}")
+    else:
+        # Abbonamento "vero" → rimuovi automaticamente eventuale stato di prova
+        if user.get("prova_attiva"):
+            await db.users.update_one(
+                {"_id": ObjectId(data.user_id)},
+                {"$set": {
+                    "prova_attiva": False,
+                    "prova_terminata_il": now_rome().strftime("%Y-%m-%d"),
+                }}
+            )
+            logger.info(f"[TRIAL] Prova disattivata automaticamente per {user.get('nome')} {user.get('cognome')} - nuovo abbonamento {data.tipo.value}")
     
     is_expired = expiry_date < now_rome()
     
@@ -4418,7 +4429,8 @@ async def check_user_has_active_subscription(user_id: str) -> bool:
 
 
 async def check_user_is_trial(user_id: str) -> bool:
-    """Verifica se un utente e in prova gratuita (non abbonato vero)"""
+    """Verifica se un utente e in prova gratuita (non abbonato vero).
+    Se la prova è scaduta, disattiva automaticamente il flag `prova_attiva`."""
     today_str = now_rome().strftime("%Y-%m-%d")
     now = now_rome()
     # Controlla flag prova sull'utente
@@ -4429,6 +4441,12 @@ async def check_user_is_trial(user_id: str) -> bool:
     if user and user.get("prova_attiva") and user.get("prova_scadenza"):
         if user["prova_scadenza"] >= today_str:
             return True
+        # Prova scaduta → disattiva il flag automaticamente
+        await db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"prova_attiva": False, "prova_terminata_il": today_str}}
+        )
+        logger.info(f"[TRIAL] Prova scaduta auto-disattivata per user {user_id}")
     # Controlla anche se ha un abbonamento di tipo prova_7gg attivo
     trial_sub = await db.subscriptions.find_one({
         "user_id": user_id,
@@ -5782,6 +5800,46 @@ async def startup_event():
         await db.cancelled_lessons.create_index([("lesson_id", 1), ("data_lezione", 1)], unique=True)
     except Exception:
         pass
+    
+    # Cleanup: disattiva flag prova_attiva per utenti che hanno un abbonamento "vero"
+    # o la cui prova è scaduta (sana eventuali stati incoerenti dei dati esistenti)
+    try:
+        today_str = now_rome().strftime("%Y-%m-%d")
+        # Trova tutti gli utenti con prova_attiva=True
+        utenti_in_prova = await db.users.find(
+            {"prova_attiva": True},
+            {"_id": 1, "nome": 1, "cognome": 1, "prova_scadenza": 1}
+        ).to_list(1000)
+        cleaned = 0
+        for u in utenti_in_prova:
+            uid = str(u["_id"])
+            # 1) Prova scaduta
+            if u.get("prova_scadenza") and u["prova_scadenza"] < today_str:
+                await db.users.update_one(
+                    {"_id": u["_id"]},
+                    {"$set": {"prova_attiva": False, "prova_terminata_il": today_str}}
+                )
+                cleaned += 1
+                logger.info(f"[STARTUP-CLEANUP] Prova scaduta disattivata per {u.get('nome')} {u.get('cognome')}")
+                continue
+            # 2) Ha già un abbonamento vero attivo (non prova_7gg)
+            real_sub = await db.subscriptions.find_one({
+                "user_id": uid,
+                "attivo": True,
+                "tipo": {"$ne": "prova_7gg"},
+                "data_scadenza": {"$gte": now_rome()}
+            })
+            if real_sub:
+                await db.users.update_one(
+                    {"_id": u["_id"]},
+                    {"$set": {"prova_attiva": False, "prova_terminata_il": today_str}}
+                )
+                cleaned += 1
+                logger.info(f"[STARTUP-CLEANUP] Prova disattivata (ha abbonamento {real_sub['tipo']}) per {u.get('nome')} {u.get('cognome')}")
+        if cleaned > 0:
+            logger.info(f"[STARTUP-CLEANUP] {cleaned} utenti puliti dal flag prova_attiva")
+    except Exception as e:
+        logger.warning(f"[STARTUP-CLEANUP] Errore: {e}")
     
     # Avvia il background task per processare le lezioni automaticamente
     asyncio.create_task(auto_process_lessons_task())

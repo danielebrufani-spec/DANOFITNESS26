@@ -169,6 +169,17 @@ App di fitness per la gestione di lezioni, prenotazioni, abbonamenti e gamificat
 - Retrocompatibilità: estrazioni esistenti senza campo `pubblicato` sono considerate pubblicate
 - Test end-to-end: admin vede bozza, cliente NO; dopo publish cliente vede tutto ✅
 
+## Auto-Cleanup Flag Prova Scaduta/Convertita (29 Aprile 2026)
+Risolve il bug in cui un cliente, dopo aver finito la settimana di prova o aver ricevuto un abbonamento vero, manteneva il badge "PROVA" verde nella scheda admin.
+
+**Backend (`server.py`):**
+1. **`create_subscription`**: quando viene assegnato un abbonamento NON-`prova_7gg`, se l'utente aveva `prova_attiva=True`, il flag viene automaticamente impostato a `False` con `prova_terminata_il=oggi`
+2. **`check_user_is_trial`**: se la prova è scaduta (`prova_scadenza < today`), il flag viene auto-disattivato al primo check
+3. **Startup cleanup**: all'avvio del backend, scansiona tutti gli utenti con `prova_attiva=True` e disattiva il flag se (a) la prova è scaduta o (b) hanno un abbonamento vero attivo
+- Verificato: log mostra "1 utenti puliti dal flag prova_attiva" (Daniele Brufani in Preview)
+
+⚠️ Per il caso specifico Manuela Uster (in DB Production): il fix verrà applicato automaticamente al primo deploy su Render dopo "Save to Github"
+
 ## Aggiunta/Rimozione Manuale Clienti su Lezioni — Admin (28 Aprile 2026)
 Permette all'admin di gestire retroattivamente le prenotazioni (bypass dei controlli normali) per:
 - aggiungere un cliente che si è dimenticato di prenotare (anche a lezione iniziata)
