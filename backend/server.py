@@ -5986,9 +5986,30 @@ async def list_my_orders(current_user: dict = Depends(get_current_user)):
     return [_serialize_order(o) for o in orders]
 
 
+@api_router.delete("/shop/orders/{order_id}")
+async def cancel_my_order(order_id: str, current_user: dict = Depends(get_current_user)):
+    """Il cliente può annullare il proprio ordine SOLO finché è in_attesa (l'admin non l'ha ancora evaso)"""
+    try:
+        order = await db.shop_orders.find_one({"_id": ObjectId(order_id)})
+    except Exception:
+        raise HTTPException(status_code=404, detail="Ordine non trovato")
+    if not order:
+        raise HTTPException(status_code=404, detail="Ordine non trovato")
+    if order.get("user_id") != str(current_user["_id"]):
+        raise HTTPException(status_code=403, detail="Non puoi annullare questo ordine")
+    if order.get("status") != "in_attesa":
+        raise HTTPException(status_code=400, detail="L'ordine è già stato preso in carico, non può più essere annullato")
+    await db.shop_orders.update_one(
+        {"_id": ObjectId(order_id)},
+        {"$set": {"status": "annullato", "updated_at": now_rome()}}
+    )
+    return {"message": "Ordine annullato"}
+
+
 @api_router.get("/admin/shop/orders")
 async def admin_list_orders(admin_user: dict = Depends(get_admin_user)):
-    orders = await db.shop_orders.find({}).sort("created_at", -1).to_list(1000)
+    # Esclude gli ordini archiviati dall'admin (soft delete)
+    orders = await db.shop_orders.find({"hidden_from_admin": {"$ne": True}}).sort("created_at", -1).to_list(1000)
     return [_serialize_order(o) for o in orders]
 
 
@@ -6010,13 +6031,17 @@ async def admin_update_order(order_id: str, data: ShopOrderStatusUpdate, admin_u
 
 @api_router.delete("/admin/shop/orders/{order_id}")
 async def admin_delete_order(order_id: str, admin_user: dict = Depends(get_admin_user)):
+    """Soft delete: l'ordine sparisce dalla vista admin ma rimane visibile al cliente come promemoria."""
     try:
-        res = await db.shop_orders.delete_one({"_id": ObjectId(order_id)})
+        res = await db.shop_orders.update_one(
+            {"_id": ObjectId(order_id)},
+            {"$set": {"hidden_from_admin": True, "updated_at": now_rome()}}
+        )
     except Exception:
         raise HTTPException(status_code=404, detail="Ordine non trovato")
-    if res.deleted_count == 0:
+    if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Ordine non trovato")
-    return {"message": "Ordine eliminato"}
+    return {"message": "Ordine archiviato"}
 
 
 @api_router.post("/admin/shop/orders/{order_id}/whatsapp-link")

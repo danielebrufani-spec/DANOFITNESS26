@@ -91,6 +91,7 @@ interface Order {
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   in_attesa: { label: 'In Attesa', color: COLORS.warning },
+  in_lavorazione: { label: 'In Lavorazione', color: COLORS.primary },
   inviato_produttore: { label: 'Inviato al Produttore', color: COLORS.primary },
   in_consegna: { label: 'In Consegna', color: COLORS.accent },
   consegnato: { label: 'Consegnato', color: COLORS.success },
@@ -293,12 +294,12 @@ export default function ShopScreen() {
   };
 
   const handleDeleteOrder = async (o: Order) => {
-    if (!window.confirm(`Cancellare l'ordine di ${o.user_nome} ${o.user_cognome} (${o.product_nome})?`)) return;
+    if (!window.confirm(`Archiviare l'ordine di ${o.user_nome} ${o.user_cognome} (${o.product_nome})?\n\nL'ordine sparirà dalla tua vista, ma rimarrà visibile al cliente come promemoria dell'acquisto.`)) return;
     try {
       await apiService.adminDeleteShopOrder(o.id);
       loadAll();
     } catch (e: any) {
-      window.alert('Errore: ' + (e?.response?.data?.detail || 'Cancellazione fallita'));
+      window.alert('Errore: ' + (e?.response?.data?.detail || 'Archiviazione fallita'));
     }
   };
 
@@ -312,11 +313,21 @@ export default function ShopScreen() {
       } else {
         Linking.openURL(waUrl);
       }
-      // Aggiorna lo stato a "inviato_produttore"
-      await apiService.adminUpdateShopOrder(o.id, { status: 'inviato_produttore', evaso_da: 'produttore' });
+      await apiService.adminUpdateShopOrder(o.id, { status: 'in_lavorazione', evaso_da: 'produttore' });
       loadAll();
     } catch (e: any) {
       window.alert('Errore: ' + (e?.response?.data?.detail || 'Impossibile generare link'));
+    }
+  };
+
+  const handleCancelMyOrder = async (o: Order) => {
+    if (!window.confirm(`Annullare l'ordine di "${o.product_nome}"?`)) return;
+    try {
+      await apiService.cancelMyShopOrder(o.id);
+      window.alert('Ordine annullato.');
+      loadAll();
+    } catch (e: any) {
+      window.alert('Errore: ' + (e?.response?.data?.detail || 'Annullamento fallito'));
     }
   };
 
@@ -482,6 +493,16 @@ export default function ShopScreen() {
                       <Text style={[styles.statusPillText, { color: stat.color }]}>{stat.label}</Text>
                     </View>
                   </View>
+                  {o.status === 'in_attesa' && (
+                    <TouchableOpacity
+                      data-testid={`cancel-my-order-${o.id}`}
+                      style={styles.cancelMyOrderBtn}
+                      onPress={() => handleCancelMyOrder(o)}
+                    >
+                      <Ionicons name="close-circle-outline" size={16} color={COLORS.error} />
+                      <Text style={styles.cancelMyOrderText}>Annulla Ordine</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               );
             })}
@@ -541,23 +562,24 @@ export default function ShopScreen() {
                           <TouchableOpacity
                             data-testid={`order-fulfill-warehouse-${o.id}`}
                             style={[styles.actionBtn, { backgroundColor: COLORS.success }]}
-                            onPress={() => handleUpdateOrderStatus(o, 'in_consegna', 'magazzino')}
+                            onPress={() => handleUpdateOrderStatus(o, 'in_lavorazione', 'magazzino')}
                           >
                             <Ionicons name="cube" size={14} color="#fff" />
                             <Text style={styles.actionBtnText}>Evadi da Magazzino</Text>
                           </TouchableOpacity>
                         </>
                       )}
-                      {o.status === 'inviato_produttore' && (
+                      {o.status === 'in_lavorazione' && (
                         <TouchableOpacity
+                          data-testid={`order-mark-shipping-${o.id}`}
                           style={[styles.actionBtn, { backgroundColor: COLORS.accent }]}
                           onPress={() => handleUpdateOrderStatus(o, 'in_consegna')}
                         >
-                          <Ionicons name="bicycle" size={14} color="#fff" />
-                          <Text style={styles.actionBtnText}>In Consegna</Text>
+                          <Ionicons name="cube-outline" size={14} color="#fff" />
+                          <Text style={styles.actionBtnText}>Prodotto in Mano · In Consegna</Text>
                         </TouchableOpacity>
                       )}
-                      {(o.status === 'in_consegna' || o.status === 'inviato_produttore') && (
+                      {o.status === 'in_consegna' && (
                         <TouchableOpacity
                           data-testid={`order-mark-delivered-${o.id}`}
                           style={[styles.actionBtn, { backgroundColor: COLORS.success }]}
@@ -568,12 +590,12 @@ export default function ShopScreen() {
                         </TouchableOpacity>
                       )}
                       <TouchableOpacity
-                        data-testid={`order-delete-${o.id}`}
+                        data-testid={`order-archive-${o.id}`}
                         style={[styles.actionBtn, { backgroundColor: COLORS.error }]}
                         onPress={() => handleDeleteOrder(o)}
                       >
-                        <Ionicons name="trash" size={14} color="#fff" />
-                        <Text style={styles.actionBtnText}>Cancella</Text>
+                        <Ionicons name="archive" size={14} color="#fff" />
+                        <Text style={styles.actionBtnText}>Archivia</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -931,6 +953,25 @@ const styles = StyleSheet.create({
   inactiveBadgeText: { fontFamily: FONTS.bodyBlack, fontSize: 10, color: '#fff', letterSpacing: 1 },
 
   orderCard: { backgroundColor: COLORS.surface, borderRadius: 8, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: COLORS.border },
+  cancelMyOrderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 10,
+    paddingVertical: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: COLORS.error,
+    backgroundColor: 'transparent',
+  },
+  cancelMyOrderText: {
+    fontFamily: FONTS.bodyBlack,
+    fontSize: 12,
+    color: COLORS.error,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
   adminOrderCard: { backgroundColor: COLORS.surface, borderRadius: 8, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: COLORS.border },
   orderRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   orderThumb: { width: 56, height: 56, borderRadius: 6, backgroundColor: COLORS.surfaceElevated },

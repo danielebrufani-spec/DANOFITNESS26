@@ -372,6 +372,7 @@ export const apiService = {
   adminDeleteShopProduct: (id: string) => api.delete<any>(`/admin/shop/products/${id}`),
   createShopOrder: (data: any) => api.post<any>('/shop/orders', data),
   getMyShopOrders: () => api.get<any[]>('/shop/orders/me'),
+  cancelMyShopOrder: (id: string) => api.delete<any>(`/shop/orders/${id}`),
   adminListShopOrders: () => api.get<any[]>('/admin/shop/orders'),
   adminUpdateShopOrder: (id: string, data: any) => api.patch<any>(`/admin/shop/orders/${id}`, data),
   adminDeleteShopOrder: (id: string) => api.delete<any>(`/admin/shop/orders/${id}`),
