@@ -5746,6 +5746,7 @@ class ShopProductCreate(BaseModel):
     colori: List[str] = []  # es ["Nero","Rosso","Bianco"]
     in_magazzino: bool = False  # Se True può essere evaso direttamente
     attivo: bool = True
+    offerta_giorno: bool = False  # Pezzo unico, pronta consegna, visto e piaciuto
 
 
 class ShopProductUpdate(BaseModel):
@@ -5757,6 +5758,7 @@ class ShopProductUpdate(BaseModel):
     colori: Optional[List[str]] = None
     in_magazzino: Optional[bool] = None
     attivo: Optional[bool] = None
+    offerta_giorno: Optional[bool] = None
 
 
 class ShopOrderCreate(BaseModel):
@@ -5783,6 +5785,7 @@ def _serialize_product(p: dict) -> dict:
         "colori": p.get("colori", []),
         "in_magazzino": p.get("in_magazzino", False),
         "attivo": p.get("attivo", True),
+        "offerta_giorno": p.get("offerta_giorno", False),
         "created_at": p.get("created_at").isoformat() if p.get("created_at") else None,
     }
 
@@ -5838,6 +5841,7 @@ async def admin_create_shop_product(data: ShopProductCreate, admin_user: dict = 
         "colori": [c.strip() for c in data.colori if c.strip()],
         "in_magazzino": bool(data.in_magazzino),
         "attivo": bool(data.attivo),
+        "offerta_giorno": bool(data.offerta_giorno),
         "created_at": now_rome(),
     }
     res = await db.shop_products.insert_one(doc)

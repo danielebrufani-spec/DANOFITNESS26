@@ -67,6 +67,7 @@ interface Product {
   colori: string[];
   in_magazzino: boolean;
   attivo: boolean;
+  offerta_giorno?: boolean;
 }
 
 interface Order {
@@ -124,6 +125,7 @@ export default function ShopScreen() {
   const [pColoriStr, setPColoriStr] = useState('');
   const [pInMagazzino, setPInMagazzino] = useState(false);
   const [pAttivo, setPAttivo] = useState(true);
+  const [pOffertaGiorno, setPOffertaGiorno] = useState(false);
   const [savingProduct, setSavingProduct] = useState(false);
 
   const loadAll = useCallback(async () => {
@@ -204,6 +206,7 @@ export default function ShopScreen() {
     setPColoriStr('Nero, Bianco');
     setPInMagazzino(false);
     setPAttivo(true);
+    setPOffertaGiorno(false);
     setShowProductModal(true);
   };
 
@@ -217,6 +220,7 @@ export default function ShopScreen() {
     setPColoriStr(p.colori.join(', '));
     setPInMagazzino(p.in_magazzino);
     setPAttivo(p.attivo);
+    setPOffertaGiorno(!!p.offerta_giorno);
     setShowProductModal(true);
   };
 
@@ -257,6 +261,7 @@ export default function ShopScreen() {
         colori: pColoriStr.split(',').map((s) => s.trim()).filter(Boolean),
         in_magazzino: pInMagazzino,
         attivo: pAttivo,
+        offerta_giorno: pOffertaGiorno,
       };
       if (editingProduct) {
         await apiService.adminUpdateShopProduct(editingProduct.id, payload);
@@ -419,70 +424,156 @@ export default function ShopScreen() {
           </TouchableOpacity>
         )}
 
-        {/* Products grid */}
-        <Text style={styles.sectionTitle}>Catalogo</Text>
-        {products.length === 0 ? (
-          <View style={styles.emptyBox}>
-            <Ionicons name="bag-outline" size={48} color={COLORS.textSecondary} />
-            <Text style={styles.emptyText}>
-              {isAdmin ? 'Nessun prodotto. Aggiungi il primo!' : 'Nessun prodotto disponibile al momento'}
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.grid}>
-            {products.map((p) => (
-              <View key={p.id} style={styles.card} data-testid={`product-card-${p.id}`}>
-                {p.foto_base64 ? (
-                  <Image source={{ uri: p.foto_base64 }} style={styles.cardImage} resizeMode="cover" />
-                ) : (
-                  <View style={[styles.cardImage, styles.cardImagePlaceholder]}>
-                    <Ionicons name="image-outline" size={48} color={COLORS.textSecondary} />
-                  </View>
-                )}
-                {!p.attivo && (
-                  <View style={styles.inactiveBadge}>
-                    <Text style={styles.inactiveBadgeText}>NON ATTIVO</Text>
-                  </View>
-                )}
-                <View style={styles.cardBody}>
-                  <Text style={styles.cardName} numberOfLines={1}>{p.nome}</Text>
-                  {p.descrizione ? (
-                    <Text style={styles.cardDesc} numberOfLines={2}>{p.descrizione}</Text>
-                  ) : null}
-                  <Text style={styles.cardPrice}>€ {p.prezzo.toFixed(2)}</Text>
-                  {isAdmin ? (
-                    <View style={styles.cardAdminActions}>
-                      <TouchableOpacity
-                        data-testid={`edit-product-${p.id}`}
-                        style={[styles.cardSmallBtn, { backgroundColor: COLORS.primary }]}
-                        onPress={() => openEditProduct(p)}
-                      >
-                        <Ionicons name="create-outline" size={14} color="#fff" />
-                        <Text style={styles.cardSmallBtnText}>Modifica</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        data-testid={`delete-product-${p.id}`}
-                        style={[styles.cardSmallBtn, { backgroundColor: COLORS.error }]}
-                        onPress={() => handleDeleteProduct(p)}
-                      >
-                        <Ionicons name="trash-outline" size={14} color="#fff" />
-                      </TouchableOpacity>
+        {/* Products: separa offerte del giorno dal resto */}
+        {(() => {
+          const offerte = products.filter(p => p.offerta_giorno);
+          const restanti = products.filter(p => !p.offerta_giorno);
+          return (
+            <>
+              {offerte.length > 0 && (
+                <>
+                  <View style={styles.offerteHeaderBox}>
+                    <View style={styles.offerteRibbon}>
+                      <Ionicons name="flame" size={20} color="#FFD700" />
+                      <Text style={styles.offerteHeaderTitle}>OFFERTE DEL GIORNO</Text>
+                      <Ionicons name="flame" size={20} color="#FFD700" />
                     </View>
-                  ) : (
-                    <TouchableOpacity
-                      data-testid={`buy-product-${p.id}`}
-                      style={styles.cardBuyBtn}
-                      onPress={() => openBuyModal(p)}
-                    >
-                      <Ionicons name="bag-add" size={14} color="#fff" />
-                      <Text style={styles.cardBuyBtnText}>Ordina</Text>
-                    </TouchableOpacity>
-                  )}
+                    <View style={styles.offerteTagsRow}>
+                      <View style={styles.offerteTag}>
+                        <Ionicons name="flash" size={11} color="#000" />
+                        <Text style={styles.offerteTagText}>PRONTA CONSEGNA</Text>
+                      </View>
+                      <View style={styles.offerteTag}>
+                        <Ionicons name="diamond" size={11} color="#000" />
+                        <Text style={styles.offerteTagText}>PEZZO UNICO</Text>
+                      </View>
+                      <View style={styles.offerteTag}>
+                        <Ionicons name="eye" size={11} color="#000" />
+                        <Text style={styles.offerteTagText}>VISTO E PIACIUTO</Text>
+                      </View>
+                    </View>
+                  </View>
+                  <View style={styles.grid}>
+                    {offerte.map((p) => (
+                      <View key={p.id} style={[styles.card, styles.offertaCard]} data-testid={`offerta-card-${p.id}`}>
+                        <View style={styles.offertaBadgeCorner}>
+                          <Text style={styles.offertaBadgeText}>OFFERTA</Text>
+                        </View>
+                        {p.foto_base64 ? (
+                          <Image source={{ uri: p.foto_base64 }} style={styles.cardImage} resizeMode="cover" />
+                        ) : (
+                          <View style={[styles.cardImage, styles.cardImagePlaceholder]}>
+                            <Ionicons name="image-outline" size={48} color={COLORS.textSecondary} />
+                          </View>
+                        )}
+                        {!p.attivo && (
+                          <View style={styles.inactiveBadge}>
+                            <Text style={styles.inactiveBadgeText}>NON ATTIVO</Text>
+                          </View>
+                        )}
+                        <View style={styles.cardBody}>
+                          <Text style={styles.cardName} numberOfLines={1}>{p.nome}</Text>
+                          {p.descrizione ? <Text style={styles.cardDesc} numberOfLines={2}>{p.descrizione}</Text> : null}
+                          <Text style={[styles.cardPrice, { color: '#FFD700' }]}>€ {p.prezzo.toFixed(2)}</Text>
+                          {isAdmin ? (
+                            <View style={styles.cardAdminActions}>
+                              <TouchableOpacity
+                                data-testid={`edit-product-${p.id}`}
+                                style={[styles.cardSmallBtn, { backgroundColor: COLORS.primary }]}
+                                onPress={() => openEditProduct(p)}
+                              >
+                                <Ionicons name="create-outline" size={14} color="#fff" />
+                                <Text style={styles.cardSmallBtnText}>Modifica</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                data-testid={`delete-product-${p.id}`}
+                                style={[styles.cardSmallBtn, { backgroundColor: COLORS.error }]}
+                                onPress={() => handleDeleteProduct(p)}
+                              >
+                                <Ionicons name="trash-outline" size={14} color="#fff" />
+                              </TouchableOpacity>
+                            </View>
+                          ) : (
+                            <TouchableOpacity
+                              data-testid={`buy-product-${p.id}`}
+                              style={[styles.cardBuyBtn, { backgroundColor: '#FFD700' }]}
+                              onPress={() => openBuyModal(p)}
+                            >
+                              <Ionicons name="bag-add" size={14} color="#000" />
+                              <Text style={[styles.cardBuyBtnText, { color: '#000' }]}>Prendilo!</Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                </>
+              )}
+
+              <Text style={[styles.sectionTitle, offerte.length > 0 && { marginTop: 28 }]}>Catalogo</Text>
+              {restanti.length === 0 && offerte.length === 0 ? (
+                <View style={styles.emptyBox}>
+                  <Ionicons name="bag-outline" size={48} color={COLORS.textSecondary} />
+                  <Text style={styles.emptyText}>
+                    {isAdmin ? 'Nessun prodotto. Aggiungi il primo!' : 'Nessun prodotto disponibile al momento'}
+                  </Text>
                 </View>
-              </View>
-            ))}
-          </View>
-        )}
+              ) : restanti.length === 0 ? null : (
+                <View style={styles.grid}>
+                  {restanti.map((p) => (
+                    <View key={p.id} style={styles.card} data-testid={`product-card-${p.id}`}>
+                      {p.foto_base64 ? (
+                        <Image source={{ uri: p.foto_base64 }} style={styles.cardImage} resizeMode="cover" />
+                      ) : (
+                        <View style={[styles.cardImage, styles.cardImagePlaceholder]}>
+                          <Ionicons name="image-outline" size={48} color={COLORS.textSecondary} />
+                        </View>
+                      )}
+                      {!p.attivo && (
+                        <View style={styles.inactiveBadge}>
+                          <Text style={styles.inactiveBadgeText}>NON ATTIVO</Text>
+                        </View>
+                      )}
+                      <View style={styles.cardBody}>
+                        <Text style={styles.cardName} numberOfLines={1}>{p.nome}</Text>
+                        {p.descrizione ? <Text style={styles.cardDesc} numberOfLines={2}>{p.descrizione}</Text> : null}
+                        <Text style={styles.cardPrice}>€ {p.prezzo.toFixed(2)}</Text>
+                        {isAdmin ? (
+                          <View style={styles.cardAdminActions}>
+                            <TouchableOpacity
+                              data-testid={`edit-product-${p.id}`}
+                              style={[styles.cardSmallBtn, { backgroundColor: COLORS.primary }]}
+                              onPress={() => openEditProduct(p)}
+                            >
+                              <Ionicons name="create-outline" size={14} color="#fff" />
+                              <Text style={styles.cardSmallBtnText}>Modifica</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              data-testid={`delete-product-${p.id}`}
+                              style={[styles.cardSmallBtn, { backgroundColor: COLORS.error }]}
+                              onPress={() => handleDeleteProduct(p)}
+                            >
+                              <Ionicons name="trash-outline" size={14} color="#fff" />
+                            </TouchableOpacity>
+                          </View>
+                        ) : (
+                          <TouchableOpacity
+                            data-testid={`buy-product-${p.id}`}
+                            style={styles.cardBuyBtn}
+                            onPress={() => openBuyModal(p)}
+                          >
+                            <Ionicons name="bag-add" size={14} color="#fff" />
+                            <Text style={styles.cardBuyBtnText}>Ordina</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </>
+          );
+        })()}
 
         {/* My orders */}
         {myOrders.length > 0 && (
@@ -812,6 +903,18 @@ export default function ShopScreen() {
                 />
               </View>
 
+              <View style={[styles.toggleRow, pOffertaGiorno && { borderColor: '#FFD700', borderWidth: 2 }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.toggleLabel, pOffertaGiorno && { color: '#FFD700' }]}>🔥 Offerta del Giorno</Text>
+                  <Text style={styles.toggleHint}>Pezzo unico · Pronta consegna · Visto e piaciuto</Text>
+                </View>
+                <Switch
+                  value={pOffertaGiorno}
+                  onValueChange={setPOffertaGiorno}
+                  trackColor={{ false: COLORS.border, true: '#FFD700' }}
+                />
+              </View>
+
               <View style={styles.toggleRow}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.toggleLabel}>Attivo (visibile ai clienti)</Text>
@@ -943,6 +1046,85 @@ const styles = StyleSheet.create({
   },
 
   sectionTitle: { fontFamily: FONTS.headline, fontSize: 24, color: COLORS.text, marginBottom: 12, letterSpacing: 1.5, textTransform: 'uppercase' },
+
+  offerteHeaderBox: {
+    backgroundColor: '#1a0f00',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 14,
+    borderWidth: 2,
+    borderColor: '#FFD700',
+    alignItems: 'center',
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.7,
+    shadowRadius: 16,
+  },
+  offerteRibbon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  offerteHeaderTitle: {
+    fontFamily: FONTS.headline,
+    fontSize: 28,
+    color: '#FFD700',
+    letterSpacing: 2.5,
+    textShadowColor: 'rgba(255, 215, 0, 0.6)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
+  },
+  offerteTagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    justifyContent: 'center',
+  },
+  offerteTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 4,
+  },
+  offerteTagText: {
+    fontFamily: FONTS.bodyBlack,
+    fontSize: 10,
+    color: '#000',
+    letterSpacing: 1,
+  },
+  offertaCard: {
+    borderColor: '#FFD700',
+    borderWidth: 2,
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+  },
+  offertaBadgeCorner: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    zIndex: 10,
+    transform: [{ rotate: '8deg' }],
+    shadowColor: '#000',
+    shadowOffset: { width: 1, height: 1 },
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
+  },
+  offertaBadgeText: {
+    fontFamily: FONTS.bodyBlack,
+    fontSize: 10,
+    color: '#000',
+    letterSpacing: 1,
+  },
 
   emptyBox: { alignItems: 'center', paddingVertical: 30, gap: 8 },
   emptyText: { fontFamily: FONTS.body, fontSize: 13, color: COLORS.textSecondary, textAlign: 'center' },
