@@ -363,6 +363,18 @@ export const apiService = {
   adminResetUserPlan: (userId: string) => api.delete<any>(`/admin/nutrition/reset-plan/${userId}`),
   getAdminNutritionPlans: () => api.get<any>('/admin/nutrition/plans'),
   getAdminUserPlan: (userId: string) => api.get<any>(`/admin/nutrition/plan/${userId}`),
+
+  // ========== SHOP / MERCHANDISE ==========
+  getShopProducts: () => api.get<any[]>('/shop/products'),
+  adminListShopProducts: () => api.get<any[]>('/admin/shop/products'),
+  adminCreateShopProduct: (data: any) => api.post<any>('/admin/shop/products', data),
+  adminUpdateShopProduct: (id: string, data: any) => api.put<any>(`/admin/shop/products/${id}`, data),
+  adminDeleteShopProduct: (id: string) => api.delete<any>(`/admin/shop/products/${id}`),
+  createShopOrder: (data: any) => api.post<any>('/shop/orders', data),
+  getMyShopOrders: () => api.get<any[]>('/shop/orders/me'),
+  adminListShopOrders: () => api.get<any[]>('/admin/shop/orders'),
+  adminUpdateShopOrder: (id: string, data: any) => api.patch<any>(`/admin/shop/orders/${id}`, data),
+  adminDeleteShopOrder: (id: string) => api.delete<any>(`/admin/shop/orders/${id}`),
 };
 
 export default api;

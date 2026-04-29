@@ -169,6 +169,27 @@ App di fitness per la gestione di lezioni, prenotazioni, abbonamenti e gamificat
 - Retrocompatibilità: estrazioni esistenti senza campo `pubblicato` sono considerate pubblicate
 - Test end-to-end: admin vede bozza, cliente NO; dopo publish cliente vede tutto ✅
 
+## Tab Shop con Merchandise Sprint Design (29 Aprile 2026)
+Nuovo tab Shop per vendita merchandise, con catalogo, ordini e invio automatico al produttore via WhatsApp.
+
+**Backend (`server.py`):**
+- 2 nuove collection: `shop_products`, `shop_orders`
+- 10 endpoint: CRUD prodotti admin (`POST/PUT/DELETE /admin/shop/products`), lista pubblica (`GET /shop/products`), ordini (`POST /shop/orders`, `GET /shop/orders/me`, `GET /admin/shop/orders`, `PATCH/DELETE /admin/shop/orders/{id}`)
+- `POST /shop/orders` ritorna sia l'ordine sia un **`whatsapp_text` con intro casuale sarcastica** (12 varianti) + scheda dettagliata cliente/prodotto/taglia/colore/quantità/totale/rif.
+
+**Frontend (`shop.tsx` + `_layout.tsx`):**
+- Header: logo Sprint Design (immagine fornita), info attività (Bastia Umbra, indirizzo, telefono cliccabile, orari)
+- Catalogo prodotti grid 2 colonne con foto, prezzo Bebas Neue
+- Modal acquisto: foto grande, descrizione, scelta taglia/colore, note → confermando apre `wa.me/393487397979` con testo precompilato
+- Sezione "I Miei Ordini" (cliente) con stato colorato
+- Pannello admin: pulsante "Nuovo Prodotto" → modal con upload foto (compressa via canvas API a max 800px JPEG 75%), taglie/colori CSV, switch magazzino e attivo
+- Sezione admin "Tutti gli Ordini" con azioni: Evadi da Magazzino / Inviato a Produttore / In Consegna / Consegnato / Cancella
+- Footer "SOLO PRODOTTINI DI QUALITÀ" in arancione fluo gigante con glow
+
+**Pagamento:** nessuno in app — paga in palestra alla consegna.
+
+**Testato:** creazione prodotto, ordine end-to-end con scheda WhatsApp generata correttamente, cleanup ordine/prodotto OK ✅
+
 ## Auto-Cleanup Flag Prova Scaduta/Convertita (29 Aprile 2026)
 Risolve il bug in cui un cliente, dopo aver finito la settimana di prova o aver ricevuto un abbonamento vero, manteneva il badge "PROVA" verde nella scheda admin.
 

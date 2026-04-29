@@ -195,6 +195,21 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="shop"
+        options={{
+          title: 'Shop',
+          href: isArchived ? null : '/shop',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons 
+              name={focused ? "bag-handle" : "bag-handle-outline"} 
+              size={size} 
+              color={focused ? COLORS.primary : color} 
+            />
+          ),
+          tabBarActiveTintColor: COLORS.primary,
+        }}
+      />
+      <Tabs.Screen
         name="profilo"
         options={{
           title: 'Profilo',

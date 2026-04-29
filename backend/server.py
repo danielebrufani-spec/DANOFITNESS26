@@ -5733,6 +5733,280 @@ async def get_wheel_prizes():
     return {"premi": RUOTA_PREMI}
 
 
+# ============================================================================
+# ============================ SHOP / MERCHANDISE ============================
+# ============================================================================
+
+class ShopProductCreate(BaseModel):
+    nome: str
+    descrizione: Optional[str] = ""
+    prezzo: float
+    foto_base64: Optional[str] = None  # data URL "data:image/jpeg;base64,..."
+    taglie: List[str] = []  # es ["S","M","L","XL"]
+    colori: List[str] = []  # es ["Nero","Rosso","Bianco"]
+    in_magazzino: bool = False  # Se True può essere evaso direttamente
+    attivo: bool = True
+
+
+class ShopProductUpdate(BaseModel):
+    nome: Optional[str] = None
+    descrizione: Optional[str] = None
+    prezzo: Optional[float] = None
+    foto_base64: Optional[str] = None
+    taglie: Optional[List[str]] = None
+    colori: Optional[List[str]] = None
+    in_magazzino: Optional[bool] = None
+    attivo: Optional[bool] = None
+
+
+class ShopOrderCreate(BaseModel):
+    product_id: str
+    taglia: Optional[str] = None
+    colore: Optional[str] = None
+    quantita: int = 1
+    note: Optional[str] = ""
+
+
+class ShopOrderStatusUpdate(BaseModel):
+    status: Optional[str] = None  # "in_attesa","inviato_produttore","in_consegna","consegnato","annullato"
+    evaso_da: Optional[str] = None  # "magazzino" | "produttore"
+
+
+def _serialize_product(p: dict) -> dict:
+    return {
+        "id": str(p["_id"]),
+        "nome": p.get("nome", ""),
+        "descrizione": p.get("descrizione", ""),
+        "prezzo": p.get("prezzo", 0),
+        "foto_base64": p.get("foto_base64"),
+        "taglie": p.get("taglie", []),
+        "colori": p.get("colori", []),
+        "in_magazzino": p.get("in_magazzino", False),
+        "attivo": p.get("attivo", True),
+        "created_at": p.get("created_at").isoformat() if p.get("created_at") else None,
+    }
+
+
+def _serialize_order(o: dict) -> dict:
+    return {
+        "id": str(o["_id"]),
+        "user_id": o.get("user_id"),
+        "user_nome": o.get("user_nome", ""),
+        "user_cognome": o.get("user_cognome", ""),
+        "user_telefono": o.get("user_telefono", ""),
+        "product_id": o.get("product_id"),
+        "product_nome": o.get("product_nome", ""),
+        "product_foto_base64": o.get("product_foto_base64"),
+        "taglia": o.get("taglia"),
+        "colore": o.get("colore"),
+        "quantita": o.get("quantita", 1),
+        "prezzo": o.get("prezzo", 0),
+        "totale": o.get("totale", 0),
+        "status": o.get("status", "in_attesa"),
+        "evaso_da": o.get("evaso_da"),
+        "note": o.get("note", ""),
+        "created_at": o.get("created_at").isoformat() if o.get("created_at") else None,
+        "updated_at": o.get("updated_at").isoformat() if o.get("updated_at") else None,
+    }
+
+
+# --- Catalogo (lettura clienti) ---
+
+@api_router.get("/shop/products")
+async def list_shop_products(current_user: dict = Depends(get_current_user)):
+    """Lista prodotti attivi visibili ai clienti"""
+    products = await db.shop_products.find({"attivo": True}).sort("created_at", -1).to_list(200)
+    return [_serialize_product(p) for p in products]
+
+
+# --- Admin CRUD prodotti ---
+
+@api_router.get("/admin/shop/products")
+async def admin_list_shop_products(admin_user: dict = Depends(get_admin_user)):
+    products = await db.shop_products.find({}).sort("created_at", -1).to_list(500)
+    return [_serialize_product(p) for p in products]
+
+
+@api_router.post("/admin/shop/products")
+async def admin_create_shop_product(data: ShopProductCreate, admin_user: dict = Depends(get_admin_user)):
+    doc = {
+        "nome": data.nome.strip(),
+        "descrizione": (data.descrizione or "").strip(),
+        "prezzo": float(data.prezzo),
+        "foto_base64": data.foto_base64,
+        "taglie": [t.strip() for t in data.taglie if t.strip()],
+        "colori": [c.strip() for c in data.colori if c.strip()],
+        "in_magazzino": bool(data.in_magazzino),
+        "attivo": bool(data.attivo),
+        "created_at": now_rome(),
+    }
+    res = await db.shop_products.insert_one(doc)
+    doc["_id"] = res.inserted_id
+    return _serialize_product(doc)
+
+
+@api_router.put("/admin/shop/products/{product_id}")
+async def admin_update_shop_product(product_id: str, data: ShopProductUpdate, admin_user: dict = Depends(get_admin_user)):
+    update_fields = {k: v for k, v in data.dict().items() if v is not None}
+    if not update_fields:
+        raise HTTPException(status_code=400, detail="Nessun campo da aggiornare")
+    try:
+        res = await db.shop_products.update_one({"_id": ObjectId(product_id)}, {"$set": update_fields})
+    except Exception:
+        raise HTTPException(status_code=404, detail="Prodotto non trovato")
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Prodotto non trovato")
+    p = await db.shop_products.find_one({"_id": ObjectId(product_id)})
+    return _serialize_product(p)
+
+
+@api_router.delete("/admin/shop/products/{product_id}")
+async def admin_delete_shop_product(product_id: str, admin_user: dict = Depends(get_admin_user)):
+    try:
+        res = await db.shop_products.delete_one({"_id": ObjectId(product_id)})
+    except Exception:
+        raise HTTPException(status_code=404, detail="Prodotto non trovato")
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Prodotto non trovato")
+    return {"message": "Prodotto eliminato"}
+
+
+# --- Ordini ---
+
+# Frasi sarcastiche/divertenti per il messaggio WhatsApp al produttore
+WHATSAPP_INTROS = [
+    "🚨 Allarme rosso Mirko! Un altro cliente è caduto vittima della linea DanoFitness 💪",
+    "🔥 Mirko, ho una notizia bomba: un altro pazzo ha deciso di vestirsi come un atleta! 🏋️",
+    "👀 Mirko, indovina chi non resiste al fascino del nostro merch? Eccone un altro!",
+    "🎯 Mirko mio, abbiamo un nuovo cliente conquistato dal richiamo del prodottino di qualità!",
+    "🦾 Yo Mirko, ennesima vittima del marketing aggressivo della palestra. Fattura, fattura!",
+    "💸 Mirko, contante in arrivo! Un altro tesserato ha cliccato sul pulsante magico.",
+    "🚀 Houston, abbiamo un ordine. Mirko, prepara la macchina da cucire (o la scatola, a seconda).",
+    "🥇 Mirko, ti annuncio con orgoglio che il merchandising vola: ordine appena entrato!",
+    "🎉 Mirko, festeggia! Un altro cliente non ha saputo resistere ai 'prodottini di qualità'™",
+    "👕 Mirko, è di nuovo quel momento: c'è chi ha capito che senza una nostra t-shirt non si vive.",
+    "📦 Pacco in partenza, Mirko! Qualcuno ha appena premuto 'ordina' senza pensarci due volte 😎",
+    "🤡 Mirko, un altro caduto. Si vede che le mie lezioni di funzionale fanno effetto anche sulla testa.",
+]
+
+
+@api_router.post("/shop/orders")
+async def create_shop_order(data: ShopOrderCreate, current_user: dict = Depends(get_current_user)):
+    """Crea un ordine. Restituisce anche il messaggio WhatsApp pronto da inviare al produttore."""
+    try:
+        product = await db.shop_products.find_one({"_id": ObjectId(data.product_id)})
+    except Exception:
+        raise HTTPException(status_code=404, detail="Prodotto non trovato")
+    if not product:
+        raise HTTPException(status_code=404, detail="Prodotto non trovato")
+    if not product.get("attivo", True):
+        raise HTTPException(status_code=400, detail="Prodotto non più disponibile")
+
+    # Validazione taglia/colore se il prodotto le richiede
+    if product.get("taglie") and not data.taglia:
+        raise HTTPException(status_code=400, detail="Seleziona una taglia")
+    if product.get("colori") and not data.colore:
+        raise HTTPException(status_code=400, detail="Seleziona un colore")
+
+    qta = max(1, int(data.quantita or 1))
+    prezzo = float(product.get("prezzo", 0))
+    totale = round(prezzo * qta, 2)
+
+    order = {
+        "user_id": str(current_user["_id"]),
+        "user_nome": current_user.get("nome", ""),
+        "user_cognome": current_user.get("cognome", ""),
+        "user_telefono": current_user.get("telefono", ""),
+        "product_id": data.product_id,
+        "product_nome": product.get("nome", ""),
+        "product_foto_base64": product.get("foto_base64"),
+        "taglia": data.taglia,
+        "colore": data.colore,
+        "quantita": qta,
+        "prezzo": prezzo,
+        "totale": totale,
+        "status": "in_attesa",
+        "evaso_da": None,
+        "note": (data.note or "").strip(),
+        "created_at": now_rome(),
+        "updated_at": now_rome(),
+    }
+    res = await db.shop_orders.insert_one(order)
+    order["_id"] = res.inserted_id
+
+    # Genera scheda ordine + frase divertente per WhatsApp
+    intro = random.choice(WHATSAPP_INTROS)
+    cliente = f"{order['user_nome']} {order['user_cognome']}".strip() or "Anonimo"
+    tel = f" (tel: {order['user_telefono']})" if order['user_telefono'] else ""
+    righe = [
+        intro,
+        "",
+        "📋 *NUOVO ORDINE DANOFITNESS23*",
+        "",
+        f"👤 Cliente: *{cliente}*{tel}",
+        f"🛍️ Prodotto: *{order['product_nome']}*",
+    ]
+    if order.get("taglia"):
+        righe.append(f"📏 Taglia: *{order['taglia']}*")
+    if order.get("colore"):
+        righe.append(f"🎨 Colore: *{order['colore']}*")
+    righe.append(f"🔢 Quantità: *{qta}*")
+    righe.append(f"💰 Totale: *€ {totale:.2f}*")
+    if order.get("note"):
+        righe.append(f"📝 Note: {order['note']}")
+    righe.append("")
+    righe.append(f"🆔 Rif. ordine: {str(res.inserted_id)[-6:].upper()}")
+    righe.append("")
+    righe.append("Procedi pure quando puoi 🙏 — Daniele")
+
+    whatsapp_text = "\n".join(righe)
+
+    return {
+        "order": _serialize_order(order),
+        "whatsapp_text": whatsapp_text,
+    }
+
+
+@api_router.get("/shop/orders/me")
+async def list_my_orders(current_user: dict = Depends(get_current_user)):
+    user_id = str(current_user["_id"])
+    orders = await db.shop_orders.find({"user_id": user_id}).sort("created_at", -1).to_list(200)
+    return [_serialize_order(o) for o in orders]
+
+
+@api_router.get("/admin/shop/orders")
+async def admin_list_orders(admin_user: dict = Depends(get_admin_user)):
+    orders = await db.shop_orders.find({}).sort("created_at", -1).to_list(1000)
+    return [_serialize_order(o) for o in orders]
+
+
+@api_router.patch("/admin/shop/orders/{order_id}")
+async def admin_update_order(order_id: str, data: ShopOrderStatusUpdate, admin_user: dict = Depends(get_admin_user)):
+    update_fields = {k: v for k, v in data.dict().items() if v is not None}
+    if not update_fields:
+        raise HTTPException(status_code=400, detail="Nessun campo da aggiornare")
+    update_fields["updated_at"] = now_rome()
+    try:
+        res = await db.shop_orders.update_one({"_id": ObjectId(order_id)}, {"$set": update_fields})
+    except Exception:
+        raise HTTPException(status_code=404, detail="Ordine non trovato")
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Ordine non trovato")
+    o = await db.shop_orders.find_one({"_id": ObjectId(order_id)})
+    return _serialize_order(o)
+
+
+@api_router.delete("/admin/shop/orders/{order_id}")
+async def admin_delete_order(order_id: str, admin_user: dict = Depends(get_admin_user)):
+    try:
+        res = await db.shop_orders.delete_one({"_id": ObjectId(order_id)})
+    except Exception:
+        raise HTTPException(status_code=404, detail="Ordine non trovato")
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Ordine non trovato")
+    return {"message": "Ordine eliminato"}
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
