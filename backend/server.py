@@ -6019,6 +6019,43 @@ async def admin_delete_order(order_id: str, admin_user: dict = Depends(get_admin
     return {"message": "Ordine eliminato"}
 
 
+@api_router.post("/admin/shop/orders/{order_id}/whatsapp-link")
+async def admin_get_whatsapp_link(order_id: str, admin_user: dict = Depends(get_admin_user)):
+    """Ritorna il testo WhatsApp per inviare l'ordine a Mirko (con intro divertente fresco ad ogni chiamata)"""
+    try:
+        order = await db.shop_orders.find_one({"_id": ObjectId(order_id)})
+    except Exception:
+        raise HTTPException(status_code=404, detail="Ordine non trovato")
+    if not order:
+        raise HTTPException(status_code=404, detail="Ordine non trovato")
+
+    intro = random.choice(WHATSAPP_INTROS)
+    cliente = f"{order.get('user_nome','')} {order.get('user_cognome','')}".strip() or "Anonimo"
+    tel = f" (tel: {order.get('user_telefono')})" if order.get('user_telefono') else ""
+    righe = [
+        intro,
+        "",
+        "📋 *NUOVO ORDINE DANOFITNESS23*",
+        "",
+        f"👤 Cliente: *{cliente}*{tel}",
+        f"🛍️ Prodotto: *{order.get('product_nome','')}*",
+    ]
+    if order.get("taglia"):
+        righe.append(f"📏 Taglia: *{order['taglia']}*")
+    if order.get("colore"):
+        righe.append(f"🎨 Colore: *{order['colore']}*")
+    righe.append(f"🔢 Quantità: *{order.get('quantita', 1)}*")
+    righe.append(f"💰 Totale: *€ {order.get('totale', 0):.2f}*")
+    if order.get("note"):
+        righe.append(f"📝 Note: {order['note']}")
+    righe.append("")
+    righe.append(f"🆔 Rif. ordine: {str(order['_id'])[-6:].upper()}")
+    righe.append("")
+    righe.append("Procedi pure quando puoi 🙏 — Daniele")
+
+    return {"whatsapp_text": "\n".join(righe)}
+
+
 # Include the router in the main app
 app.include_router(api_router)
 

@@ -375,6 +375,7 @@ export const apiService = {
   adminListShopOrders: () => api.get<any[]>('/admin/shop/orders'),
   adminUpdateShopOrder: (id: string, data: any) => api.patch<any>(`/admin/shop/orders/${id}`, data),
   adminDeleteShopOrder: (id: string) => api.delete<any>(`/admin/shop/orders/${id}`),
+  adminGetShopOrderWhatsappLink: (id: string) => api.post<{whatsapp_text: string}>(`/admin/shop/orders/${id}/whatsapp-link`),
 };
 
 export default api;

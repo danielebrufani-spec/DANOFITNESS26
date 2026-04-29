@@ -181,15 +181,7 @@ export default function ShopScreen() {
         quantita: 1,
         note: buyNote,
       });
-      const waText = encodeURIComponent(res.data.whatsapp_text);
-      const waUrl = `https://wa.me/${SPRINT_PHONE_DIGITS}?text=${waText}`;
-      // Open WhatsApp
-      if (Platform.OS === 'web') {
-        window.open(waUrl, '_blank');
-      } else {
-        Linking.openURL(waUrl);
-      }
-      window.alert(`Ordine registrato! 🎉\n\n🎟️ +${res.data.bonus_biglietti || 5} biglietti lotteria sono stati accreditati sul tuo account!\n\nSi è aperto WhatsApp con la scheda da inviare a Mirko (Sprint Bastia Umbra). Premi invio per spedire 📦`);
+      window.alert(`Ordine inviato! 🎉\n\n🎟️ +${res.data.bonus_biglietti || 5} biglietti lotteria sono stati accreditati sul tuo account!\n\nIl tuo ordine è in coda. Daniele lo gestirà al più presto e ti farà sapere quando il prodotto sarà pronto per il ritiro 💪`);
       setBuyProduct(null);
       loadAll();
     } catch (e: any) {
@@ -307,6 +299,24 @@ export default function ShopScreen() {
       loadAll();
     } catch (e: any) {
       window.alert('Errore: ' + (e?.response?.data?.detail || 'Cancellazione fallita'));
+    }
+  };
+
+  const handleSendToMirko = async (o: Order) => {
+    try {
+      const res = await apiService.adminGetShopOrderWhatsappLink(o.id);
+      const waText = encodeURIComponent(res.data.whatsapp_text);
+      const waUrl = `https://wa.me/${SPRINT_PHONE_DIGITS}?text=${waText}`;
+      if (Platform.OS === 'web') {
+        window.open(waUrl, '_blank');
+      } else {
+        Linking.openURL(waUrl);
+      }
+      // Aggiorna lo stato a "inviato_produttore"
+      await apiService.adminUpdateShopOrder(o.id, { status: 'inviato_produttore', evaso_da: 'produttore' });
+      loadAll();
+    } catch (e: any) {
+      window.alert('Errore: ' + (e?.response?.data?.detail || 'Impossibile generare link'));
     }
   };
 
@@ -521,20 +531,20 @@ export default function ShopScreen() {
                       {o.status === 'in_attesa' && (
                         <>
                           <TouchableOpacity
+                            data-testid={`order-send-mirko-${o.id}`}
+                            style={[styles.actionBtn, { backgroundColor: '#25D366' }]}
+                            onPress={() => handleSendToMirko(o)}
+                          >
+                            <Ionicons name="logo-whatsapp" size={14} color="#fff" />
+                            <Text style={styles.actionBtnText}>Invia a Mirko</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
                             data-testid={`order-fulfill-warehouse-${o.id}`}
                             style={[styles.actionBtn, { backgroundColor: COLORS.success }]}
                             onPress={() => handleUpdateOrderStatus(o, 'in_consegna', 'magazzino')}
                           >
                             <Ionicons name="cube" size={14} color="#fff" />
                             <Text style={styles.actionBtnText}>Evadi da Magazzino</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            data-testid={`order-mark-sent-${o.id}`}
-                            style={[styles.actionBtn, { backgroundColor: COLORS.primary }]}
-                            onPress={() => handleUpdateOrderStatus(o, 'inviato_produttore', 'produttore')}
-                          >
-                            <Ionicons name="paper-plane" size={14} color="#fff" />
-                            <Text style={styles.actionBtnText}>Inviato a Produttore</Text>
                           </TouchableOpacity>
                         </>
                       )}
@@ -663,8 +673,8 @@ export default function ShopScreen() {
                     <ActivityIndicator color="#fff" />
                   ) : (
                     <>
-                      <Ionicons name="logo-whatsapp" size={20} color="#fff" />
-                      <Text style={styles.confirmBtnText}>Conferma e Invia a Mirko</Text>
+                      <Ionicons name="bag-check" size={20} color="#fff" />
+                      <Text style={styles.confirmBtnText}>Conferma Ordine</Text>
                     </>
                   )}
                 </TouchableOpacity>
