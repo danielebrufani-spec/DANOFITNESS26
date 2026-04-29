@@ -189,7 +189,7 @@ export default function ShopScreen() {
       } else {
         Linking.openURL(waUrl);
       }
-      window.alert('Ordine registrato!\n\nSi è aperto WhatsApp con la scheda da inviare a Mirko (Sprint Bastia Umbra). Premi invio per spedire 📦');
+      window.alert(`Ordine registrato! 🎉\n\n🎟️ +${res.data.bonus_biglietti || 5} biglietti lotteria sono stati accreditati sul tuo account!\n\nSi è aperto WhatsApp con la scheda da inviare a Mirko (Sprint Bastia Umbra). Premi invio per spedire 📦`);
       setBuyProduct(null);
       loadAll();
     } catch (e: any) {
@@ -351,6 +351,20 @@ export default function ShopScreen() {
           <View style={styles.infoRow}>
             <Ionicons name="time-outline" size={16} color={COLORS.primary} />
             <Text style={styles.infoText}>Lun–Ven 09:30–13:00 / 15:30–19:30 · Sab 09:30–13:00</Text>
+          </View>
+        </View>
+
+        {/* 🎟️ BONUS BIGLIETTI BANNER */}
+        <View style={styles.bonusBanner}>
+          <View style={styles.bonusBadge}>
+            <Ionicons name="ticket" size={32} color="#FFD700" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.bonusTitle}>+5 BIGLIETTI LOTTERIA</Text>
+            <Text style={styles.bonusSubtitle}>GRATIS PER OGNI ACQUISTO!</Text>
+            <Text style={styles.bonusText}>
+              Compra il merchandise e ricevi automaticamente 5 biglietti per l'estrazione mensile 🎁
+            </Text>
           </View>
         </View>
 
@@ -827,6 +841,56 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary, padding: 12, borderRadius: 6, marginBottom: 16,
   },
   adminAddButtonText: { fontFamily: FONTS.bodyBlack, fontSize: 13, color: '#fff', textTransform: 'uppercase', letterSpacing: 1.2 },
+
+  bonusBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    padding: 16,
+    marginBottom: 20,
+    borderRadius: 10,
+    backgroundColor: '#1a0f00',
+    borderWidth: 2,
+    borderColor: '#FFD700',
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
+  },
+  bonusBadge: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    backgroundColor: '#000',
+    borderWidth: 2,
+    borderColor: '#FFD700',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bonusTitle: {
+    fontFamily: FONTS.headline,
+    fontSize: 26,
+    color: '#FFD700',
+    letterSpacing: 1.5,
+    lineHeight: 28,
+    textShadowColor: 'rgba(255, 215, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 6,
+  },
+  bonusSubtitle: {
+    fontFamily: FONTS.bodyBlack,
+    fontSize: 13,
+    color: COLORS.primary,
+    letterSpacing: 1.2,
+    marginTop: 2,
+    marginBottom: 6,
+  },
+  bonusText: {
+    fontFamily: FONTS.body,
+    fontSize: 12,
+    color: COLORS.text,
+    lineHeight: 17,
+  },
 
   sectionTitle: { fontFamily: FONTS.headline, fontSize: 24, color: COLORS.text, marginBottom: 12, letterSpacing: 1.5, textTransform: 'uppercase' },
 

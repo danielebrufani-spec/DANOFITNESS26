@@ -5934,6 +5934,17 @@ async def create_shop_order(data: ShopOrderCreate, current_user: dict = Depends(
     res = await db.shop_orders.insert_one(order)
     order["_id"] = res.inserted_id
 
+    # 🎟️ BONUS: +5 biglietti lotteria per ogni acquisto
+    SHOP_TICKETS_BONUS = 5
+    current_month = now_rome().strftime("%Y-%m")
+    user_id = str(current_user["_id"])
+    await db.wheel_tickets.update_one(
+        {"user_id": user_id, "mese": current_month},
+        {"$inc": {"biglietti": SHOP_TICKETS_BONUS}},
+        upsert=True
+    )
+    logger.info(f"[SHOP-BONUS] +{SHOP_TICKETS_BONUS} biglietti a {current_user.get('nome')} per ordine {res.inserted_id}")
+
     # Genera scheda ordine + frase divertente per WhatsApp
     intro = random.choice(WHATSAPP_INTROS)
     cliente = f"{order['user_nome']} {order['user_cognome']}".strip() or "Anonimo"
@@ -5964,6 +5975,7 @@ async def create_shop_order(data: ShopOrderCreate, current_user: dict = Depends(
     return {
         "order": _serialize_order(order),
         "whatsapp_text": whatsapp_text,
+        "bonus_biglietti": SHOP_TICKETS_BONUS,
     }
 
 
