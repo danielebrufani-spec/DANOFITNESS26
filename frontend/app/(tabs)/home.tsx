@@ -335,6 +335,9 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [newRegistrations, setNewRegistrations] = useState<{nome: string; cognome: string}[]>([]);
   const [showNewUsersAlert, setShowNewUsersAlert] = useState(false);
+  // Shop new orders notification (admin only)
+  const [newShopOrders, setNewShopOrders] = useState<any[]>([]);
+  const [showShopOrdersAlert, setShowShopOrdersAlert] = useState(false);
   
   // Spinning logo animation - starts immediately
   const spinValue = useRef(new Animated.Value(0)).current;
@@ -513,6 +516,14 @@ export default function HomeScreen() {
           const weeklyRes = await apiService.getWeeklyStats();
           setWeeklyStats(weeklyRes.data);
         } catch (e) {}
+        // Carica notifiche nuovi ordini shop (admin)
+        try {
+          const ordersNotif = await apiService.adminPendingOrderNotifications();
+          if (ordersNotif.data.count > 0) {
+            setNewShopOrders(ordersNotif.data.orders);
+            setShowShopOrdersAlert(true);
+          }
+        } catch (e) { /* silenzioso se shop non ancora caricato */ }
       } else {
         // Carica notifiche per cliente
         await loadClientNotifications();
@@ -908,6 +919,59 @@ export default function HomeScreen() {
                   </View>
                 ))}
               </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Modal Alert Nuovi Ordini Shop - Admin */}
+        <Modal
+          visible={showShopOrdersAlert}
+          transparent
+          animationType="fade"
+          onRequestClose={async () => {
+            setShowShopOrdersAlert(false);
+            try { await apiService.adminMarkOrdersNotified(); } catch {}
+          }}
+        >
+          <View style={styles.newUserOverlay}>
+            <View style={[styles.newUserModal, { borderTopColor: COLORS.primary }]}>
+              <TouchableOpacity
+                style={[styles.newUserDismissBtn, { backgroundColor: COLORS.primary }]}
+                onPress={async () => {
+                  setShowShopOrdersAlert(false);
+                  try { await apiService.adminMarkOrdersNotified(); } catch {}
+                }}
+                data-testid="dismiss-new-shop-orders"
+              >
+                <Text style={styles.newUserDismissText}>OK, GESTIRÒ TUTTO!</Text>
+              </TouchableOpacity>
+              <View style={styles.newUserHeader}>
+                <Ionicons name="bag-handle" size={28} color={COLORS.primary} />
+                <Text style={styles.newUserTitle}>
+                  {newShopOrders.length === 1 ? 'NUOVO ORDINE!' : `${newShopOrders.length} NUOVI ORDINI!`}
+                </Text>
+              </View>
+              <ScrollView style={styles.newUserList} showsVerticalScrollIndicator={true}>
+                {newShopOrders.map((o) => (
+                  <View key={o.id} style={[styles.newUserItem, { flexDirection: 'column', alignItems: 'flex-start' }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Ionicons name="cart" size={18} color={COLORS.primary} />
+                      <Text style={[styles.newUserName, { fontWeight: 'bold' }]}>{o.product_nome}</Text>
+                    </View>
+                    <Text style={{ color: COLORS.textSecondary, fontSize: 12, marginLeft: 26 }}>
+                      👤 {o.user_nome} {o.user_cognome}
+                      {o.taglia ? ` · Taglia ${o.taglia}` : ''}
+                      {o.colore ? ` · ${o.colore}` : ''}
+                    </Text>
+                    <Text style={{ color: COLORS.primary, fontSize: 13, fontWeight: 'bold', marginLeft: 26, marginTop: 2 }}>
+                      € {o.totale?.toFixed(2)}
+                    </Text>
+                  </View>
+                ))}
+              </ScrollView>
+              <Text style={{ color: COLORS.textSecondary, fontSize: 12, marginTop: 8, textAlign: 'center' }}>
+                Vai nel tab Shop per gestirli 🛍️
+              </Text>
             </View>
           </View>
         </Modal>

@@ -321,10 +321,10 @@ export default function ShopScreen() {
   };
 
   const handleCancelMyOrder = async (o: Order) => {
-    if (!window.confirm(`Annullare l'ordine di "${o.product_nome}"?`)) return;
+    if (!window.confirm(`Annullare l'ordine di "${o.product_nome}"?\n\n⚠️ I 5 biglietti lotteria associati verranno revocati e l'ordine sarà eliminato definitivamente.`)) return;
     try {
       await apiService.cancelMyShopOrder(o.id);
-      window.alert('Ordine annullato.');
+      window.alert('Ordine annullato.\n\n5 biglietti lotteria sono stati revocati.');
       loadAll();
     } catch (e: any) {
       window.alert('Errore: ' + (e?.response?.data?.detail || 'Annullamento fallito'));

@@ -5928,6 +5928,7 @@ async def create_shop_order(data: ShopOrderCreate, current_user: dict = Depends(
         "status": "in_attesa",
         "evaso_da": None,
         "note": (data.note or "").strip(),
+        "admin_notified": False,
         "created_at": now_rome(),
         "updated_at": now_rome(),
     }
@@ -5988,7 +5989,8 @@ async def list_my_orders(current_user: dict = Depends(get_current_user)):
 
 @api_router.delete("/shop/orders/{order_id}")
 async def cancel_my_order(order_id: str, current_user: dict = Depends(get_current_user)):
-    """Il cliente può annullare il proprio ordine SOLO finché è in_attesa (l'admin non l'ha ancora evaso)"""
+    """Il cliente può annullare il proprio ordine SOLO finché è in_attesa.
+    Cancellazione: revoca i 5 biglietti bonus e elimina completamente l'ordine."""
     try:
         order = await db.shop_orders.find_one({"_id": ObjectId(order_id)})
     except Exception:
@@ -5999,11 +6001,24 @@ async def cancel_my_order(order_id: str, current_user: dict = Depends(get_curren
         raise HTTPException(status_code=403, detail="Non puoi annullare questo ordine")
     if order.get("status") != "in_attesa":
         raise HTTPException(status_code=400, detail="L'ordine è già stato preso in carico, non può più essere annullato")
-    await db.shop_orders.update_one(
-        {"_id": ObjectId(order_id)},
-        {"$set": {"status": "annullato", "updated_at": now_rome()}}
-    )
-    return {"message": "Ordine annullato"}
+
+    # Revoca i 5 biglietti bonus (decrementa il mese in cui sono stati assegnati)
+    SHOP_TICKETS_BONUS = 5
+    created = order.get("created_at")
+    ticket_month = created.strftime("%Y-%m") if hasattr(created, "strftime") else now_rome().strftime("%Y-%m")
+    user_id = str(current_user["_id"])
+    ticket_doc = await db.wheel_tickets.find_one({"user_id": user_id, "mese": ticket_month})
+    if ticket_doc:
+        new_count = max(0, ticket_doc.get("biglietti", 0) - SHOP_TICKETS_BONUS)
+        await db.wheel_tickets.update_one(
+            {"user_id": user_id, "mese": ticket_month},
+            {"$set": {"biglietti": new_count}}
+        )
+        logger.info(f"[SHOP-CANCEL] Revocati {SHOP_TICKETS_BONUS} biglietti a user {user_id} (ordine {order_id})")
+
+    # Elimina completamente l'ordine
+    await db.shop_orders.delete_one({"_id": ObjectId(order_id)})
+    return {"message": "Ordine annullato e biglietti revocati"}
 
 
 @api_router.get("/admin/shop/orders")
@@ -6042,6 +6057,30 @@ async def admin_delete_order(order_id: str, admin_user: dict = Depends(get_admin
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Ordine non trovato")
     return {"message": "Ordine archiviato"}
+
+
+@api_router.get("/admin/shop/orders/pending-notifications")
+async def admin_pending_order_notifications(admin_user: dict = Depends(get_admin_user)):
+    """Restituisce gli ordini nuovi non ancora visti dall'admin (per popup di notifica all'apertura app)"""
+    orders = await db.shop_orders.find({
+        "admin_notified": {"$ne": True},
+        "hidden_from_admin": {"$ne": True},
+        "status": "in_attesa",
+    }).sort("created_at", -1).to_list(50)
+    return {
+        "count": len(orders),
+        "orders": [_serialize_order(o) for o in orders],
+    }
+
+
+@api_router.post("/admin/shop/orders/mark-notified")
+async def admin_mark_notified(admin_user: dict = Depends(get_admin_user)):
+    """Marca tutti gli ordini in_attesa come visti (chiamato dopo che l'admin ha visualizzato il popup)"""
+    res = await db.shop_orders.update_many(
+        {"admin_notified": {"$ne": True}, "status": "in_attesa"},
+        {"$set": {"admin_notified": True}}
+    )
+    return {"updated": res.modified_count}
 
 
 @api_router.post("/admin/shop/orders/{order_id}/whatsapp-link")
