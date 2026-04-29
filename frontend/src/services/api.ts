@@ -376,7 +376,7 @@ export const apiService = {
   adminListShopOrders: () => api.get<any[]>('/admin/shop/orders'),
   adminUpdateShopOrder: (id: string, data: any) => api.patch<any>(`/admin/shop/orders/${id}`, data),
   adminDeleteShopOrder: (id: string) => api.delete<any>(`/admin/shop/orders/${id}`),
-  adminGetShopOrderWhatsappLink: (id: string) => api.post<{whatsapp_text: string}>(`/admin/shop/orders/${id}/whatsapp-link`),
+  adminGetShopOrderWhatsappLink: (id: string, fonte: 'produttore' | 'magazzino' = 'produttore') => api.post<{whatsapp_text: string}>(`/admin/shop/orders/${id}/whatsapp-link?fonte=${fonte}`),
   adminPendingOrderNotifications: () => api.get<{count: number; orders: any[]}>('/admin/shop/orders/pending-notifications'),
   adminMarkOrdersNotified: () => api.post<{updated: number}>('/admin/shop/orders/mark-notified'),
 };

@@ -305,7 +305,7 @@ export default function ShopScreen() {
 
   const handleSendToMirko = async (o: Order) => {
     try {
-      const res = await apiService.adminGetShopOrderWhatsappLink(o.id);
+      const res = await apiService.adminGetShopOrderWhatsappLink(o.id, 'produttore');
       const waText = encodeURIComponent(res.data.whatsapp_text);
       const waUrl = `https://wa.me/${SPRINT_PHONE_DIGITS}?text=${waText}`;
       if (Platform.OS === 'web') {
@@ -317,6 +317,24 @@ export default function ShopScreen() {
       loadAll();
     } catch (e: any) {
       window.alert('Errore: ' + (e?.response?.data?.detail || 'Impossibile generare link'));
+    }
+  };
+
+  const handleFulfillFromWarehouse = async (o: Order) => {
+    try {
+      // Apri WhatsApp con messaggio FYI per Mirko (variante magazzino)
+      const res = await apiService.adminGetShopOrderWhatsappLink(o.id, 'magazzino');
+      const waText = encodeURIComponent(res.data.whatsapp_text);
+      const waUrl = `https://wa.me/${SPRINT_PHONE_DIGITS}?text=${waText}`;
+      if (Platform.OS === 'web') {
+        window.open(waUrl, '_blank');
+      } else {
+        Linking.openURL(waUrl);
+      }
+      await apiService.adminUpdateShopOrder(o.id, { status: 'in_lavorazione', evaso_da: 'magazzino' });
+      loadAll();
+    } catch (e: any) {
+      window.alert('Errore: ' + (e?.response?.data?.detail || 'Impossibile evadere'));
     }
   };
 
@@ -562,7 +580,7 @@ export default function ShopScreen() {
                           <TouchableOpacity
                             data-testid={`order-fulfill-warehouse-${o.id}`}
                             style={[styles.actionBtn, { backgroundColor: COLORS.success }]}
-                            onPress={() => handleUpdateOrderStatus(o, 'in_lavorazione', 'magazzino')}
+                            onPress={() => handleFulfillFromWarehouse(o)}
                           >
                             <Ionicons name="cube" size={14} color="#fff" />
                             <Text style={styles.actionBtnText}>Evadi da Magazzino</Text>

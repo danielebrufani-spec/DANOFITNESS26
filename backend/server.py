@@ -5873,7 +5873,7 @@ async def admin_delete_shop_product(product_id: str, admin_user: dict = Depends(
 
 # --- Ordini ---
 
-# Frasi sarcastiche/divertenti per il messaggio WhatsApp al produttore
+# Frasi sarcastiche/divertenti per il messaggio WhatsApp al produttore (ordini da produrre)
 WHATSAPP_INTROS = [
     "🚨 Allarme rosso Mirko! Un altro cliente è caduto vittima della linea DanoFitness 💪",
     "🔥 Mirko, ho una notizia bomba: un altro pazzo ha deciso di vestirsi come un atleta! 🏋️",
@@ -5887,6 +5887,20 @@ WHATSAPP_INTROS = [
     "👕 Mirko, è di nuovo quel momento: c'è chi ha capito che senza una nostra t-shirt non si vive.",
     "📦 Pacco in partenza, Mirko! Qualcuno ha appena premuto 'ordina' senza pensarci due volte 😎",
     "🤡 Mirko, un altro caduto. Si vede che le mie lezioni di funzionale fanno effetto anche sulla testa.",
+]
+
+# Frasi per ordini evasi DAL MAGAZZINO (FYI a Mirko, non deve produrre nulla)
+WHATSAPP_INTROS_MAGAZZINO = [
+    "📦 Mirko, FYI: ho evaso questo ordine direttamente dal magazzino. Tu rilassati, è tutto sotto controllo 😎",
+    "💪 Yo Mirko, ennesima vittoria del magazzino DanoFitness! Niente cuciture per te oggi.",
+    "🏆 Mirko, ti aggiorno: questo l'ho gestito io dal mio stock. Tu pensa al prossimo che arriverà 😉",
+    "🎯 Mirko mio, magazzino ringrazia e saluta. Ordine evaso senza disturbarti!",
+    "⚡ Notizia flash, Mirko: ho preso roba dal magazzino. Risparmiati la fatica, te lo dico solo per traccia 📋",
+    "🤘 Mirko, magazzino batte produzione 1-0. Tutto ok, è solo per tenerti aggiornato!",
+    "✅ Mirko, ordine sistemato dal mio scaffale. Considerala una piccola vacanza dalla cucitura 🛋️",
+    "📋 Promemoria Mirko: questo cliente l'ho coperto io con merce esistente. Riposati!",
+    "🦾 Mirko, dal magazzino con furore! Ordine evaso senza produzione, FYI per te.",
+    "🎁 Mirko, ho aperto la cassetta del magazzino e tirato fuori questo. Tu fai altro, va bene così 👌",
 ]
 
 
@@ -6084,8 +6098,9 @@ async def admin_mark_notified(admin_user: dict = Depends(get_admin_user)):
 
 
 @api_router.post("/admin/shop/orders/{order_id}/whatsapp-link")
-async def admin_get_whatsapp_link(order_id: str, admin_user: dict = Depends(get_admin_user)):
-    """Ritorna il testo WhatsApp per inviare l'ordine a Mirko (con intro divertente fresco ad ogni chiamata)"""
+async def admin_get_whatsapp_link(order_id: str, fonte: str = "produttore", admin_user: dict = Depends(get_admin_user)):
+    """Ritorna il testo WhatsApp per Mirko.
+    Param `fonte`: "produttore" (frase sarcastica per ordine da produrre) o "magazzino" (FYI per ordine evaso da magazzino)"""
     try:
         order = await db.shop_orders.find_one({"_id": ObjectId(order_id)})
     except Exception:
@@ -6093,13 +6108,14 @@ async def admin_get_whatsapp_link(order_id: str, admin_user: dict = Depends(get_
     if not order:
         raise HTTPException(status_code=404, detail="Ordine non trovato")
 
-    intro = random.choice(WHATSAPP_INTROS)
+    intro = random.choice(WHATSAPP_INTROS_MAGAZZINO if fonte == "magazzino" else WHATSAPP_INTROS)
     cliente = f"{order.get('user_nome','')} {order.get('user_cognome','')}".strip() or "Anonimo"
     tel = f" (tel: {order.get('user_telefono')})" if order.get('user_telefono') else ""
+    titolo = "📦 *ORDINE EVASO DA MAGAZZINO*" if fonte == "magazzino" else "📋 *NUOVO ORDINE DANOFITNESS23*"
     righe = [
         intro,
         "",
-        "📋 *NUOVO ORDINE DANOFITNESS23*",
+        titolo,
         "",
         f"👤 Cliente: *{cliente}*{tel}",
         f"🛍️ Prodotto: *{order.get('product_nome','')}*",
@@ -6115,7 +6131,10 @@ async def admin_get_whatsapp_link(order_id: str, admin_user: dict = Depends(get_
     righe.append("")
     righe.append(f"🆔 Rif. ordine: {str(order['_id'])[-6:].upper()}")
     righe.append("")
-    righe.append("Procedi pure quando puoi 🙏 — Daniele")
+    if fonte == "magazzino":
+        righe.append("Tutto a posto, è solo per tenerti aggiornato 🙏 — Daniele")
+    else:
+        righe.append("Procedi pure quando puoi 🙏 — Daniele")
 
     return {"whatsapp_text": "\n".join(righe)}
 
