@@ -131,8 +131,8 @@ function GridCard({ section, onPress, delay }: { section: Section; onPress: () =
             style={{ width: 28, height: 28, lineHeight: 28, textAlign: 'center' }}
           />
         </View>
-        <Text style={styles.cardLabel}>{section.label}</Text>
-        <Text style={styles.cardSub}>{section.sub}</Text>
+        <Text style={styles.cardLabel} numberOfLines={2}>{section.label}</Text>
+        <Text style={styles.cardSub} numberOfLines={2}>{section.sub}</Text>
         <View style={styles.arrow}>
           <Ionicons name="arrow-forward" size={14} color={section.color} />
         </View>
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 18,
     borderWidth: 1,
-    minHeight: 150,
+    height: 170,
     overflow: 'hidden',
     position: 'relative',
     marginBottom: 12,
@@ -217,12 +217,16 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     letterSpacing: 1.4,
     marginBottom: 4,
+    height: 44,
+    lineHeight: 22,
   },
   cardSub: {
     fontFamily: FONTS.body,
     fontSize: 11,
     color: COLORS.textSecondary,
     letterSpacing: 0.4,
+    height: 28,
+    lineHeight: 14,
   },
   arrow: {
     position: 'absolute',
