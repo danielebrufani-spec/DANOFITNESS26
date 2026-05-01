@@ -396,6 +396,7 @@ export const apiService = {
   maestroHistory: () => api.get<any[]>('/maestro/history'),
   maestroTop: () => api.get<any[]>('/maestro/top'),
   adminMaestroAll: () => api.get<any[]>('/admin/maestro/all'),
+  adminMaestroDeleteQuestion: (id: string) => api.delete<{deleted: string}>(`/admin/maestro/questions/${id}`),
   adminMaestroWeekPool: (settimana?: string) =>
     api.get<{settimana: string; from: string; to: string; questions: any[]}>(
       `/admin/maestro/week-pool${settimana ? `?settimana=${settimana}` : ''}`

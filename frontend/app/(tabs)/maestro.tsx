@@ -167,6 +167,22 @@ function AdminMaestroPanel({ onPublished }: { onPublished: () => void }) {
     }
   };
 
+  const deleteQuestion = async (qid: string, userName: string) => {
+    if (!window.confirm(`Eliminare la domanda di ${userName || 'questo utente'}? Operazione irreversibile.`)) return;
+    try {
+      await apiService.adminMaestroDeleteQuestion(qid);
+      setMsg(`✓ Domanda eliminata`);
+      setPool((prev) => prev.filter((p) => p.id !== qid));
+      setSelected((prev) => {
+        const next = new Set(prev);
+        next.delete(qid);
+        return next;
+      });
+    } catch (e: any) {
+      setMsg('Errore: ' + (e?.response?.data?.detail || 'eliminazione fallita'));
+    }
+  };
+
   return (
     <View style={styles.adminBox} testID="admin-maestro-panel">
       <View style={styles.adminHeader}>
@@ -221,6 +237,14 @@ function AdminMaestroPanel({ onPublished }: { onPublished: () => void }) {
                 </View>
                 <Text style={styles.adminQUser}>{(q as any).user_nome || '—'}</Text>
                 <Text style={styles.dateText}>{q.data}</Text>
+                <TouchableOpacity
+                  testID={`admin-delete-q-${q.id}`}
+                  onPress={(e) => { e.stopPropagation?.(); deleteQuestion(q.id, (q as any).user_nome); }}
+                  style={styles.deleteBtn}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                >
+                  <Ionicons name="trash-outline" size={14} color={COLORS.error} />
+                </TouchableOpacity>
                 <View
                   style={[
                     styles.checkBox,
@@ -794,4 +818,11 @@ const styles = StyleSheet.create({
   weekSwitchActive: { backgroundColor: '#FFD700' },
   weekSwitchText: { fontFamily: FONTS.bodyBlack, fontSize: 11, color: COLORS.textSecondary, letterSpacing: 1.4 },
   weekSwitchTextActive: { color: '#000' },
+  deleteBtn: {
+    padding: 6,
+    borderRadius: 6,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.error + '60',
+  },
 });

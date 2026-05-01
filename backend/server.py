@@ -5899,6 +5899,18 @@ async def maestro_history(current_user: dict = Depends(get_current_user)):
     return [_serialize_maestro(i) for i in items]
 
 
+@api_router.delete("/admin/maestro/questions/{question_id}")
+async def admin_maestro_delete_question(question_id: str, admin_user: dict = Depends(get_admin_user)):
+    """Admin: cancella una singola domanda Maestro (es. moderazione contenuti)."""
+    try:
+        res = await db.maestro_questions.delete_one({"_id": ObjectId(question_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="ID non valido")
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Domanda non trovata")
+    return {"deleted": question_id}
+
+
 @api_router.get("/admin/maestro/all")
 async def admin_maestro_all(admin_user: dict = Depends(get_admin_user)):
     """Admin: vede tutte le domande/risposte (utile per moderazione/divertimento)."""
