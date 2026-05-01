@@ -1,0 +1,45 @@
+{
+  "summary": "Frontend-only testing of new bottom-tab restructure (5 client tabs + 'Altro') and KPIBanner on Home. All 7 requirements verified PASSED via Playwright on real public URL with admin and a freshly registered client user. No console/page errors during navigation. Code review and runtime checks both confirm correct implementation.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "tests_executed": [
+    "Client tab bar (mobile 390x844): exactly 5 tabs - Home, Prenota, Premi, Shop, Altro. PASS",
+    "Client tab bar excludes: Dieta AI, Curiosita, Classifica, Eventi, Abbonamento, Profilo. PASS",
+    "Admin tab bar (desktop 1280x900): 6 tabs - Home, Lezioni, Admin, Premi, Shop, Altro. PASS",
+    "Altro screen renders EXTRA kicker + ALTRO headline + accent bar + subtitle. PASS",
+    "Altro grid (client): 6 cards visible in 2-column layout - DIETA AI, CLASSIFICA, CURIOSITA, EVENTI, ABBONAMENTO, PROFILO. PASS",
+    "Altro grid (admin): 5 cards (ABBONAMENTO correctly hidden since !isAdmin condition). PASS",
+    "Card navigation: all 6 routes verified - /alimentazione, /classifica, /curiosita, /eventi, /abbonamento, /profilo all load. PASS",
+    "KPIBanner renders on client Home with 3 cells: STREAK (0), BIGLIETTI (0), ABBONAM. (—). PASS",
+    "KPIBanner positioned ABOVE StreakBanner (verified visually - KPIBanner first, then 'GIORNI DI FILA' streak banner below). PASS",
+    "KPIBanner does NOT render on admin Home (verified - admin home shows admin stats only, no STREAK/BIGLIETTI text). PASS",
+    "Vertical dividers between KPI cells present (visible in screenshot). PASS",
+    "Backend endpoints /api/streak/status, /api/lottery/status, /api/subscriptions/me reachable - KPIBanner rendered values 0/0/—. PASS (graceful empty state)",
+    "No console errors or page errors during /altro navigation and back to /home. PASS"
+  ],
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "MINOR: KPIBanner uses data-testid='kpi-banner' on a React Native View. In React Native Web, the conventional prop is testID which auto-maps to data-testid on the DOM. The current literal data-testid prop appears to NOT propagate to the rendered DOM (querySelector found false). Visual labels (STREAK/BIGLIETTI/ABBONAM.) are still present so component renders correctly, but for reliable test automation switch to testID='kpi-banner' (same on Altro grid cards which use data-testid={`altro-card-${section.key}`}). Non-blocking.",
+    "Tab visibility logic in _layout.tsx is clean and centralised; href:null hides 7 tabs from bar while keeping their routes accessible - good pattern.",
+    "KPIBanner gracefully degrades on API failure via .catch(() => ({data:null/[]})) - good error handling.",
+    "Altro screen uses Animated for nice card stagger; useNativeDriver:true triggers a benign warning on web ('useNativeDriver is not supported... falling back to JS-based animation'). Cosmetic only.",
+    "AltroScreen.show() correctly hides ABBONAMENTO card for admin/istruttore (matches spec)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only)", "frontend": "100% (13/13 verified)"},
+  "test_credentials": {
+    "admin_email": "danielebrufani@gmail.com",
+    "admin_password": "Mariavittoria23",
+    "client_email_created_for_test": "testclient_kpi@test.com",
+    "client_password": "Test123456"
+  },
+  "seed_data_creation": "Registered one client user (testclient_kpi@test.com / Test123456) via POST /api/auth/register to test client-role UI. Can be reused or cleaned up by admin.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Tab restructure (Option A: 5 client tabs + Altro menu) and KPIBanner on Home are fully working for both client and admin roles on mobile (390x844) and desktop (1280x900). All 6 Altro cards navigate correctly. Future small improvement: change data-testid -> testID on KPIBanner View and Altro card TouchableOpacity for cleaner Playwright/Detox selectors in React Native Web."
+}

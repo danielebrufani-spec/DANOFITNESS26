@@ -20,6 +20,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import { apiService } from '../../src/services/api';
 import { COLORS, ABBONAMENTO_INFO, FITNESS_IMAGES } from '../../src/utils/constants';
 import { StreakBanner } from '../../src/components/StreakBanner';
+import { KPIBanner } from '../../src/components/KPIBanner';
 import { FONTS, glow } from '../../src/theme';
 import { CountUp } from '../../src/components/CountUp';
 
@@ -1053,6 +1054,9 @@ export default function HomeScreen() {
             <Ionicons name="chevron-forward" size={22} color="#FF6B6B" />
           </TouchableOpacity>
         )}
+
+        {/* BANDA KPI - Streak + Biglietti + Abbonamento */}
+        {!isAdmin && <KPIBanner />}
 
         {/* BANNER STREAK SETTIMANALE - Bonus biglietti lotteria per allenamenti consecutivi */}
         {!isAdmin && <StreakBanner />}

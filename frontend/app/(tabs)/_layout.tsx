@@ -88,7 +88,7 @@ export default function TabsLayout() {
         name="alimentazione"
         options={{
           title: 'Dieta AI',
-          href: isArchived ? null : '/alimentazione',
+          href: null, // accessibile dal tab "Altro"
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons 
               name={focused ? "nutrition" : "nutrition-outline"} 
@@ -96,11 +96,6 @@ export default function TabsLayout() {
               color={focused ? COLORS.primary : color} 
             />
           ),
-          tabBarActiveTintColor: COLORS.primary,
-          tabBarLabelStyle: {
-            fontSize: 11,
-            fontWeight: '700',
-          },
         }}
       />
       <Tabs.Screen
@@ -123,7 +118,7 @@ export default function TabsLayout() {
         name="abbonamento"
         options={{
           title: 'Abbonamento',
-          href: (isAdmin || isIstruttore || isArchived) ? null : '/abbonamento',
+          href: null, // accessibile dal tab "Altro"
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="card-outline" size={size} color={color} />
           ),
@@ -153,7 +148,7 @@ export default function TabsLayout() {
         name="curiosita"
         options={{
           title: 'Curiosità',
-          href: (isIstruttore || isArchived) ? null : '/curiosita',
+          href: null, // accessibile dal tab "Altro"
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons 
               name={focused ? "bulb" : "bulb-outline"} 
@@ -183,7 +178,7 @@ export default function TabsLayout() {
         name="classifica"
         options={{
           title: 'Classifica',
-          href: isArchived ? null : '/classifica',
+          href: null, // accessibile dal tab "Altro"
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons 
               name={focused ? "trophy" : "trophy-outline"} 
@@ -213,7 +208,7 @@ export default function TabsLayout() {
         name="eventi"
         options={{
           title: 'Eventi',
-          href: isArchived ? null : '/eventi',
+          href: null, // accessibile dal tab "Altro"
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons 
               name={focused ? "musical-notes" : "musical-notes-outline"} 
@@ -228,9 +223,25 @@ export default function TabsLayout() {
         name="profilo"
         options={{
           title: 'Profilo',
+          href: null, // accessibile dal tab "Altro"
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person-outline" size={size} color={color} />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="altro"
+        options={{
+          title: 'Altro',
+          href: isArchived ? null : '/altro',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? 'apps' : 'apps-outline'}
+              size={size}
+              color={focused ? COLORS.primary : color}
+            />
+          ),
+          tabBarActiveTintColor: COLORS.primary,
         }}
       />
     </Tabs>
