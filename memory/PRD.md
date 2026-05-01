@@ -256,7 +256,26 @@ Applicato il design system Tactical Obsidian / Kinetic Orange a TUTTE le pagine 
 
 
 ## Task Futuri
-### Chiedi al Maestro — Q&A AI Sarcastico (1 Maggio 2026)
+### Top 3 della Settimana — Maestro Curated (1 Maggio 2026)
+Pubblicazione settimanale anonima delle 3 risposte più divertenti del Maestro, curate da Daniele.
+
+**Backend (`server.py`):**
+- Helper `_iso_week_key(dt)` → "YYYY-Www" (settimana ISO Monday-based, anchor jan4)
+- `GET /api/admin/maestro/week-pool?settimana=YYYY-Www` (default = scorsa) — restituisce tutte le domande della settimana per l'admin (con user_nome)
+- `POST /api/admin/maestro/publish-top` body `{settimana, question_ids: [1-3]}` — upsert in `maestro_top` (idempotente)
+- `GET /api/maestro/top` — pubblica anonima per tutti gli utenti (ritorna SOLO `argomento`, `domanda`, `risposta` — niente nomi/ID/date)
+- `DELETE /api/admin/maestro/publish-top/{settimana}` — admin rimuove pubblicazione
+- Privacy verificata server-side: nessun leak di `user_nome`/`user_id`/`data`/`created_at`
+
+**Frontend (`maestro.tsx`):**
+- Box collassabile **"COME FUNZIONA"** in cima con 4 regole numerate (3 argomenti + 250 caratteri, +1 biglietto/1 al giorno, lunedì Top 3 anonima, sarcasmo + off-topic respinte)
+- Sezione **"TOP X DELLA SETTIMANA"** sotto il form: card con medaglia oro numerata, badge argomento colorato, chip "ANONIMO" (eye-off), DOMANDA citazione + RISPOSTA DEL MAESTRO. Nessun nome utente nel DOM.
+- **Pannello Admin** condizionale: gold-bordered con switch toggle SCORSA/CORRENTE settimana, lista domande selezionabili (max 3 → checkbox oro), pulsante "PUBBLICA TOP (n/3)", "Ricarica" + messaggi di feedback. Form domanda nascosto per admin.
+- Card "CHIEDI AL MAESTRO" in Altro ora visibile anche all'admin (per accedere al pannello curation)
+
+**Test:** 15/15 backend pytest + 12/12 frontend checkpoint passati ✅
+
+## Chiedi al Maestro — Q&A AI Sarcastico (1 Maggio 2026)
 Nuova feature in tab "Altro": l'utente può fare 1 domanda al giorno al "Maestro" su Amore, Sesso o Lavoro e riceve risposta sarcastica AI in stile palestra.
 
 **Backend (`server.py`):**

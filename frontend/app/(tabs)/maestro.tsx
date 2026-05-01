@@ -107,15 +107,28 @@ function AdminMaestroPanel({ onPublished }: { onPublished: () => void }) {
   const [loading, setLoading] = useState(true);
   const [publishing, setPublishing] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [weekChoice, setWeekChoice] = useState<'last' | 'current'>('last');
 
-  const loadPool = async (sett?: string) => {
+  const isoWeek = (date: Date) => {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const day = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - day);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+    return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+  };
+
+  const loadPool = async (choice: 'last' | 'current' = weekChoice) => {
     setLoading(true);
+    setSelected(new Set());
+    setMsg(null);
     try {
-      const res = await apiService.adminMaestroWeekPool(sett);
+      const today = new Date();
+      const target = choice === 'current' ? isoWeek(today) : isoWeek(new Date(today.getTime() - 7 * 86400000));
+      const res = await apiService.adminMaestroWeekPool(target);
       setPool(res.data.questions || []);
       setSettimana(res.data.settimana || '');
       setRange({ from: res.data.from, to: res.data.to });
-      setSelected(new Set());
     } catch (e) {
       console.error('admin maestro pool err', e);
     } finally {
@@ -123,7 +136,12 @@ function AdminMaestroPanel({ onPublished }: { onPublished: () => void }) {
     }
   };
 
-  useEffect(() => { loadPool(); }, []);
+  useEffect(() => { loadPool('last'); }, []);
+
+  const switchWeek = (choice: 'last' | 'current') => {
+    setWeekChoice(choice);
+    loadPool(choice);
+  };
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -158,6 +176,24 @@ function AdminMaestroPanel({ onPublished }: { onPublished: () => void }) {
       <Text style={styles.adminSub}>
         Settimana <Text style={styles.adminBold}>{settimana || '—'}</Text> ({range.from} → {range.to}). Seleziona da 1 a 3 domande da pubblicare in forma <Text style={styles.adminBold}>anonima</Text>.
       </Text>
+
+      {/* Switch settimana */}
+      <View style={styles.weekSwitchRow}>
+        <TouchableOpacity
+          onPress={() => switchWeek('last')}
+          testID="admin-week-last"
+          style={[styles.weekSwitchBtn, weekChoice === 'last' && styles.weekSwitchActive]}
+        >
+          <Text style={[styles.weekSwitchText, weekChoice === 'last' && styles.weekSwitchTextActive]}>SCORSA</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => switchWeek('current')}
+          testID="admin-week-current"
+          style={[styles.weekSwitchBtn, weekChoice === 'current' && styles.weekSwitchActive]}
+        >
+          <Text style={[styles.weekSwitchText, weekChoice === 'current' && styles.weekSwitchTextActive]}>CORRENTE</Text>
+        </TouchableOpacity>
+      </View>
 
       {loading ? (
         <ActivityIndicator color={COLORS.primary} style={{ marginVertical: 14 }} />
@@ -209,7 +245,7 @@ function AdminMaestroPanel({ onPublished }: { onPublished: () => void }) {
 
       <View style={styles.adminActionsRow}>
         <TouchableOpacity
-          onPress={() => loadPool()}
+          onPress={() => loadPool(weekChoice)}
           style={[styles.adminSecondaryBtn]}
           testID="admin-reload-pool"
         >
@@ -738,4 +774,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFD700',
   },
   adminPrimaryText: { fontFamily: FONTS.bodyBlack, fontSize: 12, color: '#000', letterSpacing: 1.4 },
+
+  weekSwitchRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 14,
+    backgroundColor: COLORS.background,
+    padding: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  weekSwitchBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  weekSwitchActive: { backgroundColor: '#FFD700' },
+  weekSwitchText: { fontFamily: FONTS.bodyBlack, fontSize: 11, color: COLORS.textSecondary, letterSpacing: 1.4 },
+  weekSwitchTextActive: { color: '#000' },
 });
