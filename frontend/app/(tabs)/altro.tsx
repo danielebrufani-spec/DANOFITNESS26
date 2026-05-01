@@ -33,7 +33,7 @@ const SECTIONS: Section[] = [
     icon: 'chatbubble-ellipses',
     color: '#FF3D7F',
     route: '/maestro',
-    show: ({ isAdmin, isIstruttore, isArchived }) => !isAdmin && !isIstruttore && !isArchived,
+    show: ({ isIstruttore, isArchived }) => !isIstruttore && !isArchived,
   },
   {
     key: 'alimentazione',

@@ -5911,6 +5911,118 @@ async def admin_maestro_all(admin_user: dict = Depends(get_admin_user)):
     return out
 
 
+# ===== TOP 3 DELLA SETTIMANA (curata da admin, pubblica anonima) =====
+
+def _iso_week_key(dt: datetime) -> str:
+    """Chiave settimana ISO 'YYYY-Www' (es: 2026-W18)."""
+    iso = dt.isocalendar()
+    return f"{iso[0]}-W{iso[1]:02d}"
+
+
+class MaestroTopPublish(BaseModel):
+    settimana: str  # "YYYY-Www" — opzionale, default = settimana corrente
+    question_ids: List[str]  # 1-3 ID di maestro_questions
+
+
+@api_router.get("/maestro/top")
+async def maestro_top_published(current_user: dict = Depends(get_current_user)):
+    """Restituisce le Top 3 pubblicate (tutte le settimane, ordine recente)."""
+    items = await db.maestro_top.find({}).sort("settimana", -1).to_list(20)
+    out = []
+    for w in items:
+        anon = []
+        for q in w.get("entries", []):
+            anon.append({
+                "argomento": q.get("argomento", ""),
+                "domanda": q.get("domanda", ""),
+                "risposta": q.get("risposta", ""),
+            })
+        out.append({
+            "settimana": w.get("settimana", ""),
+            "pubblicato_il": w.get("pubblicato_il").isoformat() if w.get("pubblicato_il") else None,
+            "entries": anon,
+        })
+    return out
+
+
+@api_router.get("/admin/maestro/week-pool")
+async def admin_maestro_week_pool(settimana: Optional[str] = None, admin_user: dict = Depends(get_admin_user)):
+    """Admin: elenco domande della settimana indicata (default: scorsa) per scelta Top 3."""
+    if not settimana:
+        # Settimana scorsa di default (lunedì-domenica)
+        last_week_dt = datetime.now(ROME_TZ) - timedelta(days=7)
+        settimana = _iso_week_key(last_week_dt)
+    # Calcola range data per la settimana ISO
+    try:
+        year_str, week_str = settimana.split("-W")
+        year = int(year_str)
+        week = int(week_str)
+        # Lunedì della settimana ISO
+        jan4 = datetime(year, 1, 4)
+        start = jan4 - timedelta(days=jan4.isoweekday() - 1) + timedelta(weeks=week - 1)
+        end = start + timedelta(days=7)
+        start_s = start.strftime("%Y-%m-%d")
+        end_s = end.strftime("%Y-%m-%d")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Formato settimana non valido (atteso 'YYYY-Www')")
+
+    items = await db.maestro_questions.find({
+        "data": {"$gte": start_s, "$lt": end_s}
+    }).sort("created_at", -1).to_list(500)
+    out = []
+    for i in items:
+        d = _serialize_maestro(i)
+        d["user_nome"] = i.get("user_nome", "")
+        out.append(d)
+    return {"settimana": settimana, "from": start_s, "to": end_s, "questions": out}
+
+
+@api_router.post("/admin/maestro/publish-top")
+async def admin_maestro_publish_top(payload: MaestroTopPublish, admin_user: dict = Depends(get_admin_user)):
+    """Admin: pubblica le Top della settimana (1-3 domande) in forma anonima."""
+    if not payload.question_ids or len(payload.question_ids) > 3:
+        raise HTTPException(status_code=400, detail="Devi scegliere da 1 a 3 domande")
+
+    settimana = payload.settimana or _iso_week_key(datetime.now(ROME_TZ) - timedelta(days=7))
+
+    entries = []
+    for qid in payload.question_ids:
+        try:
+            q = await db.maestro_questions.find_one({"_id": ObjectId(qid)})
+        except Exception:
+            raise HTTPException(status_code=400, detail=f"ID non valido: {qid}")
+        if not q:
+            raise HTTPException(status_code=404, detail=f"Domanda non trovata: {qid}")
+        entries.append({
+            "argomento": q.get("argomento", ""),
+            "domanda": q.get("domanda", ""),
+            "risposta": q.get("risposta", ""),
+        })
+
+    await db.maestro_top.update_one(
+        {"settimana": settimana},
+        {"$set": {
+            "settimana": settimana,
+            "entries": entries,
+            "pubblicato_il": datetime.now(ROME_TZ),
+        }},
+        upsert=True,
+    )
+    return {"settimana": settimana, "count": len(entries)}
+
+
+@api_router.delete("/admin/maestro/publish-top/{settimana}")
+async def admin_maestro_unpublish_top(settimana: str, admin_user: dict = Depends(get_admin_user)):
+    """Admin: rimuove la Top di una settimana."""
+    res = await db.maestro_top.delete_one({"settimana": settimana})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Top non trovata")
+    return {"deleted": settimana}
+
+
+
+
+
 
 
 # ============================================================================

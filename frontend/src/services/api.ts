@@ -394,7 +394,16 @@ export const apiService = {
   maestroAsk: (argomento: 'amore' | 'sesso' | 'lavoro', domanda: string) =>
     api.post<{item: any; biglietto_dato: boolean}>('/maestro/ask', { argomento, domanda }),
   maestroHistory: () => api.get<any[]>('/maestro/history'),
+  maestroTop: () => api.get<any[]>('/maestro/top'),
   adminMaestroAll: () => api.get<any[]>('/admin/maestro/all'),
+  adminMaestroWeekPool: (settimana?: string) =>
+    api.get<{settimana: string; from: string; to: string; questions: any[]}>(
+      `/admin/maestro/week-pool${settimana ? `?settimana=${settimana}` : ''}`
+    ),
+  adminMaestroPublishTop: (data: {settimana?: string; question_ids: string[]}) =>
+    api.post<{settimana: string; count: number}>('/admin/maestro/publish-top', data),
+  adminMaestroUnpublishTop: (settimana: string) =>
+    api.delete<{deleted: string}>(`/admin/maestro/publish-top/${settimana}`),
 };
 
 export default api;

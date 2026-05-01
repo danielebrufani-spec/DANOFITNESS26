@@ -1,0 +1,60 @@
+{
+  "summary": "Tested NEW Maestro Top-3 weekly publication feature (rules box, anonymous Top section, admin curation panel). Backend: 15/15 pytest cases PASSED on public URL covering /api/admin/maestro/week-pool (default last week, specific week, invalid format, RBAC), /api/admin/maestro/publish-top (1-3 IDs validation, invalid/nonexistent ID, happy path with privacy verification, RBAC), /api/maestro/top (auth required, anonymous payload), DELETE /api/admin/maestro/publish-top/{settimana} (200 + 404 + RBAC). Privacy contract verified at API level: response only contains argomento/domanda/risposta — NO user_nome, user_id, data, created_at. Frontend: /maestro renders 'COME FUNZIONA' collapsible (default open, 4 numbered rules with proper icons/colors and the exact rules requested), chevron toggle works (expands/collapses). Admin sees AdminMaestroPanel (gold-bordered, title 'PANNELLO ADMIN — TOP SETTIMANALE', subtitle with ISO week + date range, Ricarica + 'PUBBLICA TOP (n/3)' buttons, 'Nessuna domanda in questa settimana' for empty last week). Admin form/answer card/personal archive NOT rendered (verified maestro-input absent). Client TOP section renders correctly: 'TOP 1 DELLA SETTIMANA', subtitle 'Le risposte più divertenti pubblicate dal Maestro · Anonime', medal numbering, topic colored badge, ANONIMO chip with eye-off icon, DOMANDA label + quoted question, divider, RISPOSTA DEL MAESTRO label + response. NO user name leak in DOM. Altro grid for admin now shows CHIEDI AL MAESTRO card (previously hidden).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "tests_executed": [
+    "Backend GET /api/admin/maestro/week-pool default returns last week (200 + settimana/from/to/questions). PASS",
+    "Backend GET /api/admin/maestro/week-pool?settimana=current contains seeded question. PASS",
+    "Backend GET /api/admin/maestro/week-pool?settimana=BADFORMAT returns 400. PASS",
+    "Backend GET /api/admin/maestro/week-pool RBAC: client 401/403, unauth 401/403. PASS",
+    "Backend POST /api/admin/maestro/publish-top with 0 IDs returns 400. PASS",
+    "Backend POST /api/admin/maestro/publish-top with 4 IDs returns 400. PASS",
+    "Backend POST /api/admin/maestro/publish-top with malformed/non-existent ObjectId returns 400/404. PASS",
+    "Backend POST /api/admin/maestro/publish-top happy path returns {settimana, count}; GET /api/maestro/top returns anonymous entries (no user_nome/user_id/data/created_at). PASS",
+    "Backend GET /api/maestro/top unauth returns 401/403. PASS",
+    "Backend POST /api/admin/maestro/publish-top by client returns 401/403. PASS",
+    "Backend DELETE /api/admin/maestro/publish-top/{settimana} happy path 200 + {deleted}. PASS",
+    "Backend DELETE /api/admin/maestro/publish-top/1999-W01 returns 404. PASS",
+    "Backend DELETE /api/admin/maestro/publish-top by client returns 401/403. PASS",
+    "Frontend /maestro for client: 'COME FUNZIONA' header + chevron + rules box visible by default; click toggles collapse/expand. PASS",
+    "Frontend /maestro rules box contains the 4 required rules (3-argomenti+250 char, +1 biglietto/1 al giorno, lunedì Top 3 anonima, sarcasmo + off-topic respinte). PASS",
+    "Frontend /maestro for admin: AdminMaestroPanel renders (testid admin-maestro-panel), title 'PANNELLO ADMIN — TOP SETTIMANALE', subtitle with ISO week (2026-W17) and date range, Ricarica + 'PUBBLICA TOP (0/3)' buttons. PASS",
+    "Frontend /maestro for admin: form input (maestro-input) NOT rendered, answer/archive cards NOT rendered. PASS",
+    "Frontend /maestro client view after publish: TOP section visible (testid maestro-top-week) with 'TOP 1 DELLA SETTIMANA', anonima subtitle, ANONIMO chip, DOMANDA label, RISPOSTA DEL MAESTRO label. PASS",
+    "Frontend privacy: published top entry contains no user name string (verified via document.body.innerText). PASS",
+    "Frontend /altro for admin: 'CHIEDI AL MAESTRO' card now visible (previously hidden). PASS"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_maestro_top.py",
+    "/app/test_reports/pytest/maestro_top_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "GOOD: privacy contract enforced server-side in /api/maestro/top (only argomento/domanda/risposta serialized). Frontend reinforces this by not rendering user info even if present.",
+    "GOOD: ISO-week helper _iso_week_key + Monday-based date range computed correctly using jan4 anchor (handles week 1 edge cases).",
+    "GOOD: publish-top is idempotent via upsert on {settimana} — safe to re-publish without duplicates.",
+    "GOOD: validation chain order is clear (size 1-3 → invalid ObjectId 400 → not-found 404).",
+    "MINOR: AdminMaestroPanel always loads default 'last week' on mount with no UI selector to switch weeks. Last-week pool may be empty (as in this test run with W17 empty), forcing admin to wait until next week to use the panel for the prior week. Consider adding a small 'Settimana corrente / scorsa' toggle so admin can also publish the current ongoing week (which is the typical workflow when seeding the feature). Non-blocking.",
+    "MINOR: AdminMaestroPanel has no error/empty-state CTA pointing back to /admin/maestro to view current week's incoming questions. Just informational.",
+    "MINOR: rules box copy is good; consider adding a 4th rule mentioning that 'le top sono pubblicate il lunedì alle 09:00' if you ever schedule it; right now the publication is fully manual via the panel."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_maestro_top.py (new)"
+  ],
+  "success_rate": {"backend": "100% (15/15 pytest)", "frontend": "100% (12/12 checkpoints)"},
+  "test_credentials": {
+    "admin_email": "danielebrufani@gmail.com",
+    "admin_password": "Mariavittoria23",
+    "client_existing_email": "testclient_kpi@test.com",
+    "note": "Fresh TEST_maestrotop_*@test.com and TEST_uitest*@test.com clients registered via /api/auth/register and seeded a current-week (2026-W18) question to validate the publish→client-view flow."
+  },
+  "seed_data_creation": "Registered ~3 fresh TEST_ clients during this iteration (2 by pytest, 1 by Playwright UI test). Each consumed their daily slot in maestro_questions for current week (2026-W18, topic SESSO/AMORE). One Top was published and unpublished via pytest, plus one published from UI test. Admin can clean these up via existing /api/admin/maestro/all if needed.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Maestro Top-3 weekly publication feature is FULLY WORKING end-to-end. Backend: pool/publish/get/delete + RBAC + privacy all green (15/15 pytest in /app/backend/tests/test_maestro_top.py). Frontend: rules box, admin curation panel (default last week, empty pool render OK, publish button disabled at 0/3, label 'PUBBLICA TOP (n/3)'), and anonymous client TOP section all render correctly. Privacy: no user name appears in DOM or API response for /api/maestro/top. Only minor non-blocking UX suggestion: admin panel could expose a toggle to switch between current and last week (currently hard-coded to default last week). Frontend supervisorctl restart was performed at start of iteration to pick up new bundle (CI mode).",
+  "rca of the issue": "N/A — no bugs found. All 12 review requirements pass."
+}
