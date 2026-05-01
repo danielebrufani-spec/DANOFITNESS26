@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Tabs } from 'expo-router';
-import { StyleSheet, Platform, Modal, View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { StyleSheet, Platform, Modal, View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
 import { COLORS } from '../../src/utils/constants';
 import { apiService } from '../../src/services/api';
@@ -172,11 +171,22 @@ export default function TabsLayout() {
             />
           ),
           tabBarActiveTintColor: COLORS.primary,
-          tabBarLabelStyle: {
-            fontSize: 10,
-            fontWeight: '600',
-            marginTop: 2,
-          },
+          tabBarLabel: ({ focused, color }) => (
+            <Text
+              numberOfLines={2}
+              style={{
+                fontSize: 10,
+                fontWeight: '600',
+                color: focused ? COLORS.primary : color,
+                textAlign: 'center',
+                lineHeight: 12,
+                marginTop: 2,
+                width: 70,
+              }}
+            >
+              Ruota e{'\n'}Quiz
+            </Text>
+          ),
         }}
       />
       <Tabs.Screen
