@@ -1452,30 +1452,6 @@ export default function PremiScreen() {
           </TouchableOpacity>
         )}
 
-        {/* Albo d'Oro */}
-        {winners.length > 0 && (
-          <View style={styles.hallOfFame}>
-            <Text style={styles.hofTitle}>🏆 ALBO D'ORO 🏆</Text>
-            {winners.slice(0, 5).map((winnerMonth, idx) => (
-              <View key={idx} style={styles.hofMonthBlock}>
-                <Text style={styles.hofMonthLabel}>{formatMese(winnerMonth.mese_riferimento)}</Text>
-                {winnerMonth.vincitori.map((v, vIdx) => (
-                  <View key={vIdx} style={styles.hofItem}>
-                    <Text style={styles.hofMedal}>
-                      {v.posizione === 1 ? '🥇' : v.posizione === 2 ? '🥈' : '🥉'}
-                    </Text>
-                    <View style={styles.hofInfo}>
-                      <Text style={styles.hofName}>{v.soprannome || `${v.nome} ${v.cognome}`}</Text>
-                      {v.premio && <Text style={styles.hofPrize}>🎁 {v.premio}</Text>}
-                    </View>
-                    <Text style={styles.hofTickets}>{v.biglietti} 🎟️</Text>
-                  </View>
-                ))}
-              </View>
-            ))}
-          </View>
-        )}
-
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>Buona fortuna! 🍀</Text>
