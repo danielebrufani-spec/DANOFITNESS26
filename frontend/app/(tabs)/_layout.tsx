@@ -235,6 +235,16 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="maestro"
+        options={{
+          title: 'Maestro',
+          href: null, // accessibile dal tab "Altro"
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="chatbubble-ellipses-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profilo"
         options={{
           title: 'Profilo',

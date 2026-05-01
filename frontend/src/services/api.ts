@@ -388,6 +388,13 @@ export const apiService = {
   adminGetShopOrderWhatsappLink: (id: string, fonte: 'produttore' | 'magazzino' = 'produttore') => api.post<{whatsapp_text: string}>(`/admin/shop/orders/${id}/whatsapp-link?fonte=${fonte}`),
   adminPendingOrderNotifications: () => api.get<{count: number; orders: any[]}>('/admin/shop/orders/pending-notifications'),
   adminMarkOrdersNotified: () => api.post<{updated: number}>('/admin/shop/orders/mark-notified'),
+
+  // ========== CHIEDI AL MAESTRO ==========
+  maestroToday: () => api.get<{can_ask: boolean; today: any | null}>('/maestro/today'),
+  maestroAsk: (argomento: 'amore' | 'sesso' | 'lavoro', domanda: string) =>
+    api.post<{item: any; biglietto_dato: boolean}>('/maestro/ask', { argomento, domanda }),
+  maestroHistory: () => api.get<any[]>('/maestro/history'),
+  adminMaestroAll: () => api.get<any[]>('/admin/maestro/all'),
 };
 
 export default api;

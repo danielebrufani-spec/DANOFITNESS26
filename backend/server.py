@@ -5733,6 +5733,186 @@ async def get_wheel_prizes():
     return {"premi": RUOTA_PREMI}
 
 
+
+# ============================================================================
+# ===================== CHIEDI AL MAESTRO (Q&A SARCASTICO) ===================
+# ============================================================================
+
+MAESTRO_SYSTEM_PROMPT = """Sei "IL MAESTRO" di una palestra italiana di Bastia Umbra (DanoFitness23).
+Ti chiamano così gli iscritti che ti scrivono per ricevere consigli sarcastici su 3 argomenti SOLO:
+1. AMORE (relazioni, ex, partner, corteggiamento, tradimenti, gelosia, coppia)
+2. SESSO (intimità, attrazione, problemi di letto, prime volte — sempre con eleganza, mai volgare)
+3. LAVORO (capi, colleghi, motivazione, carriera, dimissioni, stipendio)
+
+REGOLE FERREE:
+- Tono: BASTARDO MA AFFETTUOSO. Sarcastico, irriverente, diretto, romanaccio/umbro nelle metafore. Sembri un mix tra un amico fidato e uno zio brontolone.
+- Mai politicamente corretto. Mai moralista. Niente cuoricini, niente emoji a cascata. Massimo 1 emoji a fine risposta.
+- Lunghezza: 2-4 frasi. MAI più di 100 parole. Brevità = sarcasmo.
+- DEVI sempre dare un consiglio utile finale, anche dopo averlo preso in giro.
+- Riferimenti alla palestra ammessi e graditi (es. "intanto vieni a fare un circuito che almeno sudi 'sta ansia").
+
+FUORI TEMA:
+Se la domanda NON è chiaramente su Amore/Sesso/Lavoro (es. politica, cucina, salute, calcio, matematica, codici), RIFIUTATI con una battuta tipo:
+"Senti, qui si parla di amore, sesso e lavoro. Le altre cose vai a chiederle a Google. Io c'ho di meglio da fare." 
+Adatta la battuta al contesto, ma rifiuta SEMPRE.
+
+CONTENUTI VIETATI:
+- Niente porno esplicito (suggestivo sì, hardcore no)
+- Niente consigli illegali, violenti, autolesionistici
+- Niente attacchi a categorie protette
+Se la domanda contiene questi temi, declina con: "Bella, su questa zona non scendo. Cambia argomento."
+
+Rispondi SOLO con il testo della risposta. Niente intestazioni, niente "Maestro:", niente firma. Solo la risposta."""
+
+
+class MaestroAskRequest(BaseModel):
+    argomento: str  # "amore" | "sesso" | "lavoro"
+    domanda: str
+
+
+def _serialize_maestro(m: dict) -> dict:
+    return {
+        "id": str(m["_id"]),
+        "argomento": m.get("argomento", ""),
+        "domanda": m.get("domanda", ""),
+        "risposta": m.get("risposta", ""),
+        "data": m.get("data"),
+        "created_at": m.get("created_at").isoformat() if m.get("created_at") else None,
+    }
+
+
+async def _call_maestro_llm(argomento: str, domanda: str) -> str:
+    """Chiama GPT-4.1-mini con prompt sarcastico. Riusa il pattern HTTPx già in uso per la dieta."""
+    import httpx
+    llm_key = os.environ.get("EMERGENT_LLM_KEY", "").strip()
+    if not llm_key:
+        raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY non configurata")
+
+    user_payload = f"Argomento: {argomento.upper()}\nDomanda dell'utente: {domanda.strip()}"
+
+    async with httpx.AsyncClient(timeout=45.0) as client:
+        try:
+            resp = await client.post(
+                "https://integrations.emergentagent.com/llm/chat/completions",
+                headers={"Content-Type": "application/json", "Authorization": f"Bearer {llm_key}"},
+                json={
+                    "model": "gpt-4.1-mini",
+                    "messages": [
+                        {"role": "system", "content": MAESTRO_SYSTEM_PROMPT},
+                        {"role": "user", "content": user_payload},
+                    ],
+                    "temperature": 0.95,
+                    "max_tokens": 220,
+                },
+            )
+        except Exception as e:
+            logger.error(f"[MAESTRO] HTTPx errore: {e}")
+            raise HTTPException(status_code=502, detail="Maestro temporaneamente offline. Riprova tra poco.")
+
+    if resp.status_code != 200:
+        logger.warning(f"[MAESTRO] LLM status={resp.status_code} body={resp.text[:200]}")
+        raise HTTPException(status_code=502, detail="Il Maestro non risponde. Riprova tra poco.")
+
+    try:
+        text = resp.json()["choices"][0]["message"]["content"].strip()
+    except Exception:
+        raise HTTPException(status_code=502, detail="Risposta Maestro malformata")
+    return text
+
+
+@api_router.get("/maestro/today")
+async def maestro_today(current_user: dict = Depends(get_current_user)):
+    """Restituisce la domanda di oggi (se già fatta) + flag can_ask."""
+    user_id = str(current_user["_id"])
+    today = datetime.now(ROME_TZ).strftime("%Y-%m-%d")
+    doc = await db.maestro_questions.find_one({"user_id": user_id, "data": today})
+    return {
+        "can_ask": doc is None,
+        "today": _serialize_maestro(doc) if doc else None,
+    }
+
+
+@api_router.post("/maestro/ask")
+async def maestro_ask(payload: MaestroAskRequest, current_user: dict = Depends(get_current_user)):
+    """L'utente fa la sua unica domanda del giorno al Maestro. +1 biglietto bonus alla prima del giorno."""
+    user_id = str(current_user["_id"])
+    user_nome = f"{current_user.get('nome', '')} {current_user.get('cognome', '')}".strip()
+    today_dt = datetime.now(ROME_TZ)
+    today = today_dt.strftime("%Y-%m-%d")
+    mese = today_dt.strftime("%Y-%m")
+
+    arg = (payload.argomento or "").strip().lower()
+    if arg not in ("amore", "sesso", "lavoro"):
+        raise HTTPException(status_code=400, detail="Argomento non valido (amore/sesso/lavoro)")
+
+    domanda = (payload.domanda or "").strip()
+    if len(domanda) < 5:
+        raise HTTPException(status_code=400, detail="Scrivi almeno 5 caratteri, non sei muto")
+    if len(domanda) > 250:
+        raise HTTPException(status_code=400, detail="Massimo 250 caratteri. Rispetta il Maestro.")
+
+    # Limite: 1 al giorno
+    existing = await db.maestro_questions.find_one({"user_id": user_id, "data": today})
+    if existing:
+        raise HTTPException(status_code=429, detail="Hai già fatto la tua domanda oggi. Torna domani.")
+
+    # Chiamata LLM
+    risposta = await _call_maestro_llm(arg, domanda)
+
+    # Bonus biglietto: +1 alla wheel_tickets del mese corrente
+    biglietto_dato = False
+    try:
+        await db.wheel_tickets.update_one(
+            {"user_id": user_id, "mese": mese},
+            {"$inc": {"biglietti": 1}, "$setOnInsert": {"user_id": user_id, "mese": mese}},
+            upsert=True,
+        )
+        biglietto_dato = True
+    except Exception as e:
+        logger.warning(f"[MAESTRO] errore bonus biglietto user={user_id}: {e}")
+
+    # Salva domanda
+    doc = {
+        "user_id": user_id,
+        "user_nome": user_nome,
+        "argomento": arg,
+        "domanda": domanda,
+        "risposta": risposta,
+        "data": today,
+        "mese": mese,
+        "biglietto_dato": biglietto_dato,
+        "created_at": today_dt,
+    }
+    res = await db.maestro_questions.insert_one(doc)
+    doc["_id"] = res.inserted_id
+    return {
+        "item": _serialize_maestro(doc),
+        "biglietto_dato": biglietto_dato,
+    }
+
+
+@api_router.get("/maestro/history")
+async def maestro_history(current_user: dict = Depends(get_current_user)):
+    """Ultime 30 domande dell'utente."""
+    user_id = str(current_user["_id"])
+    items = await db.maestro_questions.find({"user_id": user_id}).sort("created_at", -1).to_list(30)
+    return [_serialize_maestro(i) for i in items]
+
+
+@api_router.get("/admin/maestro/all")
+async def admin_maestro_all(admin_user: dict = Depends(get_admin_user)):
+    """Admin: vede tutte le domande/risposte (utile per moderazione/divertimento)."""
+    items = await db.maestro_questions.find({}).sort("created_at", -1).to_list(500)
+    out = []
+    for i in items:
+        d = _serialize_maestro(i)
+        d["user_nome"] = i.get("user_nome", "")
+        out.append(d)
+    return out
+
+
+
+
 # ============================================================================
 # ====================== EVENTI PISCINA CAMPING ==============================
 # ============================================================================

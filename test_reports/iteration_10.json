@@ -1,0 +1,56 @@
+{
+  "summary": "Full backend + frontend testing of 'Chiedi al Maestro' feature. Backend: 11/11 pytest cases PASSED on real public URL (ask validation, happy-path with GPT-4.1-mini, +1 ticket bonus, today, history, rate-limit 429, admin list, 401 unauth, 403 client->admin). Frontend: Altro grid shows pink 'CHIEDI AL MAESTRO' card at top-left (first position), subtitle 'Amore, sesso e lavoro — risponde sarcastico'. Card is hidden for admin (5 cards only, no maestro/abbonamento). Bottom tab bar has NO Maestro tab (Home/Prenota/Ruota-Quiz/Shop/Altro). /maestro page renders: title 'CHIEDI AL MAESTRO' (Bebas Neue), 3 chips (AMORE pink / SESSO orange / LAVORO blue), TextInput, '0/250' counter, submit button 'CHIEDI AL MAESTRO' — all present for fresh user (can_ask=true). For user whose daily slot is consumed, locked-state renders correctly: topic badge, 'TU HAI CHIESTO', question, divider, 'IL MAESTRO RISPONDE', response text, plus 'Hai già fatto la tua domanda di oggi'. All 12 required test points passed.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "tests_executed": [
+    "Backend POST /api/maestro/ask valid (amore) returns 200 with item.risposta>5 chars and biglietto_dato=true. PASS",
+    "Backend GET /api/maestro/today before ask -> can_ask=true, today=null. PASS",
+    "Backend GET /api/maestro/today after ask -> can_ask=false, today.risposta populated. PASS",
+    "Backend POST /api/maestro/ask 2nd time same day -> 429 detail contains 'oggi'/'domani'. PASS",
+    "Backend POST /api/maestro/ask invalid argomento 'cucina' -> 400. PASS",
+    "Backend POST /api/maestro/ask domanda<5 -> 400. PASS",
+    "Backend POST /api/maestro/ask domanda>250 -> 400. PASS",
+    "Backend GET /api/maestro/history returns list with latest first. PASS",
+    "Backend GET /api/admin/maestro/all (admin token) returns 200 list. PASS",
+    "Backend GET /api/admin/maestro/all (client token) returns 401/403. PASS",
+    "Backend POST /api/maestro/ask unauth -> 401/403. PASS",
+    "Frontend client altro grid: MAESTRO card is first (x=18,y=155), pink, subtitle visible. PASS",
+    "Frontend bottom tab bar has NO 'Maestro' tab (only Home/Prenota/Ruota-Quiz/Shop/Altro). PASS",
+    "Frontend /maestro page for FRESH user: title, 3 topic chips (amore/sesso/lavoro data-testid), input, submit, counter 0/250 all present. PASS",
+    "Frontend /maestro page for LOCKED user: 'TU HAI CHIESTO', 'IL MAESTRO RISPONDE', 'Hai già fatto la tua domanda di oggi' all render. PASS",
+    "Frontend admin altro grid: no MAESTRO card (cards = alimentazione/classifica/curiosita/eventi/profilo). PASS"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_maestro.py",
+    "/app/test_reports/pytest/maestro_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "GOOD: endpoints correctly prefixed with /api, proper HTTPException codes (400/429/502), Pydantic model validation, sarcastic Italian system prompt well constrained to 3 topics with off-topic refusal rule.",
+    "GOOD: daily rate-limit enforced via {user_id, data:'YYYY-MM-DD'} index on maestro_questions; atomic upsert on wheel_tickets for +1 bonus.",
+    "GOOD: altro.tsx filters MAESTRO card for admin/istruttore/archived (show callback) — matches spec.",
+    "GOOD: _layout.tsx uses href:null for 'maestro' so route exists but is hidden from bottom bar.",
+    "MINOR (existing, not a regression): _serialize_maestro doesn't expose 'biglietto_dato' inside the item object (only returned at top-level of /ask response); history items thus don't show whether a bonus was granted. Non-blocking but consider adding for UI badges in history view.",
+    "MINOR: _call_maestro_llm uses raw httpx POST directly instead of emergentintegrations helper used elsewhere. Works fine but inconsistent with the rest of the codebase (consigli musicali uses the same pattern too, so acceptable).",
+    "MINOR: after manual supervisor restart, Metro bundler served the updated bundle correctly. CI=true disables watch mode so HOT reload didn't pick up the new maestro.tsx/altro.tsx until restart. Main agent should be aware that large UI additions may require one supervisorctl restart frontend to take effect in the preview env."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_maestro.py (new)"
+  ],
+  "success_rate": {"backend": "100% (11/11 pytest)", "frontend": "100% (16/16 checkpoints)"},
+  "test_credentials": {
+    "admin_email": "danielebrufani@gmail.com",
+    "admin_password": "Mariavittoria23",
+    "client_existing_email": "testclient_kpi@test.com",
+    "client_existing_password": "Test123456",
+    "note": "testclient_kpi has today's slot consumed (topic=LAVORO). Fresh accounts registered via POST /api/auth/register with TEST_ prefix for happy-path testing."
+  },
+  "seed_data_creation": "Registered 2 fresh TEST_ clients (TEST_maestro_*@test.com and TEST_maestroui_*@test.com) during testing. Each consumed their daily question slot in maestro_questions collection. Can be cleaned up by admin.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Chiedi al Maestro feature is FULLY WORKING end-to-end: backend endpoints + GPT-4.1-mini sarcastic Italian responses + 1/day rate limit + +1 lottery bonus + private user history + admin view. Frontend card hidden for admin, card ordered first for clients, locked-state UI correct. Only caveat: frontend Metro bundler in CI mode requires a supervisorctl restart frontend after major .tsx additions so the new bundle is served (did it once during testing to pick up the new altro.tsx/maestro.tsx). All 12 review requirements passed."
+}

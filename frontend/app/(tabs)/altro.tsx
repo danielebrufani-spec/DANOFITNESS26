@@ -27,6 +27,15 @@ type Section = {
 
 const SECTIONS: Section[] = [
   {
+    key: 'maestro',
+    label: 'CHIEDI AL MAESTRO',
+    sub: 'Amore, sesso e lavoro — risponde sarcastico',
+    icon: 'chatbubble-ellipses',
+    color: '#FF3D7F',
+    route: '/maestro',
+    show: ({ isAdmin, isIstruttore, isArchived }) => !isAdmin && !isIstruttore && !isArchived,
+  },
+  {
     key: 'alimentazione',
     label: 'DIETA AI',
     sub: 'Piano nutrizione',
