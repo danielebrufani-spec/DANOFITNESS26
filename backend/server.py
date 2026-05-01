@@ -5734,6 +5734,66 @@ async def get_wheel_prizes():
 
 
 # ============================================================================
+# ============== Admin: correzione premi lotteria di un mese =================
+# ============================================================================
+class LotteryPrizesCorrection(BaseModel):
+    mese: str  # formato "YYYY-MM"
+    premio_1: str
+    premio_2: str
+    premio_3: str
+
+
+@api_router.post("/admin/lottery/correct-prizes")
+async def admin_correct_prizes(data: LotteryPrizesCorrection, admin_user: dict = Depends(get_admin_user)):
+    """Aggiorna i premi del documento lottery_winners di un mese specifico, mantenendo gli stessi vincitori.
+    Aggiorna sia i top-level (premio_1/2/3) sia il campo `premio` di ogni vincitore in base alla posizione."""
+    doc = await db.lottery_winners.find_one({"mese": data.mese})
+    if not doc:
+        raise HTTPException(status_code=404, detail=f"Nessun documento lottery_winners per il mese {data.mese}")
+
+    nuovi_premi = [data.premio_1, data.premio_2, data.premio_3]
+    vincitori_aggiornati = []
+    for v in doc.get("vincitori", []):
+        pos = int(v.get("posizione", 0))
+        idx = pos - 1
+        if 0 <= idx < len(nuovi_premi):
+            v["premio"] = nuovi_premi[idx]
+        vincitori_aggiornati.append(v)
+
+    await db.lottery_winners.update_one(
+        {"mese": data.mese},
+        {"$set": {
+            "premio_1": data.premio_1,
+            "premio_2": data.premio_2,
+            "premio_3": data.premio_3,
+            "vincitori": vincitori_aggiornati,
+            "updated_at": now_rome(),
+            "premi_corretti_da": str(admin_user["_id"]),
+        }}
+    )
+
+    # Aggiorna anche lottery_prizes per coerenza futura
+    await db.lottery_prizes.update_one(
+        {"mese": data.mese},
+        {"$set": {
+            "mese": data.mese,
+            "premio_1": data.premio_1,
+            "premio_2": data.premio_2,
+            "premio_3": data.premio_3,
+            "updated_at": now_rome(),
+            "updated_by": str(admin_user["_id"]),
+        }},
+        upsert=True
+    )
+
+    return {
+        "message": f"Premi del mese {data.mese} corretti",
+        "premi": nuovi_premi,
+        "vincitori_aggiornati": len(vincitori_aggiornati),
+    }
+
+
+# ============================================================================
 # ============================ SHOP / MERCHANDISE ============================
 # ============================================================================
 
