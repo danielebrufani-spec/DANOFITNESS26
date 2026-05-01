@@ -378,6 +378,13 @@ export const apiService = {
   adminDeleteShopOrder: (id: string) => api.delete<any>(`/admin/shop/orders/${id}`),
   adminCorrectLotteryPrizes: (data: { mese: string; premio_1: string; premio_2: string; premio_3: string }) =>
     api.post<any>('/admin/lottery/correct-prizes', data),
+
+  // ========== EVENTI PISCINA CAMPING ==========
+  getEvents: () => api.get<any[]>('/events'),
+  adminListEvents: () => api.get<any[]>('/admin/events'),
+  adminCreateEvent: (data: any) => api.post<any>('/admin/events', data),
+  adminUpdateEvent: (id: string, data: any) => api.put<any>(`/admin/events/${id}`, data),
+  adminDeleteEvent: (id: string) => api.delete<any>(`/admin/events/${id}`),
   adminGetShopOrderWhatsappLink: (id: string, fonte: 'produttore' | 'magazzino' = 'produttore') => api.post<{whatsapp_text: string}>(`/admin/shop/orders/${id}/whatsapp-link?fonte=${fonte}`),
   adminPendingOrderNotifications: () => api.get<{count: number; orders: any[]}>('/admin/shop/orders/pending-notifications'),
   adminMarkOrdersNotified: () => api.post<{updated: number}>('/admin/shop/orders/mark-notified'),

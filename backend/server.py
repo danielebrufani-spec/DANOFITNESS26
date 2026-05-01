@@ -5734,6 +5734,91 @@ async def get_wheel_prizes():
 
 
 # ============================================================================
+# ====================== EVENTI PISCINA CAMPING ==============================
+# ============================================================================
+class EventCreate(BaseModel):
+    titolo: str
+    testo: Optional[str] = ""
+    foto_base64: Optional[str] = None
+    data_evento: Optional[str] = None  # YYYY-MM-DD
+    attivo: bool = True
+
+
+class EventUpdate(BaseModel):
+    titolo: Optional[str] = None
+    testo: Optional[str] = None
+    foto_base64: Optional[str] = None
+    data_evento: Optional[str] = None
+    attivo: Optional[bool] = None
+
+
+def _serialize_event(e: dict) -> dict:
+    return {
+        "id": str(e["_id"]),
+        "titolo": e.get("titolo", ""),
+        "testo": e.get("testo", ""),
+        "foto_base64": e.get("foto_base64"),
+        "data_evento": e.get("data_evento"),
+        "attivo": e.get("attivo", True),
+        "created_at": e.get("created_at").isoformat() if e.get("created_at") else None,
+    }
+
+
+@api_router.get("/events")
+async def list_events(current_user: dict = Depends(get_current_user)):
+    """Lista eventi attivi visibili a tutti gli utenti"""
+    events = await db.events.find({"attivo": True}).sort("created_at", -1).to_list(200)
+    return [_serialize_event(e) for e in events]
+
+
+@api_router.get("/admin/events")
+async def admin_list_events(admin_user: dict = Depends(get_admin_user)):
+    events = await db.events.find({}).sort("created_at", -1).to_list(500)
+    return [_serialize_event(e) for e in events]
+
+
+@api_router.post("/admin/events")
+async def admin_create_event(data: EventCreate, admin_user: dict = Depends(get_admin_user)):
+    doc = {
+        "titolo": data.titolo.strip(),
+        "testo": (data.testo or "").strip(),
+        "foto_base64": data.foto_base64,
+        "data_evento": data.data_evento,
+        "attivo": bool(data.attivo),
+        "created_at": now_rome(),
+    }
+    res = await db.events.insert_one(doc)
+    doc["_id"] = res.inserted_id
+    return _serialize_event(doc)
+
+
+@api_router.put("/admin/events/{event_id}")
+async def admin_update_event(event_id: str, data: EventUpdate, admin_user: dict = Depends(get_admin_user)):
+    update_fields = {k: v for k, v in data.dict().items() if v is not None}
+    if not update_fields:
+        raise HTTPException(status_code=400, detail="Nessun campo da aggiornare")
+    try:
+        res = await db.events.update_one({"_id": ObjectId(event_id)}, {"$set": update_fields})
+    except Exception:
+        raise HTTPException(status_code=404, detail="Evento non trovato")
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Evento non trovato")
+    e = await db.events.find_one({"_id": ObjectId(event_id)})
+    return _serialize_event(e)
+
+
+@api_router.delete("/admin/events/{event_id}")
+async def admin_delete_event(event_id: str, admin_user: dict = Depends(get_admin_user)):
+    try:
+        res = await db.events.delete_one({"_id": ObjectId(event_id)})
+    except Exception:
+        raise HTTPException(status_code=404, detail="Evento non trovato")
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Evento non trovato")
+    return {"message": "Evento eliminato"}
+
+
+# ============================================================================
 # ============== Admin: correzione premi lotteria di un mese =================
 # ============================================================================
 class LotteryPrizesCorrection(BaseModel):

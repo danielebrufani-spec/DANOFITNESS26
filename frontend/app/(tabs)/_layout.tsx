@@ -210,6 +210,21 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="eventi"
+        options={{
+          title: 'Eventi',
+          href: isArchived ? null : '/eventi',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons 
+              name={focused ? "musical-notes" : "musical-notes-outline"} 
+              size={size} 
+              color={focused ? '#FF6B00' : color} 
+            />
+          ),
+          tabBarActiveTintColor: '#FF6B00',
+        }}
+      />
+      <Tabs.Screen
         name="profilo"
         options={{
           title: 'Profilo',
