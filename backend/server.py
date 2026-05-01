@@ -5746,10 +5746,15 @@ class LotteryPrizesCorrection(BaseModel):
 @api_router.post("/admin/lottery/correct-prizes")
 async def admin_correct_prizes(data: LotteryPrizesCorrection, admin_user: dict = Depends(get_admin_user)):
     """Aggiorna i premi del documento lottery_winners di un mese specifico, mantenendo gli stessi vincitori.
-    Aggiorna sia i top-level (premio_1/2/3) sia il campo `premio` di ogni vincitore in base alla posizione."""
-    doc = await db.lottery_winners.find_one({"mese": data.mese})
+    Cerca per mese_riferimento (es: '2026-04' = mese a cui si riferisce l'estrazione) o mese (mese di estrazione)."""
+    # Prima prova mese_riferimento, poi mese (fallback)
+    doc = await db.lottery_winners.find_one({"mese_riferimento": data.mese})
+    match_field = "mese_riferimento"
     if not doc:
-        raise HTTPException(status_code=404, detail=f"Nessun documento lottery_winners per il mese {data.mese}")
+        doc = await db.lottery_winners.find_one({"mese": data.mese})
+        match_field = "mese"
+    if not doc:
+        raise HTTPException(status_code=404, detail=f"Nessuna estrazione trovata per il mese {data.mese}")
 
     nuovi_premi = [data.premio_1, data.premio_2, data.premio_3]
     vincitori_aggiornati = []
@@ -5761,7 +5766,7 @@ async def admin_correct_prizes(data: LotteryPrizesCorrection, admin_user: dict =
         vincitori_aggiornati.append(v)
 
     await db.lottery_winners.update_one(
-        {"mese": data.mese},
+        {"_id": doc["_id"]},
         {"$set": {
             "premio_1": data.premio_1,
             "premio_2": data.premio_2,
@@ -5787,7 +5792,7 @@ async def admin_correct_prizes(data: LotteryPrizesCorrection, admin_user: dict =
     )
 
     return {
-        "message": f"Premi del mese {data.mese} corretti",
+        "message": f"Premi del mese {data.mese} corretti (matched on {match_field})",
         "premi": nuovi_premi,
         "vincitori_aggiornati": len(vincitori_aggiornati),
     }
