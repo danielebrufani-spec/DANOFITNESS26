@@ -141,6 +141,13 @@ export default function PremiScreen() {
   const [publishingBozza, setPublishingBozza] = useState(false);
   const [reExtracting, setReExtracting] = useState(false);
 
+  // Admin: correzione premi vincitori già estratti
+  const [showCorrectPrizes, setShowCorrectPrizes] = useState(false);
+  const [correctPrize1, setCorrectPrize1] = useState('');
+  const [correctPrize2, setCorrectPrize2] = useState('');
+  const [correctPrize3, setCorrectPrize3] = useState('');
+  const [savingCorrection, setSavingCorrection] = useState(false);
+
   // Ruota della Fortuna
   const [wheelStatus, setWheelStatus] = useState<WheelStatus | null>(null);
   const [isSpinning, setIsSpinning] = useState(false);
@@ -555,6 +562,46 @@ export default function PremiScreen() {
       Alert.alert('Errore', error.response?.data?.detail || 'Errore ri-estrazione');
     } finally {
       setReExtracting(false);
+    }
+  };
+
+  // Admin: apre il modal di correzione premi (precompila con i premi attuali)
+  const openCorrectPrizesModal = () => {
+    const v = status?.vincitori || [];
+    const p1 = v.find(x => x.posizione === 1)?.premio || '';
+    const p2 = v.find(x => x.posizione === 2)?.premio || '';
+    const p3 = v.find(x => x.posizione === 3)?.premio || '';
+    setCorrectPrize1(p1);
+    setCorrectPrize2(p2);
+    setCorrectPrize3(p3);
+    setShowCorrectPrizes(true);
+  };
+
+  const handleCorrectPrizes = async () => {
+    if (!correctPrize1.trim() || !correctPrize2.trim() || !correctPrize3.trim()) {
+      Alert.alert('Errore', 'Compila tutti i 3 premi');
+      return;
+    }
+    const mese = status?.mese_riferimento;
+    if (!mese) {
+      Alert.alert('Errore', 'Mese non disponibile');
+      return;
+    }
+    setSavingCorrection(true);
+    try {
+      await apiService.adminCorrectLotteryPrizes({
+        mese,
+        premio_1: correctPrize1.trim(),
+        premio_2: correctPrize2.trim(),
+        premio_3: correctPrize3.trim(),
+      });
+      Alert.alert('Premi aggiornati!', `I premi del ${mese} sono stati corretti. I vincitori restano invariati.`);
+      setShowCorrectPrizes(false);
+      await loadData();
+    } catch (error: any) {
+      Alert.alert('Errore', error.response?.data?.detail || 'Errore aggiornamento premi');
+    } finally {
+      setSavingCorrection(false);
     }
   };
 
@@ -1332,6 +1379,18 @@ export default function PremiScreen() {
                   Estrazione: {formatMese(status.mese_riferimento || '')}
                 </Text>
 
+                {/* Admin: Correggi Premi */}
+                {isAdmin && (
+                  <TouchableOpacity
+                    data-testid="correct-prizes-btn"
+                    style={[styles.setPrizeBtn, { marginTop: 12, alignSelf: 'center' }]}
+                    onPress={openCorrectPrizesModal}
+                  >
+                    <Ionicons name="create" size={16} color={VEGAS_COLORS.gold} />
+                    <Text style={styles.setPrizeBtnText}>Correggi Premi (mantenendo i vincitori)</Text>
+                  </TouchableOpacity>
+                )}
+
                 {/* Statistiche estrazione */}
                 <View style={styles.winnerStatsRow}>
                   <View style={styles.winnerStatItem}>
@@ -1528,6 +1587,67 @@ export default function PremiScreen() {
                 <ActivityIndicator color="#000" />
               ) : (
                 <Text style={styles.saveButtonText}>SALVA PREMI</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal Correggi Premi Vincitori Già Estratti (Admin) */}
+      <Modal visible={showCorrectPrizes} transparent animationType="fade" onRequestClose={() => setShowCorrectPrizes(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>✏️ CORREGGI PREMI</Text>
+              <TouchableOpacity onPress={() => setShowCorrectPrizes(false)}>
+                <Ionicons name="close-circle" size={28} color={VEGAS_COLORS.gold} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ color: VEGAS_COLORS.gold, fontSize: 12, marginBottom: 12, textAlign: 'center' }}>
+              Estrazione: {formatMese(status?.mese_riferimento || '')} · I 3 vincitori restano invariati
+            </Text>
+
+            <Text style={styles.inputLabel}>🥇 1° Premio</Text>
+            <TextInput
+              style={styles.input}
+              value={correctPrize1}
+              onChangeText={setCorrectPrize1}
+              placeholder="Es: Borsone Militare DanoFitness23"
+              placeholderTextColor="#666"
+              data-testid="correct-prize-1-input"
+            />
+
+            <Text style={styles.inputLabel}>🥈 2° Premio</Text>
+            <TextInput
+              style={styles.input}
+              value={correctPrize2}
+              onChangeText={setCorrectPrize2}
+              placeholder="Es: Felpa THIS AGIO DanoFitness23"
+              placeholderTextColor="#666"
+              data-testid="correct-prize-2-input"
+            />
+
+            <Text style={styles.inputLabel}>🥉 3° Premio</Text>
+            <TextInput
+              style={styles.input}
+              value={correctPrize3}
+              onChangeText={setCorrectPrize3}
+              placeholder="Es: Asciuga-Ano DanoFitness23"
+              placeholderTextColor="#666"
+              data-testid="correct-prize-3-input"
+            />
+
+            <TouchableOpacity
+              style={[styles.saveButton, savingCorrection && styles.saveButtonDisabled]}
+              onPress={handleCorrectPrizes}
+              disabled={savingCorrection}
+              data-testid="save-correction-btn"
+            >
+              {savingCorrection ? (
+                <ActivityIndicator color="#000" />
+              ) : (
+                <Text style={styles.saveButtonText}>SALVA CORREZIONE</Text>
               )}
             </TouchableOpacity>
           </View>
