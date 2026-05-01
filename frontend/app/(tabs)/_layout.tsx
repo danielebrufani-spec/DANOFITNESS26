@@ -184,7 +184,7 @@ export default function TabsLayout() {
                 width: 70,
               }}
             >
-              Ruota e{'\n'}Quiz
+              Ruota{'\n'}Quiz
             </Text>
           ),
         }}
