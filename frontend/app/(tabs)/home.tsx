@@ -1035,25 +1035,7 @@ export default function HomeScreen() {
           </View>
         ))}
 
-        {/* BANNER PIANO ALIMENTARE - Sempre visibile fino a completamento */}
-        {!isAdmin && !hasMealPlan && (
-          <TouchableOpacity 
-            style={styles.mealPlanBanner}
-            onPress={() => router.push('/(tabs)/alimentazione')}
-            data-testid="nutrition-banner"
-          >
-            <View style={styles.mealPlanBannerIcon}>
-              <Ionicons name="nutrition" size={28} color="#fff" />
-            </View>
-            <View style={styles.mealPlanBannerContent}>
-              <Text style={styles.mealPlanBannerTitle}>Crea il Tuo Piano Alimentare!</Text>
-              <Text style={styles.mealPlanBannerText}>
-                Piano personalizzato generato con IA, gratis per te
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={22} color="#FF6B6B" />
-          </TouchableOpacity>
-        )}
+        {/* BANNER PIANO ALIMENTARE — rimosso: ora accessibile dal tab "Altro" */}
 
         {/* BANDA KPI - Streak + Biglietti + Abbonamento */}
         {!isAdmin && <KPIBanner />}
