@@ -256,7 +256,30 @@ Applicato il design system Tactical Obsidian / Kinetic Orange a TUTTE le pagine 
 
 
 ## Task Futuri
-### Riorganizzazione Bottom Tab Bar + Banda KPI Home (1 Maggio 2026)
+### Chiedi al Maestro — Q&A AI Sarcastico (1 Maggio 2026)
+Nuova feature in tab "Altro": l'utente può fare 1 domanda al giorno al "Maestro" su Amore, Sesso o Lavoro e riceve risposta sarcastica AI in stile palestra.
+
+**Backend (`server.py`):**
+- 4 endpoint: `POST /api/maestro/ask`, `GET /api/maestro/today`, `GET /api/maestro/history`, `GET /api/admin/maestro/all`
+- Modello: `gpt-4.1-mini` via Emergent LLM Key (HTTPx pattern già in uso per la dieta), temperature 0.95, max 220 token
+- Prompt sistema "MAESTRO_SYSTEM_PROMPT": tono bastardo-affettuoso, 3 argomenti only (amore/sesso/lavoro), rifiuta fuori-tema con sarcasmo, max 100 parole, riferimenti palestra graditi
+- Limite 1 domanda/giorno per utente (key `{user_id, data}`), HTTP 429 al secondo tentativo
+- **+1 biglietto lotteria** automatico nel mese corrente (atomic upsert su `wheel_tickets`)
+- Validazione: 5 ≤ caratteri ≤ 250, argomento ∈ {amore,sesso,lavoro}
+- Collection `maestro_questions`: `{user_id, user_nome, argomento, domanda, risposta, data, mese, biglietto_dato, created_at}`
+
+**Frontend:**
+- Nuova schermata `app/(tabs)/maestro.tsx`: hero "CHIEDI AL MAESTRO" Bebas Neue 44px + 3 chip colorati (AMORE rosa, SESSO arancio, LAVORO blu), TextInput multiline + counter 250, submit "CHIEDI AL MAESTRO" arancione
+- Stato bloccato (post-domanda): card risposta animata con badge argomento + "TU HAI CHIESTO" (citazione) → divider → "IL MAESTRO RISPONDE", banner +1 biglietto giallo
+- Archivio personale ultime 30 risposte sotto la domanda di oggi
+- Card "CHIEDI AL MAESTRO" in cima al tab Altro (rosa, icona chatbubble), nascosta per admin/istruttore
+- Tab `maestro` in `_layout.tsx` con `href: null` (route esiste, non in bottom bar)
+
+**Costo:** ~0.035 cent/domanda → **~1€/mese** anche con 80 utenti tutti i giorni.
+
+**Test:** 11/11 backend pytest + 16/16 frontend checkpoint passati ✅
+
+## Riorganizzazione Bottom Tab Bar + Banda KPI Home (1 Maggio 2026)
 Bottom bar passa da 10+ tab a SOLO 5 tab fisse per il cliente:
 - 🏠 Home • 📅 Prenota • 🎁 Premi • 🛒 Shop • ⋯ Altro
 Per admin: Home, Lezioni, Admin, Premi, Shop, Altro (Profilo accessibile da Altro).
