@@ -162,7 +162,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="premi"
         options={{
-          title: 'Premi',
+          title: 'Ruota e Quiz',
           href: (isIstruttore || isArchived) ? null : '/premi',
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons 
@@ -172,6 +172,11 @@ export default function TabsLayout() {
             />
           ),
           tabBarActiveTintColor: COLORS.primary,
+          tabBarLabelStyle: {
+            fontSize: 10,
+            fontWeight: '600',
+            marginTop: 2,
+          },
         }}
       />
       <Tabs.Screen

@@ -47,7 +47,7 @@ const SECTIONS: Section[] = [
   {
     key: 'curiosita',
     label: 'CURIOSITÀ',
-    sub: 'Quiz & ruota',
+    sub: 'Bacheca e Consigli Musicali del Maestro',
     icon: 'bulb',
     color: '#FFB300',
     route: '/curiosita',
