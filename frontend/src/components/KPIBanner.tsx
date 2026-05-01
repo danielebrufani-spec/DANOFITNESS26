@@ -70,7 +70,7 @@ export const KPIBanner: React.FC = () => {
   }
 
   return (
-    <View style={styles.wrap} data-testid="kpi-banner">
+    <View style={styles.wrap} testID="kpi-banner">
       {/* Streak */}
       <View style={[styles.cell, { borderLeftColor: '#00E676' }]}>
         <View style={styles.iconRow}>

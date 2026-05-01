@@ -256,6 +256,20 @@ Applicato il design system Tactical Obsidian / Kinetic Orange a TUTTE le pagine 
 
 
 ## Task Futuri
+### Riorganizzazione Bottom Tab Bar + Banda KPI Home (1 Maggio 2026)
+Bottom bar passa da 10+ tab a SOLO 5 tab fisse per il cliente:
+- 🏠 Home • 📅 Prenota • 🎁 Premi • 🛒 Shop • ⋯ Altro
+Per admin: Home, Lezioni, Admin, Premi, Shop, Altro (Profilo accessibile da Altro).
+
+**Nuovi file:**
+- `app/(tabs)/altro.tsx` — griglia 2-col animata (stagger 60ms, spring on press) con 6 card: DIETA AI, CLASSIFICA, CURIOSITÀ, EVENTI, ABBONAMENTO, PROFILO. Routing via `router.push()`.
+- `src/components/KPIBanner.tsx` — banner Home (solo cliente): 🔥 STREAK / 🎟️ BIGLIETTI / ⏳ GIORNI/LEZIONI. Carica in parallelo `/streak/status`, `/lottery/status`, `/subscriptions/me` con graceful fallback.
+
+**Modifiche `_layout.tsx`:** 6 tab nascoste con `href: null` (alimentazione, abbonamento, curiosita, classifica, eventi, profilo) + nuova `altro` con icona `apps`.
+
+**Test agent:** 13/13 PASS su mobile (390x844) e desktop (1280x900).
+
+## Task Pianificati Futuri
 ### P1
 - Sistema Notifiche In-App (icona campanella) per lezioni cancellate, abbonamenti in scadenza, classifica
 - "Porta un Amico" (sistema referral per biglietti lotteria bonus)

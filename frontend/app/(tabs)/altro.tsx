@@ -110,7 +110,7 @@ function GridCard({ section, onPress, delay }: { section: Section; onPress: () =
         onPressIn={onPressIn}
         onPressOut={onPressOut}
         onPress={onPress}
-        data-testid={`altro-card-${section.key}`}
+        testID={`altro-card-${section.key}`}
         style={[styles.card, { borderColor: section.color + '60' }]}
       >
         <View style={[styles.cardGlow, { backgroundColor: section.color }]} />

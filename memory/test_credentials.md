@@ -4,4 +4,8 @@
 - Email: danielebrufani@gmail.com
 - Password: Mariavittoria23
 
-Note: Only admin credentials are currently available. Client/user accounts can be created via the "Registrati" flow on the login page, then activated from the admin panel.
+## Client (creato dal testing agent il 1 Maggio 2026)
+- Email: testclient_kpi@test.com
+- Password: Test123456
+
+Note: il client `testclient_kpi@test.com` è stato registrato dal testing agent per validare il flusso utente non-admin. Riutilizzabile per test successivi.
