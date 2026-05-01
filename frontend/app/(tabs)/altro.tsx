@@ -30,7 +30,7 @@ const SECTIONS: Section[] = [
     key: 'maestro',
     label: 'CHIEDI AL MAESTRO',
     sub: 'Amore, sesso e lavoro — risponde sarcastico',
-    icon: 'chatbubble-ellipses',
+    icon: 'chatbubble-ellipses-outline',
     color: '#FF3D7F',
     route: '/maestro',
     show: ({ isIstruttore, isArchived }) => !isIstruttore && !isArchived,
@@ -39,7 +39,7 @@ const SECTIONS: Section[] = [
     key: 'alimentazione',
     label: 'DIETA AI',
     sub: 'Piano nutrizione',
-    icon: 'nutrition',
+    icon: 'nutrition-outline',
     color: '#00E676',
     route: '/alimentazione',
     show: ({ isArchived }) => !isArchived,
@@ -48,7 +48,7 @@ const SECTIONS: Section[] = [
     key: 'classifica',
     label: 'CLASSIFICA',
     sub: 'Settimanale',
-    icon: 'trophy',
+    icon: 'trophy-outline',
     color: '#FFD700',
     route: '/classifica',
     show: ({ isArchived }) => !isArchived,
@@ -57,7 +57,7 @@ const SECTIONS: Section[] = [
     key: 'curiosita',
     label: 'CURIOSITÀ',
     sub: 'Bacheca e Consigli Musicali del Maestro',
-    icon: 'bulb',
+    icon: 'bulb-outline',
     color: '#FFB300',
     route: '/curiosita',
     show: ({ isIstruttore, isArchived }) => !isIstruttore && !isArchived,
@@ -66,7 +66,7 @@ const SECTIONS: Section[] = [
     key: 'eventi',
     label: 'EVENTI',
     sub: 'Piscina Camping',
-    icon: 'musical-notes',
+    icon: 'musical-notes-outline',
     color: '#FF6B00',
     route: '/eventi',
     show: ({ isArchived }) => !isArchived,
@@ -75,7 +75,7 @@ const SECTIONS: Section[] = [
     key: 'abbonamento',
     label: 'ABBONAMENTO',
     sub: 'Stato e scadenza',
-    icon: 'card',
+    icon: 'card-outline',
     color: '#00B0FF',
     route: '/abbonamento',
     show: ({ isAdmin, isIstruttore, isArchived }) => !isAdmin && !isIstruttore && !isArchived,
@@ -84,7 +84,7 @@ const SECTIONS: Section[] = [
     key: 'profilo',
     label: 'PROFILO',
     sub: 'Account & impostazioni',
-    icon: 'person',
+    icon: 'person-outline',
     color: '#A78BFA',
     route: '/profilo',
     show: () => true,
@@ -124,7 +124,12 @@ function GridCard({ section, onPress, delay }: { section: Section; onPress: () =
       >
         <View style={[styles.cardGlow, { backgroundColor: section.color }]} />
         <View style={[styles.iconWrap, { backgroundColor: section.color + '22', borderColor: section.color }]}>
-          <Ionicons name={section.icon} size={28} color={section.color} />
+          <Ionicons
+            name={section.icon}
+            size={28}
+            color={section.color}
+            style={{ width: 28, height: 28, lineHeight: 28, textAlign: 'center' }}
+          />
         </View>
         <Text style={styles.cardLabel}>{section.label}</Text>
         <Text style={styles.cardSub}>{section.sub}</Text>
