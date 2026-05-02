@@ -353,7 +353,7 @@ export default function ClassificaScreen() {
             <Text style={styles.emptyIcon}>⏳</Text>
             <Text style={styles.emptyTitle}>Classifica in arrivo!</Text>
             <Text style={styles.emptyText}>
-              La classifica della settimana {settimana} verrà pubblicata sabato dopo le lezioni di yoga.
+              La classifica della settimana {settimana} esce ogni sabato alle 13:30.
               {'\n\n'}Allenati e conquista il podio! 💪
             </Text>
           </View>
@@ -363,7 +363,7 @@ export default function ClassificaScreen() {
         <View style={styles.infoBox}>
           <Ionicons name="information-circle" size={18} color={COLORS.textSecondary} />
           <Text style={styles.infoText}>
-            La classifica viene pubblicata sabato dopo le lezioni di yoga. In caso di parità, vince chi ha raggiunto quel numero di allenamenti per primo!
+            La classifica esce ogni <Text style={{fontWeight: 'bold'}}>sabato alle 13:30</Text> in modo automatico, anche se le lezioni del sabato sono annullate. In caso di parità, vince chi ha raggiunto quel numero di allenamenti per primo!
           </Text>
         </View>
 
@@ -380,7 +380,7 @@ export default function ClassificaScreen() {
           </View>
           <View style={styles.ruleItem}>
             <Text style={styles.ruleBullet}>🏆</Text>
-            <Text style={styles.ruleText}>La classifica viene pubblicata sabato dopo lo yoga</Text>
+            <Text style={styles.ruleText}>La classifica esce ogni sabato alle 13:30</Text>
           </View>
           <View style={styles.ruleItem}>
             <Text style={styles.ruleBullet}>⚖️</Text>

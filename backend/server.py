@@ -2521,59 +2521,36 @@ LEADERBOARD_EXCLUDED_USERS = ["daniele brufani"]
 
 @api_router.get("/leaderboard/weekly")
 async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user)):
-    """Get top 3 positions by workouts - mostra la settimana CORRENTE.
-    Solo podio: 1°, 2°, 3° posto.
-    Le posizioni sono basate sul NUMERO di allenamenti:
-    - 1° = chi ha fatto più allenamenti
-    - 2° = chi ha fatto il secondo numero più alto
-    - 3° = chi ha fatto il terzo numero più alto
-    Più persone possono essere nella stessa posizione (pari merito).
+    """Classifica settimanale - esce sempre dal SABATO ore 13:30 in poi.
+    Conta le lezioni effettivamente fatte (lezione_scalata=True) Lun-Sab della settimana corrente,
+    INDIPENDENTEMENTE da lezioni annullate o sospese. Se il sabato è annullato/bloccato la classifica
+    esce comunque alle 13:30 col conteggio delle lezioni Lun-Ven (+ Sab se ci sono).
+
+    Solo podio: 1°, 2°, 3° posto. Più persone possono essere nella stessa posizione (pari merito).
     """
     today = now_rome()
-    current_day = today.weekday()
-    
-    # Calcola lunedì della settimana CORRENTE
+    current_day = today.weekday()  # 0=Lun, 5=Sab, 6=Dom
+
+    # Calcola lunedì-sabato della settimana CORRENTE
     monday = today - timedelta(days=current_day)
     monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
     saturday = monday + timedelta(days=5)
     saturday_str = saturday.strftime("%Y-%m-%d")
-    
-    # Controlla se il sabato è bloccato (lezione sospesa)
-    sabato_bloccato = await db.blocked_dates.find_one({"data": saturday_str})
-    
-    if not sabato_bloccato:
-        # Sabato NON bloccato: aspetta che le lezioni del sabato vengano processate
-        yoga_sabato_scalate = await db.bookings.count_documents({
-            "data_lezione": saturday_str,
-            "confermata": True,
-            "lezione_scalata": True
-        })
-        
-        if yoga_sabato_scalate == 0:
-            return {
-                "leaderboard": [],
-                "settimana": f"{monday.strftime('%d/%m')} - {saturday.strftime('%d/%m')}",
-                "total_participants": 0,
-                "status": "pending"
-            }
-    else:
-        # Sabato BLOCCATO: la classifica esce basandosi sulle lezioni fino a venerdì
-        # Aspetta che sia almeno sabato per mostrare la classifica
-        if current_day < 5:  # Prima di sabato
-            venerdi_str = (monday + timedelta(days=4)).strftime("%Y-%m-%d")
-            lezioni_venerdi = await db.bookings.count_documents({
-                "data_lezione": venerdi_str,
-                "confermata": True,
-                "lezione_scalata": True
-            })
-            if lezioni_venerdi == 0 and current_day < 4:
-                return {
-                    "leaderboard": [],
-                    "settimana": f"{monday.strftime('%d/%m')} - {saturday.strftime('%d/%m')}",
-                    "total_participants": 0,
-                    "status": "pending"
-                }
-    
+
+    # Sblocco classifica: dal SABATO 13:30 in poi (e ovviamente Domenica)
+    is_after_saturday_1330 = (
+        current_day == 5 and (today.hour > 13 or (today.hour == 13 and today.minute >= 30))
+    ) or current_day == 6  # Domenica: sempre disponibile
+
+    if not is_after_saturday_1330:
+        return {
+            "leaderboard": [],
+            "settimana": f"{monday.strftime('%d/%m')} - {saturday.strftime('%d/%m')}",
+            "total_participants": 0,
+            "status": "pending",
+            "available_at": f"{saturday.strftime('%d/%m')} 13:30",
+        }
+
     # Get date strings for the week (Mon-Sat)
     week_dates = [(monday + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(6)]
     
