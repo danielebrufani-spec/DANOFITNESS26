@@ -552,14 +552,47 @@ export default function HomeScreen() {
 
   const assignSubscription = async (tipo: string) => {
     if (!selectedUser) return;
+
+    // Mappa tipo → label leggibile per la conferma
+    const tipoLabel: Record<string, string> = {
+      lezione_singola: 'Lezione Singola (10€)',
+      lezioni_8: 'Pacchetto 8 Lezioni',
+      lezioni_16: 'Pacchetto 16 Lezioni',
+      mensile: 'Abbonamento Mensile',
+      trimestrale: 'Abbonamento Trimestrale',
+      prova_7gg: 'Prova 7 Giorni - Gratis',
+    };
+    const label = tipoLabel[tipo] || tipo;
+    const pagatoLabel = renewPagato ? 'PAGATO' : 'DA SALDARE';
+    const userFullName = `${selectedUser.user_nome} ${selectedUser.user_cognome}`;
+    const confirmMsg = `Confermi l'assegnazione di:\n\n${label}\n${pagatoLabel}\n\nA: ${userFullName}?`;
+
+    let confirmed = false;
+    if (Platform.OS === 'web') {
+      confirmed = window.confirm(confirmMsg);
+    } else {
+      confirmed = await new Promise<boolean>((resolve) => {
+        Alert.alert(
+          'Conferma Operazione',
+          confirmMsg,
+          [
+            { text: 'Annulla', style: 'cancel', onPress: () => resolve(false) },
+            { text: 'Conferma', onPress: () => resolve(true) },
+          ],
+          { cancelable: true, onDismiss: () => resolve(false) }
+        );
+      });
+    }
+    if (!confirmed) return;
+
     try {
       await apiService.createSubscription({
         user_id: selectedUser.user_id,
         tipo: tipo,
         pagato: renewPagato,
       });
-      const pagatoLabel = renewPagato ? '' : ' (DA SALDARE)';
-      Alert.alert('Successo', `Abbonamento ${tipo} assegnato!${pagatoLabel}`);
+      const sufx = renewPagato ? '' : ' (DA SALDARE)';
+      Alert.alert('Successo', `Abbonamento ${label} assegnato!${sufx}`);
       setShowModal(false);
       setSelectedUser(null);
       setRenewPagato(true);
