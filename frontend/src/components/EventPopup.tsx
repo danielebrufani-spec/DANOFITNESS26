@@ -94,8 +94,10 @@ export const EventPopup: React.FC = () => {
           </TouchableOpacity>
 
           <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-            {/* Locandina */}
-            <Image source={{ uri: EVENT_IMAGE }} style={styles.flyer} resizeMode="contain" />
+            {/* Locandina - intera, non cropped */}
+            <View style={styles.flyerWrap}>
+              <Image source={{ uri: EVENT_IMAGE }} style={styles.flyer} resizeMode="contain" />
+            </View>
 
             {/* Titolo */}
             <View style={styles.titleBox}>
@@ -105,38 +107,28 @@ export const EventPopup: React.FC = () => {
               <Text style={styles.subtitle}>SABATO 13 GIUGNO · Piscina Camping · dalle 20:00</Text>
             </View>
 
-            {/* Info evento */}
+            {/* Info evento - compatte per mobile */}
             <View style={styles.infoBox}>
               <View style={styles.infoRow}>
-                <Ionicons name="enter-outline" size={18} color="#00E676" />
+                <Ionicons name="enter-outline" size={16} color="#00E676" />
                 <Text style={styles.infoText}>
-                  <Text style={styles.infoBold}>Ingresso libero</Text> al concerto
+                  <Text style={styles.infoBold}>Ingresso libero</Text> al concerto · A bordo piscina
                 </Text>
               </View>
               <View style={styles.infoRow}>
-                <Ionicons name="restaurant-outline" size={18} color="#FF6B00" />
+                <Ionicons name="restaurant-outline" size={16} color="#FF6B00" />
                 <Text style={styles.infoText}>
-                  <Text style={styles.infoBold}>Apericena</Text> con ricco buffet solo su prenotazione
+                  <Text style={styles.infoBold}>Apericena + ricco buffet</Text> solo su prenotazione
                 </Text>
               </View>
               <View style={styles.infoRow}>
-                <Ionicons name="wine-outline" size={18} color="#FFD700" />
+                <Ionicons name="wine-outline" size={16} color="#FFD700" />
                 <Text style={styles.infoText}>
-                  <Text style={styles.infoBold}>Adulti 15€</Text> apericena + 1 drink incluso
+                  <Text style={styles.infoBold}>15€ adulti</Text> (+1 drink) · <Text style={styles.infoBold}>10€ bambini</Text>
                 </Text>
               </View>
               <View style={styles.infoRow}>
-                <Ionicons name="happy-outline" size={18} color="#00B0FF" />
-                <Text style={styles.infoText}>
-                  <Text style={styles.infoBold}>Bambini 10€</Text>
-                </Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Ionicons name="water-outline" size={18} color="#00BFFF" />
-                <Text style={styles.infoText}>Tutto a bordo piscina</Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Ionicons name="musical-notes-outline" size={18} color="#FF3D7F" />
+                <Ionicons name="musical-notes-outline" size={16} color="#FF3D7F" />
                 <Text style={styles.infoText}>
                   Fantastico <Text style={styles.infoBold}>duo live</Text> da non perdere
                 </Text>
@@ -178,7 +170,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '100%',
-    maxWidth: 460,
+    maxWidth: 380,
     maxHeight: '95%',
     backgroundColor: COLORS.background,
     borderRadius: 18,
@@ -189,71 +181,77 @@ const styles = StyleSheet.create({
   },
   closeBtn: {
     position: 'absolute',
-    top: 10,
-    right: 10,
+    top: 8,
+    right: 8,
     zIndex: 10,
     backgroundColor: 'rgba(0,0,0,0.65)',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  scroll: { padding: 0, paddingBottom: 20 },
+  scroll: { padding: 0, paddingBottom: 12 },
+  flyerWrap: {
+    width: '100%',
+    height: 280,
+    backgroundColor: '#FFF5EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   flyer: {
     width: '100%',
-    height: 420,
-    backgroundColor: '#000',
+    height: 280,
   },
-  titleBox: { paddingHorizontal: 18, paddingTop: 16, alignItems: 'center' },
+  titleBox: { paddingHorizontal: 14, paddingTop: 10, alignItems: 'center' },
   kicker: {
     fontFamily: FONTS.bodyBlack,
-    fontSize: 11,
+    fontSize: 10,
     color: '#FF6B00',
-    letterSpacing: 3,
-    marginBottom: 4,
+    letterSpacing: 2.5,
+    marginBottom: 2,
   },
   title: {
     fontFamily: FONTS.headline,
-    fontSize: 30,
+    fontSize: 22,
     color: COLORS.text,
     textAlign: 'center',
-    letterSpacing: 1.2,
-    lineHeight: 32,
+    letterSpacing: 1,
+    lineHeight: 24,
   },
-  accentBar: { width: 50, height: 3, backgroundColor: '#FF6B00', marginTop: 10, marginBottom: 8 },
+  accentBar: { width: 40, height: 3, backgroundColor: '#FF6B00', marginTop: 6, marginBottom: 6 },
   subtitle: {
     fontFamily: FONTS.bodyBold,
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.textSecondary,
     textAlign: 'center',
-    letterSpacing: 0.6,
+    letterSpacing: 0.5,
   },
 
   infoBox: {
-    marginHorizontal: 18,
-    marginTop: 16,
-    padding: 14,
+    marginHorizontal: 14,
+    marginTop: 10,
+    padding: 10,
     backgroundColor: COLORS.surface || '#141416',
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: COLORS.border,
-    gap: 10,
+    gap: 6,
   },
-  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  infoText: { fontFamily: FONTS.body, fontSize: 13, color: COLORS.text, flex: 1, lineHeight: 18 },
+  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  infoText: { fontFamily: FONTS.body, fontSize: 12, color: COLORS.text, flex: 1, lineHeight: 16 },
   infoBold: { fontFamily: FONTS.bodyBlack, color: COLORS.text },
 
   ctaBtn: {
-    marginHorizontal: 18,
-    marginTop: 18,
+    marginHorizontal: 14,
+    marginTop: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
+    gap: 8,
     backgroundColor: '#25D366',
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: 12,
+    borderRadius: 10,
     shadowColor: '#25D366',
     shadowOpacity: 0.5,
     shadowRadius: 12,
@@ -261,21 +259,21 @@ const styles = StyleSheet.create({
   },
   ctaText: {
     fontFamily: FONTS.bodyBlack,
-    fontSize: 15,
+    fontSize: 13,
     color: '#fff',
-    letterSpacing: 1.6,
+    letterSpacing: 1.4,
   },
   callTxt: {
     fontFamily: FONTS.body,
-    fontSize: 11,
+    fontSize: 10,
     color: COLORS.textSecondary,
     textAlign: 'center',
-    marginTop: 10,
+    marginTop: 6,
   },
-  secondaryBtn: { alignSelf: 'center', marginTop: 14, paddingVertical: 8, paddingHorizontal: 16 },
+  secondaryBtn: { alignSelf: 'center', marginTop: 8, paddingVertical: 4, paddingHorizontal: 14 },
   secondaryText: {
     fontFamily: FONTS.bodyBold,
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.textSecondary,
     textDecorationLine: 'underline',
   },
