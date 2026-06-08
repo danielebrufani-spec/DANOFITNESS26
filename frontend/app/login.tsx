@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../src/context/AuthContext';
 import { COLORS } from '../src/utils/constants';
+import { SummerSilhouettes } from '../src/components/SummerSilhouettes';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -106,6 +107,7 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <SummerSilhouettes variant="login" />
       <View style={styles.content}>
         {/* Logo Section con grafica fitness */}
         <View style={styles.logoSection}>

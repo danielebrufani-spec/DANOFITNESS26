@@ -16,6 +16,7 @@ import { COLORS } from '../../src/utils/constants';
 import { FONTS } from '../../src/theme';
 import { apiService } from '../../src/services/api';
 import { useAuth } from '../../src/context/AuthContext';
+import { SummerSilhouettes } from '../../src/components/SummerSilhouettes';
 
 type Argomento = 'amore' | 'sesso' | 'lavoro';
 
@@ -367,6 +368,7 @@ export default function MaestroScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <SummerSilhouettes variant="maestro" />
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Header */}
         <View style={styles.header}>

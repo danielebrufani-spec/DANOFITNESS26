@@ -119,37 +119,46 @@ export const getDayNameFromDate = (dateString: string): string => {
   return GIORNI[dayIndex];
 };
 
-// Colors - Tactical Obsidian & Kinetic Orange (Functional/CrossFit theme)
+// Colors - Tropical Pop Italian Riviera Summer 2026 (Light Theme)
+// Primary: Azzurro Mare · Secondary: Fucsia POP · Accent: Banana Yellow
 export const COLORS = {
-  primary: '#FF4500',         // Kinetic Orange - main accent
-  primaryDark: '#CC3800',     // Darker orange (hover/pressed)
-  primaryLight: '#FF6B3D',    // Lighter orange (highlights)
-  secondary: '#00E676',       // Neon Green - streaks / success / HP bars
-  secondaryDark: '#00B359',
-  accent: '#00B0FF',          // Electric Blue - info / links
-  background: '#0A0A0A',      // Obsidian - main BG
-  surface: '#121212',          // Cards
-  surfaceElevated: '#1C1C1E', // Elevated cards
-  surfaceHover: '#2A2A2C',
-  card: '#121212',             // Alias for backwards compat
-  cardLight: '#1C1C1E',        // Alias
-  text: '#FFFFFF',
-  textSecondary: '#A0A0A5',
-  textMuted: '#6B6B70',
+  primary: '#0099DD',          // Azzurro Mare - main accent
+  primaryDark: '#007BB8',      // Deeper sea blue
+  primaryLight: '#4DD0E1',     // Cyan/turquoise
+  secondary: '#FF1493',        // Fucsia POP - pop accent / streak
+  secondaryDark: '#C71585',
+  accent: '#FFEA00',           // Banana Yellow - highlights / sun rays
+  accentLime: '#39FF14',       // Lime Green - success / pop
+  background: '#F0F9FF',       // Sky tint white - main BG
+  surface: '#FFFFFF',          // Pure white cards
+  surfaceElevated: '#FFFFFF',  // Elevated cards (with shadow)
+  surfaceHover: '#E0F2FE',     // Light sky hover
+  card: '#FFFFFF',
+  cardLight: '#F0F9FF',
+  text: '#0C2333',             // Deep navy text (high contrast on white)
+  textSecondary: '#597A8E',    // Medium slate
+  textMuted: '#94A3B8',        // Soft slate for hints
   success: '#00E676',
-  warning: '#FFAB00',
-  error: '#FF3B30',
-  danger: '#FF3B30',
-  border: '#2C2C2E',
-  borderStrong: '#3A3A3C',
-  overlay: 'rgba(10,10,10,0.75)',
-  glowOrange: 'rgba(255,69,0,0.35)',
+  warning: '#FF9E00',          // Sunset orange for warnings
+  error: '#FF1493',            // Fucsia for errors (attention-getting)
+  danger: '#FF1493',
+  border: '#BAE6FD',           // Light sky blue border
+  borderStrong: '#7DD3FC',
+  overlay: 'rgba(12,35,51,0.55)',
+  glowOrange: 'rgba(255,158,0,0.35)',
   glowGreen: 'rgba(0,230,118,0.3)',
+  // Summer-specific tokens
+  gradientPrimaryFrom: '#0099DD',
+  gradientPrimaryTo: '#00D4FF',
+  gradientSunsetFrom: '#FF1493',
+  gradientSunsetTo: '#FF9E00',
+  sand: '#FEF3C7',             // Beach sand
+  coral: '#FF6B6B',            // Coral accent
 };
 
-// Fitness images (from design guidelines - Pexels/Unsplash)
+// Fitness images (from design guidelines - Pexels/Unsplash) - Summer Tropical
 export const FITNESS_IMAGES = {
-  hero: 'https://images.pexels.com/photos/6389507/pexels-photo-6389507.jpeg',
+  hero: 'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=1200&q=80', // pool/beach summer vibes
   abstractGym: 'https://images.unsplash.com/photo-1770513649465-2c60c8039806',
   circuit: 'https://images.pexels.com/photos/9958668/pexels-photo-9958668.jpeg',
   functional: 'https://images.unsplash.com/photo-1578762560042-46ad127c95ea',

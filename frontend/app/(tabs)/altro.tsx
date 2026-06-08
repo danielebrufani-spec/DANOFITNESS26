@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { COLORS } from '../../src/utils/constants';
 import { FONTS } from '../../src/theme';
+import { SummerSilhouettes } from '../../src/components/SummerSilhouettes';
 
 type Section = {
   key: string;
@@ -150,6 +151,7 @@ export default function AltroScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <SummerSilhouettes variant="altro" />
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.header}>
           <Text style={styles.kicker}>EXTRA</Text>

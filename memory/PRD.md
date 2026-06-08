@@ -256,7 +256,37 @@ Applicato il design system Tactical Obsidian / Kinetic Orange a TUTTE le pagine 
 
 
 ## Task Futuri
-### Top 3 della Settimana — Maestro Curated (1 Maggio 2026)
+### Tropical Pop Light Restyling Completo (8 Giugno 2026)
+Restyling completo dell'app da "Dark Obsidian + Kinetic Orange" → **"Tropical Pop Italian Riviera Summer 2026"** (tema chiaro/solare).
+
+**Nuova palette centrale (`constants.ts`):**
+- primary: `#0099DD` Azzurro Mare (sostituisce Kinetic Orange)
+- secondary: `#FF1493` Fucsia POP
+- accent: `#FFEA00` Banana Yellow
+- background: `#F0F9FF` Sky Tint White (era #0A0A0A obsidian)
+- surface: `#FFFFFF` Pure White cards
+- text: `#0C2333` Deep Navy (era #FFFFFF)
+- coral, sand, accentLime per pop estivo
+- Gradient sunset (fucsia → arancio) + sea (azzurro → cyan)
+
+**Nuovo Sistema Ombre (`theme.ts`):**
+- summerSoft: `0 8px 24px rgba(0,153,221,0.12)` (più morbide)
+- RADII bumped: sm 6→12, md 10→16, lg 14→24
+
+**Nuovo componente decorativo:**
+- `/app/frontend/src/components/SummerSilhouettes.tsx` — overlay assoluto con silhouette estive (palme, sole, onde, ombrelloni, gelati, occhiali, fiamme cuori) a opacity 11-20%, 8 varianti per schermata (home/altro/shop/maestro/prenota/classifica/eventi/login)
+
+**Hero immagine aggiornata:** Pool/beach Unsplash + overlay azzurro mare (rgba(0,153,221,0.35))
+
+**Schermate aggiornate manualmente:**
+- `home.tsx`: hero overlay blu, kicker giallo banana shadow, silhouette estive
+- `login.tsx`: silhouette login (sole 220px, palme, ombrelloni)
+- `altro.tsx`: silhouette variant altro
+- `maestro.tsx`: silhouette cuori/fiamme/sole
+- `premi.tsx`: VEGAS_COLORS aggiornato tropical (background F0F9FF, fucsia/sunset gold), bulk replace di tutti i rgba(0,0,0,X) → rgba(255,255,255,X)
+- `StreakBanner.tsx`: card bianca con ombra azzurra, dots blu/giallo, modal tropical
+
+## Top 3 della Settimana — Maestro Curated (1 Maggio 2026)
 Pubblicazione settimanale anonima delle 3 risposte più divertenti del Maestro, curate da Daniele.
 
 **Backend (`server.py`):**

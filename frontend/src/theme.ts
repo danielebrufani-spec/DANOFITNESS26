@@ -23,10 +23,10 @@ export const SPACING = {
 };
 
 export const RADII = {
-  sm: 6,
-  md: 10,
-  lg: 14,
-  xl: 20,
+  sm: 12,
+  md: 16,
+  lg: 24,
+  xl: 28,
   full: 999,
 };
 
@@ -42,6 +42,32 @@ export const glow = (color: string, radius = 14, opacity = 0.6) =>
       elevation: radius / 2,
     },
   }) as object;
+
+// Soft summer shadow (Tropical Pop)
+export const summerSoft = Platform.select({
+  web: { boxShadow: '0 8px 24px rgba(0,153,221,0.12)' },
+  default: {
+    shadowColor: '#0099DD',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 5,
+  },
+}) as object;
+
+export const SHADOWS = {
+  card: summerSoft,
+  button: Platform.select({
+    web: { boxShadow: '0 4px 12px rgba(0,153,221,0.25)' },
+    default: {
+      shadowColor: '#0099DD',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.25,
+      shadowRadius: 12,
+      elevation: 4,
+    },
+  }) as object,
+};
 
 export const textHeadline = (size: number, color: string) => ({
   fontFamily: FONTS.headline,

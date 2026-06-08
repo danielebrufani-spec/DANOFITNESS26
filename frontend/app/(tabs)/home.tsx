@@ -21,6 +21,7 @@ import { apiService } from '../../src/services/api';
 import { COLORS, ABBONAMENTO_INFO, FITNESS_IMAGES } from '../../src/utils/constants';
 import { StreakBanner } from '../../src/components/StreakBanner';
 import { KPIBanner } from '../../src/components/KPIBanner';
+import { SummerSilhouettes } from '../../src/components/SummerSilhouettes';
 import { FONTS, glow } from '../../src/theme';
 import { CountUp } from '../../src/components/CountUp';
 
@@ -1068,6 +1069,9 @@ export default function HomeScreen() {
           </View>
         ))}
 
+        {/* SILHOUETTE ESTIVE - sfondo decorativo */}
+        {!isAdmin && <SummerSilhouettes variant="home" />}
+
         {/* BANNER PIANO ALIMENTARE — rimosso: ora accessibile dal tab "Altro" */}
 
         {/* BANDA KPI - Streak + Biglietti + Abbonamento */}
@@ -1216,7 +1220,7 @@ const styles = StyleSheet.create({
   heroOverlay: {
     position: 'absolute',
     top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(10,10,10,0.55)',
+    backgroundColor: 'rgba(0,153,221,0.35)',
   },
   heroContent: {
     position: 'absolute',
@@ -1227,9 +1231,11 @@ const styles = StyleSheet.create({
   heroKicker: {
     fontFamily: FONTS.bodyBold,
     fontSize: 11,
-    color: COLORS.primary,
+    color: '#FFEA00',
     letterSpacing: 3,
     marginBottom: 6,
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowRadius: 4,
   },
   heroGreeting: {
     fontFamily: FONTS.headline,
@@ -1237,20 +1243,24 @@ const styles = StyleSheet.create({
     color: '#fff',
     letterSpacing: 2,
     lineHeight: 44,
+    textShadowColor: 'rgba(0,0,0,0.45)',
+    textShadowRadius: 6,
   },
   heroAccentBar: {
     width: 48,
     height: 4,
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#FFEA00',
     marginVertical: 10,
     borderRadius: 2,
   },
   heroQuote: {
     fontFamily: FONTS.bodySemi,
     fontSize: 13,
-    color: COLORS.textSecondary,
+    color: '#FFFFFF',
     fontStyle: 'italic',
     letterSpacing: 0.5,
+    textShadowColor: 'rgba(0,0,0,0.45)',
+    textShadowRadius: 4,
   },
 
   starWarsCard: {
