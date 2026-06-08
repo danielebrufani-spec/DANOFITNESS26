@@ -1,137 +1,162 @@
 {
-  "theme_and_archetype": {
-    "theme": "DARK",
-    "archetype": "Archetype 2: The Performance Pro",
-    "rationale": "High energy, tactical, command-center feel specifically requested for a functional training/CrossFit aesthetic. Heavy contrasts with Kinetic Orange/Red to simulate adrenaline and heat, abandoning the old casino look."
+  "theme_identity": {
+    "name": "Tropical Pop Italian Riviera Summer 2026",
+    "archetype": "Pastel & Soft / Vibrant Play",
+    "mode": "light",
+    "primary_accent": "Azzurro Mare",
+    "vibe": "Audace, festoso, da apericena, solare, fresco."
   },
-  "color_palette": {
-    "background": "#0A0A0A",
-    "surface": "#121212",
-    "surface_elevated": "#1C1C1E",
-    "primary": "#FF4500",
-    "secondary": "#2C2C2E",
-    "accent": "#00E676",
-    "text_primary": "#FFFFFF",
-    "text_secondary": "#A0A0A5",
-    "danger": "#FF3B30",
+  "colors": {
+    "background": "#F0F9FF",
+    "surface": "#FFFFFF",
+    "primary": "#0099DD",
+    "primaryLight": "#4DD0E1",
+    "secondary": "#FF1493",
+    "accentYellow": "#FFEA00",
+    "accentLime": "#39FF14",
+    "text": "#0C2333",
+    "textSecondary": "#597A8E",
+    "border": "#BAE6FD",
     "success": "#00E676",
-    "border": "#2C2C2E"
+    "warning": "#FFEA00",
+    "error": "#FF1493",
+    "gradientPrimary": ["#0099DD", "#00D4FF"],
+    "gradientSunset": ["#FF1493", "#FF9E00"]
   },
   "typography": {
-    "fonts": [
-      {
-        "family": "Bebas Neue",
-        "usage": "Headlines, Hero Banners, Numbers, KPIs",
-        "rationale": "Heavy, condensed weight typical of high-end functional training aesthetics. Imparts power and urgency."
-      },
-      {
-        "family": "Montserrat",
-        "usage": "Body text, small buttons, labels",
-        "rationale": "Geometric and highly readable, contrasts perfectly with condensed headers."
-      }
-    ],
+    "titleFont": "Bebas Neue",
+    "bodyFont": "Montserrat",
     "scales": {
-      "h1": "48px, tracking: tight",
-      "h2": "36px, tracking: tight",
-      "h3": "24px",
-      "body": "16px",
-      "small": "14px, uppercase, tracking: wide"
+      "h1": { "fontSize": 48, "fontFamily": "Bebas Neue", "lineHeight": 52, "letterSpacing": 1.2 },
+      "h2": { "fontSize": 32, "fontFamily": "Bebas Neue", "lineHeight": 36, "letterSpacing": 1.0 },
+      "h3": { "fontSize": 24, "fontFamily": "Bebas Neue", "lineHeight": 28, "letterSpacing": 0.5 },
+      "bodyLarge": { "fontSize": 18, "fontFamily": "Montserrat", "fontWeight": "700" },
+      "body": { "fontSize": 16, "fontFamily": "Montserrat", "fontWeight": "400" },
+      "bodySmall": { "fontSize": 14, "fontFamily": "Montserrat", "fontWeight": "400" },
+      "label": { "fontSize": 12, "fontFamily": "Montserrat", "fontWeight": "900", "textTransform": "uppercase", "letterSpacing": 1.5 }
     }
   },
-  "image_urls": [
-    {
-      "category": "hero",
-      "url": "https://images.pexels.com/photos/6389507/pexels-photo-6389507.jpeg",
-      "description": "Intense woman working out in dark gym with fog. Use for Client Home banner."
+  "visual_language": {
+    "silhouettes": {
+      "strategy": "Overlay decorative absolute positioned elements (SVG or Ionicons) across screens to ensure a summery feel.",
+      "opacity": 0.1,
+      "base_color": "#0099DD",
+      "elements": [
+        { "name": "Palma", "icon": "leaf-outline", "placement": "Top corners, overlapping headers." },
+        { "name": "Onde", "icon": "water-outline", "placement": "Bottom edges of screens or cards as repeating patterns." },
+        { "name": "Sole", "icon": "sunny-outline", "placement": "Behind the main hero banners or top center of dashboard." },
+        { "name": "Ombrellone", "icon": "umbrella-outline", "placement": "Scattered in background of Shop and Booking screens." },
+        { "name": "Occhiali da sole", "icon": "glasses-outline", "placement": "Decorative corner accents in Altro grid." },
+        { "name": "Gelato/Cocktail", "icon": "ice-cream-outline", "placement": "Events or Quiz backgrounds." }
+      ]
     },
-    {
-      "category": "lesson_circuit",
-      "url": "https://images.pexels.com/photos/9958668/pexels-photo-9958668.jpeg",
-      "description": "Industrial gym with barbells. Use for Circuito class."
-    },
-    {
-      "category": "lesson_functional",
-      "url": "https://images.unsplash.com/photo-1578762560042-46ad127c95ea",
-      "description": "Black metal kettlebell. Use for Funzionale class."
-    },
-    {
-      "category": "lesson_pilates",
-      "url": "https://images.pexels.com/photos/35553893/pexels-photo-35553893.jpeg",
-      "description": "Pilates reformer in dark studio."
-    },
-    {
-      "category": "lesson_yoga",
-      "url": "https://images.unsplash.com/photo-1590915202637-31dbc5528371",
-      "description": "Yoga bending in dark studio."
-    },
-    {
-      "category": "background_abstract",
-      "url": "https://images.unsplash.com/photo-1770513649465-2c60c8039806",
-      "description": "Dark gym background for admin or profile pages (apply heavy black overlay)."
-    }
-  ],
-  "animations": {
-    "libraries": [
-      "react-native Animated API (primary for layout and taps)",
-      "canvas-confetti (for web lottery win) or react-native-confetti-cannon (native)"
-    ],
-    "specs": [
-      {
-        "flow": "Entrance Home",
-        "technique": "Parallax + Fade In",
-        "description": "Hero background scales from 1.1 to 1.0 slowly on mount. Elements fade in staggered by 100ms."
+    "shapes": {
+      "borderRadius": {
+        "sm": 12,
+        "md": 16,
+        "lg": 24,
+        "pill": 999
       },
-      {
-        "flow": "Tap Interaction (Buttons/Cards)",
-        "technique": "Spring Scale",
-        "code_snippet": "Animated.spring(scaleAnim, { toValue: 0.95, friction: 5, tension: 100, useNativeDriver: true }).start();"
-      },
-      {
-        "flow": "Streak Flame",
-        "technique": "Pulse Animation",
-        "code_snippet": "Animated.loop(Animated.sequence([Animated.timing(scaleAnim, {toValue: 1.2, duration: 600, useNativeDriver: true}), Animated.timing(scaleAnim, {toValue: 1.0, duration: 600, useNativeDriver: true})])).start();"
-      },
-      {
-        "flow": "KPI Counter (Admin)",
-        "technique": "Count Up",
-        "description": "Use setInterval or a hook to rapidly step numbers from 0 to target value upon mount."
-      },
-      {
-        "flow": "Lottery Win",
-        "technique": "Confetti overlay",
-        "description": "Full screen confetti using canvas-confetti triggered on wheel stop."
-      },
-      {
-        "flow": "Wheel Glow",
-        "technique": "Breathing DropShadow",
-        "description": "Animate the drop-shadow opacity and radius from 10px to 20px over 1000ms loop."
+      "shadows": {
+        "summerSoft": {
+          "shadowColor": "#0099DD",
+          "shadowOffset": { "width": 0, "height": 8 },
+          "shadowOpacity": 0.12,
+          "shadowRadius": 24,
+          "elevation": 5
+        }
       }
-    ]
-  },
-  "component_guidelines": [
-    {
-      "name": "Standard Fitness Card",
-      "styling": "Background #121212, Border 1px solid #2C2C2E, Border Radius 8px. Dark overlay gradient if image background."
-    },
-    {
-      "name": "Primary Button",
-      "styling": "Background #FF4500 (Kinetic Orange). Text Bebas Neue, uppercase, pure white. Sharp athletic look (border-radius 4px). Use scale down on press."
-    },
-    {
-      "name": "Progress Bar",
-      "styling": "Track #1C1C1E, Fill #00E676 (Neon Green) for health/streak. Height 8px, sharp edges."
     }
-  ],
-  "page_mapping": {
-    "home_client": "Hero image with dark gradient overlay (bg-black/60). Greeting in Bebas Neue. Pulse flame on streak. Staggered fade in for recipe and plan cards.",
-    "home_admin": "Tactical grid layout. Count-up animations for KPIs. #121212 cards with 1px #2C2C2E borders. Red #FF3B30 for expired subs.",
-    "prenota_lezioni": "4 grid cards with the specific lesson images. Each card scales down on press. Dark overlay on images so text pops.",
-    "abbonamento": "Pricing cards. Selected card gets a 2px solid #FF4500 border and subtle inner glow. Features listed with Bebas Neue headers.",
-    "alimentazione": "Clean, structured. Use #1C1C1E for macro breakdown boxes. Neon Green for protein metrics to look like a game stamina bar.",
-    "premi_lotteria": "Completely remove 'Vegas' look. Make it look like 'Rogue Fitness Games' prize pool. Dark carbon background. Wheel is industrial looking with #FF4500 and #121212 slices.",
-    "classifica_settimanale": "Leaderboard. Rank 1 gets a Kinetic Orange #FF4500 badge. Others get grey #A0A0A5. List items slide in from right sequentially.",
-    "profilo": "Dark abstract gym background with #0A0A0A/80 overlay. User stats displayed like RPG game stats.",
-    "admin_dashboard": "Dense data view. Strip away all decor. Pure functional grid (Archetype 2 Control Room). Small font sizes (14px) for data tables."
   },
-  "instructions_to_main_agent": "Ensure all interactive elements have data-testid attributes. Apply the new color palette via constants.ts. Use pure React Native components (View, Text, Pressable). Use Expo Font to load Bebas Neue and Montserrat. Do NOT use Inter. Use the Animated API for the requested interactions. For images, apply StyleSheet.absoluteFillObject with a dark semi-transparent View over them to ensure text contrast."
+  "components": {
+    "buttons": {
+      "primary": {
+        "backgroundColor": "#0099DD",
+        "borderRadius": 999,
+        "paddingVertical": 16,
+        "paddingHorizontal": 32,
+        "shadow": "summerSoft"
+      },
+      "primaryText": {
+        "color": "#FFFFFF",
+        "fontFamily": "Montserrat",
+        "fontWeight": "900",
+        "textTransform": "uppercase",
+        "letterSpacing": 1
+      },
+      "secondary": {
+        "backgroundColor": "#FF1493",
+        "borderRadius": 999,
+        "paddingVertical": 16,
+        "paddingHorizontal": 32,
+        "shadow": "summerSoft"
+      }
+    },
+    "cards": {
+      "base": {
+        "backgroundColor": "#FFFFFF",
+        "borderRadius": 24,
+        "padding": 20,
+        "borderColor": "#BAE6FD",
+        "borderWidth": 1,
+        "shadow": "summerSoft"
+      }
+    },
+    "badges": {
+      "backgroundColor": "#FFEA00",
+      "borderRadius": 12,
+      "paddingVertical": 4,
+      "paddingHorizontal": 10,
+      "textColor": "#0C2333"
+    },
+    "bottom_tab_bar": {
+      "backgroundColor": "#FFFFFF",
+      "activeTintColor": "#0099DD",
+      "inactiveTintColor": "#BAE6FD",
+      "borderTopColor": "#E0F2FE",
+      "borderTopWidth": 1
+    }
+  },
+  "screens": {
+    "login": {
+      "style": "WOW estivo. Background gradientPrimary. Huge 'sunny' silhouette watermark centered behind the login card. Card is stark white with rounded corners (24px) and soft shadow."
+    },
+    "home_dashboard": {
+      "header": "Subtle sun-ray gradient. Silhouette of palm trees top-right.",
+      "kpi_banner": "White card, Azzurro primary metrics. Streak uses Fuchsia (#FF1493) to pop."
+    },
+    "class_booking": {
+      "calendar": "Current day highlighted in Banana Yellow (#FFEA00).",
+      "slots": "Available: White with Azzurro border. Full: Light gray with crossed umbrella silhouette."
+    },
+    "wheel_quiz": {
+      "wheel": "Sections use full Tropical Pop palette: Cyan, Fuchsia, Yellow, Lime.",
+      "background": "Scattered silhouettes: stars, ice creams, flamingos."
+    },
+    "ask_master": {
+      "layout": "Chat bubbles: Azzurro for Master, Fuchsia/Light blue for user. Sarcastic tone maintained with tropical aesthetic."
+    },
+    "shop": {
+      "cards": "Summery, clean. 24px border radius. Buy buttons in Lime Green or Azzurro."
+    },
+    "altro_grid": {
+      "cards": "7 cards with soft borders, each featuring a faint 10% opacity silhouette icon corresponding to the feature."
+    },
+    "leaderboard": {
+      "podium": "1st: Yellow/Gold, 2nd: Cyan, 3rd: Fuchsia. Fun, summery energetic feel."
+    },
+    "popups": {
+      "style": "Modal content centered. 24px radius. Large Azzurro Mare CTA button for WhatsApp."
+    }
+  },
+  "technical_instructions_to_dev_agent": {
+    "files_to_modify": ["/app/frontend/src/utils/constants.ts", "/app/frontend/src/theme.ts"],
+    "rules": [
+      "Keep all Italian text strictly unchanged.",
+      "Implement design tokens mapped to React Native StyleSheet objects.",
+      "Use @expo/vector-icons (Ionicons) configured as absolute positioned layers for the silhouettes.",
+      "Avoid raw CSS. Map to RN properties (e.g. shadowColor, shadowOffset, shadowOpacity).",
+      "Include testID=\"[kebab-case-name]\" on all interactive elements to comply with testing rules."
+    ]
+  }
 }
