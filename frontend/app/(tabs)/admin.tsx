@@ -1141,7 +1141,7 @@ export default function AdminScreen() {
                                       <View key={p.booking_id || idx} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6, borderBottomWidth: idx < participants.length - 1 ? 1 : 0, borderBottomColor: COLORS.border }}>
                                         <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 12, color: COLORS.textSecondary, width: 22 }}>{idx + 1}.</Text>
                                         <Ionicons name="person" size={14} color={COLORS.textSecondary} />
-                                        <Text style={{ flex: 1, fontFamily: FONTS.body, fontSize: 13, color: COLORS.text }}>{p.nome}</Text>
+                                        <Text style={{ flex: 1, fontFamily: FONTS.body, fontSize: 13, color: COLORS.text }}>{`${p.nome || ''} ${p.cognome || ''}`.trim() || 'Utente'}</Text>
                                         {p.lezione_scalata && (
                                           <View style={{ backgroundColor: COLORS.success + '25', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
                                             <Text style={{ color: COLORS.success, fontFamily: FONTS.bodyBold, fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.8 }}>Scalata</Text>
@@ -1151,7 +1151,7 @@ export default function AdminScreen() {
                                           <TouchableOpacity
                                             data-testid={`remove-participant-${p.booking_id}`}
                                             style={{ backgroundColor: COLORS.error, borderRadius: 6, padding: 6 }}
-                                            onPress={() => handleRemoveParticipant(p.booking_id!, !!p.lezione_scalata, lesson.lesson_id, giorno.data, p.nome)}
+                                            onPress={() => handleRemoveParticipant(p.booking_id!, !!p.lezione_scalata, lesson.lesson_id, giorno.data, `${p.nome || ''} ${p.cognome || ''}`.trim())}
                                           >
                                             <Ionicons name="remove" size={16} color="#fff" />
                                           </TouchableOpacity>

@@ -283,7 +283,7 @@ export const apiService = {
         orario: string;
         tipo_attivita: string;
         coach: string;
-        partecipanti: {nome: string; soprannome: string; lezione_scalata: boolean}[];
+        partecipanti: {nome: string; cognome?: string; soprannome: string; display_name?: string; lezione_scalata: boolean; booking_id?: string}[];
         totale_iscritti: number;
       }[];
     }[];

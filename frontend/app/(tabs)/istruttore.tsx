@@ -184,7 +184,7 @@ export default function IstruttoreScreen() {
                                     styles.participantName,
                                     p.lezione_scalata && styles.participantConfirmed
                                   ]}>
-                                    {p.soprannome || p.nome}
+                                    {p.display_name || p.soprannome || `${p.nome || ''} ${(p as any).cognome || ''}`.trim() || 'Utente'}
                                   </Text>
                                   {p.lezione_scalata && (
                                     <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />

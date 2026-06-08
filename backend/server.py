@@ -2640,7 +2640,10 @@ async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user))
         
         for entry in entries_with_count:
             user = entry["user"]
-            display_name = user.get("soprannome") or user.get("nome", "Utente")
+            # Usa soprannome se presente, altrimenti nome COMPLETO (per evitare omonimie)
+            display_name = user.get("soprannome") if user.get("soprannome") else f"{user.get('nome', '')} {user.get('cognome', '')}".strip()
+            if not display_name:
+                display_name = "Utente"
             
             # Controlla pari merito: stessa posizione E più di una persona
             is_pari = len(entries_with_count) > 1
@@ -3640,11 +3643,11 @@ async def get_istruttore_lezioni(current_user: dict = Depends(get_current_user))
         {"user_id": 1, "lesson_id": 1, "data_lezione": 1, "lezione_scalata": 1}
     ).to_list(1000)
     
-    # Carica solo gli utenti necessari (solo nome e soprannome)
+    # Carica solo gli utenti necessari (nome + cognome + soprannome per display name univoco)
     user_ids = list(set(b["user_id"] for b in bookings))
     users = await db.users.find(
         {"_id": {"$in": [ObjectId(uid) for uid in user_ids]}},
-        {"nome": 1, "soprannome": 1}
+        {"nome": 1, "cognome": 1, "soprannome": 1}
     ).to_list(len(user_ids)) if user_ids else []
     users_map = {str(u["_id"]): u for u in users}
     
@@ -3680,14 +3683,21 @@ async def get_istruttore_lezioni(current_user: dict = Depends(get_current_user))
             key = f"{str(lesson['_id'])}_{data}"
             lesson_bookings = bookings_index.get(key, [])
             
-            partecipanti = [
-                {
-                    "nome": users_map.get(b["user_id"], {}).get("nome", ""),
-                    "soprannome": users_map.get(b["user_id"], {}).get("soprannome", ""),
-                    "lezione_scalata": b.get("lezione_scalata", False)
-                }
-                for b in lesson_bookings
-            ]
+            partecipanti = []
+            for b in lesson_bookings:
+                u = users_map.get(b["user_id"], {})
+                u_nome = u.get("nome", "") or ""
+                u_cognome = u.get("cognome", "") or ""
+                u_soprannome = u.get("soprannome") or ""
+                # Display name: soprannome se presente, altrimenti nome + cognome (per evitare omonimie)
+                display_name = u_soprannome if u_soprannome else f"{u_nome} {u_cognome}".strip()
+                partecipanti.append({
+                    "nome": u_nome,
+                    "cognome": u_cognome,
+                    "soprannome": u_soprannome,
+                    "display_name": display_name or "Utente",
+                    "lezione_scalata": b.get("lezione_scalata", False),
+                })
             
             lezioni_list.append({
                 "id": str(lesson["_id"]),
