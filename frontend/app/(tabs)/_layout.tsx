@@ -4,6 +4,7 @@ import { StyleSheet, Platform, Modal, View, Text, TextInput, TouchableOpacity, A
 import { useAuth } from '../../src/context/AuthContext';
 import { COLORS } from '../../src/utils/constants';
 import { apiService } from '../../src/services/api';
+import { EventPopup } from '../../src/components/EventPopup';
 
 export default function TabsLayout() {
   const { isAdmin, isIstruttore, mustResetPassword, clearMustResetPassword, user, logout } = useAuth();
@@ -53,6 +54,8 @@ export default function TabsLayout() {
 
   return (
     <>
+    {/* Popup evento Mobili Trignani - visibile fino al 13/06/2026 19:00 */}
+    {!isArchived && <EventPopup />}
     <Tabs
       screenOptions={{
         headerShown: false,
