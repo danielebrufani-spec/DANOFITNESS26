@@ -739,6 +739,12 @@ export default function PrenotaScreen() {
                         <Text style={[styles.lessonType, { color: (isPassed || isCancelled) ? COLORS.textSecondary : (info.colore || COLORS.primary) }]}>
                           {info.nome || lesson.tipo_attivita}
                         </Text>
+                        {lesson.orario === '18:30' && !isCancelled && (
+                          <View style={styles.poolBadge}>
+                            <Ionicons name="water" size={13} color="#00C8FF" />
+                            <Text style={styles.poolBadgeText}>IN ACQUA · PISCINA CAMPING</Text>
+                          </View>
+                        )}
                         {isCancelled ? (
                           <Text style={{ color: '#EF4444', fontSize: 13, fontWeight: 'bold' }}>ANNULLATA{cancelInfo?.motivo ? ` - ${cancelInfo.motivo}` : ''}</Text>
                         ) : lesson.coach ? (
@@ -1200,6 +1206,26 @@ const styles = StyleSheet.create({
   coachNamePassed: {
     color: COLORS.textSecondary,
     opacity: 0.7,
+  },
+  poolBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    backgroundColor: 'rgba(0,200,255,0.12)',
+    borderWidth: 1,
+    borderColor: '#00C8FF',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginTop: 6,
+    marginBottom: 2,
+  },
+  poolBadgeText: {
+    fontFamily: FONTS.bodyBlack,
+    fontSize: 11,
+    color: '#00C8FF',
+    letterSpacing: 1.2,
   },
   participantsToggle: {
     flexDirection: 'row',

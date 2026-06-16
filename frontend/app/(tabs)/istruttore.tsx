@@ -168,6 +168,12 @@ export default function IstruttoreScreen() {
                             <View style={styles.lessonInfo}>
                               <Text style={styles.lessonTime}>{lezione.orario}</Text>
                               <Text style={styles.lessonType}>{info.nome || lezione.tipo_attivita}</Text>
+                              {lezione.orario === '18:30' && (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 4, backgroundColor: 'rgba(0,200,255,0.12)', borderWidth: 1, borderColor: '#00C8FF', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginTop: 4 }}>
+                                  <Ionicons name="water" size={11} color="#00C8FF" />
+                                  <Text style={{ fontSize: 10, color: '#00C8FF', fontWeight: '900', letterSpacing: 1 }}>IN ACQUA · PISCINA CAMPING</Text>
+                                </View>
+                              )}
                             </View>
                             <View style={styles.participantsBadge}>
                               <Ionicons name="people" size={16} color={COLORS.primary} />

@@ -1059,6 +1059,12 @@ export default function AdminScreen() {
                                   disabled={isCancelled}
                                 >
                                   <Text style={styles.lessonStatTime}>{lesson.orario} - {info.nome || lesson.tipo_attivita}</Text>
+                                  {lesson.orario === '18:30' && !isCancelled && (
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 4, backgroundColor: 'rgba(0,200,255,0.12)', borderWidth: 1, borderColor: '#00C8FF', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, marginTop: 3, marginBottom: 2 }}>
+                                      <Ionicons name="water" size={10} color="#00C8FF" />
+                                      <Text style={{ fontSize: 9, color: '#00C8FF', fontWeight: '900', letterSpacing: 1 }}>IN ACQUA · PISCINA CAMPING</Text>
+                                    </View>
+                                  )}
                                   {isCancelled && (
                                     <Text style={{ color: '#EF4444', fontSize: 11, fontWeight: 'bold' }}>
                                       ANNULLATA: {cancelInfo?.motivo}
