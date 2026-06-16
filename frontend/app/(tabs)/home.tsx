@@ -746,12 +746,12 @@ export default function HomeScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#EF4444', letterSpacing: 0.5 }}>LEZIONE ANNULLATA</Text>
-                  <Text style={{ fontSize: 14, color: '#fff', fontWeight: '600', marginTop: 2 }}>Ore {c.orario} — {c.tipo_attivita || 'Lezione'} ({new Date(c.data_lezione + 'T00:00').toLocaleDateString('it-IT', {weekday: 'long', day: 'numeric', month: 'long'})})</Text>
+                  <Text style={{ fontSize: 16, color: '#fff', fontWeight: '600', marginTop: 2 }}>Ore {c.orario} — {c.tipo_attivita || 'Lezione'} ({new Date(c.data_lezione + 'T00:00').toLocaleDateString('it-IT', {weekday: 'long', day: 'numeric', month: 'long'})})</Text>
                 </View>
               </View>
               <Text style={{ fontSize: 15, color: '#fff', lineHeight: 22, marginBottom: 10 }}>{c.motivo}</Text>
               <View style={{ backgroundColor: '#ffffff10', borderRadius: 10, padding: 10 }}>
-                <Text style={{ fontSize: 12, color: '#aaa', textAlign: 'center' }}>
+                <Text style={{ fontSize: 14, color: '#aaa', textAlign: 'center' }}>
                   Ci scusiamo per il disagio! Le prenotazioni non verranno scalate dal vostro abbonamento.
                 </Text>
               </View>
@@ -811,7 +811,7 @@ export default function HomeScreen() {
                       <Text style={styles.expiredName}>
                         {sub.user_nome || 'Cliente'} {sub.user_cognome || ''}
                       </Text>
-                      <Text style={{ fontSize: 12, color: COLORS.textSecondary, marginTop: 2 }}>
+                      <Text style={{ fontSize: 14, color: COLORS.textSecondary, marginTop: 2 }}>
                         {ABBONAMENTO_INFO[sub.tipo]?.nome || sub.tipo}
                         {' · Scaduto: '}
                         {new Date(sub.data_scadenza).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: '2-digit' })}
@@ -993,18 +993,18 @@ export default function HomeScreen() {
                       <Ionicons name="cart" size={18} color={COLORS.primary} />
                       <Text style={[styles.newUserName, { fontWeight: 'bold' }]}>{o.product_nome}</Text>
                     </View>
-                    <Text style={{ color: COLORS.textSecondary, fontSize: 12, marginLeft: 26 }}>
+                    <Text style={{ color: COLORS.textSecondary, fontSize: 14, marginLeft: 26 }}>
                       👤 {o.user_nome} {o.user_cognome}
                       {o.taglia ? ` · Taglia ${o.taglia}` : ''}
                       {o.colore ? ` · ${o.colore}` : ''}
                     </Text>
-                    <Text style={{ color: COLORS.primary, fontSize: 13, fontWeight: 'bold', marginLeft: 26, marginTop: 2 }}>
+                    <Text style={{ color: COLORS.primary, fontSize: 15, fontWeight: 'bold', marginLeft: 26, marginTop: 2 }}>
                       € {o.totale?.toFixed(2)}
                     </Text>
                   </View>
                 ))}
               </ScrollView>
-              <Text style={{ color: COLORS.textSecondary, fontSize: 12, marginTop: 8, textAlign: 'center' }}>
+              <Text style={{ color: COLORS.textSecondary, fontSize: 14, marginTop: 8, textAlign: 'center' }}>
                 Vai nel tab Shop per gestirli 🛍️
               </Text>
             </View>
@@ -1057,12 +1057,12 @@ export default function HomeScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#EF4444', letterSpacing: 0.5 }}>LEZIONE ANNULLATA</Text>
-                <Text style={{ fontSize: 14, color: '#fff', fontWeight: '600', marginTop: 2 }}>Ore {c.orario} — {c.tipo_attivita || 'Lezione'} ({new Date(c.data_lezione + 'T00:00').toLocaleDateString('it-IT', {weekday: 'long', day: 'numeric', month: 'long'})})</Text>
+                <Text style={{ fontSize: 16, color: '#fff', fontWeight: '600', marginTop: 2 }}>Ore {c.orario} — {c.tipo_attivita || 'Lezione'} ({new Date(c.data_lezione + 'T00:00').toLocaleDateString('it-IT', {weekday: 'long', day: 'numeric', month: 'long'})})</Text>
               </View>
             </View>
             <Text style={{ fontSize: 15, color: '#fff', lineHeight: 22, marginBottom: 10 }}>{c.motivo}</Text>
             <View style={{ backgroundColor: '#ffffff10', borderRadius: 10, padding: 10 }}>
-              <Text style={{ fontSize: 12, color: '#aaa', textAlign: 'center' }}>
+              <Text style={{ fontSize: 14, color: '#aaa', textAlign: 'center' }}>
                 Ci scusiamo per il disagio! Le prenotazioni non verranno scalate dal vostro abbonamento.
               </Text>
             </View>
@@ -1192,7 +1192,7 @@ const styles = StyleSheet.create({
   },
   notificationText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 15,
     color: COLORS.text,
     lineHeight: 18,
   },
@@ -1230,7 +1230,7 @@ const styles = StyleSheet.create({
   },
   heroKicker: {
     fontFamily: FONTS.bodyBold,
-    fontSize: 11,
+    fontSize: 13,
     color: '#FFEA00',
     letterSpacing: 3,
     marginBottom: 6,
@@ -1255,7 +1255,7 @@ const styles = StyleSheet.create({
   },
   heroQuote: {
     fontFamily: FONTS.bodySemi,
-    fontSize: 13,
+    fontSize: 15,
     color: '#FFFFFF',
     fontStyle: 'italic',
     letterSpacing: 0.5,
@@ -1308,7 +1308,7 @@ const styles = StyleSheet.create({
     borderColor: '#FFE81F44',
   },
   starWarsQuote: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#b8b8b8',
     fontStyle: 'italic',
     letterSpacing: 1,
@@ -1332,7 +1332,7 @@ const styles = StyleSheet.create({
 
   // Header (legacy)
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  greeting: { fontSize: 14, color: COLORS.textSecondary },
+  greeting: { fontSize: 16, color: COLORS.textSecondary },
   userName: { fontSize: 22, fontWeight: 'bold', color: COLORS.text },
   logoImage: { width: 90, height: 90, borderRadius: 45 },
 
@@ -1362,10 +1362,10 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     lineHeight: 36,
   },
-  statLabel: { fontSize: 11, color: '#FFF', opacity: 0.95, marginTop: 4, textAlign: 'center', flexShrink: 0 },
+  statLabel: { fontSize: 13, color: '#FFF', opacity: 0.95, marginTop: 4, textAlign: 'center', flexShrink: 0 },
   statLabelKinetic: {
     fontFamily: FONTS.bodyBold,
-    fontSize: 10,
+    fontSize: 12,
     color: COLORS.textSecondary,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
@@ -1380,7 +1380,7 @@ const styles = StyleSheet.create({
   },
   weeklySummaryItem: { flex: 1, alignItems: 'center' },
   weeklySummaryNumber: { fontSize: 36, fontWeight: 'bold', color: COLORS.primary },
-  weeklySummaryLabel: { fontSize: 12, color: COLORS.text, marginTop: 4, fontWeight: '500' },
+  weeklySummaryLabel: { fontSize: 14, color: COLORS.text, marginTop: 4, fontWeight: '500' },
   weeklySummaryDivider: { width: 1, backgroundColor: COLORS.border, marginHorizontal: 12 },
 
   // Quote Card (Client)
@@ -1406,29 +1406,29 @@ const styles = StyleSheet.create({
   section: { marginBottom: 20 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   sectionTitle: { fontSize: 16, fontWeight: '600', color: COLORS.text },
-  seeAll: { fontSize: 13, color: COLORS.primary, fontWeight: '500' },
+  seeAll: { fontSize: 15, color: COLORS.primary, fontWeight: '500' },
 
   // Search
   searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card, borderRadius: 10, paddingHorizontal: 12, marginBottom: 12, gap: 8 },
-  searchInput: { flex: 1, height: 40, color: COLORS.text, fontSize: 14 },
+  searchInput: { flex: 1, height: 44, color: COLORS.text, fontSize: 16 },
 
   // Lezioni (Admin)
   lessonRow: { backgroundColor: COLORS.card, borderRadius: 10, padding: 12, flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   lessonColor: { width: 4, height: 36, borderRadius: 2, marginRight: 12 },
   lessonInfo: { flex: 1 },
   lessonTime: { fontSize: 15, fontWeight: '600', color: COLORS.text },
-  lessonType: { fontSize: 13, color: COLORS.textSecondary, marginTop: 2 },
+  lessonType: { fontSize: 15, color: COLORS.textSecondary, marginTop: 2 },
   participantsBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.background, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16, gap: 4 },
-  participantsNumber: { fontSize: 14, fontWeight: 'bold', color: COLORS.primary },
+  participantsNumber: { fontSize: 16, fontWeight: 'bold', color: COLORS.primary },
 
   // Expiring (Admin)
   expiringCard: { backgroundColor: COLORS.card, borderRadius: 10, padding: 12, flexDirection: 'row', alignItems: 'center', marginBottom: 8, borderLeftWidth: 3, borderLeftColor: COLORS.error },
   expiringInfo: { flex: 1 },
-  expiringName: { fontSize: 14, fontWeight: '600', color: COLORS.text },
-  expiringType: { fontSize: 12, color: COLORS.textSecondary },
+  expiringName: { fontSize: 16, fontWeight: '600', color: COLORS.text },
+  expiringType: { fontSize: 14, color: COLORS.textSecondary },
   expiringDate: { alignItems: 'flex-end' },
-  expiringDateText: { fontSize: 13, fontWeight: '600', color: COLORS.error },
-  expiringLessons: { fontSize: 11, color: COLORS.textSecondary },
+  expiringDateText: { fontSize: 15, fontWeight: '600', color: COLORS.error },
+  expiringLessons: { fontSize: 13, color: COLORS.textSecondary },
 
   // Expired Subscriptions (Admin)
   expiredCard: { 
@@ -1443,7 +1443,7 @@ const styles = StyleSheet.create({
     borderLeftColor: COLORS.error,
   },
   expiredInfo: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  expiredName: { fontSize: 14, fontWeight: '600', color: COLORS.text },
+  expiredName: { fontSize: 16, fontWeight: '600', color: COLORS.text },
 
   // Banner Piano Alimentare
   mealPlanBanner: {
@@ -1467,7 +1467,7 @@ const styles = StyleSheet.create({
   },
   mealPlanBannerContent: { flex: 1 },
   mealPlanBannerTitle: { fontSize: 15, fontWeight: 'bold', color: '#FF6B6B' },
-  mealPlanBannerText: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
+  mealPlanBannerText: { fontSize: 14, color: COLORS.textSecondary, marginTop: 2 },
 
   // Modal
   modalOverlay: {
@@ -1485,12 +1485,12 @@ const styles = StyleSheet.create({
     maxWidth: 320,
   },
   modalTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text, textAlign: 'center' },
-  modalSubtitle: { fontSize: 14, color: COLORS.primary, textAlign: 'center', marginTop: 4, marginBottom: 12 },
+  modalSubtitle: { fontSize: 16, color: COLORS.primary, textAlign: 'center', marginTop: 4, marginBottom: 12 },
   paymentToggle: { flexDirection: 'row', gap: 8, marginBottom: 14 },
   paymentBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, padding: 10, borderRadius: 10, borderWidth: 2, borderColor: COLORS.border, backgroundColor: COLORS.card },
   paymentBtnPaid: { borderColor: COLORS.success, backgroundColor: COLORS.success },
   paymentBtnUnpaid: { borderColor: '#f59e0b', backgroundColor: '#f59e0b' },
-  paymentBtnText: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
+  paymentBtnText: { fontSize: 15, fontWeight: '600', color: COLORS.textSecondary },
   paymentBtnTextActive: { color: '#fff' },
   modalOptions: { gap: 10 },
   modalOption: {
@@ -1503,14 +1503,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  modalOptionText: { fontSize: 14, fontWeight: '600', color: COLORS.text },
-  modalOptionPrice: { fontSize: 14, fontWeight: 'bold', color: COLORS.primary },
+  modalOptionText: { fontSize: 16, fontWeight: '600', color: COLORS.text },
+  modalOptionPrice: { fontSize: 16, fontWeight: 'bold', color: COLORS.primary },
   modalCancel: {
     marginTop: 16,
     padding: 12,
     alignItems: 'center',
   },
-  modalCancelText: { fontSize: 14, color: COLORS.textSecondary },
+  modalCancelText: { fontSize: 16, color: COLORS.textSecondary },
 
   // Modal Divider e Archivia
   modalDivider: {
@@ -1525,7 +1525,7 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     marginHorizontal: 12,
-    fontSize: 12,
+    fontSize: 14,
     color: COLORS.textSecondary,
   },
   archiveOption: {
@@ -1547,43 +1547,43 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   archiveOptionTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#6366f1',
   },
   archiveOptionDesc: {
-    fontSize: 11,
+    fontSize: 13,
     color: COLORS.textSecondary,
   },
 
   // Recent Users (Admin)
   userRow: { backgroundColor: COLORS.card, borderRadius: 10, padding: 10, flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 10 },
   userInfo: { flex: 1 },
-  userNameText: { fontSize: 14, fontWeight: '500', color: COLORS.text },
-  userDate: { fontSize: 12, color: COLORS.textSecondary },
+  userNameText: { fontSize: 16, fontWeight: '500', color: COLORS.text },
+  userDate: { fontSize: 14, color: COLORS.textSecondary },
 
   // Bookings (Client)
   bookingCardWrapper: { marginBottom: 8 },
   bookingCard: { backgroundColor: COLORS.card, borderRadius: 10, padding: 12, flexDirection: 'row', alignItems: 'center' },
   bookingColor: { width: 4, height: 36, borderRadius: 2, marginRight: 12 },
   bookingInfo: { flex: 1 },
-  bookingDate: { fontSize: 14, fontWeight: '600', color: COLORS.text },
-  bookingActivity: { fontSize: 13, color: COLORS.primary, marginTop: 2 },
+  bookingDate: { fontSize: 16, fontWeight: '600', color: COLORS.text },
+  bookingActivity: { fontSize: 15, color: COLORS.primary, marginTop: 2 },
   bookingClassButton: { padding: 8 },
   participantsDropdown: { backgroundColor: COLORS.card, borderTopWidth: 1, borderTopColor: COLORS.border, padding: 12, borderBottomLeftRadius: 10, borderBottomRightRadius: 10 },
-  participantsCount: { fontSize: 12, fontWeight: '600', color: COLORS.textSecondary, marginBottom: 6 },
-  participantName: { fontSize: 13, color: COLORS.text, marginBottom: 4 },
-  noParticipantsText: { fontSize: 12, color: COLORS.textSecondary, fontStyle: 'italic' },
+  participantsCount: { fontSize: 14, fontWeight: '600', color: COLORS.textSecondary, marginBottom: 6 },
+  participantName: { fontSize: 15, color: COLORS.text, marginBottom: 4 },
+  noParticipantsText: { fontSize: 14, color: COLORS.textSecondary, fontStyle: 'italic' },
   emptyBookings: { alignItems: 'center', paddingVertical: 30, backgroundColor: COLORS.card, borderRadius: 12 },
   bookNowButton: { backgroundColor: COLORS.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8, marginTop: 12 },
   bookNowText: { color: '#FFF', fontWeight: '600' },
 
-  noData: { fontSize: 14, color: COLORS.textSecondary, textAlign: 'center', paddingVertical: 16 },
+  noData: { fontSize: 16, color: COLORS.textSecondary, textAlign: 'center', paddingVertical: 16 },
 
   // Actions
   actionsGrid: { flexDirection: 'row', gap: 12, marginTop: 8 },
   actionCard: { flex: 1, backgroundColor: COLORS.card, borderRadius: 12, padding: 16, alignItems: 'center', gap: 6 },
-  actionText: { fontSize: 13, fontWeight: '500', color: COLORS.text },
+  actionText: { fontSize: 15, fontWeight: '500', color: COLORS.text },
 
   // Benessere Section
   benessereSection: {
@@ -1637,7 +1637,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   ricettaCalorie: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: '#4CAF50',
   },
@@ -1647,19 +1647,19 @@ const styles = StyleSheet.create({
     marginVertical: 14,
   },
   ricettaSectionLabel: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: COLORS.primary,
     marginBottom: 6,
     marginTop: 8,
   },
   ricettaIngredienti: {
-    fontSize: 13,
+    fontSize: 15,
     color: COLORS.textSecondary,
     lineHeight: 20,
   },
   ricettaPreparazione: {
-    fontSize: 13,
+    fontSize: 15,
     color: COLORS.text,
     lineHeight: 20,
   },
@@ -1673,7 +1673,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   ricettaTip: {
-    fontSize: 12,
+    fontSize: 14,
     color: COLORS.primary,
     flex: 1,
     fontWeight: '500',

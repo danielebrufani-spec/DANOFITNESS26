@@ -294,7 +294,7 @@ export default function AlimentazioneScreen() {
               <Ionicons name="search" size={18} color={COLORS.textSecondary} />
               <TextInput
                 data-testid="search-nutrition-plans"
-                style={{ flex: 1, padding: 12, color: COLORS.text, fontSize: 14 }}
+                style={{ flex: 1, padding: 12, color: COLORS.text, fontSize: 16 }}
                 placeholder="Cerca cliente per nome..."
                 placeholderTextColor={COLORS.textSecondary}
                 value={nutritionSearch}

@@ -740,7 +740,7 @@ export default function PrenotaScreen() {
                           {info.nome || lesson.tipo_attivita}
                         </Text>
                         {isCancelled ? (
-                          <Text style={{ color: '#EF4444', fontSize: 11, fontWeight: 'bold' }}>ANNULLATA{cancelInfo?.motivo ? ` - ${cancelInfo.motivo}` : ''}</Text>
+                          <Text style={{ color: '#EF4444', fontSize: 13, fontWeight: 'bold' }}>ANNULLATA{cancelInfo?.motivo ? ` - ${cancelInfo.motivo}` : ''}</Text>
                         ) : lesson.coach ? (
                           <Text style={[styles.coachName, isPassed && styles.coachNamePassed]}>
                             Coach {lesson.coach}
@@ -1012,7 +1012,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontFamily: FONTS.bodySemi,
-    fontSize: 12,
+    fontSize: 14,
     color: COLORS.primary,
     marginTop: 2,
     letterSpacing: 1.5,
@@ -1035,7 +1035,7 @@ const styles = StyleSheet.create({
   },
   closedBannerText: {
     color: COLORS.warning,
-    fontSize: 13,
+    fontSize: 15,
     fontFamily: FONTS.bodySemi,
     flex: 1,
   },
@@ -1067,7 +1067,7 @@ const styles = StyleSheet.create({
   },
   dateDay: {
     fontFamily: FONTS.bodyBold,
-    fontSize: 11,
+    fontSize: 13,
     color: COLORS.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 1.2,
@@ -1117,7 +1117,7 @@ const styles = StyleSheet.create({
   },
   selectedDateText: {
     fontFamily: FONTS.bodyBold,
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.text,
     flex: 1,
     textTransform: 'uppercase',
@@ -1133,7 +1133,7 @@ const styles = StyleSheet.create({
   },
   passedBadgeText: {
     color: COLORS.textSecondary,
-    fontSize: 10,
+    fontSize: 12,
     fontFamily: FONTS.bodyBold,
     textTransform: 'uppercase',
     letterSpacing: 1,
@@ -1185,14 +1185,14 @@ const styles = StyleSheet.create({
   },
   lessonType: {
     fontFamily: FONTS.bodyBlack,
-    fontSize: 13,
+    fontSize: 15,
     marginTop: 2,
     textTransform: 'uppercase',
     letterSpacing: 1.2,
   },
   coachName: {
     fontFamily: FONTS.body,
-    fontSize: 12,
+    fontSize: 14,
     color: COLORS.textSecondary,
     marginTop: 2,
     fontStyle: 'italic',
@@ -1221,13 +1221,13 @@ const styles = StyleSheet.create({
   },
   participantNumber: {
     fontFamily: FONTS.bodyBlack,
-    fontSize: 13,
+    fontSize: 15,
     color: COLORS.primary,
     minWidth: 20,
   },
   participantsToggleText: {
     fontFamily: FONTS.bodySemi,
-    fontSize: 13,
+    fontSize: 15,
     color: COLORS.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 1,
@@ -1240,18 +1240,18 @@ const styles = StyleSheet.create({
   },
   participantsCount: {
     fontFamily: FONTS.bodyBold,
-    fontSize: 13,
+    fontSize: 15,
     color: COLORS.primary,
     marginBottom: 6,
   },
   participantName: {
     fontFamily: FONTS.body,
-    fontSize: 13,
+    fontSize: 15,
     color: COLORS.text,
     marginVertical: 2,
   },
   noParticipants: {
-    fontSize: 12,
+    fontSize: 14,
     color: COLORS.textSecondary,
     fontStyle: 'italic',
   },
@@ -1273,7 +1273,7 @@ const styles = StyleSheet.create({
   bookButtonText: {
     color: COLORS.text,
     fontFamily: FONTS.bodyBlack,
-    fontSize: 12,
+    fontSize: 14,
     textTransform: 'uppercase',
     letterSpacing: 1.2,
   },
@@ -1288,7 +1288,7 @@ const styles = StyleSheet.create({
   passedIndicatorText: {
     color: COLORS.error,
     fontFamily: FONTS.bodyBold,
-    fontSize: 11,
+    fontSize: 13,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
@@ -1299,7 +1299,7 @@ const styles = StyleSheet.create({
   },
   noLessonsText: {
     fontFamily: FONTS.bodySemi,
-    fontSize: 13,
+    fontSize: 15,
     color: COLORS.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 1,
@@ -1368,7 +1368,7 @@ const styles = StyleSheet.create({
   },
   bookingDate: {
     fontFamily: FONTS.bodyBold,
-    fontSize: 13,
+    fontSize: 15,
     color: COLORS.text,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
@@ -1378,7 +1378,7 @@ const styles = StyleSheet.create({
   },
   bookingDetails: {
     fontFamily: FONTS.bodyBlack,
-    fontSize: 12,
+    fontSize: 14,
     color: COLORS.primary,
     marginTop: 2,
     textTransform: 'uppercase',
@@ -1389,7 +1389,7 @@ const styles = StyleSheet.create({
   },
   bookingCoach: {
     fontFamily: FONTS.body,
-    fontSize: 11,
+    fontSize: 13,
     color: COLORS.textSecondary,
     marginTop: 2,
     fontStyle: 'italic',
@@ -1418,7 +1418,7 @@ const styles = StyleSheet.create({
   },
   noBookingsText: {
     fontFamily: FONTS.body,
-    fontSize: 12,
+    fontSize: 14,
     color: COLORS.textSecondary,
     textAlign: 'center',
     paddingVertical: 16,
@@ -1482,7 +1482,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   sadSubtext: {
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.textSecondary,
     textAlign: 'center',
   },
@@ -1526,14 +1526,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   bonusMessage: {
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.text,
     marginBottom: 12,
     textAlign: 'center',
     lineHeight: 20,
   },
   bonusMotivation: {
-    fontSize: 13,
+    fontSize: 15,
     color: COLORS.textSecondary,
     textAlign: 'center',
     fontStyle: 'italic',

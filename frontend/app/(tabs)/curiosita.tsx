@@ -689,10 +689,10 @@ const styles = StyleSheet.create({
   curiositaHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   curiositaEmoji: { fontSize: 32 },
   curiositaBadge: { backgroundColor: COLORS.warning + '30', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
-  curiositaBadgeText: { fontSize: 11, fontWeight: '600', color: COLORS.warning },
+  curiositaBadgeText: { fontSize: 13, fontWeight: '600', color: COLORS.warning },
   curiositaTitolo: { fontSize: 16, fontWeight: 'bold', color: COLORS.text, marginBottom: 8 },
-  curiositaTesto: { fontSize: 13, color: COLORS.text, lineHeight: 20 },
-  curiositaCategoria: { fontSize: 11, color: COLORS.textSecondary, marginTop: 10 },
+  curiositaTesto: { fontSize: 15, color: COLORS.text, lineHeight: 20 },
+  curiositaCategoria: { fontSize: 13, color: COLORS.textSecondary, marginTop: 10 },
   
   // Section Header
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
@@ -702,7 +702,7 @@ const styles = StyleSheet.create({
   
   // Empty State
   emptyConsigli: { alignItems: 'center', paddingVertical: 40, backgroundColor: COLORS.card, borderRadius: 12 },
-  emptyText: { fontSize: 14, color: COLORS.textSecondary, marginTop: 10 },
+  emptyText: { fontSize: 16, color: COLORS.textSecondary, marginTop: 10 },
   
   // Consiglio Card
   consiglioCard: {
@@ -712,8 +712,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   deleteButton: { position: 'absolute', top: 12, right: 12, zIndex: 1 },
-  consiglioData: { fontSize: 11, color: COLORS.textSecondary, marginBottom: 8 },
-  consiglioTesto: { fontSize: 14, color: COLORS.text, lineHeight: 20, marginBottom: 12 },
+  consiglioData: { fontSize: 13, color: COLORS.textSecondary, marginBottom: 8 },
+  consiglioTesto: { fontSize: 16, color: COLORS.text, lineHeight: 20, marginBottom: 12 },
   consiglioImmagine: { width: '100%', height: 180, borderRadius: 10, marginBottom: 12 },
   spotifyButton: {
     flexDirection: 'row',
@@ -723,7 +723,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 10,
   },
-  spotifyText: { flex: 1, fontSize: 14, fontWeight: '500', color: COLORS.text },
+  spotifyText: { flex: 1, fontSize: 16, fontWeight: '500', color: COLORS.text },
   
   // Link text style
   linkText: {
@@ -736,12 +736,12 @@ const styles = StyleSheet.create({
   modalScrollContent: { flexGrow: 1, justifyContent: 'center', padding: 20 },
   modalContent: { backgroundColor: COLORS.card, borderRadius: 16, padding: 20 },
   modalTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text, marginBottom: 16, textAlign: 'center' },
-  inputLabel: { fontSize: 12, color: COLORS.textSecondary, marginBottom: 6, marginTop: 10 },
+  inputLabel: { fontSize: 14, color: COLORS.textSecondary, marginBottom: 6, marginTop: 10 },
   input: {
     backgroundColor: COLORS.background,
     borderRadius: 10,
     padding: 12,
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.text,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -750,7 +750,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     borderRadius: 10,
     padding: 12,
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.text,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -759,10 +759,10 @@ const styles = StyleSheet.create({
   },
   modalButtons: { flexDirection: 'row', gap: 12, marginTop: 20 },
   cancelButton: { flex: 1, padding: 14, borderRadius: 10, alignItems: 'center', backgroundColor: COLORS.background },
-  cancelButtonText: { fontSize: 14, color: COLORS.textSecondary },
+  cancelButtonText: { fontSize: 16, color: COLORS.textSecondary },
   publishButton: { flex: 1, padding: 14, borderRadius: 10, alignItems: 'center', backgroundColor: COLORS.primary },
   publishButtonDisabled: { opacity: 0.7 },
-  publishButtonText: { fontSize: 14, fontWeight: '600', color: '#FFF' },
+  publishButtonText: { fontSize: 16, fontWeight: '600', color: '#FFF' },
   
   // Image attach button
   attachButton: {
@@ -773,7 +773,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   attachButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.text,
   },
   imagePreviewContainer: {
@@ -827,7 +827,7 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   maestroSubtitle: {
-    fontSize: 12,
+    fontSize: 14,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
@@ -842,7 +842,7 @@ const styles = StyleSheet.create({
   
   // Consigli Musicali
   musicSubtitle: {
-    fontSize: 13,
+    fontSize: 15,
     color: COLORS.textSecondary,
     fontStyle: 'italic',
     marginBottom: 12,
@@ -871,13 +871,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   musicTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: 2,
   },
   musicUrl: {
-    fontSize: 11,
+    fontSize: 13,
     color: COLORS.textSecondary,
   },
   musicDeleteBtn: {

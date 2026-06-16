@@ -564,13 +564,13 @@ const styles = StyleSheet.create({
   scroll: { padding: 18, paddingBottom: 120 },
 
   header: { marginBottom: 22 },
-  kicker: { fontFamily: FONTS.bodyBlack, fontSize: 11, color: COLORS.primary, letterSpacing: 3 },
+  kicker: { fontFamily: FONTS.bodyBlack, fontSize: 13, color: COLORS.primary, letterSpacing: 3 },
   title: { fontFamily: FONTS.headline, fontSize: 44, color: COLORS.text, letterSpacing: 1.5, lineHeight: 46, marginTop: 4 },
   accentBar: { width: 60, height: 4, backgroundColor: COLORS.primary, marginTop: 10, marginBottom: 12 },
-  subtitle: { fontFamily: FONTS.body, fontSize: 13, color: COLORS.textSecondary, lineHeight: 19 },
+  subtitle: { fontFamily: FONTS.body, fontSize: 15, color: COLORS.textSecondary, lineHeight: 19 },
 
   formBox: { backgroundColor: COLORS.surface || '#141416', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: COLORS.border },
-  label: { fontFamily: FONTS.bodyBlack, fontSize: 11, color: COLORS.textSecondary, letterSpacing: 1.4, marginBottom: 10 },
+  label: { fontFamily: FONTS.bodyBlack, fontSize: 13, color: COLORS.textSecondary, letterSpacing: 1.4, marginBottom: 10 },
 
   chipsRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   chip: {
@@ -582,7 +582,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     borderWidth: 2,
   },
-  chipText: { fontFamily: FONTS.bodyBlack, fontSize: 12, letterSpacing: 1.2 },
+  chipText: { fontFamily: FONTS.bodyBlack, fontSize: 14, letterSpacing: 1.2 },
 
   input: {
     backgroundColor: COLORS.background,
@@ -596,10 +596,10 @@ const styles = StyleSheet.create({
     minHeight: 90,
     textAlignVertical: 'top',
   },
-  counter: { fontFamily: FONTS.body, fontSize: 11, color: COLORS.textSecondary, alignSelf: 'flex-end', marginTop: 4 },
+  counter: { fontFamily: FONTS.body, fontSize: 13, color: COLORS.textSecondary, alignSelf: 'flex-end', marginTop: 4 },
 
   errorBox: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },
-  errorText: { fontFamily: FONTS.body, fontSize: 12, color: COLORS.error, flex: 1 },
+  errorText: { fontFamily: FONTS.body, fontSize: 14, color: COLORS.error, flex: 1 },
 
   submitBtn: {
     flexDirection: 'row',
@@ -611,8 +611,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginTop: 14,
   },
-  submitText: { fontFamily: FONTS.bodyBlack, fontSize: 14, color: '#fff', letterSpacing: 1.4 },
-  hint: { fontFamily: FONTS.body, fontSize: 11, color: COLORS.textSecondary, textAlign: 'center', marginTop: 10 },
+  submitText: { fontFamily: FONTS.bodyBlack, fontSize: 16, color: '#fff', letterSpacing: 1.4 },
+  hint: { fontFamily: FONTS.body, fontSize: 13, color: COLORS.textSecondary, textAlign: 'center', marginTop: 10 },
 
   bonusBanner: {
     flexDirection: 'row',
@@ -624,7 +624,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 12,
   },
-  bonusText: { fontFamily: FONTS.bodyBlack, fontSize: 13, color: '#000', letterSpacing: 1.5 },
+  bonusText: { fontFamily: FONTS.bodyBlack, fontSize: 15, color: '#000', letterSpacing: 1.5 },
 
   responseCard: {
     backgroundColor: COLORS.surface || '#141416',
@@ -645,13 +645,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
   },
-  argBadgeText: { fontFamily: FONTS.bodyBlack, fontSize: 10, letterSpacing: 1.2 },
-  dateText: { fontFamily: FONTS.body, fontSize: 11, color: COLORS.textSecondary },
-  qLabel: { fontFamily: FONTS.bodyBlack, fontSize: 10, color: COLORS.textSecondary, letterSpacing: 1.4, marginBottom: 4 },
-  qText: { fontFamily: FONTS.body, fontSize: 14, color: COLORS.text, fontStyle: 'italic', lineHeight: 20 },
+  argBadgeText: { fontFamily: FONTS.bodyBlack, fontSize: 12, letterSpacing: 1.2 },
+  dateText: { fontFamily: FONTS.body, fontSize: 13, color: COLORS.textSecondary },
+  qLabel: { fontFamily: FONTS.bodyBlack, fontSize: 12, color: COLORS.textSecondary, letterSpacing: 1.4, marginBottom: 4 },
+  qText: { fontFamily: FONTS.body, fontSize: 16, color: COLORS.text, fontStyle: 'italic', lineHeight: 20 },
   divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 12 },
-  aLabel: { fontFamily: FONTS.bodyBlack, fontSize: 10, color: COLORS.primary, letterSpacing: 1.4, marginBottom: 4 },
-  aText: { fontFamily: FONTS.body, fontSize: 14, color: COLORS.text, lineHeight: 21 },
+  aLabel: { fontFamily: FONTS.bodyBlack, fontSize: 12, color: COLORS.primary, letterSpacing: 1.4, marginBottom: 4 },
+  aText: { fontFamily: FONTS.body, fontSize: 16, color: COLORS.text, lineHeight: 21 },
 
   lockedBox: {
     flexDirection: 'row',
@@ -664,7 +664,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     marginBottom: 14,
   },
-  lockedText: { fontFamily: FONTS.body, fontSize: 12, color: COLORS.textSecondary, flex: 1 },
+  lockedText: { fontFamily: FONTS.body, fontSize: 14, color: COLORS.textSecondary, flex: 1 },
 
   sectionTitle: { fontFamily: FONTS.headline, fontSize: 22, color: COLORS.text, letterSpacing: 1.4, marginBottom: 12 },
 
@@ -683,7 +683,7 @@ const styles = StyleSheet.create({
   },
   rulesHeaderText: {
     fontFamily: FONTS.bodyBlack,
-    fontSize: 12,
+    fontSize: 14,
     color: COLORS.text,
     letterSpacing: 1.6,
     flex: 1,
@@ -708,15 +708,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  ruleNumText: { fontFamily: FONTS.bodyBlack, fontSize: 13, color: COLORS.primary },
-  ruleText: { fontFamily: FONTS.body, fontSize: 13, color: COLORS.textSecondary, lineHeight: 19, flex: 1 },
+  ruleNumText: { fontFamily: FONTS.bodyBlack, fontSize: 15, color: COLORS.primary },
+  ruleText: { fontFamily: FONTS.body, fontSize: 15, color: COLORS.textSecondary, lineHeight: 19, flex: 1 },
   ruleBold: { fontFamily: FONTS.bodyBlack, color: COLORS.text },
 
   // Top 3 della Settimana
   topSection: { marginTop: 28 },
   topHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   topTitle: { fontFamily: FONTS.headline, fontSize: 22, color: COLORS.text, letterSpacing: 1.4 },
-  topSub: { fontFamily: FONTS.body, fontSize: 12, color: COLORS.textSecondary, marginBottom: 14 },
+  topSub: { fontFamily: FONTS.body, fontSize: 14, color: COLORS.textSecondary, marginBottom: 14 },
   topCard: {
     backgroundColor: COLORS.surface || '#141416',
     borderRadius: 14,
@@ -728,7 +728,7 @@ const styles = StyleSheet.create({
   },
   topCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' },
   medalCircle: { width: 26, height: 26, borderRadius: 13, justifyContent: 'center', alignItems: 'center' },
-  medalText: { fontFamily: FONTS.bodyBlack, fontSize: 13, color: '#000' },
+  medalText: { fontFamily: FONTS.bodyBlack, fontSize: 15, color: '#000' },
   anonBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -756,9 +756,9 @@ const styles = StyleSheet.create({
   },
   adminHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
   adminTitle: { fontFamily: FONTS.headline, fontSize: 18, color: COLORS.text, letterSpacing: 1.4 },
-  adminSub: { fontFamily: FONTS.body, fontSize: 12, color: COLORS.textSecondary, lineHeight: 18, marginBottom: 12 },
+  adminSub: { fontFamily: FONTS.body, fontSize: 14, color: COLORS.textSecondary, lineHeight: 18, marginBottom: 12 },
   adminBold: { fontFamily: FONTS.bodyBlack, color: COLORS.text },
-  adminEmpty: { fontFamily: FONTS.body, fontSize: 13, color: COLORS.textSecondary, fontStyle: 'italic', textAlign: 'center', paddingVertical: 16 },
+  adminEmpty: { fontFamily: FONTS.body, fontSize: 15, color: COLORS.textSecondary, fontStyle: 'italic', textAlign: 'center', paddingVertical: 16 },
   adminQCard: {
     backgroundColor: COLORS.background,
     borderRadius: 10,
@@ -767,7 +767,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   adminQHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' },
-  adminQUser: { fontFamily: FONTS.bodyBold, fontSize: 11, color: COLORS.text, flex: 1 },
+  adminQUser: { fontFamily: FONTS.bodyBold, fontSize: 13, color: COLORS.text, flex: 1 },
   checkBox: {
     width: 22,
     height: 22,
@@ -788,7 +788,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     backgroundColor: COLORS.background,
   },
-  adminSecondaryText: { fontFamily: FONTS.bodyBold, fontSize: 11, color: COLORS.text, letterSpacing: 1 },
+  adminSecondaryText: { fontFamily: FONTS.bodyBold, fontSize: 13, color: COLORS.text, letterSpacing: 1 },
   adminPrimaryBtn: {
     flex: 1,
     flexDirection: 'row',
@@ -799,7 +799,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#FFD700',
   },
-  adminPrimaryText: { fontFamily: FONTS.bodyBlack, fontSize: 12, color: '#000', letterSpacing: 1.4 },
+  adminPrimaryText: { fontFamily: FONTS.bodyBlack, fontSize: 14, color: '#000', letterSpacing: 1.4 },
 
   weekSwitchRow: {
     flexDirection: 'row',
@@ -818,7 +818,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   weekSwitchActive: { backgroundColor: '#FFD700' },
-  weekSwitchText: { fontFamily: FONTS.bodyBlack, fontSize: 11, color: COLORS.textSecondary, letterSpacing: 1.4 },
+  weekSwitchText: { fontFamily: FONTS.bodyBlack, fontSize: 13, color: COLORS.textSecondary, letterSpacing: 1.4 },
   weekSwitchTextActive: { color: '#000' },
   deleteBtn: {
     padding: 6,

@@ -179,10 +179,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   scroll: { padding: 18, paddingBottom: 120 },
   header: { marginBottom: 24 },
-  kicker: { fontFamily: FONTS.bodyBlack, fontSize: 12, color: COLORS.primary, letterSpacing: 3, marginBottom: 4 },
+  kicker: { fontFamily: FONTS.bodyBlack, fontSize: 14, color: COLORS.primary, letterSpacing: 3, marginBottom: 4 },
   title: { fontFamily: FONTS.headline, fontSize: 48, color: COLORS.text, letterSpacing: 2, lineHeight: 50 },
   accentBar: { width: 60, height: 4, backgroundColor: COLORS.primary, marginTop: 8, marginBottom: 12 },
-  subtitle: { fontFamily: FONTS.body, fontSize: 14, color: COLORS.textSecondary, lineHeight: 20 },
+  subtitle: { fontFamily: FONTS.body, fontSize: 16, color: COLORS.textSecondary, lineHeight: 20 },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 },
   card: {
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   },
   cardSub: {
     fontFamily: FONTS.body,
-    fontSize: 11,
+    fontSize: 13,
     color: COLORS.textSecondary,
     letterSpacing: 0.4,
     height: 28,

@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   weekText: {
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.textSecondary,
     textAlign: 'center',
     marginTop: 8,
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   winnerLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: COLORS.gold,
     letterSpacing: 2,
     fontWeight: 'bold',
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   winnerYouTag: {
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.gold,
     fontWeight: 'bold',
   },
@@ -512,7 +512,7 @@ const styles = StyleSheet.create({
     color: COLORS.gold,
   },
   winnerCountLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.textSecondary,
     letterSpacing: 2,
   },
@@ -525,7 +525,7 @@ const styles = StyleSheet.create({
     borderLeftColor: COLORS.gold,
   },
   dedicaText: {
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.text,
     lineHeight: 22,
     fontStyle: 'italic',
@@ -608,13 +608,13 @@ const styles = StyleSheet.create({
     color: COLORS.background,
   },
   podiumCountLabel: {
-    fontSize: 10,
+    fontSize: 12,
     color: COLORS.background,
     opacity: 0.8,
     marginTop: 2,
   },
   podiumName: {
-    fontSize: 12,
+    fontSize: 14,
     color: COLORS.text,
     textAlign: 'center',
   },
@@ -627,7 +627,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   podiumPos: {
-    fontSize: 10,
+    fontSize: 12,
     color: COLORS.textSecondary,
     marginTop: 4,
   },
@@ -695,7 +695,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   leaderboardFullName: {
-    fontSize: 11,
+    fontSize: 13,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
@@ -737,7 +737,7 @@ const styles = StyleSheet.create({
     borderLeftColor: COLORS.accent,
   },
   motivationText: {
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.text,
     textAlign: 'center',
     lineHeight: 22,
@@ -759,7 +759,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.textSecondary,
     textAlign: 'center',
   },
@@ -776,7 +776,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     flex: 1,
-    fontSize: 12,
+    fontSize: 14,
     color: COLORS.textSecondary,
     lineHeight: 18,
   },
@@ -789,7 +789,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   rulesTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
     color: COLORS.gold,
     textAlign: 'center',
@@ -802,12 +802,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   ruleBullet: {
-    fontSize: 14,
+    fontSize: 16,
     width: 24,
   },
   ruleText: {
     flex: 1,
-    fontSize: 12,
+    fontSize: 14,
     color: COLORS.textSecondary,
     lineHeight: 18,
   },

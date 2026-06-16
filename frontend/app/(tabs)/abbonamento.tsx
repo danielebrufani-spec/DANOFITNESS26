@@ -219,9 +219,9 @@ export default function AbbonamentoScreen() {
                 <View style={{ backgroundColor: '#f59e0b15', borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: '#f59e0b40' }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                     <Ionicons name="wallet-outline" size={18} color="#f59e0b" />
-                    <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#f59e0b' }}>Abbonamento da saldare</Text>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#f59e0b' }}>Abbonamento da saldare</Text>
                   </View>
-                  <Text style={{ fontSize: 12, color: COLORS.textSecondary, lineHeight: 18 }}>
+                  <Text style={{ fontSize: 14, color: COLORS.textSecondary, lineHeight: 18 }}>
                     Ciao! Il tuo abbonamento non risulta ancora saldato. Puoi regolarizzarlo quando ci vediamo in palestra!
                   </Text>
                 </View>
@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF5030',
   },
   trialDateLabel: {
-    fontSize: 11,
+    fontSize: 13,
     color: COLORS.textSecondary,
     marginBottom: 4,
   },
@@ -534,7 +534,7 @@ const styles = StyleSheet.create({
   },
   trialInfoText: {
     flex: 1,
-    fontSize: 12,
+    fontSize: 14,
     color: COLORS.textSecondary,
     lineHeight: 18,
   },
@@ -552,7 +552,7 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 12,
   },
-  statusText: { fontSize: 14, fontWeight: 'bold', color: COLORS.success },
+  statusText: { fontSize: 16, fontWeight: 'bold', color: COLORS.success },
 
   // Package Name
   packageNameCard: {
@@ -580,14 +580,14 @@ const styles = StyleSheet.create({
   },
   dateDivider: { width: 1, backgroundColor: COLORS.border, marginHorizontal: 8 },
   dateLabel: { 
-    fontSize: 11, 
+    fontSize: 13, 
     color: COLORS.textSecondary, 
     textAlign: 'center',
     marginTop: 4,
     marginBottom: 2,
   },
   dateValue: { 
-    fontSize: 12, 
+    fontSize: 14, 
     fontWeight: '600', 
     color: COLORS.text, 
     textAlign: 'center',
@@ -625,7 +625,7 @@ const styles = StyleSheet.create({
   },
   warningBannerText: {
     color: '#FFF',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
   },
   lessonsIconWarning: {
@@ -648,7 +648,7 @@ const styles = StyleSheet.create({
   },
   renewMessageText: {
     color: '#dc2626',
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
   },
   lessonsIconContainer: {
@@ -660,9 +660,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  lessonsLabel: { fontSize: 12, fontWeight: '600', color: COLORS.text, marginBottom: 4 },
+  lessonsLabel: { fontSize: 14, fontWeight: '600', color: COLORS.text, marginBottom: 4 },
   lessonsLabelBig: { 
-    fontSize: 14, 
+    fontSize: 16, 
     fontWeight: '700', 
     color: COLORS.textSecondary, 
     letterSpacing: 1,
@@ -676,7 +676,7 @@ const styles = StyleSheet.create({
     lineHeight: 60,
   },
   lessonsSubtext: {
-    fontSize: 12,
+    fontSize: 14,
     color: COLORS.textSecondary,
     marginTop: 4,
   },
@@ -691,7 +691,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 6,
   },
-  logToggleText: { flex: 1, marginLeft: 8, fontSize: 13, fontWeight: '500', color: COLORS.text },
+  logToggleText: { flex: 1, marginLeft: 8, fontSize: 15, fontWeight: '500', color: COLORS.text },
 
   // Log Container
   logContainer: {
@@ -719,17 +719,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 10,
   },
-  logNumberText: { fontSize: 12, fontWeight: 'bold', color: '#FFF' },
+  logNumberText: { fontSize: 14, fontWeight: 'bold', color: '#FFF' },
   logDate: {
     width: 80,
     marginRight: 10,
   },
-  logDayText: { fontSize: 11, fontWeight: '600', color: COLORS.text },
-  logDateText: { fontSize: 10, color: COLORS.textSecondary },
+  logDayText: { fontSize: 13, fontWeight: '600', color: COLORS.text },
+  logDateText: { fontSize: 12, color: COLORS.textSecondary },
   logDetails: { flex: 1, alignItems: 'flex-end' },
-  logTime: { fontSize: 12, fontWeight: '600', color: COLORS.text },
-  logActivity: { fontSize: 10, color: COLORS.textSecondary },
-  logEmpty: { fontSize: 11, color: COLORS.textSecondary, textAlign: 'center', paddingVertical: 12 },
+  logTime: { fontSize: 14, fontWeight: '600', color: COLORS.text },
+  logActivity: { fontSize: 12, color: COLORS.textSecondary },
+  logEmpty: { fontSize: 13, color: COLORS.textSecondary, textAlign: 'center', paddingVertical: 12 },
 
   // Log Toggle per abbonamento scaduto
   logToggleExpired: {
@@ -751,7 +751,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   logExpiredInfo: {
-    fontSize: 12,
+    fontSize: 14,
     color: COLORS.primary,
     fontWeight: '600',
     textAlign: 'center',
@@ -771,7 +771,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.error,
   },
   noSubTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.error, marginTop: 10 },
-  noSubText: { fontSize: 12, color: COLORS.textSecondary, textAlign: 'center', marginTop: 6 },
+  noSubText: { fontSize: 14, color: COLORS.textSecondary, textAlign: 'center', marginTop: 6 },
 
   // ===== MESSAGGIO ABBONAMENTO SCADUTO DAL MAESTRO =====
   expiredMainCard: {
@@ -812,7 +812,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   thankYouText: {
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.text,
     textAlign: 'center',
     lineHeight: 22,
@@ -836,7 +836,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   renewInviteText: {
-    fontSize: 13,
+    fontSize: 15,
     color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
@@ -855,7 +855,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   expiredContactLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: 'rgba(255,255,255,0.8)',
   },
   expiredContactNumber: {
@@ -864,7 +864,7 @@ const styles = StyleSheet.create({
     color: '#FFF',
   },
   maestroSignature: {
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.textSecondary,
     textAlign: 'center',
     marginTop: 16,
@@ -874,7 +874,7 @@ const styles = StyleSheet.create({
 
   // Expired Section
   expiredSection: { marginBottom: 16 },
-  expiredTitle: { fontSize: 12, fontWeight: '600', color: COLORS.textSecondary, marginBottom: 6 },
+  expiredTitle: { fontSize: 14, fontWeight: '600', color: COLORS.textSecondary, marginBottom: 6 },
   expiredCard: {
     backgroundColor: COLORS.card,
     borderRadius: 6,
@@ -882,8 +882,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     opacity: 0.7,
   },
-  expiredType: { fontSize: 12, fontWeight: '500', color: COLORS.text },
-  expiredDates: { fontSize: 10, color: COLORS.textSecondary, marginTop: 2 },
+  expiredType: { fontSize: 14, fontWeight: '500', color: COLORS.text },
+  expiredDates: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
 
   // Packages Section
   packagesSection: {
@@ -892,7 +892,7 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 14,
   },
-  packagesTitle: { fontSize: 13, fontWeight: '600', color: COLORS.text, marginBottom: 12, textAlign: 'center' },
+  packagesTitle: { fontSize: 15, fontWeight: '600', color: COLORS.text, marginBottom: 12, textAlign: 'center' },
   packagesRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
   packageBox: {
     flex: 1,
@@ -903,7 +903,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  packageBoxName: { fontSize: 13, fontWeight: '600', color: COLORS.text },
+  packageBoxName: { fontSize: 15, fontWeight: '600', color: COLORS.text },
   packageBoxPrice: { fontSize: 18, fontWeight: 'bold', color: COLORS.primary, marginTop: 4 },
   packageBoxNote: { fontSize: 9, color: COLORS.textSecondary, marginTop: 2 },
   registrationNote: { 
@@ -916,7 +916,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
   },
-  registrationText: { fontSize: 11, color: COLORS.textSecondary },
+  registrationText: { fontSize: 13, color: COLORS.textSecondary },
 
   // Contact
   contactCard: {
@@ -928,6 +928,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   contactInfo: { flex: 1 },
-  contactLabel: { fontSize: 10, color: COLORS.textSecondary },
-  contactNumber: { fontSize: 13, fontWeight: '600', color: COLORS.text, marginTop: 1 },
+  contactLabel: { fontSize: 12, color: COLORS.textSecondary },
+  contactNumber: { fontSize: 15, fontWeight: '600', color: COLORS.text, marginTop: 1 },
 });

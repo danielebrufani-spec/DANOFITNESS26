@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
     lineHeight: 34,
   },
   streakLabel: {
-    fontSize: 10,
+    fontSize: 12,
     color: '#597A8E',
     textAlign: 'center',
     letterSpacing: 0.5,
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
   },
   dotCheck: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '900',
   },
   dotLabel: {
@@ -360,10 +360,10 @@ const styles = StyleSheet.create({
     borderColor: '#00E676',
   },
   milestoneIcon: {
-    fontSize: 10,
+    fontSize: 12,
   },
   milestoneText: {
-    fontSize: 10,
+    fontSize: 12,
     color: '#0C2333',
     fontWeight: '700',
   },
@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   progressLabel: {
-    fontSize: 10,
+    fontSize: 12,
     color: '#597A8E',
     fontStyle: 'italic',
   },
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   maxedText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '900',
     color: '#FF9E00',
     letterSpacing: 0.5,
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   modalText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#0C2333',
     lineHeight: 20,
   },
@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
     color: '#0C2333',
   },
   bonusDesc: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#FF9E00',
     marginTop: 2,
   },
@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
   },
   exampleText: {
     color: '#0C2333',
-    fontSize: 13,
+    fontSize: 15,
     lineHeight: 22,
   },
   exampleHighlight: {
@@ -500,7 +500,7 @@ const styles = StyleSheet.create({
   tipText: {
     flex: 1,
     color: '#FF9E00',
-    fontSize: 12,
+    fontSize: 14,
     fontStyle: 'italic',
   },
   modalCloseBtn: {

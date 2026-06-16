@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
   titleBox: { paddingHorizontal: 14, paddingTop: 10, alignItems: 'center' },
   kicker: {
     fontFamily: FONTS.bodyBlack,
-    fontSize: 10,
+    fontSize: 12,
     color: '#FF6B00',
     letterSpacing: 2.5,
     marginBottom: 2,
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   accentBar: { width: 40, height: 3, backgroundColor: '#FF6B00', marginTop: 6, marginBottom: 6 },
   subtitle: {
     fontFamily: FONTS.bodyBold,
-    fontSize: 11,
+    fontSize: 13,
     color: COLORS.textSecondary,
     textAlign: 'center',
     letterSpacing: 0.5,
@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  infoText: { fontFamily: FONTS.body, fontSize: 12, color: COLORS.text, flex: 1, lineHeight: 16 },
+  infoText: { fontFamily: FONTS.body, fontSize: 14, color: COLORS.text, flex: 1, lineHeight: 16 },
   infoBold: { fontFamily: FONTS.bodyBlack, color: COLORS.text },
 
   ctaBtn: {
@@ -259,13 +259,13 @@ const styles = StyleSheet.create({
   },
   ctaText: {
     fontFamily: FONTS.bodyBlack,
-    fontSize: 13,
+    fontSize: 15,
     color: '#fff',
     letterSpacing: 1.4,
   },
   callTxt: {
     fontFamily: FONTS.body,
-    fontSize: 10,
+    fontSize: 12,
     color: COLORS.textSecondary,
     textAlign: 'center',
     marginTop: 6,
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   secondaryBtn: { alignSelf: 'center', marginTop: 8, paddingVertical: 4, paddingHorizontal: 14 },
   secondaryText: {
     fontFamily: FONTS.bodyBold,
-    fontSize: 11,
+    fontSize: 13,
     color: COLORS.textSecondary,
     textDecorationLine: 'underline',
   },
