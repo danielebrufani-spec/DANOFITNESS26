@@ -119,41 +119,40 @@ export const getDayNameFromDate = (dateString: string): string => {
   return GIORNI[dayIndex];
 };
 
-// Colors - Tropical Pop Italian Riviera Summer 2026 (Light Theme)
-// Primary: Azzurro Mare · Secondary: Fucsia POP · Accent: Banana Yellow
+// Colors - "Night Beach" Tropical Dark Theme — Mare Notturno + Neon Estate
 export const COLORS = {
-  primary: '#0099DD',          // Azzurro Mare - main accent
-  primaryDark: '#007BB8',      // Deeper sea blue
-  primaryLight: '#4DD0E1',     // Cyan/turquoise
-  secondary: '#FF1493',        // Fucsia POP - pop accent / streak
+  primary: '#00C8FF',          // Turquoise neon - main accent
+  primaryDark: '#0099CC',
+  primaryLight: '#7DF9FF',     // Light cyan
+  secondary: '#FF1493',        // Fucsia neon
   secondaryDark: '#C71585',
-  accent: '#FFEA00',           // Banana Yellow - highlights / sun rays
-  accentLime: '#39FF14',       // Lime Green - success / pop
-  background: '#F0F9FF',       // Sky tint white - main BG
-  surface: '#FFFFFF',          // Pure white cards
-  surfaceElevated: '#FFFFFF',  // Elevated cards (with shadow)
-  surfaceHover: '#E0F2FE',     // Light sky hover
-  card: '#FFFFFF',
-  cardLight: '#F0F9FF',
-  text: '#0C2333',             // Deep navy text (high contrast on white)
-  textSecondary: '#597A8E',    // Medium slate
-  textMuted: '#94A3B8',        // Soft slate for hints
-  success: '#00E676',
-  warning: '#FF9E00',          // Sunset orange for warnings
-  error: '#FF1493',            // Fucsia for errors (attention-getting)
-  danger: '#FF1493',
-  border: '#BAE6FD',           // Light sky blue border
-  borderStrong: '#7DD3FC',
-  overlay: 'rgba(12,35,51,0.55)',
-  glowOrange: 'rgba(255,158,0,0.35)',
-  glowGreen: 'rgba(0,230,118,0.3)',
-  // Summer-specific tokens
-  gradientPrimaryFrom: '#0099DD',
-  gradientPrimaryTo: '#00D4FF',
+  accent: '#FFEA00',           // Banana / lemon yellow neon
+  accentLime: '#39FF14',       // Neon lime
+  background: '#0D1B2A',       // Deep night sea
+  surface: '#1A2B3D',          // Card slightly lighter navy
+  surfaceElevated: '#243447',  // Elevated cards
+  surfaceHover: '#2F4358',
+  card: '#1A2B3D',
+  cardLight: '#243447',
+  text: '#FFFFFF',
+  textSecondary: '#B8C6D9',    // Soft light slate
+  textMuted: '#7E8FA5',
+  success: '#39FF14',          // Neon lime
+  warning: '#FF9E00',
+  error: '#FF4D6D',
+  danger: '#FF4D6D',
+  border: '#2F4358',
+  borderStrong: '#456381',
+  overlay: 'rgba(0,0,0,0.75)',
+  glowOrange: 'rgba(255,158,0,0.4)',
+  glowGreen: 'rgba(57,255,20,0.35)',
+  // Summer-specific tokens (kept for compatibility)
+  gradientPrimaryFrom: '#00C8FF',
+  gradientPrimaryTo: '#7DF9FF',
   gradientSunsetFrom: '#FF1493',
   gradientSunsetTo: '#FF9E00',
-  sand: '#FEF3C7',             // Beach sand
-  coral: '#FF6B6B',            // Coral accent
+  sand: '#FEF3C7',
+  coral: '#FF6B6B',
 };
 
 // Fitness images (from design guidelines - Pexels/Unsplash) - Summer Tropical

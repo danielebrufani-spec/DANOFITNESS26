@@ -254,14 +254,14 @@ const styles = StyleSheet.create({
   },
   card: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1A2B3D',
     borderRadius: 20,
     padding: 14,
     borderWidth: 2,
     gap: 12,
     alignItems: 'center',
     position: 'relative',
-    shadowColor: '#0099DD',
+    shadowColor: '#00C8FF',
     shadowOpacity: 0.18,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 6 },
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingRight: 8,
     borderRightWidth: 1,
-    borderRightColor: 'rgba(0,153,221,0.15)',
+    borderRightColor: 'rgba(255,255,255,0.12)',
     minWidth: 72,
   },
   flame: {
@@ -282,13 +282,13 @@ const styles = StyleSheet.create({
   streakValue: {
     fontSize: 32,
     fontWeight: '900',
-    color: '#FF1493',
+    color: '#FFEA00',
     textAlign: 'center',
     lineHeight: 34,
   },
   streakLabel: {
     fontSize: 12,
-    color: '#597A8E',
+    color: '#B8C6D9',
     textAlign: 'center',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
@@ -309,14 +309,14 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: 'rgba(0,153,221,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1.5,
-    borderColor: 'rgba(0,153,221,0.25)',
+    borderColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   dotTrained: {
-    backgroundColor: '#0099DD',
+    backgroundColor: '#FF1493',
     borderColor: '#FFEA00',
   },
   dotToday: {
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   },
   dotLabel: {
     fontSize: 9,
-    color: '#597A8E',
+    color: '#B8C6D9',
     fontWeight: '700',
   },
   dotLabelToday: {
@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 3,
-    backgroundColor: 'rgba(0,153,221,0.06)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     paddingVertical: 4,
     paddingHorizontal: 6,
     borderRadius: 8,
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
   },
   milestoneText: {
     fontSize: 12,
-    color: '#0C2333',
+    color: '#FFFFFF',
     fontWeight: '700',
   },
   progressWrapper: {
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 5,
-    backgroundColor: 'rgba(0,153,221,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 3,
     overflow: 'hidden',
   },
@@ -382,7 +382,7 @@ const styles = StyleSheet.create({
   },
   progressLabel: {
     fontSize: 12,
-    color: '#597A8E',
+    color: '#B8C6D9',
     fontStyle: 'italic',
   },
   maxedOut: {
@@ -411,13 +411,13 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1A2B3D',
     borderRadius: 22,
     padding: 20,
     width: '100%',
     maxWidth: 420,
     borderWidth: 2,
-    borderColor: '#0099DD',
+    borderColor: '#00C8FF',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -428,36 +428,36 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 22,
     fontWeight: '900',
-    color: '#FF1493',
+    color: '#FFEA00',
     letterSpacing: 1.2,
   },
   modalSectionTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#0099DD',
+    color: '#00C8FF',
     marginTop: 14,
     marginBottom: 6,
     letterSpacing: 0.3,
   },
   modalText: {
     fontSize: 16,
-    color: '#0C2333',
+    color: '#FFFFFF',
     lineHeight: 20,
   },
   modalBold: {
     fontWeight: '800',
-    color: '#0C2333',
+    color: '#FFFFFF',
   },
   bonusRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: 'rgba(0,153,221,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     padding: 12,
     borderRadius: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: 'rgba(0,153,221,0.25)',
+    borderColor: 'rgba(255,255,255,0.18)',
   },
   bonusEmoji: {
     fontSize: 28,
@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
   bonusTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#0C2333',
+    color: '#FFFFFF',
   },
   bonusDesc: {
     fontSize: 14,
@@ -473,19 +473,19 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   exampleBox: {
-    backgroundColor: 'rgba(0,153,221,0.06)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     padding: 12,
     borderRadius: 12,
     borderLeftWidth: 3,
     borderLeftColor: '#FFEA00',
   },
   exampleText: {
-    color: '#0C2333',
+    color: '#FFFFFF',
     fontSize: 15,
     lineHeight: 22,
   },
   exampleHighlight: {
-    color: '#FF1493',
+    color: '#FFEA00',
     fontWeight: '900',
   },
   tipBox: {
@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
   },
   modalCloseBtn: {
     marginTop: 14,
-    backgroundColor: '#0099DD',
+    backgroundColor: '#FF1493',
     paddingVertical: 14,
     borderRadius: 14,
     alignItems: 'center',

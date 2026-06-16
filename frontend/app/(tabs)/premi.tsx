@@ -25,15 +25,15 @@ import { ConfettiBurst } from '../../src/components/ConfettiBurst';
 
 // Colori Tactical Obsidian (Functional/CrossFit theme)
 const VEGAS_COLORS = {
-  background: '#F0F9FF',
-  card: '#FFFFFF',
-  gold: '#FF9E00',        // Sunset orange/gold (summery)
-  red: '#FF1493',         // Fucsia POP
+  background: '#0D1B2A',
+  card: '#1A2B3D',
+  gold: '#FFEA00',        // Lemon neon yellow
+  red: '#FF1493',         // Fucsia neon
   darkRed: '#C71585',
   neonPink: '#FF1493',
-  neonBlue: '#0099DD',    // Azzurro Mare
-  text: '#0C2333',
-  textSecondary: '#597A8E',
+  neonBlue: '#00C8FF',
+  text: '#FFFFFF',
+  textSecondary: '#B8C6D9',
 };
 
 // Premi della ruota
@@ -1804,7 +1804,7 @@ const styles = StyleSheet.create({
 
   // Countdown
   countdownCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#0A0F1A',
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
@@ -1887,7 +1887,7 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   winnerInner: {
-    backgroundColor: '#FFF5F8',
+    backgroundColor: '#1A0E1F',
     borderRadius: 20,
     padding: 24,
     alignItems: 'center',
@@ -2142,7 +2142,7 @@ const styles = StyleSheet.create({
   },
   winnerStatBox: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    backgroundColor: 'rgba(0,0,0,0.35)',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 10,
@@ -2282,7 +2282,7 @@ const styles = StyleSheet.create({
   bozzaWinnerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    backgroundColor: 'rgba(0,0,0,0.35)',
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 12,
@@ -2361,7 +2361,7 @@ const styles = StyleSheet.create({
   hofItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    backgroundColor: 'rgba(0,0,0,0.35)',
     borderRadius: 10,
     padding: 12,
     marginBottom: 8,
@@ -2418,7 +2418,7 @@ const styles = StyleSheet.create({
   // Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.95)',
+    backgroundColor: 'rgba(0,0,0,0.9)',
     justifyContent: 'center',
     padding: 20,
   },
@@ -2476,14 +2476,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   input: {
-    backgroundColor: '#F0F9FF',
+    backgroundColor: '#0A0F1A',
     borderRadius: 10,
     padding: 14,
-    color: '#0C2333',
+    color: '#FFFFFF',
     fontSize: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#BAE6FD',
+    borderColor: '#2F4358',
   },
   inputMultiline: {
     height: 80,
@@ -2575,7 +2575,7 @@ const styles = StyleSheet.create({
     width: 250,
     height: 250,
     borderRadius: 125,
-    backgroundColor: '#FFF8DC',
+    backgroundColor: '#0A0F1A',
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -2682,7 +2682,7 @@ const styles = StyleSheet.create({
   prizesListContainer: {
     width: '100%',
     marginTop: 24,
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    backgroundColor: 'rgba(0,0,0,0.35)',
     borderRadius: 16,
     padding: 16,
   },
@@ -2700,7 +2700,7 @@ const styles = StyleSheet.create({
   prizeListItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,153,221,0.06)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 10,
     padding: 10,
     borderLeftWidth: 0,
@@ -2751,7 +2751,7 @@ const styles = StyleSheet.create({
   // Modal Risultato Ruota
   wheelResultOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    backgroundColor: 'rgba(0,0,0,0.85)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -2817,7 +2817,7 @@ const styles = StyleSheet.create({
   vincitoreCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,153,221,0.06)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 12,
     padding: 12,
     marginVertical: 6,
@@ -3097,7 +3097,7 @@ const styles = StyleSheet.create({
   quizOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,153,221,0.06)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 12,
     padding: 14,
     borderWidth: 2,
@@ -3210,7 +3210,7 @@ const styles = StyleSheet.create({
   },
   // Quiz Locked Styles
   quizLockedCard: {
-    backgroundColor: 'rgba(0,153,221,0.06)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
@@ -3270,7 +3270,7 @@ const styles = StyleSheet.create({
   },
   // Category Selection styles
   categorySelectionCard: {
-    backgroundColor: 'rgba(0,153,221,0.06)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
@@ -3297,7 +3297,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   categoryButton: {
-    backgroundColor: 'rgba(0,153,221,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 14,
     padding: 16,
     alignItems: 'center',

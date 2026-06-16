@@ -256,7 +256,26 @@ Applicato il design system Tactical Obsidian / Kinetic Orange a TUTTE le pagine 
 
 
 ## Task Futuri
-### Tropical Pop Light Restyling Completo (8 Giugno 2026)
+### Night Beach Dark Theme — Mare Notturno Estivo (16 Giugno 2026)
+Restyle dopo feedback utente che trovava il light theme poco leggibile. Switch da "Tropical Pop Light" → **"Night Beach"** (dark + tropical neon).
+
+**Palette aggiornata (`constants.ts`):**
+- primary: `#00C8FF` Turchese neon
+- secondary: `#FF1493` Fucsia neon
+- accent: `#FFEA00` Banana lemon
+- background: `#0D1B2A` Deep night sea
+- surface: `#1A2B3D` Card navy
+- text: `#FFFFFF` (bianco su navy = alto contrasto)
+- success: `#39FF14` Lime neon
+- error: `#FF4D6D`
+
+**Ombre Night Beach:** glow turchese (rgba(0,200,255,0.18-0.35))
+**Hero overlay:** `rgba(13,27,42,0.55)` (navy translucido)
+**Premi/VEGAS:** background navy notte, gold giallo neon, fucsia accent
+**StreakBanner:** card navy, fiamma gialla, dots fucsia, glow turchese
+**Silhouette estive mantenute** — risaltano bellissimo su navy
+
+## Tropical Pop Light Restyling Completo (8 Giugno 2026)
 Restyling completo dell'app da "Dark Obsidian + Kinetic Orange" → **"Tropical Pop Italian Riviera Summer 2026"** (tema chiaro/solare).
 
 **Nuova palette centrale (`constants.ts`):**

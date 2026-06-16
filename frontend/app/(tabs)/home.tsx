@@ -1220,7 +1220,7 @@ const styles = StyleSheet.create({
   heroOverlay: {
     position: 'absolute',
     top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,153,221,0.35)',
+    backgroundColor: 'rgba(13,27,42,0.55)',
   },
   heroContent: {
     position: 'absolute',
