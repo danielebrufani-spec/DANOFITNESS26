@@ -1245,6 +1245,87 @@ async def deactivate_trial(user_id: str, admin_user: dict = Depends(get_admin_us
     return {"message": f"Prova disattivata per {user.get('nome')} {user.get('cognome')}"}
 
 
+@api_router.get("/onboarding/status")
+async def onboarding_status(current_user: dict = Depends(get_current_user)):
+    """Controlla se l'utente è un NUOVO ISCRITTO (mai avuto abbonamenti)
+    e quindi può attivare da solo la sua settimana di prova gratuita.
+    """
+    user_id = str(current_user["_id"])
+
+    # Mai avuto NESSUN abbonamento (incluso prova)
+    sub_count = await db.subscriptions.count_documents({"user_id": user_id})
+    # E NON ha prova_attiva sui flag user (vecchia logica)
+    has_legacy_trial = bool(current_user.get("prova_attiva"))
+
+    is_brand_new = sub_count == 0 and not has_legacy_trial
+
+    return {
+        "is_brand_new": is_brand_new,
+        "subscriptions_count": sub_count,
+        "can_self_activate_trial": is_brand_new,
+        "user_nome": current_user.get("nome", ""),
+    }
+
+
+@api_router.post("/onboarding/self-activate-trial")
+async def self_activate_trial(current_user: dict = Depends(get_current_user)):
+    """SELF-SERVICE: il nuovo iscritto attiva da solo la sua prova 7 giorni.
+    Vincolo: solo se NON ha mai avuto un abbonamento (mai una sub_count > 0
+    e mai un prova_attiva legacy). Idempotente.
+    """
+    user_id = str(current_user["_id"])
+
+    # Verifica brand-new
+    sub_count = await db.subscriptions.count_documents({"user_id": user_id})
+    has_legacy_trial = bool(current_user.get("prova_attiva"))
+    if sub_count > 0 or has_legacy_trial:
+        raise HTTPException(
+            status_code=400,
+            detail="Hai già attivato un abbonamento. La settimana di prova è riservata ai nuovi iscritti."
+        )
+
+    now = datetime.now(ROME_TZ)
+    scadenza = now + timedelta(days=7)
+    scadenza_str = scadenza.strftime("%Y-%m-%d")
+    inizio_str = now.strftime("%Y-%m-%d")
+
+    # Crea l'abbonamento prova_7gg vero e proprio
+    subscription_doc = {
+        "user_id": user_id,
+        "tipo": "prova_7gg",
+        "data_inizio": inizio_str,
+        "data_scadenza": scadenza_str,
+        "lezioni_rimanenti": None,
+        "lezioni_totali": None,
+        "pagato": True,
+        "prezzo": 0,
+        "created_at": now,
+        "self_activated": True,
+    }
+    res = await db.subscriptions.insert_one(subscription_doc)
+
+    # Aggiorna i flag legacy sul user
+    await db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$set": {
+            "prova_attiva": True,
+            "prova_inizio": inizio_str,
+            "prova_scadenza": scadenza_str,
+            "onboarding_completed": True,
+        }}
+    )
+
+    logger.info(f"[TRIAL-SELF] Prova self-attivata da {current_user.get('nome')} {current_user.get('cognome')} - scade {scadenza_str}")
+
+    return {
+        "ok": True,
+        "subscription_id": str(res.inserted_id),
+        "data_inizio": inizio_str,
+        "data_scadenza": scadenza_str,
+        "message": f"Settimana di prova attivata! Hai tempo fino al {scadenza_str} per prenotare quante lezioni vuoi.",
+    }
+
+
 # ======================== BOOKINGS ROUTES ========================
 
 @api_router.post("/bookings", response_model=BookingResponse)

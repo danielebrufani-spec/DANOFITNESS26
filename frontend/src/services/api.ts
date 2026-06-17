@@ -397,6 +397,10 @@ export const apiService = {
   maestroTop: () => api.get<any[]>('/maestro/top'),
   adminMaestroAll: () => api.get<any[]>('/admin/maestro/all'),
   adminMaestroDeleteQuestion: (id: string) => api.delete<{deleted: string}>(`/admin/maestro/questions/${id}`),
+
+  // ========== ONBOARDING NEW USER (Trial Self-Activation) ==========
+  onboardingStatus: () => api.get<{is_brand_new: boolean; subscriptions_count: number; can_self_activate_trial: boolean; user_nome: string}>('/onboarding/status'),
+  selfActivateTrial: () => api.post<{ok: boolean; subscription_id: string; data_inizio: string; data_scadenza: string; message: string}>('/onboarding/self-activate-trial'),
   adminMaestroWeekPool: (settimana?: string) =>
     api.get<{settimana: string; from: string; to: string; questions: any[]}>(
       `/admin/maestro/week-pool${settimana ? `?settimana=${settimana}` : ''}`

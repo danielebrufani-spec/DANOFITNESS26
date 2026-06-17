@@ -5,6 +5,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import { COLORS } from '../../src/utils/constants';
 import { apiService } from '../../src/services/api';
 import { EventPopup } from '../../src/components/EventPopup';
+import { WelcomeGate } from '../../src/components/WelcomeGate';
 
 export default function TabsLayout() {
   const { isAdmin, isIstruttore, mustResetPassword, clearMustResetPassword, user, logout } = useAuth();
@@ -52,8 +53,24 @@ export default function TabsLayout() {
     default: 25,
   });
 
+  // Welcome Gate state: gestito per non-admin / non-istruttore / non-archived
+  const showWelcomeGate = !isAdmin && !isIstruttore && !isArchived;
+  const [gateActive, setGateActive] = React.useState(showWelcomeGate);
+
+  React.useEffect(() => {
+    setGateActive(showWelcomeGate);
+  }, [showWelcomeGate]);
+
   return (
     <>
+    {/* Welcome Gate per nuovi iscritti (blocca app finché non attivano la prova) */}
+    {showWelcomeGate && (
+      <WelcomeGate
+        enabled={gateActive}
+        userNome={user?.nome}
+        onActivated={() => setGateActive(false)}
+      />
+    )}
     {/* Popup evento Mobili Trignani - visibile fino al 13/06/2026 19:00 */}
     {!isArchived && <EventPopup />}
     <Tabs
