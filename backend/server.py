@@ -1293,12 +1293,13 @@ async def self_activate_trial(current_user: dict = Depends(get_current_user)):
     subscription_doc = {
         "user_id": user_id,
         "tipo": "prova_7gg",
-        "data_inizio": inizio_str,
-        "data_scadenza": scadenza_str,
+        "data_inizio": now,
+        "data_scadenza": scadenza,
         "lezioni_rimanenti": None,
         "lezioni_totali": None,
         "pagato": True,
         "prezzo": 0,
+        "attivo": True,
         "created_at": now,
         "self_activated": True,
     }
