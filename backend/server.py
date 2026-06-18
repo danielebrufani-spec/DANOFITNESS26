@@ -6733,7 +6733,36 @@ async def startup_event():
         await db.cancelled_lessons.create_index([("lesson_id", 1), ("data_lezione", 1)], unique=True)
     except Exception:
         pass
-    
+
+    # Auto-fix migration: ripara le subscriptions self_activated col bug (manca attivo / datetime str)
+    # Idempotente: aggiorna solo i record davvero rotti
+    try:
+        broken_subs = await db.subscriptions.find({"self_activated": True}).to_list(500)
+        fixed_count = 0
+        for s in broken_subs:
+            update = {}
+            if "attivo" not in s:
+                update["attivo"] = True
+            if isinstance(s.get("data_scadenza"), str):
+                try:
+                    dt = datetime.strptime(s["data_scadenza"], "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=ROME_TZ)
+                    update["data_scadenza"] = dt
+                except Exception:
+                    pass
+            if isinstance(s.get("data_inizio"), str):
+                try:
+                    dt = datetime.strptime(s["data_inizio"], "%Y-%m-%d").replace(tzinfo=ROME_TZ)
+                    update["data_inizio"] = dt
+                except Exception:
+                    pass
+            if update:
+                await db.subscriptions.update_one({"_id": s["_id"]}, {"$set": update})
+                fixed_count += 1
+        if fixed_count > 0:
+            logger.info(f"[MIGRATION] Fissate {fixed_count} subscriptions self_activated rotte (bug attivo/datetime)")
+    except Exception as e:
+        logger.warning(f"[MIGRATION] Errore fix subs self_activated: {e}")
+
     # Cleanup: disattiva flag prova_attiva per utenti che hanno un abbonamento "vero"
     # o la cui prova è scaduta (sana eventuali stati incoerenti dei dati esistenti)
     try:
