@@ -1197,6 +1197,46 @@ async def mark_registrations_seen(admin_user: dict = Depends(get_admin_user)):
     return {"message": "Registrazioni segnate come viste"}
 
 
+@api_router.get("/admin/new-trial-activations")
+async def get_new_trial_activations(admin_user: dict = Depends(get_admin_user)):
+    """Ritorna i clienti che hanno self-attivato la prova DOPO l'ultimo controllo admin."""
+    admin_id = str(admin_user["_id"])
+
+    last_check_doc = await db.admin_last_trial_check.find_one({"admin_id": admin_id})
+    last_check_time = last_check_doc["checked_at"] if last_check_doc else admin_user.get("created_at", datetime(2020, 1, 1))
+
+    # Trova le subscriptions self-attivate dopo l'ultimo check
+    new_trials = await db.subscriptions.find({
+        "self_activated": True,
+        "created_at": {"$gt": last_check_time},
+    }).sort("created_at", -1).to_list(50)
+
+    result = []
+    for s in new_trials:
+        user = await db.users.find_one({"_id": ObjectId(s["user_id"])}) if s.get("user_id") else None
+        if user:
+            result.append({
+                "nome": user.get("nome", ""),
+                "cognome": user.get("cognome", ""),
+                "email": user.get("email", ""),
+                "data_attivazione": s["created_at"].strftime("%d/%m/%Y %H:%M") if s.get("created_at") else None,
+                "data_scadenza_prova": s["data_scadenza"].strftime("%d/%m/%Y") if isinstance(s.get("data_scadenza"), datetime) else str(s.get("data_scadenza", "")),
+            })
+    return {"nuove_attivazioni_prova": result, "count": len(result)}
+
+
+@api_router.post("/admin/mark-trial-activations-seen")
+async def mark_trial_activations_seen(admin_user: dict = Depends(get_admin_user)):
+    """Segna le nuove attivazioni di prova come viste."""
+    admin_id = str(admin_user["_id"])
+    await db.admin_last_trial_check.update_one(
+        {"admin_id": admin_id},
+        {"$set": {"admin_id": admin_id, "checked_at": now_rome()}},
+        upsert=True
+    )
+    return {"message": "Attivazioni prova segnate come viste"}
+
+
 # ======================== PROVA GRATUITA (TRIAL) ========================
 
 @api_router.post("/admin/activate-trial/{user_id}")
@@ -1284,7 +1324,7 @@ async def self_activate_trial(current_user: dict = Depends(get_current_user)):
             detail="Hai già attivato un abbonamento. La settimana di prova è riservata ai nuovi iscritti."
         )
 
-    now = datetime.now(ROME_TZ)
+    now = now_rome()
     scadenza = now + timedelta(days=7)
     scadenza_str = scadenza.strftime("%Y-%m-%d")
     inizio_str = now.strftime("%Y-%m-%d")
@@ -6745,13 +6785,13 @@ async def startup_event():
                 update["attivo"] = True
             if isinstance(s.get("data_scadenza"), str):
                 try:
-                    dt = datetime.strptime(s["data_scadenza"], "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=ROME_TZ)
+                    dt = datetime.strptime(s["data_scadenza"], "%Y-%m-%d").replace(hour=23, minute=59, second=59)
                     update["data_scadenza"] = dt
                 except Exception:
                     pass
             if isinstance(s.get("data_inizio"), str):
                 try:
-                    dt = datetime.strptime(s["data_inizio"], "%Y-%m-%d").replace(tzinfo=ROME_TZ)
+                    dt = datetime.strptime(s["data_inizio"], "%Y-%m-%d")
                     update["data_inizio"] = dt
                 except Exception:
                     pass

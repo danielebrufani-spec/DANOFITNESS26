@@ -337,6 +337,9 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [newRegistrations, setNewRegistrations] = useState<{nome: string; cognome: string}[]>([]);
   const [showNewUsersAlert, setShowNewUsersAlert] = useState(false);
+  // Trial self-activations notification (admin only)
+  const [newTrialActivations, setNewTrialActivations] = useState<{nome: string; cognome: string; data_attivazione: string; data_scadenza_prova: string}[]>([]);
+  const [showTrialAlert, setShowTrialAlert] = useState(false);
   // Shop new orders notification (admin only)
   const [newShopOrders, setNewShopOrders] = useState<any[]>([]);
   const [showShopOrdersAlert, setShowShopOrdersAlert] = useState(false);
@@ -660,6 +663,14 @@ export default function HomeScreen() {
           setShowNewUsersAlert(true);
         }
       }).catch(() => {});
+
+      // Check nuove attivazioni della prova
+      apiService.adminNewTrialActivations().then(res => {
+        if (res.data.count > 0) {
+          setNewTrialActivations(res.data.nuove_attivazioni_prova);
+          setShowTrialAlert(true);
+        }
+      }).catch(() => {});
     }
   }, [isAdmin]);
 
@@ -685,6 +696,13 @@ export default function HomeScreen() {
     setShowNewUsersAlert(false);
     try {
       await apiService.markRegistrationsSeen();
+    } catch {}
+  };
+
+  const handleDismissTrialAlert = async () => {
+    setShowTrialAlert(false);
+    try {
+      await apiService.adminMarkTrialActivationsSeen();
     } catch {}
   };
 
@@ -951,6 +969,42 @@ export default function HomeScreen() {
                   <View key={i} style={styles.newUserItem}>
                     <Ionicons name="person-circle" size={20} color={COLORS.primary} />
                     <Text style={styles.newUserName}>{u.nome} {u.cognome}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Modal Alert Nuove Attivazioni Prova - Admin */}
+        <Modal visible={showTrialAlert} transparent animationType="fade" onRequestClose={handleDismissTrialAlert}>
+          <View style={styles.newUserOverlay}>
+            <View style={[styles.newUserModal, { borderColor: '#FFEA00' }]}>
+              <TouchableOpacity style={[styles.newUserDismissBtn, { backgroundColor: '#FFEA00' }]} onPress={handleDismissTrialAlert} testID="dismiss-trial-activations">
+                <Text style={[styles.newUserDismissText, { color: '#000' }]}>OK, VISTO!</Text>
+              </TouchableOpacity>
+              <View style={styles.newUserHeader}>
+                <Ionicons name="gift" size={28} color="#FFEA00" />
+                <Text style={[styles.newUserTitle, { color: '#FFEA00' }]}>
+                  {newTrialActivations.length === 1 ? 'PROVA ATTIVATA!' : `${newTrialActivations.length} PROVE ATTIVATE!`}
+                </Text>
+              </View>
+              <Text style={{ color: COLORS.textSecondary, fontSize: 13, marginBottom: 10, textAlign: 'center' }}>
+                Hanno cliccato "ATTIVA SETTIMANA DI PROVA" dall'app
+              </Text>
+              <ScrollView style={styles.newUserList} showsVerticalScrollIndicator={true}>
+                {newTrialActivations.map((t, i) => (
+                  <View key={i} style={[styles.newUserItem, { flexDirection: 'column', alignItems: 'flex-start', gap: 4, borderColor: 'rgba(255,234,0,0.2)' }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Ionicons name="person-circle" size={20} color="#FFEA00" />
+                      <Text style={[styles.newUserName, { color: COLORS.text, fontSize: 16 }]}>{t.nome} {t.cognome}</Text>
+                    </View>
+                    <Text style={{ color: COLORS.textSecondary, fontSize: 12, marginLeft: 28 }}>
+                      Attivata: <Text style={{ color: '#00C8FF', fontWeight: '900' }}>{t.data_attivazione}</Text>
+                    </Text>
+                    <Text style={{ color: COLORS.textSecondary, fontSize: 12, marginLeft: 28 }}>
+                      Scade: <Text style={{ color: '#FF1493', fontWeight: '900' }}>{t.data_scadenza_prova}</Text>
+                    </Text>
                   </View>
                 ))}
               </ScrollView>

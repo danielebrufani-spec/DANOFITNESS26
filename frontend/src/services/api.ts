@@ -401,6 +401,11 @@ export const apiService = {
   // ========== ONBOARDING NEW USER (Trial Self-Activation) ==========
   onboardingStatus: () => api.get<{is_brand_new: boolean; subscriptions_count: number; can_self_activate_trial: boolean; user_nome: string}>('/onboarding/status'),
   selfActivateTrial: () => api.post<{ok: boolean; subscription_id: string; data_inizio: string; data_scadenza: string; message: string}>('/onboarding/self-activate-trial'),
+
+  // ========== ADMIN: NEW TRIAL ACTIVATIONS NOTIFICATION ==========
+  adminNewTrialActivations: () =>
+    api.get<{nuove_attivazioni_prova: {nome: string; cognome: string; email: string; data_attivazione: string; data_scadenza_prova: string}[]; count: number}>('/admin/new-trial-activations'),
+  adminMarkTrialActivationsSeen: () => api.post<{message: string}>('/admin/mark-trial-activations-seen'),
   adminMaestroWeekPool: (settimana?: string) =>
     api.get<{settimana: string; from: string; to: string; questions: any[]}>(
       `/admin/maestro/week-pool${settimana ? `?settimana=${settimana}` : ''}`
