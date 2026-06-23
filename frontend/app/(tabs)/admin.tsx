@@ -237,10 +237,14 @@ export default function AdminScreen() {
   // Filtered users based on search
   const filteredUsers = users.filter(user => {
     if (!userSearchQuery.trim()) return true;
-    const searchLower = userSearchQuery.toLowerCase();
+    const searchLower = userSearchQuery.toLowerCase().trim();
+    const fullName = `${user.nome || ''} ${user.cognome || ''}`.toLowerCase().trim();
+    const fullNameInverted = `${user.cognome || ''} ${user.nome || ''}`.toLowerCase().trim();
     return (
       user.nome?.toLowerCase().includes(searchLower) ||
       user.cognome?.toLowerCase().includes(searchLower) ||
+      fullName.includes(searchLower) ||
+      fullNameInverted.includes(searchLower) ||
       user.email?.toLowerCase().includes(searchLower) ||
       user.telefono?.includes(searchLower)
     );
@@ -250,20 +254,28 @@ export default function AdminScreen() {
   const filteredUsersForSubscription = users.filter(u => {
     if (u.role === 'admin') return false;
     if (!subscriptionUserSearch.trim()) return true;
-    const searchLower = subscriptionUserSearch.toLowerCase();
+    const searchLower = subscriptionUserSearch.toLowerCase().trim();
+    const fullName = `${u.nome || ''} ${u.cognome || ''}`.toLowerCase().trim();
+    const fullNameInverted = `${u.cognome || ''} ${u.nome || ''}`.toLowerCase().trim();
     return (
       u.nome?.toLowerCase().includes(searchLower) ||
-      u.cognome?.toLowerCase().includes(searchLower)
+      u.cognome?.toLowerCase().includes(searchLower) ||
+      fullName.includes(searchLower) ||
+      fullNameInverted.includes(searchLower)
     );
   });
 
   // Filtered subscriptions based on search
   const filteredSubscriptions = subscriptions.filter(sub => {
     if (!subSearchQuery.trim()) return true;
-    const searchLower = subSearchQuery.toLowerCase();
+    const searchLower = subSearchQuery.toLowerCase().trim();
+    const fullName = `${sub.user_nome || ''} ${sub.user_cognome || ''}`.toLowerCase().trim();
+    const fullNameInverted = `${sub.user_cognome || ''} ${sub.user_nome || ''}`.toLowerCase().trim();
     return (
       sub.user_nome?.toLowerCase().includes(searchLower) ||
-      sub.user_cognome?.toLowerCase().includes(searchLower)
+      sub.user_cognome?.toLowerCase().includes(searchLower) ||
+      fullName.includes(searchLower) ||
+      fullNameInverted.includes(searchLower)
     );
   });
 
@@ -2047,8 +2059,12 @@ export default function AdminScreen() {
                 .filter(u => {
                   if (u.role === 'admin') return false;
                   if (!addParticipantSearch.trim()) return true;
-                  const q = addParticipantSearch.toLowerCase();
-                  return (u.nome || '').toLowerCase().includes(q) || (u.cognome || '').toLowerCase().includes(q);
+                  const q = addParticipantSearch.toLowerCase().trim();
+                  const nome = (u.nome || '').toLowerCase();
+                  const cognome = (u.cognome || '').toLowerCase();
+                  const fullName = `${nome} ${cognome}`.trim();
+                  const inverted = `${cognome} ${nome}`.trim();
+                  return nome.includes(q) || cognome.includes(q) || fullName.includes(q) || inverted.includes(q);
                 })
                 .slice(0, 50)
                 .map(u => (

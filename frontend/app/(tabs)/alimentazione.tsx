@@ -311,9 +311,14 @@ export default function AlimentazioneScreen() {
             {(() => {
               const plans = nutritionData?.plans || [];
               const filtered = nutritionSearch.trim()
-                ? plans.filter((p: any) =>
-                    `${p.user_nome} ${p.user_cognome}`.toLowerCase().includes(nutritionSearch.toLowerCase())
-                  )
+                ? plans.filter((p: any) => {
+                    const q = nutritionSearch.toLowerCase().trim();
+                    const nome = (p.user_nome || '').toLowerCase();
+                    const cognome = (p.user_cognome || '').toLowerCase();
+                    return nome.includes(q) || cognome.includes(q) ||
+                           `${nome} ${cognome}`.includes(q) ||
+                           `${cognome} ${nome}`.includes(q);
+                  })
                 : plans;
 
               if (filtered.length === 0) {
