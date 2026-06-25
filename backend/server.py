@@ -3443,6 +3443,14 @@ async def process_lessons_after_30min():
                     {"$set": {"lezione_scalata": True}}
                 )
 
+                # BUG FIX: assegna eventuali biglietti bonus streak settimanale
+                try:
+                    streak_res = await check_and_award_streak_bonus(user_id, today)
+                    if streak_res.get("bonus_awarded", 0) > 0:
+                        logger.info(f"[SCHEDULER-STREAK] +{streak_res['bonus_awarded']} biglietti a user {user_id} (streak={streak_res.get('streak')})")
+                except Exception as exc:
+                    logger.warning(f"[SCHEDULER-STREAK] Errore streak bonus user {user_id}: {exc}")
+
 async def process_day_automatically():
     """Backup midnight processing for any missed bookings"""
     yesterday = (now_rome() - timedelta(days=1)).strftime("%Y-%m-%d")
@@ -3494,6 +3502,14 @@ async def process_day_automatically():
                     "created_at": now_rome()
                 }
                 await db.notifications.insert_one(notification)
+
+            # BUG FIX: streak bonus settimanale
+            try:
+                streak_res = await check_and_award_streak_bonus(user_id, booking.get("data_lezione", yesterday))
+                if streak_res.get("bonus_awarded", 0) > 0:
+                    logger.info(f"[BACKUP-STREAK] +{streak_res['bonus_awarded']} biglietti a user {user_id}")
+            except Exception as exc:
+                logger.warning(f"[BACKUP-STREAK] Errore streak bonus user {user_id}: {exc}")
         else:
             # Cerca abbonamento a TEMPO (mensile, trimestrale, annuale)
             sub_tempo = await db.subscriptions.find_one({
@@ -3509,6 +3525,14 @@ async def process_day_automatically():
                     {"$set": {"lezione_scalata": True}}
                 )
                 processed_tempo += 1
+
+                # BUG FIX: streak bonus settimanale anche per abbonamenti tempo
+                try:
+                    streak_res = await check_and_award_streak_bonus(user_id, booking.get("data_lezione", yesterday))
+                    if streak_res.get("bonus_awarded", 0) > 0:
+                        logger.info(f"[BACKUP-STREAK] +{streak_res['bonus_awarded']} biglietti a user {user_id}")
+                except Exception as exc:
+                    logger.warning(f"[BACKUP-STREAK] Errore streak bonus user {user_id}: {exc}")
     
     total_processed = processed + processed_tempo
     logger.info(f"[SCHEDULER] Processed {processed} pacchetto + {processed_tempo} tempo = {total_processed} for {yesterday}")
@@ -6802,6 +6826,39 @@ async def startup_event():
             logger.info(f"[MIGRATION] Fissate {fixed_count} subscriptions self_activated rotte (bug attivo/datetime)")
     except Exception as e:
         logger.warning(f"[MIGRATION] Errore fix subs self_activated: {e}")
+
+    # Auto-fix RETROATTIVO biglietti streak: per le 8 settimane precedenti, controlla
+    # se ci sono streak bonus non assegnati (bug scheduler che non chiamava la funzione).
+    # Idempotente: check_and_award_streak_bonus salva un flag bonus_3_dato/bonus_5_dato
+    # quindi non duplica.
+    try:
+        from datetime import date as dt_date
+        today_d = now_rome().date()
+        # Trova utenti con almeno una lezione scalata
+        pipeline = [
+            {"$match": {"lezione_scalata": True}},
+            {"$group": {"_id": "$user_id"}},
+        ]
+        user_ids = [doc["_id"] async for doc in db.bookings.aggregate(pipeline)]
+        retro_users = 0
+        retro_tickets = 0
+        for weeks_ago in range(0, 9):
+            ref_monday = today_d - timedelta(days=today_d.weekday() + 7 * weeks_ago)
+            monday, sunday, _ = _week_bounds(ref_monday)
+            for uid in user_ids:
+                for d_idx in range(7):
+                    day_str = (monday + timedelta(days=d_idx)).isoformat()
+                    try:
+                        res = await check_and_award_streak_bonus(uid, day_str)
+                        if res.get("bonus_awarded", 0) > 0:
+                            retro_users += 1
+                            retro_tickets += res["bonus_awarded"]
+                    except Exception:
+                        pass
+        if retro_tickets > 0:
+            logger.info(f"[MIGRATION-STREAK] Accreditati retroattivamente {retro_tickets} biglietti a {retro_users} bonus mancanti")
+    except Exception as e:
+        logger.warning(f"[MIGRATION-STREAK] Errore fix retroattivo: {e}")
 
     # Cleanup: disattiva flag prova_attiva per utenti che hanno un abbonamento "vero"
     # o la cui prova è scaduta (sana eventuali stati incoerenti dei dati esistenti)

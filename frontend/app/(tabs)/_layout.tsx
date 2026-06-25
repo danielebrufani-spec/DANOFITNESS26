@@ -74,8 +74,6 @@ export default function TabsLayout() {
     )}
     {/* Popup evento Mobili Trignani - visibile fino al 13/06/2026 19:00 */}
     {!isArchived && <EventPopup />}
-    {/* Annuncio lezione in piscina - visibile fino alle 21:00 di oggi */}
-    {!isArchived && <PoolAnnouncementPopup />}
     <Tabs
       screenOptions={{
         headerShown: false,
