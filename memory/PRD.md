@@ -360,6 +360,20 @@ Per admin: Home, Lezioni, Admin, Premi, Shop, Altro (Profilo accessibile da Altr
 
 **Test agent:** 13/13 PASS su mobile (390x844) e desktop (1280x900).
 
+
+## Riattivazione Account via WhatsApp per Utenti Archiviati (30 Giugno 2026)
+Quando l'admin archivia un cliente, il cliente all'ingresso vede la schermata "Account Sospeso" (in `app/(tabs)/profilo.tsx`). Aggiunta una CTA verde WhatsApp **"RIATTIVA ACCOUNT E ABBONAMENTO"** sopra il pulsante logout.
+
+**Flow:**
+1. Click sulla CTA → si apre un Modal con 5 opzioni di abbonamento (radio): Lezione Singola (10€), 8 Lezioni (55€), 16 Lezioni (95€), Mensile (65€), Trimestrale (175€).
+2. Selezionata una opzione, il pulsante "APRI WHATSAPP E INVIA" diventa attivo.
+3. Click → apre `wa.me/393395020625` con messaggio pre-compilato:  
+   `Ciao Daniele! Sono [Nome Cognome] e vorrei riattivare il mio account su DanoFitness.\n\nAbbonamento scelto: [tipo] ([prezzo])\n\nFammi sapere come procedere. Grazie!`
+
+**File modificato:** `app/(tabs)/profilo.tsx` (import `Linking` + `Platform`, state `showReactivateModal`/`selectedReactivateKey`, costanti `DANIELE_WA_NUMBER` e `REACTIVATION_OPTIONS`, helper `buildReactivationMessage`/`handleOpenWhatsAppReactivation`, Modal con radio list e stili).
+
+**Test:** Verifica e2e tramite Playwright — `wait_for_selector('text=Account Sospeso')` + click testID `archived-reactivate-btn` + selezione `reactivate-option-mensile` → tutti i selector trovati, modal funzionante. TypeScript compile pulito su `profilo.tsx`.
+
 ## Task Pianificati Futuri
 ### P1
 - Sistema Notifiche In-App (icona campanella) per lezioni cancellate, abbonamenti in scadenza, classifica

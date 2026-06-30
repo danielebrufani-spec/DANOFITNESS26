@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   Modal,
   Image,
+  Linking,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +18,18 @@ import { useAuth } from '../../src/context/AuthContext';
 import { COLORS } from '../../src/utils/constants';
 import { FONTS } from '../../src/theme';
 import { apiService } from '../../src/services/api';
+
+// WhatsApp Daniele (proprietario)
+const DANIELE_WA_NUMBER = '393395020625';
+
+// Opzioni abbonamento per riattivazione (esclusa la prova)
+const REACTIVATION_OPTIONS: { key: string; nome: string; prezzo: string }[] = [
+  { key: 'lezione_singola', nome: 'Lezione Singola', prezzo: '10 €' },
+  { key: 'lezioni_8', nome: '8 Lezioni', prezzo: '55 €' },
+  { key: 'lezioni_16', nome: '16 Lezioni', prezzo: '95 €' },
+  { key: 'mensile', nome: 'Abbonamento Mensile', prezzo: '65 €' },
+  { key: 'trimestrale', nome: 'Abbonamento Trimestrale', prezzo: '175 €' },
+];
 
 // Livelli per riferimento nel frontend
 const LIVELLI_NOMI = [
@@ -92,6 +106,34 @@ export default function ProfiloScreen() {
   } | null>(null);
   const [showMedaglieModal, setShowMedaglieModal] = useState(false);
 
+  // Modal riattivazione account/abbonamento (per utenti archiviati)
+  const [showReactivateModal, setShowReactivateModal] = useState(false);
+  const [selectedReactivateKey, setSelectedReactivateKey] = useState<string | null>(null);
+
+  const buildReactivationMessage = (subKey: string | null): string => {
+    const nomeCompleto = `${user?.nome || ''} ${user?.cognome || ''}`.trim() || 'un cliente';
+    const subInfo = subKey ? REACTIVATION_OPTIONS.find(o => o.key === subKey) : null;
+    const subLine = subInfo
+      ? `\n\nAbbonamento scelto: ${subInfo.nome} (${subInfo.prezzo})`
+      : '';
+    return (
+      `Ciao Daniele! Sono ${nomeCompleto} e vorrei riattivare il mio account su DanoFitness.` +
+      subLine +
+      `\n\nFammi sapere come procedere. Grazie!`
+    );
+  };
+
+  const handleOpenWhatsAppReactivation = () => {
+    const text = encodeURIComponent(buildReactivationMessage(selectedReactivateKey));
+    const url = `https://wa.me/${DANIELE_WA_NUMBER}?text=${text}`;
+    if (Platform.OS === 'web') {
+      window.open(url, '_blank');
+    } else {
+      Linking.openURL(url).catch(() => {});
+    }
+    setShowReactivateModal(false);
+  };
+
   useEffect(() => {
     if (showLivello) {
       loadLivello();
@@ -143,11 +185,20 @@ export default function ProfiloScreen() {
               <Text style={archivedStyles.brand}>DanoFitness</Text>, contatta il Maestro Daniele.
             </Text>
 
-            <View style={archivedStyles.contactBox}>
-              <Ionicons name="call-outline" size={22} color={COLORS.primary} />
-              <Text style={archivedStyles.contactText}>Contatta il Maestro Daniele</Text>
-            </View>
-            
+            {/* CTA principale - Riattiva via WhatsApp */}
+            <TouchableOpacity
+              testID="archived-reactivate-btn"
+              style={archivedStyles.reactivateBtn}
+              onPress={() => {
+                setSelectedReactivateKey(null);
+                setShowReactivateModal(true);
+              }}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="logo-whatsapp" size={22} color="#fff" />
+              <Text style={archivedStyles.reactivateBtnText}>Riattiva Account e Abbonamento</Text>
+            </TouchableOpacity>
+
             <Text style={archivedStyles.footer}>
               Ti aspettiamo a braccia aperte!
             </Text>
@@ -158,6 +209,84 @@ export default function ProfiloScreen() {
             <Text style={archivedStyles.logoutText}>Esci dall'account</Text>
           </TouchableOpacity>
         </ScrollView>
+
+        {/* Modal scelta abbonamento per riattivazione */}
+        <Modal
+          visible={showReactivateModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowReactivateModal(false)}
+        >
+          <View style={archivedStyles.modalOverlay}>
+            <View style={archivedStyles.modalCard}>
+              <View style={archivedStyles.modalHeader}>
+                <Text style={archivedStyles.modalTitle}>Scegli l'abbonamento</Text>
+                <TouchableOpacity
+                  onPress={() => setShowReactivateModal(false)}
+                  testID="archived-reactivate-close"
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons name="close" size={26} color={COLORS.text} />
+                </TouchableOpacity>
+              </View>
+
+              <Text style={archivedStyles.modalSubtitle}>
+                Seleziona l'abbonamento con cui vuoi ripartire. Verrà aperto WhatsApp con un messaggio già pronto per Daniele.
+              </Text>
+
+              <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false}>
+                {REACTIVATION_OPTIONS.map((opt) => {
+                  const isSel = selectedReactivateKey === opt.key;
+                  return (
+                    <TouchableOpacity
+                      key={opt.key}
+                      testID={`reactivate-option-${opt.key}`}
+                      style={[
+                        archivedStyles.subOption,
+                        isSel && archivedStyles.subOptionSelected,
+                      ]}
+                      onPress={() => setSelectedReactivateKey(opt.key)}
+                      activeOpacity={0.85}
+                    >
+                      <View style={archivedStyles.subOptionLeft}>
+                        <View
+                          style={[
+                            archivedStyles.radioOuter,
+                            isSel && { borderColor: COLORS.primary },
+                          ]}
+                        >
+                          {isSel && <View style={archivedStyles.radioInner} />}
+                        </View>
+                        <Text style={archivedStyles.subOptionName}>{opt.nome}</Text>
+                      </View>
+                      <Text style={archivedStyles.subOptionPrice}>{opt.prezzo}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
+              <TouchableOpacity
+                testID="archived-send-whatsapp"
+                style={[
+                  archivedStyles.sendBtn,
+                  !selectedReactivateKey && archivedStyles.sendBtnDisabled,
+                ]}
+                onPress={handleOpenWhatsAppReactivation}
+                disabled={!selectedReactivateKey}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="logo-whatsapp" size={20} color="#fff" />
+                <Text style={archivedStyles.sendBtnText}>
+                  {selectedReactivateKey ? 'Apri WhatsApp e Invia' : 'Seleziona un abbonamento'}
+                </Text>
+              </TouchableOpacity>
+
+              <Text style={archivedStyles.modalDisclaimer}>
+                Il messaggio è pre-compilato: potrai sempre modificarlo prima di inviarlo.
+              </Text>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     );
   }
@@ -1168,6 +1297,135 @@ const archivedStyles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: COLORS.primary,
+  },
+  reactivateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: '#25D366',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 14,
+    marginBottom: 16,
+    shadowColor: '#25D366',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 6,
+    width: '100%',
+  },
+  reactivateBtnText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: 0.3,
+  },
+  // ---- Modal stili ----
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    padding: 22,
+    width: '100%',
+    maxWidth: 480,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  subOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.background,
+    marginBottom: 10,
+  },
+  subOptionSelected: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primary + '12',
+  },
+  subOptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  radioOuter: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: COLORS.primary,
+  },
+  subOptionName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  subOptionPrice: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  sendBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: '#25D366',
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  sendBtnDisabled: {
+    backgroundColor: '#25D36655',
+  },
+  sendBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  modalDisclaimer: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginTop: 10,
+    fontStyle: 'italic',
   },
   footer: {
     fontSize: 14,
