@@ -2171,6 +2171,7 @@ export default function AdminScreen() {
           onClose={() => setAvvisaModalVisible(false)}
           participants={avvisaTarget.participants}
           loading={avvisaTarget.loading}
+          lessonKey={`${avvisaTarget.data_lezione}_${avvisaTarget.lesson_id}`}
           lessonInfo={{
             tipo: avvisaTarget.tipo,
             orario: avvisaTarget.orario,

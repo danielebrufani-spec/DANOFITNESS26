@@ -29,6 +29,8 @@ interface Props {
   participants: Participant[];
   lessonInfo: { tipo: string; orario: string; data: string }; // es. { tipo: 'Funzionale', orario: '18:30', data: '01/07/2026' }
   loading?: boolean;
+  // Identificatore unico della lezione per persistere lo stato inviati (es. "2026-07-04_lesson123")
+  lessonKey?: string;
 }
 
 /** Normalizza il numero telefono in formato wa.me (solo cifre, prefisso 39 se manca) */
@@ -42,7 +44,30 @@ function normalizePhone(raw: string): string | null {
   return n;
 }
 
-export const AvvisaClasseModal: React.FC<Props> = ({ visible, onClose, participants, lessonInfo, loading }) => {
+const STORAGE_KEY_PREFIX = 'avvisa_classe_sent_';
+
+function loadSentFromStorage(lessonKey?: string): Set<string> {
+  if (!lessonKey || Platform.OS !== 'web') return new Set();
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY_PREFIX + lessonKey);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw) as string[];
+    return new Set(arr);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveSentToStorage(lessonKey: string | undefined, sent: Set<string>) {
+  if (!lessonKey || Platform.OS !== 'web') return;
+  try {
+    window.localStorage.setItem(STORAGE_KEY_PREFIX + lessonKey, JSON.stringify(Array.from(sent)));
+  } catch {
+    /* noop */
+  }
+}
+
+export const AvvisaClasseModal: React.FC<Props> = ({ visible, onClose, participants, lessonInfo, loading, lessonKey }) => {
   const defaultMessage = `Ciao! La lezione di ${lessonInfo.tipo} delle ${lessonInfo.orario} del ${lessonInfo.data} è ANNULLATA.\n\nCi scusiamo per l'inconveniente.\n\nDaniele · DanoFitness23`;
   const [message, setMessage] = useState(defaultMessage);
   const [sentTo, setSentTo] = useState<Set<string>>(new Set());
@@ -50,10 +75,11 @@ export const AvvisaClasseModal: React.FC<Props> = ({ visible, onClose, participa
   useEffect(() => {
     if (visible) {
       setMessage(defaultMessage);
-      setSentTo(new Set());
+      // Carica gli inviati persistiti per questa lezione
+      setSentTo(loadSentFromStorage(lessonKey));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, lessonInfo.tipo, lessonInfo.orario, lessonInfo.data]);
+  }, [visible, lessonInfo.tipo, lessonInfo.orario, lessonInfo.data, lessonKey]);
 
   const handleSend = (p: Participant) => {
     const phone = normalizePhone(p.telefono || '');
@@ -68,8 +94,20 @@ export const AvvisaClasseModal: React.FC<Props> = ({ visible, onClose, participa
     setSentTo((prev) => {
       const next = new Set(prev);
       next.add(p.user_id || p.telefono || p.display_name || '');
+      saveSentToStorage(lessonKey, next);
       return next;
     });
+  };
+
+  const handleResetSent = () => {
+    const ok = Platform.OS === 'web'
+      ? window.confirm('Sei sicuro di voler azzerare tutti gli "INVIATO"? Questo permetterà di re-inviare il messaggio a chi era già stato avvisato.')
+      : true;
+    if (!ok) return;
+    setSentTo(new Set());
+    if (lessonKey && Platform.OS === 'web') {
+      try { window.localStorage.removeItem(STORAGE_KEY_PREFIX + lessonKey); } catch {}
+    }
   };
 
   const validParticipants = participants.filter(p => normalizePhone(p.telefono || ''));
@@ -130,10 +168,11 @@ export const AvvisaClasseModal: React.FC<Props> = ({ visible, onClose, participa
                       <Text style={styles.partPhone}>📞 {p.telefono}</Text>
                     </View>
                     <TouchableOpacity
-                      onPress={() => handleSend(p)}
+                      onPress={() => !isSent && handleSend(p)}
+                      disabled={isSent}
                       style={[styles.sendBtn, isSent && styles.sendBtnSent]}
                       testID={`avvisa-send-${i}`}
-                      activeOpacity={0.85}
+                      activeOpacity={isSent ? 1 : 0.85}
                     >
                       <Ionicons
                         name={isSent ? 'checkmark-done' : 'logo-whatsapp'}
@@ -141,7 +180,7 @@ export const AvvisaClasseModal: React.FC<Props> = ({ visible, onClose, participa
                         color={isSent ? '#000' : '#fff'}
                       />
                       <Text style={[styles.sendBtnText, isSent && { color: '#000' }]}>
-                        {isSent ? 'INVIATO' : 'INVIA'}
+                        {isSent ? 'INVIATO ✓' : 'INVIA'}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -166,6 +205,12 @@ export const AvvisaClasseModal: React.FC<Props> = ({ visible, onClose, participa
                 </Text>
                 {sentTo.size === validParticipants.length && (
                   <Text style={styles.doneText}>✅ Tutti avvisati!</Text>
+                )}
+                {sentTo.size > 0 && (
+                  <TouchableOpacity onPress={handleResetSent} style={styles.resetBtn} testID="avvisa-reset">
+                    <Ionicons name="refresh" size={12} color={COLORS.textSecondary} />
+                    <Text style={styles.resetText}>Azzera "Inviato"</Text>
+                  </TouchableOpacity>
                 )}
               </View>
             )}
@@ -285,6 +330,24 @@ const styles = StyleSheet.create({
   progressText: { fontFamily: FONTS.body, fontSize: 13, color: COLORS.text },
   progressNum: { fontFamily: FONTS.bodyBlack, color: '#00C8FF' },
   doneText: { fontFamily: FONTS.bodyBlack, fontSize: 14, color: '#39FF14', marginTop: 4 },
+  resetBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginTop: 6,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+  },
+  resetText: {
+    fontFamily: FONTS.body,
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    fontStyle: 'italic',
+  },
 
   doneBtn: {
     marginHorizontal: 18,
