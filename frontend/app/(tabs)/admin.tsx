@@ -1462,6 +1462,24 @@ export default function AdminScreen() {
                 </View>
                 {user.role !== 'admin' && (
                   <View style={styles.userActionsRow}>
+                    {user.telefono && (
+                      <TouchableOpacity
+                        testID={`whatsapp-${user.id}`}
+                        style={[styles.actionBtnSmall, { backgroundColor: 'rgba(37,211,102,0.15)' }]}
+                        onPress={() => {
+                          let n = (user.telefono || '').replace(/[^\d+]/g, '');
+                          if (n.startsWith('+')) n = n.substring(1);
+                          if (n && !n.startsWith('39') && n.length === 10) n = '39' + n;
+                          if (!n) return;
+                          const msg = encodeURIComponent(`Ciao ${user.nome}!`);
+                          const url = `https://wa.me/${n}?text=${msg}`;
+                          if (typeof window !== 'undefined') window.open(url, '_blank');
+                        }}
+                      >
+                        <Ionicons name="logo-whatsapp" size={16} color="#25D366" />
+                        <Text style={[styles.actionBtnText, { color: '#25D366' }]}>WhatsApp</Text>
+                      </TouchableOpacity>
+                    )}
                     {user.role !== 'istruttore' && (
                       <TouchableOpacity 
                         style={styles.actionBtnSmall}
