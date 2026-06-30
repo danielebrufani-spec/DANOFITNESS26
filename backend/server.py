@@ -484,12 +484,10 @@ SCHEDULE = [
     {"giorno": "lunedi", "orario": "20:30", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Daniele"},
     {"giorno": "martedi", "orario": "13:15", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Fabio"},
     {"giorno": "martedi", "orario": "17:30", "tipo_attivita": ActivityType.CIRCUITO, "descrizione": "Allenamento a stazioni per resistenza, forza e velocità", "coach": "Daniele"},
-    {"giorno": "martedi", "orario": "20:15", "tipo_attivita": ActivityType.PILATES, "descrizione": "Per postura, flessibilità e concentrazione", "coach": "Toto"},
     {"giorno": "mercoledi", "orario": "08:30", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Daniele"},
     {"giorno": "mercoledi", "orario": "20:30", "tipo_attivita": ActivityType.CIRCUITO, "descrizione": "Allenamento a stazioni per resistenza, forza e velocità", "coach": "Daniele"},
     {"giorno": "giovedi", "orario": "13:15", "tipo_attivita": ActivityType.CIRCUITO, "descrizione": "Allenamento a stazioni per resistenza, forza e velocità", "coach": "Daniele"},
     {"giorno": "giovedi", "orario": "17:30", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Daniele"},
-    {"giorno": "giovedi", "orario": "20:15", "tipo_attivita": ActivityType.PILATES, "descrizione": "Per postura, flessibilità e concentrazione", "coach": "Toto"},
     {"giorno": "venerdi", "orario": "08:30", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Fabio"},
     {"giorno": "venerdi", "orario": "20:15", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Daniele"},
     {"giorno": "sabato", "orario": "13:30", "tipo_attivita": ActivityType.YOGA, "descrizione": "Disciplina che unisce respiro, movimento e meditazione", "coach": "Costanza"},
@@ -6860,6 +6858,15 @@ async def startup_event():
     except Exception as e:
         logger.warning(f"[MIGRATION-STREAK] Errore fix retroattivo: {e}")
 
+    # Auto-migration STAGIONALE: rimuove le lezioni di Pilates (corso concluso fino a settembre)
+    # Idempotente: se già rimosse, non fa nulla
+    try:
+        del_res = await db.lessons.delete_many({"tipo_attivita": "pilates"})
+        if del_res.deleted_count > 0:
+            logger.info(f"[MIGRATION] Rimosse {del_res.deleted_count} lezioni Pilates dalla programmazione (corso concluso - riprende a settembre)")
+    except Exception as e:
+        logger.warning(f"[MIGRATION] Errore rimozione lezioni Pilates: {e}")
+
     # Cleanup: disattiva flag prova_attiva per utenti che hanno un abbonamento "vero"
     # o la cui prova è scaduta (sana eventuali stati incoerenti dei dati esistenti)
     try:
@@ -7054,12 +7061,10 @@ async def import_lessons():
         {"giorno": "lunedi", "orario": "20:30", "tipo_attivita": "funzionale", "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Daniele"},
         {"giorno": "martedi", "orario": "13:15", "tipo_attivita": "funzionale", "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Fabio"},
         {"giorno": "martedi", "orario": "17:30", "tipo_attivita": "circuito", "descrizione": "Allenamento a stazioni per resistenza, forza e velocità", "coach": "Daniele"},
-        {"giorno": "martedi", "orario": "20:15", "tipo_attivita": "pilates", "descrizione": "Per postura, flessibilità e concentrazione", "coach": "Toto"},
         {"giorno": "mercoledi", "orario": "08:30", "tipo_attivita": "funzionale", "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Daniele"},
         {"giorno": "mercoledi", "orario": "20:30", "tipo_attivita": "circuito", "descrizione": "Allenamento a stazioni per resistenza, forza e velocità", "coach": "Daniele"},
         {"giorno": "giovedi", "orario": "13:15", "tipo_attivita": "circuito", "descrizione": "Allenamento a stazioni per resistenza, forza e velocità", "coach": "Daniele"},
         {"giorno": "giovedi", "orario": "17:30", "tipo_attivita": "funzionale", "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Daniele"},
-        {"giorno": "giovedi", "orario": "20:15", "tipo_attivita": "pilates", "descrizione": "Per postura, flessibilità e concentrazione", "coach": "Toto"},
         {"giorno": "venerdi", "orario": "08:30", "tipo_attivita": "funzionale", "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Fabio"},
         {"giorno": "venerdi", "orario": "20:15", "tipo_attivita": "funzionale", "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Daniele"},
         {"giorno": "sabato", "orario": "13:30", "tipo_attivita": "yoga", "descrizione": "Disciplina che unisce respiro, movimento e meditazione", "coach": "Costanza"},

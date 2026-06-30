@@ -21,6 +21,7 @@ import { apiService } from '../../src/services/api';
 import { COLORS, ABBONAMENTO_INFO, FITNESS_IMAGES } from '../../src/utils/constants';
 import { StreakBanner } from '../../src/components/StreakBanner';
 import { KPIBanner } from '../../src/components/KPIBanner';
+import { PilatesEndBanner } from '../../src/components/PilatesEndBanner';
 import { SummerSilhouettes } from '../../src/components/SummerSilhouettes';
 import { FONTS, glow } from '../../src/theme';
 import { CountUp } from '../../src/components/CountUp';
@@ -1130,6 +1131,9 @@ export default function HomeScreen() {
 
         {/* BANDA KPI - Streak + Biglietti + Abbonamento */}
         {!isAdmin && <KPIBanner />}
+
+        {/* BANNER FINE CORSO PILATES - visibile fino a sabato 28/06 */}
+        {!isAdmin && <PilatesEndBanner />}
 
         {/* BANNER STREAK SETTIMANALE - Bonus biglietti lotteria per allenamenti consecutivi */}
         {!isAdmin && <StreakBanner />}
