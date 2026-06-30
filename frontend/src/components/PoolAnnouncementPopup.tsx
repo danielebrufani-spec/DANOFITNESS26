@@ -18,15 +18,15 @@ import { FONTS } from '../theme';
  * Per disattivare manualmente: setta ENABLED a false o cambia DEADLINE.
  */
 
-// Deadline: oggi (data odierna) alle 21:00 Europe/Rome
+// Deadline: oggi alle 20:00 (ora locale del dispositivo, es. Europe/Rome)
 const getDeadline = (): Date => {
   const now = new Date();
-  const deadline = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 21, 0, 0);
+  const deadline = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 20, 0, 0);
   return deadline;
 };
 
 const ENABLED = true;
-const STORAGE_KEY_PREFIX = 'pool_announce_dismissed_';
+const STORAGE_KEY_PREFIX = 'acquagym_confirm_dismissed_';
 
 function getTodayKey(): string {
   const d = new Date();
@@ -89,28 +89,16 @@ export const PoolAnnouncementPopup: React.FC = () => {
           </View>
 
           {/* Title */}
-          <Text style={styles.kicker}>AVVISO IMPORTANTE</Text>
-          <Text style={styles.title}>LEZIONE DI STASERA</Text>
+          <Text style={styles.kicker}>LEZIONE CONFERMATA</Text>
+          <Text style={styles.title}>ACQUAGYM CONFERMATA</Text>
           <View style={styles.accentBar} />
 
-          {/* Time + Location */}
-          <View style={styles.infoBox}>
-            <View style={styles.infoRow}>
-              <Ionicons name="time-outline" size={20} color="#FFEA00" />
-              <Text style={styles.infoTitle}>ORE 20:15</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Ionicons name="location-outline" size={20} color="#FF1493" />
-              <Text style={styles.infoTitle}>PISCINA CAMPING</Text>
-            </View>
-          </View>
-
-          {/* Romantic message */}
+          {/* Messaggio principale */}
           <View style={styles.messageBox}>
             <Text style={styles.message}>
-              Un'atmosfera <Text style={styles.bold}>quasi romantica</Text>...
-              {'\n'}
-              <Text style={styles.bigText}>Faticheremo con amore.</Text> 💙
+              <Text style={styles.bigText}>VI ASPETTO!</Text>
+              {'\n\n'}
+              Ci vediamo in <Text style={styles.bold}>piscina</Text> 🌊💪
             </Text>
           </View>
 
@@ -125,7 +113,7 @@ export const PoolAnnouncementPopup: React.FC = () => {
             <Text style={styles.ctaText}>CI SARÒ!</Text>
           </TouchableOpacity>
 
-          <Text style={styles.footer}>Ti aspettiamo a bordo piscina 🌊</Text>
+          <Text style={styles.footer}>Forza ragazzi, si fatica con il sorriso 💙</Text>
         </View>
       </View>
     </Modal>
