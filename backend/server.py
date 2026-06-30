@@ -1964,6 +1964,10 @@ async def get_lesson_participants(lesson_id: str, lesson_date: str, current_user
                 entry["booking_id"] = str(booking["_id"])
                 entry["user_id"] = booking["user_id"]
                 entry["lezione_scalata"] = booking.get("lezione_scalata", False)
+                entry["telefono"] = user.get("telefono", "")
+                entry["nome"] = user.get("nome", "")
+                entry["cognome"] = user.get("cognome", "")
+                entry["display_name"] = display_name.strip()
             participants.append(entry)
     
     return {
@@ -3787,11 +3791,11 @@ async def get_istruttore_lezioni(current_user: dict = Depends(get_current_user))
         {"user_id": 1, "lesson_id": 1, "data_lezione": 1, "lezione_scalata": 1}
     ).to_list(1000)
     
-    # Carica solo gli utenti necessari (nome + cognome + soprannome per display name univoco)
+    # Carica solo gli utenti necessari (nome + cognome + soprannome + telefono per WhatsApp)
     user_ids = list(set(b["user_id"] for b in bookings))
     users = await db.users.find(
         {"_id": {"$in": [ObjectId(uid) for uid in user_ids]}},
-        {"nome": 1, "cognome": 1, "soprannome": 1}
+        {"nome": 1, "cognome": 1, "soprannome": 1, "telefono": 1}
     ).to_list(len(user_ids)) if user_ids else []
     users_map = {str(u["_id"]): u for u in users}
     
@@ -3833,12 +3837,14 @@ async def get_istruttore_lezioni(current_user: dict = Depends(get_current_user))
                 u_nome = u.get("nome", "") or ""
                 u_cognome = u.get("cognome", "") or ""
                 u_soprannome = u.get("soprannome") or ""
+                u_telefono = u.get("telefono", "") or ""
                 # Display name: soprannome se presente, altrimenti nome + cognome (per evitare omonimie)
                 display_name = u_soprannome if u_soprannome else f"{u_nome} {u_cognome}".strip()
                 partecipanti.append({
                     "nome": u_nome,
                     "cognome": u_cognome,
                     "soprannome": u_soprannome,
+                    "telefono": u_telefono,
                     "display_name": display_name or "Utente",
                     "lezione_scalata": b.get("lezione_scalata", False),
                 })

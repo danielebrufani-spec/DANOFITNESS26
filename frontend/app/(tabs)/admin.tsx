@@ -31,6 +31,7 @@ import {
   getTodayDateString,
 } from '../../src/utils/constants';
 import { FONTS } from '../../src/theme';
+import { AvvisaClasseModal } from '../../src/components/AvvisaClasseModal';
 
 interface WeeklyLesson {
   lesson_id: string;
@@ -136,6 +137,32 @@ export default function AdminScreen() {
   const [addParticipantSearch, setAddParticipantSearch] = useState<string>('');
   const [addParticipantScala, setAddParticipantScala] = useState<boolean>(true);
   const [savingAddParticipant, setSavingAddParticipant] = useState(false);
+
+  // AVVISA CLASSE Modal (WhatsApp)
+  const [avvisaModalVisible, setAvvisaModalVisible] = useState(false);
+  const [avvisaTarget, setAvvisaTarget] = useState<{
+    lesson_id: string;
+    data_lezione: string;
+    tipo: string;
+    orario: string;
+    participants: any[];
+    loading: boolean;
+  } | null>(null);
+
+  const handleOpenAvvisa = async (lesson_id: string, data_lezione: string, tipo: string, orario: string) => {
+    // Formatta data DD/MM/YYYY
+    const [y, m, d] = data_lezione.split('-');
+    const dataFmt = `${d}/${m}/${y}`;
+    setAvvisaTarget({ lesson_id, data_lezione, tipo, orario, participants: [], loading: true });
+    setAvvisaModalVisible(true);
+    try {
+      const res = await apiService.getLessonParticipants(lesson_id, data_lezione);
+      const list = (res.data as any).participants || [];
+      setAvvisaTarget({ lesson_id, data_lezione, tipo, orario, participants: list, loading: false });
+    } catch {
+      setAvvisaTarget({ lesson_id, data_lezione, tipo, orario, participants: [], loading: false });
+    }
+  };
 
   const loadLessonParticipants = async (lesson_id: string, data_lezione: string) => {
     const key = `${data_lezione}-${lesson_id}`;
@@ -1146,6 +1173,17 @@ export default function AdminScreen() {
                                     <Text style={{ color: '#EF4444', fontSize: 12, fontWeight: '600' }}>Annulla</Text>
                                   </TouchableOpacity>
                                 )}
+                                {/* Pulsante AVVISA CLASSE - WhatsApp */}
+                                {!isCancelled && (
+                                  <TouchableOpacity
+                                    testID={`avvisa-classe-${giorno.data}-${lesson.lesson_id}`}
+                                    style={{ backgroundColor: 'rgba(37,211,102,0.12)', borderWidth: 1, borderColor: '#25D366', borderRadius: 8, padding: 8, flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                                    onPress={() => handleOpenAvvisa(lesson.lesson_id, giorno.data, info.nome || lesson.tipo_attivita, lesson.orario)}
+                                  >
+                                    <Ionicons name="logo-whatsapp" size={16} color="#25D366" />
+                                    <Text style={{ color: '#25D366', fontSize: 12, fontWeight: '600' }}>Avvisa</Text>
+                                  </TouchableOpacity>
+                                )}
                               </View>
                               {/* Participants list (expanded) */}
                               {isExpanded && !isCancelled && (
@@ -2125,6 +2163,21 @@ export default function AdminScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* AVVISA CLASSE modal (WhatsApp) */}
+      {avvisaTarget && (
+        <AvvisaClasseModal
+          visible={avvisaModalVisible}
+          onClose={() => setAvvisaModalVisible(false)}
+          participants={avvisaTarget.participants}
+          loading={avvisaTarget.loading}
+          lessonInfo={{
+            tipo: avvisaTarget.tipo,
+            orario: avvisaTarget.orario,
+            data: avvisaTarget.data_lezione.split('-').reverse().join('/'),
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }
