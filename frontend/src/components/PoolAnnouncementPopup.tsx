@@ -1,72 +1,61 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   Modal,
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
-  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../utils/constants';
 import { FONTS } from '../theme';
 
 /**
- * Annuncio lezione spostata in piscina — visibile a TUTTI i clienti
- * fino al deadline. Self-dismissing una volta superata l'ora limite.
+ * Annuncio SPOSTAMENTO lezione di CIRCUITO in piscina — visibile a TUTTI i clienti
+ * ad OGNI apertura app fino al deadline (oggi 22:00 ora locale).
  *
+ * Il popup si ri-apre ad ogni riapertura dell'app (nessuna persistenza dismissione).
  * Per disattivare manualmente: setta ENABLED a false o cambia DEADLINE.
  */
 
-// Deadline: oggi alle 20:00 (ora locale del dispositivo, es. Europe/Rome)
+// Deadline: oggi alle 22:00 (ora locale del dispositivo, es. Europe/Rome)
 const getDeadline = (): Date => {
   const now = new Date();
-  const deadline = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 20, 0, 0);
+  const deadline = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 22, 0, 0);
   return deadline;
 };
 
 const ENABLED = true;
-const STORAGE_KEY_PREFIX = 'acquagym_confirm_dismissed_';
-
-function getTodayKey(): string {
-  const d = new Date();
-  return `${STORAGE_KEY_PREFIX}${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-}
 
 function isStillActive(): boolean {
   return ENABLED && new Date() < getDeadline();
 }
 
-function readDismissed(): boolean {
-  if (Platform.OS !== 'web') return false;
-  try {
-    return window.localStorage.getItem(getTodayKey()) === '1';
-  } catch {
-    return false;
-  }
-}
-
-function writeDismissed() {
-  if (Platform.OS !== 'web') return;
-  try {
-    window.localStorage.setItem(getTodayKey(), '1');
-  } catch {
-    /* noop */
-  }
-}
-
 export const PoolAnnouncementPopup: React.FC = () => {
   const [visible, setVisible] = useState(false);
+  const blinkAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (!isStillActive()) return;
-    if (readDismissed()) return;
-    const t = setTimeout(() => setVisible(true), 1000);
+    const t = setTimeout(() => setVisible(true), 800);
     return () => clearTimeout(t);
   }, []);
 
+  // Blink loop: opacity 1 <-> 0.25 ogni ~500ms
+  useEffect(() => {
+    if (!visible) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(blinkAnim, { toValue: 0.25, duration: 500, useNativeDriver: false }),
+        Animated.timing(blinkAnim, { toValue: 1, duration: 500, useNativeDriver: false }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [visible, blinkAnim]);
+
   const close = () => {
-    writeDismissed();
     setVisible(false);
   };
 
@@ -88,17 +77,34 @@ export const PoolAnnouncementPopup: React.FC = () => {
             </View>
           </View>
 
-          {/* Title */}
-          <Text style={styles.kicker}>LEZIONE CONFERMATA</Text>
-          <Text style={styles.title}>ACQUAGYM CONFERMATA</Text>
+          {/* Titolo lampeggiante */}
+          <Text style={styles.kicker}>AVVISO IMPORTANTE</Text>
+          <Animated.Text style={[styles.title, { opacity: blinkAnim }]}>
+            CIRCUITO IN PISCINA!
+          </Animated.Text>
           <View style={styles.accentBar} />
 
           {/* Messaggio principale */}
           <View style={styles.messageBox}>
-            <Text style={styles.message}>
-              <Text style={styles.bigText}>VI ASPETTO!</Text>
-              {'\n\n'}
-              Ci vediamo in <Text style={styles.bold}>piscina</Text> 🌊💪
+            <Text style={styles.messageIntro}>
+              La lezione di <Text style={styles.hlOrange}>CIRCUITO</Text> di stasera si svolgerà
+            </Text>
+            <Animated.Text style={[styles.bigText, { opacity: blinkAnim }]}>
+              PISCINA DEL CAMPEGGIO
+            </Animated.Text>
+          </View>
+
+          {/* Avviso maltempo */}
+          <View style={styles.warningBox}>
+            <View style={styles.warningRow}>
+              <Ionicons name="rainy-outline" size={18} color="#FFEA00" />
+              <Text style={styles.warningTitle}>ATTENZIONE MALTEMPO</Text>
+            </View>
+            <Text style={styles.warningText}>
+              In caso di cambiamenti per maltempo verranno aggiornati
+              <Text style={styles.warningBold}> qui in app</Text>.
+              {'\n'}
+              <Text style={styles.warningBold}>Controllate sempre l'app prima di venire a lezione</Text>.
             </Text>
           </View>
 
@@ -110,10 +116,15 @@ export const PoolAnnouncementPopup: React.FC = () => {
             style={styles.cta}
           >
             <Ionicons name="checkmark-circle" size={22} color="#000" />
-            <Text style={styles.ctaText}>CI SARÒ!</Text>
+            <Text style={styles.ctaText}>OK, CI SARÒ!</Text>
           </TouchableOpacity>
 
-          <Text style={styles.footer}>Forza ragazzi, si fatica con il sorriso 💙</Text>
+          <Text style={styles.footer}>
+            Grazie 💙{'\n'}
+            <Text style={styles.footerSignature}>
+              Il Maestro di Vita Don Nascimento Daniele{'\n'}DanoFitness23
+            </Text>
+          </Text>
         </View>
       </View>
     </Modal>
@@ -187,11 +198,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: FONTS.headline,
-    fontSize: 28,
-    color: COLORS.text,
+    fontSize: 34,
+    color: '#FF6B00',
     textAlign: 'center',
-    letterSpacing: 1.5,
-    lineHeight: 30,
+    letterSpacing: 2,
+    lineHeight: 38,
+    textShadowColor: 'rgba(255,107,0,0.6)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 12,
   },
   accentBar: {
     width: 50,
@@ -223,12 +237,26 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
   },
   messageBox: {
-    backgroundColor: 'rgba(255,20,147,0.08)',
+    backgroundColor: 'rgba(255,107,0,0.10)',
     borderRadius: 14,
-    padding: 14,
+    padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,20,147,0.25)',
-    marginBottom: 16,
+    borderColor: 'rgba(255,107,0,0.35)',
+    marginBottom: 14,
+    alignItems: 'center',
+  },
+  messageIntro: {
+    fontFamily: FONTS.body,
+    fontSize: 15,
+    color: COLORS.text,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 8,
+  },
+  hlOrange: {
+    fontFamily: FONTS.bodyBlack,
+    color: '#FF6B00',
+    fontStyle: 'italic',
   },
   message: {
     fontFamily: FONTS.body,
@@ -244,9 +272,46 @@ const styles = StyleSheet.create({
   },
   bigText: {
     fontFamily: FONTS.headline,
-    fontSize: 22,
-    color: '#FF1493',
-    letterSpacing: 1,
+    fontSize: 30,
+    color: '#FFEA00',
+    letterSpacing: 1.6,
+    textAlign: 'center',
+    lineHeight: 34,
+    textShadowColor: 'rgba(255,234,0,0.6)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
+  },
+  warningBox: {
+    backgroundColor: 'rgba(255,234,0,0.08)',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,234,0,0.35)',
+    marginBottom: 14,
+  },
+  warningRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+    justifyContent: 'center',
+  },
+  warningTitle: {
+    fontFamily: FONTS.bodyBlack,
+    fontSize: 13,
+    color: '#FFEA00',
+    letterSpacing: 1.4,
+  },
+  warningText: {
+    fontFamily: FONTS.body,
+    fontSize: 13,
+    color: COLORS.text,
+    textAlign: 'center',
+    lineHeight: 19,
+  },
+  warningBold: {
+    fontFamily: FONTS.bodyBlack,
+    color: '#FFEA00',
   },
   cta: {
     flexDirection: 'row',
@@ -273,6 +338,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textSecondary,
     textAlign: 'center',
-    marginTop: 10,
+    marginTop: 12,
+    lineHeight: 18,
+  },
+  footerSignature: {
+    fontFamily: FONTS.bodyBlack,
+    color: '#00C8FF',
+    fontStyle: 'italic',
   },
 });
