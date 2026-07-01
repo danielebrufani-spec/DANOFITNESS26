@@ -73,24 +73,28 @@ export const PoolAnnouncementPopup: React.FC = () => {
           {/* Hero icon */}
           <View style={styles.iconHero}>
             <View style={styles.iconCircle}>
-              <Ionicons name="water" size={48} color="#00C8FF" />
+              <Ionicons name="barbell" size={48} color="#FF6B00" />
             </View>
           </View>
 
           {/* Titolo lampeggiante */}
           <Text style={styles.kicker}>AVVISO IMPORTANTE</Text>
           <Animated.Text style={[styles.title, { opacity: blinkAnim }]}>
-            CIRCUITO IN PISCINA!
+            CIRCUITO IN PALESTRA!
           </Animated.Text>
           <View style={styles.accentBar} />
 
           {/* Messaggio principale */}
           <View style={styles.messageBox}>
             <Text style={styles.messageIntro}>
-              La lezione di <Text style={styles.hlOrange}>CIRCUITO</Text> di stasera si svolgerà
+              La lezione di <Text style={styles.hlOrange}>ACQUAGYM</Text> di stasera è
+              {' '}
+              <Text style={styles.hlCancel}>ANNULLATA</Text>.
+              {'\n\n'}
+              Il <Text style={styles.hlOrange}>CIRCUITO</Text> si svolgerà regolarmente
             </Text>
             <Animated.Text style={[styles.bigText, { opacity: blinkAnim }]}>
-              PISCINA DEL CAMPEGGIO
+              IN PALESTRA
             </Animated.Text>
           </View>
 
@@ -147,11 +151,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: '#00C8FF',
+    borderColor: '#FF6B00',
     padding: 20,
     paddingTop: 24,
     position: 'relative',
-    shadowColor: '#00C8FF',
+    shadowColor: '#FF6B00',
     shadowOpacity: 0.5,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 0 },
@@ -177,12 +181,12 @@ const styles = StyleSheet.create({
     width: 86,
     height: 86,
     borderRadius: 43,
-    backgroundColor: 'rgba(0,200,255,0.12)',
+    backgroundColor: 'rgba(255,107,0,0.12)',
     borderWidth: 3,
-    borderColor: '#00C8FF',
+    borderColor: '#FF6B00',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#00C8FF',
+    shadowColor: '#FF6B00',
     shadowOpacity: 0.6,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 0 },
@@ -257,6 +261,12 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.bodyBlack,
     color: '#FF6B00',
     fontStyle: 'italic',
+  },
+  hlCancel: {
+    fontFamily: FONTS.bodyBlack,
+    color: '#FF4D6D',
+    fontStyle: 'italic',
+    textDecorationLine: 'line-through',
   },
   message: {
     fontFamily: FONTS.body,
