@@ -374,6 +374,34 @@ Quando l'admin archivia un cliente, il cliente all'ingresso vede la schermata "A
 
 **Test:** Verifica e2e tramite Playwright — `wait_for_selector('text=Account Sospeso')` + click testID `archived-reactivate-btn` + selezione `reactivate-option-mensile` → tutti i selector trovati, modal funzionante. TypeScript compile pulito su `profilo.tsx`.
 
+## Pannello Avvisi Popup — Admin Self-Service (2 Luglio 2026)
+Sistema completo per gestire i popup di avviso dall'Admin senza dover richiedere modifiche al codice.
+
+**Backend (`backend/server.py`)**: nuova collezione `admin_announcements` + endpoints:
+- `GET /api/announcements/active` → lista annunci ATTIVI + non scaduti (visibile ad ogni utente loggato non archiviato)
+- `GET /api/admin/announcements` → lista completa (admin)
+- `POST /api/admin/announcements` → crea
+- `PUT /api/admin/announcements/{id}` → modifica (con flag `scadenza_clear` per rimuovere scadenza)
+- `PATCH /api/admin/announcements/{id}/toggle` → attiva/disattiva
+- `DELETE /api/admin/announcements/{id}` → elimina definitivo
+
+**Campi annuncio:** `titolo`, `messaggio`, `colore` (orange/red/yellow/blue/green), `lampeggiante` (bool), `attivo` (bool), `scadenza` (datetime opzionale).
+
+**Frontend:**
+- `src/components/AdminAnnouncementPopup.tsx` — fetcha annunci attivi all'apertura app, mostra i popup **a cascata (uno alla volta)**, con contatore "Avviso X di N". Titolo lampeggiante se abilitato. Pulsante "OK, ho letto" (chiude solo la sessione) + "Non mostrarmi più oggi" (localStorage per ID, reset a mezzanotte).
+- `src/components/AdminAnnouncementsPanel.tsx` — pannello Admin: form completo (titolo/messaggio/scelta colore/switch lampeggiante/switch attivo/scadenza YYYY-MM-DD + HH:MM), lista card con badge stato (ATTIVO/OFF/SCADUTO), azioni per card (Attiva/Disattiva, Modifica, Elimina).
+- Nuova tab "Avvisi" in `app/(tabs)/admin.tsx`.
+- `<AdminAnnouncementPopup />` renderizzato in `app/(tabs)/_layout.tsx` per tutti gli utenti non archiviati.
+
+**Test:** Backend testato end-to-end via curl (create × 2, list active, toggle, delete). Popup client visibile all'apertura app (Playwright: `wait_for_selector('[data-testid^="announcement-popup-"]')` ✅). Pannello Admin caricabile via tab "Avvisi", modal di creazione apribile. TypeScript compile pulito.
+
+**Come si usa (dal telefono di Daniele):**
+1. Admin → tab "Avvisi" → "NUOVO"
+2. Compila titolo, messaggio, sceglie colore, opzionale lampeggio + scadenza
+3. Salva → il popup appare a **tutti** i clienti/istruttori alla prossima apertura app
+4. Per rimuoverlo: Disattiva (rimane in archivio) o Elimina (definitivo)
+
+
 ## Task Pianificati Futuri
 ### P1
 - Sistema Notifiche In-App (icona campanella) per lezioni cancellate, abbonamenti in scadenza, classifica

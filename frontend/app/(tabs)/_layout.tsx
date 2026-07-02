@@ -5,6 +5,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import { COLORS } from '../../src/utils/constants';
 import { apiService } from '../../src/services/api';
 import { EventPopup } from '../../src/components/EventPopup';
+import { AdminAnnouncementPopup } from '../../src/components/AdminAnnouncementPopup';
 import { WelcomeGate } from '../../src/components/WelcomeGate';
 
 export default function TabsLayout() {
@@ -73,6 +74,8 @@ export default function TabsLayout() {
     )}
     {/* Popup evento Mobili Trignani - visibile fino al 13/06/2026 19:00 */}
     {!isArchived && <EventPopup />}
+    {/* Popup Avvisi Admin - configurabili dall'Admin, visibili ad ogni apertura */}
+    {!isArchived && <AdminAnnouncementPopup />}
     <Tabs
       screenOptions={{
         headerShown: false,

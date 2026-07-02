@@ -127,6 +127,29 @@ export interface DailyStats {
   lezioni_scalate: number;
 }
 
+export type AnnouncementColor = 'orange' | 'red' | 'yellow' | 'blue' | 'green';
+
+export interface Announcement {
+  id: string;
+  titolo: string;
+  messaggio: string;
+  colore: AnnouncementColor;
+  lampeggiante: boolean;
+  attivo: boolean;
+  scadenza: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface AnnouncementPayload {
+  titolo: string;
+  messaggio: string;
+  colore: AnnouncementColor;
+  lampeggiante: boolean;
+  attivo: boolean;
+  scadenza?: string | null;
+}
+
 // API functions
 export const apiService = {
   // Lessons
@@ -238,6 +261,14 @@ export const apiService = {
   setMonthlyPrize: (premio_1: string, premio_2: string, premio_3: string) => api.post('/admin/lottery/set-prize', { premio_1, premio_2, premio_3 }),
   publishLottery: (mese: string) => api.post(`/admin/lottery/publish/${mese}`),
   reExtractLottery: (mese: string) => api.post(`/admin/lottery/re-extract/${mese}`),
+
+  // Announcements (popup avvisi admin-configurabili)
+  getActiveAnnouncements: () => api.get<{announcements: Announcement[]}>('/announcements/active'),
+  adminListAnnouncements: () => api.get<{announcements: Announcement[]}>('/admin/announcements'),
+  adminCreateAnnouncement: (data: AnnouncementPayload) => api.post<{announcement: Announcement}>('/admin/announcements', data),
+  adminUpdateAnnouncement: (id: string, data: Partial<AnnouncementPayload> & {scadenza_clear?: boolean}) => api.put<{announcement: Announcement}>(`/admin/announcements/${id}`, data),
+  adminToggleAnnouncement: (id: string) => api.patch<{announcement: Announcement; attivo: boolean}>(`/admin/announcements/${id}/toggle`),
+  adminDeleteAnnouncement: (id: string) => api.delete(`/admin/announcements/${id}`),
 
   // Streak bonus settimanale
   getStreakStatus: () => api.get('/streak/status'),

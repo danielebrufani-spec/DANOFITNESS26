@@ -6766,6 +6766,190 @@ async def admin_get_whatsapp_link(order_id: str, fonte: str = "produttore", admi
     return {"whatsapp_text": "\n".join(righe)}
 
 
+# ==================== ADMIN ANNOUNCEMENTS (POPUP AVVISI) ====================
+
+ANNOUNCEMENT_COLORS = {"orange", "red", "yellow", "blue", "green"}
+
+
+class AnnouncementCreate(BaseModel):
+    titolo: str
+    messaggio: str
+    colore: str = "orange"  # orange | red | yellow | blue | green
+    lampeggiante: bool = False
+    attivo: bool = True
+    scadenza: Optional[datetime] = None  # se None: nessuna scadenza automatica
+
+
+class AnnouncementUpdate(BaseModel):
+    titolo: Optional[str] = None
+    messaggio: Optional[str] = None
+    colore: Optional[str] = None
+    lampeggiante: Optional[bool] = None
+    attivo: Optional[bool] = None
+    scadenza: Optional[datetime] = None
+    scadenza_clear: Optional[bool] = False  # se True rimuove la scadenza
+
+
+def _serialize_announcement(doc: dict) -> dict:
+    """Serializza un doc annuncio per il JSON di risposta."""
+    if not doc:
+        return None
+    scadenza = doc.get("scadenza")
+    return {
+        "id": str(doc.get("_id")),
+        "titolo": doc.get("titolo", ""),
+        "messaggio": doc.get("messaggio", ""),
+        "colore": doc.get("colore", "orange"),
+        "lampeggiante": bool(doc.get("lampeggiante", False)),
+        "attivo": bool(doc.get("attivo", True)),
+        "scadenza": scadenza.isoformat() if isinstance(scadenza, datetime) else None,
+        "created_at": doc.get("created_at").isoformat() if isinstance(doc.get("created_at"), datetime) else None,
+        "updated_at": doc.get("updated_at").isoformat() if isinstance(doc.get("updated_at"), datetime) else None,
+    }
+
+
+@api_router.get("/announcements/active")
+async def list_active_announcements(current_user: dict = Depends(get_current_user)):
+    """Ritorna gli annunci attualmente attivi e non scaduti (endpoint pubblico agli utenti loggati).
+    Ordinati per created_at ASC (i più vecchi appaiono prima nello stack di popup).
+    Utenti archiviati non ricevono annunci.
+    """
+    if current_user.get("archived"):
+        return {"announcements": []}
+    now = now_rome()
+    query = {
+        "attivo": True,
+        "$or": [
+            {"scadenza": None},
+            {"scadenza": {"$exists": False}},
+            {"scadenza": {"$gt": now}},
+        ],
+    }
+    docs = await db.admin_announcements.find(query).sort("created_at", 1).to_list(50)
+    return {"announcements": [_serialize_announcement(d) for d in docs]}
+
+
+@api_router.get("/admin/announcements")
+async def admin_list_announcements(admin_user: dict = Depends(get_admin_user)):
+    """Admin: elenco COMPLETO degli avvisi (attivi + disattivati + scaduti)."""
+    docs = await db.admin_announcements.find({}).sort("created_at", -1).to_list(200)
+    return {"announcements": [_serialize_announcement(d) for d in docs]}
+
+
+@api_router.post("/admin/announcements")
+async def admin_create_announcement(data: AnnouncementCreate, admin_user: dict = Depends(get_admin_user)):
+    """Admin: crea un nuovo avviso popup."""
+    if data.colore not in ANNOUNCEMENT_COLORS:
+        raise HTTPException(status_code=400, detail=f"Colore non valido. Usa: {sorted(ANNOUNCEMENT_COLORS)}")
+    titolo = (data.titolo or "").strip()
+    messaggio = (data.messaggio or "").strip()
+    if not titolo or not messaggio:
+        raise HTTPException(status_code=400, detail="Titolo e messaggio sono obbligatori")
+
+    scadenza = data.scadenza
+    if isinstance(scadenza, datetime) and scadenza.tzinfo is not None:
+        scadenza = scadenza.astimezone(ROME_TZ).replace(tzinfo=None)
+
+    now = now_rome()
+    doc = {
+        "titolo": titolo,
+        "messaggio": messaggio,
+        "colore": data.colore,
+        "lampeggiante": bool(data.lampeggiante),
+        "attivo": bool(data.attivo),
+        "scadenza": scadenza,
+        "created_at": now,
+        "updated_at": now,
+        "created_by": str(admin_user["_id"]),
+    }
+    res = await db.admin_announcements.insert_one(doc)
+    doc["_id"] = res.inserted_id
+    logger.info(f"[ANNOUNCEMENT] Creato annuncio {res.inserted_id} titolo='{titolo}' attivo={doc['attivo']}")
+    return {"announcement": _serialize_announcement(doc)}
+
+
+@api_router.put("/admin/announcements/{announcement_id}")
+async def admin_update_announcement(
+    announcement_id: str,
+    data: AnnouncementUpdate,
+    admin_user: dict = Depends(get_admin_user),
+):
+    """Admin: aggiorna un avviso esistente."""
+    try:
+        oid = ObjectId(announcement_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="ID non valido")
+
+    update: dict = {"updated_at": now_rome()}
+    if data.titolo is not None:
+        t = data.titolo.strip()
+        if not t:
+            raise HTTPException(status_code=400, detail="Titolo non può essere vuoto")
+        update["titolo"] = t
+    if data.messaggio is not None:
+        m = data.messaggio.strip()
+        if not m:
+            raise HTTPException(status_code=400, detail="Messaggio non può essere vuoto")
+        update["messaggio"] = m
+    if data.colore is not None:
+        if data.colore not in ANNOUNCEMENT_COLORS:
+            raise HTTPException(status_code=400, detail=f"Colore non valido. Usa: {sorted(ANNOUNCEMENT_COLORS)}")
+        update["colore"] = data.colore
+    if data.lampeggiante is not None:
+        update["lampeggiante"] = bool(data.lampeggiante)
+    if data.attivo is not None:
+        update["attivo"] = bool(data.attivo)
+    if data.scadenza_clear:
+        update["scadenza"] = None
+    elif data.scadenza is not None:
+        sc = data.scadenza
+        if isinstance(sc, datetime) and sc.tzinfo is not None:
+            sc = sc.astimezone(ROME_TZ).replace(tzinfo=None)
+        update["scadenza"] = sc
+
+    result = await db.admin_announcements.update_one({"_id": oid}, {"$set": update})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Avviso non trovato")
+
+    doc = await db.admin_announcements.find_one({"_id": oid})
+    return {"announcement": _serialize_announcement(doc)}
+
+
+@api_router.patch("/admin/announcements/{announcement_id}/toggle")
+async def admin_toggle_announcement(announcement_id: str, admin_user: dict = Depends(get_admin_user)):
+    """Admin: attiva/disattiva un avviso (toggle)."""
+    try:
+        oid = ObjectId(announcement_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="ID non valido")
+
+    doc = await db.admin_announcements.find_one({"_id": oid})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Avviso non trovato")
+
+    new_val = not bool(doc.get("attivo", True))
+    await db.admin_announcements.update_one(
+        {"_id": oid},
+        {"$set": {"attivo": new_val, "updated_at": now_rome()}},
+    )
+    doc["attivo"] = new_val
+    return {"announcement": _serialize_announcement(doc), "attivo": new_val}
+
+
+@api_router.delete("/admin/announcements/{announcement_id}")
+async def admin_delete_announcement(announcement_id: str, admin_user: dict = Depends(get_admin_user)):
+    """Admin: elimina definitivamente un avviso."""
+    try:
+        oid = ObjectId(announcement_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="ID non valido")
+
+    result = await db.admin_announcements.delete_one({"_id": oid})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Avviso non trovato")
+    return {"message": "Avviso eliminato"}
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
