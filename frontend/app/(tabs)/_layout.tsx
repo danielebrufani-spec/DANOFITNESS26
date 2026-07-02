@@ -5,7 +5,6 @@ import { useAuth } from '../../src/context/AuthContext';
 import { COLORS } from '../../src/utils/constants';
 import { apiService } from '../../src/services/api';
 import { EventPopup } from '../../src/components/EventPopup';
-import { PoolAnnouncementPopup } from '../../src/components/PoolAnnouncementPopup';
 import { WelcomeGate } from '../../src/components/WelcomeGate';
 
 export default function TabsLayout() {
@@ -74,8 +73,6 @@ export default function TabsLayout() {
     )}
     {/* Popup evento Mobili Trignani - visibile fino al 13/06/2026 19:00 */}
     {!isArchived && <EventPopup />}
-    {/* Popup conferma lezione Acquagym - visibile fino alle 20:00 di oggi */}
-    {!isArchived && <PoolAnnouncementPopup />}
     <Tabs
       screenOptions={{
         headerShown: false,
