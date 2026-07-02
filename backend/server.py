@@ -5670,7 +5670,12 @@ class SetPrizeRequest(BaseModel):
 
 @api_router.post("/admin/lottery/set-prize")
 async def set_monthly_prize(data: SetPrizeRequest, admin_user: dict = Depends(get_admin_user)):
-    """Imposta i 3 premi del mese corrente"""
+    """Imposta i 3 premi del mese corrente.
+
+    Se esiste già un'estrazione (bozza o pubblicata) per il mese corrente,
+    aggiorna automaticamente anche i premi mostrati nell'estrazione
+    (winner.premio_1/2/3 + winner.vincitori[i].premio in base alla posizione).
+    """
     now = datetime.now(ROME_TZ)
     current_month = now.strftime("%Y-%m")
     
@@ -5686,9 +5691,36 @@ async def set_monthly_prize(data: SetPrizeRequest, admin_user: dict = Depends(ge
         }},
         upsert=True
     )
-    
+
+    # Sync: se esiste già un'estrazione del mese, aggiornala con i nuovi premi
+    winner_doc = await db.lottery_winners.find_one({"mese": current_month})
+    if winner_doc:
+        premi = [data.premio_1, data.premio_2, data.premio_3]
+        vincitori = winner_doc.get("vincitori", []) or []
+        for v in vincitori:
+            pos_idx = (v.get("posizione") or 1) - 1
+            if 0 <= pos_idx < len(premi):
+                v["premio"] = premi[pos_idx]
+        await db.lottery_winners.update_one(
+            {"mese": current_month},
+            {"$set": {
+                "premio_1": premi[0],
+                "premio_2": premi[1],
+                "premio_3": premi[2],
+                "vincitori": vincitori,
+                "premi_synced_at": now_rome(),
+            }}
+        )
+        logger.info(f"[LOTTERY] Premi sincronizzati anche sull'estrazione {current_month}")
+
     logger.info(f"[LOTTERY] Premi del mese impostati: 1={data.premio_1}, 2={data.premio_2}, 3={data.premio_3}")
-    return {"message": "Premi impostati", "premio_1": data.premio_1, "premio_2": data.premio_2, "premio_3": data.premio_3}
+    return {
+        "message": "Premi impostati",
+        "premio_1": data.premio_1,
+        "premio_2": data.premio_2,
+        "premio_3": data.premio_3,
+        "synced_extraction": winner_doc is not None,
+    }
 
 
 @api_router.get("/lottery/current-prize")
