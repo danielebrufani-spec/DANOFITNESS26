@@ -167,6 +167,20 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="avvisi"
+        options={{
+          title: 'Avvisi',
+          href: (isAdmin && !isArchived) ? '/avvisi' : null,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? 'megaphone' : 'megaphone-outline'}
+              size={size}
+              color={focused ? COLORS.primary : color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="curiosita"
         options={{
           title: 'Curiosità',

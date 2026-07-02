@@ -32,7 +32,6 @@ import {
 } from '../../src/utils/constants';
 import { FONTS } from '../../src/theme';
 import { AvvisaClasseModal } from '../../src/components/AvvisaClasseModal';
-import { AdminAnnouncementsPanel } from '../../src/components/AdminAnnouncementsPanel';
 
 interface WeeklyLesson {
   lesson_id: string;
@@ -64,7 +63,7 @@ interface WeeklyBookings {
 export default function AdminScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'riepilogo' | 'abbonamenti' | 'insoluti' | 'utenti' | 'archiviati' | 'avvisi'>('riepilogo');
+  const [activeTab, setActiveTab] = useState<'riepilogo' | 'abbonamenti' | 'insoluti' | 'utenti' | 'archiviati'>('riepilogo');
   
   const [weeklyBookings, setWeeklyBookings] = useState<WeeklyBookings | null>(null);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -960,15 +959,6 @@ export default function AdminScreen() {
             Archivio
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'avvisi' && styles.tabActive]}
-          onPress={() => setActiveTab('avvisi')}
-          testID="admin-tab-avvisi"
-        >
-          <Text style={[styles.tabText, activeTab === 'avvisi' && styles.tabTextActive]}>
-            Avvisi
-          </Text>
-        </TouchableOpacity>
       </View>
 
       {/* Refresh Button */}
@@ -1598,11 +1588,6 @@ export default function AdminScreen() {
               ))
             )}
           </>
-        )}
-
-        {/* TAB AVVISI - Popup gestibili dall'admin */}
-        {activeTab === 'avvisi' && (
-          <AdminAnnouncementsPanel />
         )}
       </ScrollView>
 

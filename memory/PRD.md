@@ -389,17 +389,19 @@ Sistema completo per gestire i popup di avviso dall'Admin senza dover richiedere
 
 **Frontend:**
 - `src/components/AdminAnnouncementPopup.tsx` — fetcha annunci attivi all'apertura app, mostra i popup **a cascata (uno alla volta)**, con contatore "Avviso X di N". Titolo lampeggiante se abilitato. Pulsante "OK, ho letto" (chiude solo la sessione) + "Non mostrarmi più oggi" (localStorage per ID, reset a mezzanotte).
-- `src/components/AdminAnnouncementsPanel.tsx` — pannello Admin: form completo (titolo/messaggio/scelta colore/switch lampeggiante/switch attivo/scadenza YYYY-MM-DD + HH:MM), lista card con badge stato (ATTIVO/OFF/SCADUTO), azioni per card (Attiva/Disattiva, Modifica, Elimina).
-- Nuova tab "Avvisi" in `app/(tabs)/admin.tsx`.
+- `src/components/AdminAnnouncementsPanel.tsx` — pannello: form completo (titolo/messaggio/scelta colore/switch lampeggiante/switch attivo/scadenza YYYY-MM-DD + HH:MM), lista card con badge stato (ATTIVO/OFF/SCADUTO), azioni per card (Attiva/Disattiva, Modifica, Elimina).
+- Nuova route `app/(tabs)/avvisi.tsx` con header dedicato — la tab compare **in fondo nella barra bottom** con icona 📢 (visibile solo admin, href `null` per gli altri).
 - `<AdminAnnouncementPopup />` renderizzato in `app/(tabs)/_layout.tsx` per tutti gli utenti non archiviati.
 
-**Test:** Backend testato end-to-end via curl (create × 2, list active, toggle, delete). Popup client visibile all'apertura app (Playwright: `wait_for_selector('[data-testid^="announcement-popup-"]')` ✅). Pannello Admin caricabile via tab "Avvisi", modal di creazione apribile. TypeScript compile pulito.
+**Test:** Backend testato end-to-end via curl (create × 2, list active, toggle, delete). Popup client visibile all'apertura app (Playwright: `wait_for_selector('[data-testid^="announcement-popup-"]')` ✅). Route `/avvisi` renderizza correttamente. TypeScript compile pulito.
 
 **Come si usa (dal telefono di Daniele):**
-1. Admin → tab "Avvisi" → "NUOVO"
+1. Tap sulla tab **Avvisi** 📢 nella barra in basso → click **NUOVO**
 2. Compila titolo, messaggio, sceglie colore, opzionale lampeggio + scadenza
 3. Salva → il popup appare a **tutti** i clienti/istruttori alla prossima apertura app
 4. Per rimuoverlo: Disattiva (rimane in archivio) o Elimina (definitivo)
+
+**Aggiornamento (2 Luglio 2026 - richiesto da Daniele):** la voce "Avvisi" è stata **spostata dalla sub-tab interna del pannello Admin alla barra di navigazione in basso** (perché "si leggeva malissimo" tra le altre sub-tab). Ora è una tab dedicata top-level tipo Home/Prenota/Admin, visibile solo per l'admin.
 
 
 ## Task Pianificati Futuri
