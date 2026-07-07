@@ -464,3 +464,43 @@ Frontend: nuovo sotto-modale `SnapshotsModal` in `LessonScheduleManager.tsx` acc
 
 ### P3
 - Modularizzazione server.py (~5400 righe) in router separati
+
+
+## Web Push Notifications (7 Luglio 2026)
+
+**Obiettivo**: notifiche di sistema sul telefono dei clienti **anche ad app chiusa** quando l'admin pubblica un avviso.
+
+### Backend (`server.py` sezione WEB PUSH NOTIFICATIONS)
+- Aggiunta libreria `pywebpush==2.3.0` in requirements.txt.
+- VAPID keys generate una tantum (secp256r1) e salvate in `/app/backend/.env`: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT=mailto:danielebrufani@gmail.com`.
+- Nuova collezione `push_subscriptions` (fields: user_id, endpoint, p256dh, auth, created_at, updated_at).
+- Endpoints:
+  - `GET /api/push/vapid-public-key` (pubblico, no auth) → chiave VAPID per il client
+  - `GET /api/push/status` (auth) → { subscribed, devices }
+  - `POST /api/push/subscribe` (auth) → upsert idempotente per (user_id, endpoint)
+  - `POST /api/push/unsubscribe` (auth) → rimuove sub
+- Helper `send_push_to_all_users(title, body, tag)` → itera su tutte le sub (escluse archiviate), invia webpush, cleanup automatico su 404/410 (subscription scadute).
+- Hook nell'endpoint `POST /admin/announcements` e `PATCH /admin/announcements/{id}/toggle`: se l'annuncio viene creato/riattivato con `attivo=true`, invia push a tutti in tempo reale. Response include `push_stats={sent, failed, expired_cleaned}`.
+
+### Frontend
+- Service worker `/app/frontend/public/sw.js` (già esistente, patchato per `data.tag` dinamico dal backend). Gestisce `push` event (mostra notification con vibrate + sound), `notificationclick` (apre l'app o focus).
+- Nuovo componente `src/components/PushNotificationButton.tsx`:
+  - Detection stabile del support browser via `useState(lazy)` (fix bug iter_15).
+  - Legge `Notification.permission` all'apertura.
+  - Rendering condizionale: `push-btn-unsupported` (no serviceWorker/PushManager), `push-btn-denied` (permission=denied), `push-btn-subscribe` (default, CTA arancione), `push-btn-unsubscribe` (già attivo, verde).
+  - Flow subscribe: `Notification.requestPermission()` → `serviceWorker.register('/sw.js')` → `getVapidPublicKey()` → `pushManager.subscribe({applicationServerKey})` → `pushSubscribe(endpoint+keys)` a backend.
+- Pulsante integrato in `app/(tabs)/altro.tsx` in fondo alla schermata (visibile a tutti gli utenti non archiviati).
+- 4 nuovi metodi `apiService`: `getVapidPublicKey`, `getPushStatus`, `pushSubscribe`, `pushUnsubscribe`.
+
+### Test
+- **Iteration_15**: Backend 100% (10/10 pytest). Frontend bug: pulsante non renderizzato per `checking` gate.
+- **Iteration_16 (retest)**: Frontend 100% dopo fix del gate + stabilizzazione `isSupported`. Card `push-btn-denied` visibile in chromium headless (permission=denied by default), tutte le grid altro-card restano visibili sopra.
+
+### Limitazioni note
+- iOS Safari richiede che l'app sia stata **"aggiunta a Home"** dal browser prima di poter ricevere push (iOS 16.4+). Il messaggio nel card `push-btn-unsupported` guida l'utente.
+- Broadcast attualmente sincrono all'interno della create/toggle announcement handler. Con centinaia di subscriber sarà da spostare in `BackgroundTasks`. Cap 5000 sub per broadcast.
+
+### Come si usa (Daniele)
+1. Ogni cliente apre l'app → tab **Altro** → in fondo trova il pulsante arancione **"ATTIVA NOTIFICHE PUSH"** → tap → il browser chiede il permesso → conferma.
+2. D'ora in avanti, ogni volta che Daniele pubblica un nuovo annuncio dalla tab **Avvisi**, quel cliente riceve una notifica di sistema sul telefono (con suono) anche se l'app è chiusa.
+3. Per disattivare: tap sul pulsante verde "NOTIFICHE ATTIVE ✓".
