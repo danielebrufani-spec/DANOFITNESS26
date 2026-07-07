@@ -524,3 +524,23 @@ Frontend: nuovo sotto-modale `SnapshotsModal` in `LessonScheduleManager.tsx` acc
 - Client nuovissimo → NO popup, WelcomeGate col suo pulsante push (refactor intatto). ✓
 - Nota headless: `Notification.permission` è 'denied' di default in chromium headless → testato con override init-script a 'default'.
 - Nota ambiente: dopo la creazione dei nuovi file Metro serviva un bundle stale → risolto con `supervisorctl restart frontend`.
+
+## Debug: popup non appare in produzione (7 Luglio 2026, sera)
+
+**Segnalazione utente**: dopo "Save to Github", aprendo un profilo vecchio su Android/PC il popup notifiche non appare.
+
+### Diagnosi (verificata con curl sul live)
+- Frontend Vercel (danofitness23.vercel.app): AGGIORNATO ✓ (il bundle `entry-83da404e...js` contiene `push-optin-popup`).
+- Backend Render (https://diobestia.onrender.com): **VECCHIO** ✗ — `/api/push/status` → 404, `/api/push/vapid-public-key` → `{"publicKey":"temp"}` (stub legacy pre-13:06 del 7/7).
+- Il popup chiama `GET /push/status` prima di mostrarsi → 404 → catch silenzioso → popup nascosto. Comportamento coerente col codice.
+- Causa: il deploy Render non è partito/è fallito dopo il push. In più su Render MANCANO le env `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (sono solo nel .env locale, gitignorato).
+
+### Fix applicati in preview
+- Rimossi endpoint push LEGACY duplicati in `server.py` (ex righe 4608-4638: GET vapid con `publicKey`, POST subscribe su `users.push_subscription`, DELETE unsubscribe). Restano solo i nuovi (righe ~1144-1195, collection `push_subscriptions`). Endpoint expo-token e helper legacy `send_push_notification` intatti (usati in 5 punti).
+- Sanity check preview: vapid-public-key restituisce `public_key` corretto, push/status 200 con auth. ✓
+
+### Azioni RICHIESTE ALL'UTENTE su Render (dashboard servizio "diobestia")
+1. Environment → aggiungere: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (valori nel .env backend locale).
+2. Manual Deploy → "Deploy latest commit" (o verificare perché l'auto-deploy è fallito negli Events).
+3. Verifica: https://diobestia.onrender.com/api/push/vapid-public-key deve rispondere `{"public_key":"BEWmP8..."}` e NON `{"publicKey":"temp"}`.
+4. Nuovo "Save to Github" per portare online anche la pulizia dei duplicati.

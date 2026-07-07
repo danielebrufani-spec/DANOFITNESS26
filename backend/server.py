@@ -4604,38 +4604,9 @@ async def delete_message(message_id: str, admin_user: dict = Depends(get_admin_u
     return {"message": "Messaggio eliminato"}
 
 # ======================== PUSH NOTIFICATIONS ========================
-
-@api_router.get("/push/vapid-public-key")
-async def get_vapid_public_key():
-    """Get the VAPID public key for push subscription"""
-    return {"publicKey": VAPID_PUBLIC_KEY}
-
-@api_router.post("/push/subscribe")
-async def subscribe_push(subscription: PushSubscription, current_user: dict = Depends(get_current_user)):
-    """Save push subscription for user"""
-    user_id = current_user["_id"]
-    
-    # Save subscription to database
-    await db.users.update_one(
-        {"_id": user_id},
-        {"$set": {"push_subscription": subscription.dict()}}
-    )
-    
-    logger.info(f"[PUSH] User {user_id} subscribed to push notifications")
-    return {"message": "Iscrizione alle notifiche push completata"}
-
-@api_router.delete("/push/unsubscribe")
-async def unsubscribe_push(current_user: dict = Depends(get_current_user)):
-    """Remove push subscription for user"""
-    user_id = current_user["_id"]
-    
-    await db.users.update_one(
-        {"_id": user_id},
-        {"$unset": {"push_subscription": ""}}
-    )
-    
-    logger.info(f"[PUSH] User {user_id} unsubscribed from push notifications")
-    return {"message": "Disiscrizione dalle notifiche push completata"}
+# NOTA: gli endpoint web push attivi (/push/vapid-public-key, /push/subscribe,
+# /push/unsubscribe, /push/status) sono definiti nella sezione
+# "WEB PUSH NOTIFICATIONS" più in alto (collection push_subscriptions).
 
 # Expo Push Token endpoints
 class ExpoPushTokenRequest(BaseModel):
