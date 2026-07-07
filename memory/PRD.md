@@ -427,6 +427,29 @@ Nuova tab dedicata `📅 Orari` (icona calendar) nella barra bottom, visibile so
 4. **Modifica/Elimina** dalla card della singola lezione.
 
 
+## Duplica Settimana + Notifiche Sonore (7 Luglio 2026)
+
+### Duplica Settimana (Backup/Restore Orario)
+Nuova collezione `schedule_snapshots` con endpoints admin CRUD:
+- `POST /api/admin/schedule-snapshots` → crea snapshot dell'orario corrente (nome opzionale, default "Backup DD/MM/YYYY HH:MM")
+- `GET /api/admin/schedule-snapshots` → lista (proiezione senza campo pesante `lessons`)
+- `POST /api/admin/schedule-snapshots/{id}/restore` → delete tutte le lezioni correnti + insert dallo snapshot + cache invalidation
+- `DELETE /api/admin/schedule-snapshots/{id}` → elimina snapshot
+- Cap alzato a 2000 lezioni per sicurezza future.
+
+Frontend: nuovo sotto-modale `SnapshotsModal` in `LessonScheduleManager.tsx` accessibile via pulsante "Duplica Settimana" nel pannello Orari. UI: form nome + salva + lista backup con azioni Ripristina/Elimina. Confirm dialog al restore (avviso di sostituzione totale).
+
+### Notifiche Sonore + Badge Tab Avvisi
+- **Web Audio API ding** (`src/utils/notificationSound.ts`): 2 note (C6 + G5 con 80ms delay) per un effetto campanella. Cross-browser, senza asset esterni. No-op su native.
+- **`AdminAnnouncementPopup`** ora suona il ding UNA volta per ogni avviso nuovo mai visto. Traccia gli ID in localStorage key `announce_sounds_played` (permanente, cap 500 ID). Non risuona su riaperture app.
+- **Badge tab Avvisi** in `_layout.tsx`: state `activeAnnouncementCount` con polling 60s. Se N > 0 mostra pallino rosso con numero sul tab 📢.
+
+### Test (iteration_14.json)
+- Backend 100% — 13/13 pytest passati (auth gating, CRUD, list projection, restore E2E preserva giorno/orario/tipo/coach, error handling 400/404).
+- Frontend 100% — pulsante Duplica Settimana visibile, modale creazione OK, restore/delete verificati. Ding: localStorage popolato al primo popup, NON re-fired al reload. Badge Avvisi: numero corretto nel bottom bar.
+- Test file: `/app/backend/tests/test_schedule_snapshots.py`.
+
+
 
 ## Task Pianificati Futuri
 ### P1

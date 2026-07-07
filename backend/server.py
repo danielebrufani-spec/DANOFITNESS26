@@ -1074,7 +1074,7 @@ async def create_schedule_snapshot(data: ScheduleSnapshotCreate, admin_user: dic
     now = now_rome()
     nome = (data.nome or "").strip() or f"Backup {now.strftime('%d/%m/%Y %H:%M')}"
 
-    lessons_cursor = await db.lessons.find({}).to_list(200)
+    lessons_cursor = await db.lessons.find({}).to_list(2000)
     lessons_data = []
     for l in lessons_cursor:
         lessons_data.append({
