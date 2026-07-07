@@ -37,6 +37,18 @@ export const ATTIVITA_INFO: { [key: string]: { nome: string; icona: string; colo
     colore: '#00B0FF',
     image: 'https://images.unsplash.com/photo-1590915202637-31dbc5528371'
   },
+  'acquapower': {
+    nome: 'AcquaPower',
+    icona: 'pool',
+    colore: '#00C8FF',
+    image: 'https://images.unsplash.com/photo-1560089000-7433a4ebbd64'
+  },
+  'acquagag': {
+    nome: 'AcquaGag',
+    icona: 'pool',
+    colore: '#00E5FF',
+    image: 'https://images.unsplash.com/photo-1560089000-7433a4ebbd64'
+  },
 };
 
 // Subscription type display
