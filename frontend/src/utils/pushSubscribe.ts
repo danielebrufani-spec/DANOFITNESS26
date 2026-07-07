@@ -3,7 +3,7 @@ import { apiService } from '../services/api';
 
 /**
  * Logica condivisa per l'attivazione delle Web Push Notifications.
- * Usata da PushNotificationButton (profilo/welcome gate) e PushOptInPopup (popup all'accesso).
+ * Usata da PushNotificationButton (tab Altro / welcome gate).
  */
 
 export function isPushSupported(): boolean {

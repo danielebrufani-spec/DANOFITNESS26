@@ -561,3 +561,10 @@ Frontend: nuovo sotto-modale `SnapshotsModal` in `LessonScheduleManager.tsx` acc
 - Testato: env="temp" → chiave vera; env mancante → chiave vera; env custom → rispettata. Endpoint preview OK.
 - NOTA: dopo il prossimo Save to Github, Render risponderà con la chiave vera SENZA toccare le env. Se in futuro si ruotano le chiavi, basta settare le env su Render (hanno precedenza, tranne "temp").
 - NOTA BROWSER: l'utente usa Brave su Android → per ricevere push serve attivare "Usa i servizi Google per la messaggistica push" in brave://settings/privacy (di default è OFF su Brave).
+
+## RIMOZIONE Popup Opt-in Notifiche (7 Lug 2026, sera - richiesta utente)
+- Utente: "togli le notifiche danno problemi" → rimosso il popup opt-in all'accesso.
+- Eliminato `src/components/PushOptInPopup.tsx`; rimossi import+mount da `app/(tabs)/_layout.tsx`; aggiornato commento in `pushSubscribe.ts`.
+- RESTA ATTIVO: tutto il sistema web push (backend + service worker + pulsante "ATTIVA NOTIFICHE PUSH" nel tab Altro e nel WelcomeGate + fallback chiavi VAPID in server.py). Solo il popup automatico è stato tolto.
+- Verificato con screenshot: login admin → nessun popup, dashboard OK.
+- Se in futuro l'utente rivuole il popup: recuperabile da git history (commit del 7/7 pomeriggio, componente PushOptInPopup).
