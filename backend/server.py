@@ -781,6 +781,270 @@ async def get_lessons_by_day(giorno: str, current_user: dict = Depends(get_curre
         ) for lesson in lessons
     ]
 
+
+# ==================== ATTIVITÀ (activities) ====================
+VALID_DAYS = {"lunedi", "martedi", "mercoledi", "giovedi", "venerdi", "sabato", "domenica"}
+DEFAULT_ACTIVITIES = [
+    {"key": "circuito",   "nome": "Circuito",           "colore": "#FF4500", "icona": "refresh",         "is_default": True},
+    {"key": "funzionale", "nome": "Workout Funzionale", "colore": "#FF6B00", "icona": "fitness-center",  "is_default": True},
+    {"key": "pilates",    "nome": "Pilates",            "colore": "#00E676", "icona": "self-improvement","is_default": True},
+    {"key": "yoga",       "nome": "Yoga",               "colore": "#00B0FF", "icona": "spa",             "is_default": True},
+    {"key": "acquapower", "nome": "AcquaPower",         "colore": "#00C8FF", "icona": "pool",            "is_default": True},
+    {"key": "acquagag",   "nome": "AcquaGag",           "colore": "#00E5FF", "icona": "pool",            "is_default": True},
+]
+
+
+class ActivityCreate(BaseModel):
+    key: str  # slug lowercase, unique
+    nome: str
+    colore: str = "#FF6B00"
+    icona: str = "fitness-center"
+
+
+class ActivityUpdate(BaseModel):
+    nome: Optional[str] = None
+    colore: Optional[str] = None
+    icona: Optional[str] = None
+
+
+def _slugify_activity_key(s: str) -> str:
+    return "".join(c for c in s.strip().lower() if c.isalnum() or c == "_").strip("_")
+
+
+def _serialize_activity(doc: dict) -> dict:
+    return {
+        "id": str(doc.get("_id")),
+        "key": doc.get("key"),
+        "nome": doc.get("nome"),
+        "colore": doc.get("colore"),
+        "icona": doc.get("icona"),
+        "is_default": bool(doc.get("is_default", False)),
+    }
+
+
+@api_router.get("/activities")
+async def list_activities(current_user: dict = Depends(get_current_user)):
+    """Elenco attività disponibili (per dropdown / display nomi)."""
+    docs = await db.activities.find({}).sort("nome", 1).to_list(200)
+    return {"activities": [_serialize_activity(d) for d in docs]}
+
+
+@api_router.post("/admin/activities")
+async def admin_create_activity(data: ActivityCreate, admin_user: dict = Depends(get_admin_user)):
+    key = _slugify_activity_key(data.key or data.nome)
+    if not key:
+        raise HTTPException(status_code=400, detail="La chiave attività non può essere vuota")
+    nome = (data.nome or "").strip()
+    if not nome:
+        raise HTTPException(status_code=400, detail="Il nome è obbligatorio")
+
+    exists = await db.activities.find_one({"key": key})
+    if exists:
+        raise HTTPException(status_code=400, detail=f"Un'attività con chiave '{key}' esiste già")
+
+    doc = {
+        "key": key,
+        "nome": nome,
+        "colore": (data.colore or "#FF6B00").strip(),
+        "icona": (data.icona or "fitness-center").strip(),
+        "is_default": False,
+        "created_at": now_rome(),
+    }
+    res = await db.activities.insert_one(doc)
+    doc["_id"] = res.inserted_id
+    logger.info(f"[ACTIVITY] Creata attività '{nome}' (key={key})")
+    return {"activity": _serialize_activity(doc)}
+
+
+@api_router.put("/admin/activities/{activity_id}")
+async def admin_update_activity(activity_id: str, data: ActivityUpdate, admin_user: dict = Depends(get_admin_user)):
+    try:
+        oid = ObjectId(activity_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="ID non valido")
+
+    update = {}
+    if data.nome is not None:
+        n = data.nome.strip()
+        if not n:
+            raise HTTPException(status_code=400, detail="Nome non può essere vuoto")
+        update["nome"] = n
+    if data.colore is not None:
+        update["colore"] = data.colore.strip()
+    if data.icona is not None:
+        update["icona"] = data.icona.strip()
+
+    result = await db.activities.update_one({"_id": oid}, {"$set": update})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Attività non trovata")
+
+    doc = await db.activities.find_one({"_id": oid})
+    return {"activity": _serialize_activity(doc)}
+
+
+@api_router.delete("/admin/activities/{activity_id}")
+async def admin_delete_activity(activity_id: str, admin_user: dict = Depends(get_admin_user)):
+    try:
+        oid = ObjectId(activity_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="ID non valido")
+
+    doc = await db.activities.find_one({"_id": oid})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Attività non trovata")
+
+    # Blocca eliminazione se ancora usata da lezioni
+    used = await db.lessons.count_documents({"tipo_attivita": doc.get("key")})
+    if used > 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Impossibile eliminare: l'attività è usata da {used} lezione/i. Prima cambia o elimina quelle lezioni.",
+        )
+    await db.activities.delete_one({"_id": oid})
+    return {"message": "Attività eliminata"}
+
+
+# ==================== ADMIN LESSONS CRUD ====================
+class LessonCreate(BaseModel):
+    giorno: str
+    orario: str
+    tipo_attivita: str
+    descrizione: Optional[str] = None
+    coach: str = "Daniele"
+
+
+class LessonUpdate(BaseModel):
+    giorno: Optional[str] = None
+    orario: Optional[str] = None
+    tipo_attivita: Optional[str] = None
+    descrizione: Optional[str] = None
+    coach: Optional[str] = None
+
+
+def _validate_lesson_fields(giorno: Optional[str], orario: Optional[str], tipo_attivita: Optional[str]):
+    if giorno is not None:
+        if giorno.lower() not in VALID_DAYS:
+            raise HTTPException(status_code=400, detail=f"Giorno non valido. Usa: {sorted(VALID_DAYS)}")
+    if orario is not None:
+        import re
+        if not re.match(r"^\d{2}:\d{2}$", orario or ""):
+            raise HTTPException(status_code=400, detail="Orario formato non valido (HH:MM)")
+
+
+async def _tipo_attivita_exists(key: str) -> bool:
+    """Verifica se la key attività esiste tra le attività registrate (case-insensitive)."""
+    doc = await db.activities.find_one({"key": key.lower()})
+    return doc is not None
+
+
+@api_router.post("/admin/lessons")
+async def admin_create_lesson(data: LessonCreate, admin_user: dict = Depends(get_admin_user)):
+    _validate_lesson_fields(data.giorno, data.orario, data.tipo_attivita)
+    tipo = _slugify_activity_key(data.tipo_attivita)
+    if not await _tipo_attivita_exists(tipo):
+        raise HTTPException(status_code=400, detail=f"Attività '{tipo}' non esiste. Creala prima da 'Gestisci attività'.")
+
+    # Blocca duplicati (stesso giorno + stesso orario)
+    dup = await db.lessons.find_one({"giorno": data.giorno.lower(), "orario": data.orario})
+    if dup:
+        raise HTTPException(status_code=400, detail="Esiste già una lezione in questo giorno/orario")
+
+    doc = {
+        "giorno": data.giorno.lower(),
+        "orario": data.orario,
+        "tipo_attivita": tipo,
+        "descrizione": (data.descrizione or "").strip() or None,
+        "coach": (data.coach or "Daniele").strip(),
+    }
+    res = await db.lessons.insert_one(doc)
+    doc["_id"] = res.inserted_id
+    cache.invalidate("all_lessons")
+    logger.info(f"[LESSON] Creata lezione {data.giorno} {data.orario} {tipo}/{doc['coach']}")
+    return {
+        "lesson": {
+            "id": str(doc["_id"]),
+            "giorno": doc["giorno"],
+            "orario": doc["orario"],
+            "tipo_attivita": doc["tipo_attivita"],
+            "descrizione": doc.get("descrizione"),
+            "coach": doc["coach"],
+        }
+    }
+
+
+@api_router.put("/admin/lessons/{lesson_id}")
+async def admin_update_lesson(lesson_id: str, data: LessonUpdate, admin_user: dict = Depends(get_admin_user)):
+    try:
+        oid = ObjectId(lesson_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="ID non valido")
+
+    doc = await db.lessons.find_one({"_id": oid})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Lezione non trovata")
+
+    _validate_lesson_fields(data.giorno, data.orario, data.tipo_attivita)
+
+    update = {}
+    new_giorno = data.giorno.lower() if data.giorno else doc["giorno"]
+    new_orario = data.orario if data.orario else doc["orario"]
+    if data.giorno is not None:
+        update["giorno"] = new_giorno
+    if data.orario is not None:
+        update["orario"] = new_orario
+    if data.tipo_attivita is not None:
+        tipo = _slugify_activity_key(data.tipo_attivita)
+        if not await _tipo_attivita_exists(tipo):
+            raise HTTPException(status_code=400, detail=f"Attività '{tipo}' non esiste. Creala prima da 'Gestisci attività'.")
+        update["tipo_attivita"] = tipo
+    if data.descrizione is not None:
+        update["descrizione"] = (data.descrizione or "").strip() or None
+    if data.coach is not None:
+        c = (data.coach or "").strip()
+        if not c:
+            raise HTTPException(status_code=400, detail="Coach non può essere vuoto")
+        update["coach"] = c
+
+    # Check duplicati se cambiano giorno/orario
+    if data.giorno is not None or data.orario is not None:
+        dup = await db.lessons.find_one({
+            "giorno": new_giorno,
+            "orario": new_orario,
+            "_id": {"$ne": oid},
+        })
+        if dup:
+            raise HTTPException(status_code=400, detail="Esiste già un'altra lezione in questo giorno/orario")
+
+    if update:
+        await db.lessons.update_one({"_id": oid}, {"$set": update})
+    cache.invalidate("all_lessons")
+
+    updated = await db.lessons.find_one({"_id": oid})
+    return {
+        "lesson": {
+            "id": str(updated["_id"]),
+            "giorno": updated["giorno"],
+            "orario": updated["orario"],
+            "tipo_attivita": updated["tipo_attivita"],
+            "descrizione": updated.get("descrizione"),
+            "coach": updated.get("coach", "Daniele"),
+        }
+    }
+
+
+@api_router.delete("/admin/lessons/{lesson_id}")
+async def admin_delete_lesson(lesson_id: str, admin_user: dict = Depends(get_admin_user)):
+    try:
+        oid = ObjectId(lesson_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="ID non valido")
+    res = await db.lessons.delete_one({"_id": oid})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Lezione non trovata")
+    cache.invalidate("all_lessons")
+    return {"message": "Lezione eliminata"}
+
+
 # ======================== SUBSCRIPTIONS ROUTES ========================
 
 @api_router.post("/subscriptions", response_model=SubscriptionResponse)
@@ -7019,6 +7283,25 @@ async def startup_event():
         await db.cancelled_lessons.create_index([("lesson_id", 1), ("data_lezione", 1)], unique=True)
     except Exception:
         pass
+
+    # Seed automatico attività di default (se collezione vuota)
+    try:
+        count_activities = await db.activities.count_documents({})
+        if count_activities == 0:
+            await db.activities.insert_many([
+                {**a, "created_at": now_rome()} for a in DEFAULT_ACTIVITIES
+            ])
+            logger.info(f"[SEED-ACTIVITIES] Inserite {len(DEFAULT_ACTIVITIES)} attività di default")
+        else:
+            # Assicurati che tutte le default esistano (idempotente, no duplicati)
+            for a in DEFAULT_ACTIVITIES:
+                await db.activities.update_one(
+                    {"key": a["key"]},
+                    {"$setOnInsert": {**a, "created_at": now_rome()}},
+                    upsert=True,
+                )
+    except Exception as e:
+        logger.warning(f"[SEED-ACTIVITIES] {e}")
 
     # Auto-migration: orario estivo martedì/giovedì 18:30 con nuove attività ACQUA
     # (Martedì ACQUAPOWER con Daniele, Giovedì ACQUAGAG con Davide)

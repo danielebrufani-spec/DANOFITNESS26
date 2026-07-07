@@ -1,0 +1,24 @@
+{
+  "summary": "Full end-to-end testing of the new 'Orari & Lezioni' admin management panel (backend CRUD activities+lessons + frontend LessonScheduleManager). Backend: 6/6 pytest tests passed covering default activities seed, activity CRUD + duplicate/in-use guards, lesson CRUD + validation (day/time/activity), duplicate detection, cache invalidation, admin auth gating. Frontend: admin login OK, 'Orari' tab visible in bottom bar, /orari route loads with header, 7 days list, existing lessons rendered with proper activity names (AcquaGag, AcquaPower, Workout Funzionale, Circuito) and Modifica/Elimina buttons; NUOVA LEZIONE modal opens with all form fields; created a sabato 23:55 pilates lesson successfully and list auto-refreshed. Cleanup done via API.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_schedule_management.py",
+    "/app/test_reports/pytest/schedule_management.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py is now 7630+ lines — consider modularizing (activities/lessons routes into separate router modules) before file becomes unmaintainable.",
+    "In LessonScheduleManager.deleteLesson: the web-path uses window.confirm inline but the branch logic is confusing (line 146 short-circuits then reaches line 153 again). Works but hard to read; consider unifying.",
+    "cache.invalidate('all_lessons') is called on create/update lesson but NOT visible in delete_lesson (line 1035+ not viewed). Worth double-checking during future iteration.",
+    "Non blocking: the /api/activities endpoint requires auth (get_current_user) so any logged-in user can list activities — this is fine (used for display), but confirm this is intentional if activities key names are considered sensitive."
+  ],
+  "updated_files": ["/app/backend/tests/test_schedule_management.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "Admin: danielebrufani@gmail.com / Mariavittoria23 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Tests self-cleanup all TEST_ prefixed / test_* activities and lessons. A stray sabato 23:55 lesson created via UI test was also cleaned up post-test via API.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "The 4 PROVE ATTIVATE / 10 NUOVI ISCRITTI admin modals can be dismissed reliably by clicking the 'OK, VISTO!' / OK / Chiudi / Fantastico buttons in a loop after login — see test script pattern. All Orari feature testIDs are stable: schedule-add-lesson, schedule-manage-activities, schedule-add-<giorno>, lesson-card-<id>, lesson-edit-<id>, lesson-delete-<id>, lesson-form-day-<giorno>, lesson-form-orario, lesson-form-tipo-<key>, lesson-form-coach, lesson-form-desc, lesson-form-save, activity-form-nome, activity-color-<hex>, activity-form-save, activity-row-<key>, activity-delete-<key>, orari-no-access.",
+  "rca of the issue": "N/A — no issues found. Feature implementation is functional end-to-end."
+}

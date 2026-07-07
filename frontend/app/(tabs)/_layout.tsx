@@ -181,6 +181,20 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="orari"
+        options={{
+          title: 'Orari',
+          href: (isAdmin && !isArchived) ? '/orari' : null,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? 'calendar' : 'calendar-outline'}
+              size={size}
+              color={focused ? COLORS.primary : color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="curiosita"
         options={{
           title: 'Curiosità',

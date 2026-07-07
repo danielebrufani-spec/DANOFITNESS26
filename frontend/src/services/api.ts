@@ -28,6 +28,7 @@ export interface Lesson {
   orario: string;
   tipo_attivita: string;
   descrizione?: string;
+  coach?: string;
 }
 
 export interface Subscription {
@@ -56,6 +57,7 @@ export interface Booking {
     giorno: string;
     orario: string;
     tipo_attivita: string;
+    coach?: string;
   };
   data_lezione: string;
   abbonamento_scaduto: boolean;
@@ -148,6 +150,30 @@ export interface AnnouncementPayload {
   lampeggiante: boolean;
   attivo: boolean;
   scadenza?: string | null;
+}
+
+export interface Activity {
+  id: string;
+  key: string;
+  nome: string;
+  colore: string;
+  icona: string;
+  is_default: boolean;
+}
+
+export interface ActivityPayload {
+  key: string;
+  nome: string;
+  colore?: string;
+  icona?: string;
+}
+
+export interface LessonPayload {
+  giorno: string;   // 'lunedi'|'martedi'|...
+  orario: string;   // 'HH:MM'
+  tipo_attivita: string;  // activity key
+  descrizione?: string;
+  coach: string;
 }
 
 // API functions
@@ -269,6 +295,17 @@ export const apiService = {
   adminUpdateAnnouncement: (id: string, data: Partial<AnnouncementPayload> & {scadenza_clear?: boolean}) => api.put<{announcement: Announcement}>(`/admin/announcements/${id}`, data),
   adminToggleAnnouncement: (id: string) => api.patch<{announcement: Announcement; attivo: boolean}>(`/admin/announcements/${id}/toggle`),
   adminDeleteAnnouncement: (id: string) => api.delete(`/admin/announcements/${id}`),
+
+  // Activities (gestione tipi attività)
+  listActivities: () => api.get<{activities: Activity[]}>('/activities'),
+  adminCreateActivity: (data: ActivityPayload) => api.post<{activity: Activity}>('/admin/activities', data),
+  adminUpdateActivity: (id: string, data: Partial<ActivityPayload>) => api.put<{activity: Activity}>(`/admin/activities/${id}`, data),
+  adminDeleteActivity: (id: string) => api.delete(`/admin/activities/${id}`),
+
+  // Admin Lessons CRUD (gestione orario settimanale)
+  adminCreateLesson: (data: LessonPayload) => api.post<{lesson: Lesson}>('/admin/lessons', data),
+  adminUpdateLesson: (id: string, data: Partial<LessonPayload>) => api.put<{lesson: Lesson}>(`/admin/lessons/${id}`, data),
+  adminDeleteLesson: (id: string) => api.delete(`/admin/lessons/${id}`),
 
   // Streak bonus settimanale
   getStreakStatus: () => api.get('/streak/status'),
