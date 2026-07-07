@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import { StyleSheet, Platform, Modal, View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
@@ -13,8 +13,26 @@ export default function TabsLayout() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [saving, setSaving] = useState(false);
+  const [activeAnnouncementCount, setActiveAnnouncementCount] = useState<number>(0);
 
   const isArchived = user?.archived === true;
+
+  // Fetch numero avvisi attivi (per il badge sul tab Avvisi - solo admin)
+  useEffect(() => {
+    if (!isAdmin || isArchived) return;
+    let cancelled = false;
+    const fetchCount = async () => {
+      try {
+        const res = await apiService.getActiveAnnouncements();
+        if (!cancelled) setActiveAnnouncementCount(res.data.announcements?.length || 0);
+      } catch {
+        /* noop */
+      }
+    };
+    fetchCount();
+    const timer = setInterval(fetchCount, 60000); // refresh ogni 60s
+    return () => { cancelled = true; clearInterval(timer); };
+  }, [isAdmin, isArchived]);
 
   const handleChangePassword = async () => {
     if (newPassword.length < 6) {
@@ -171,6 +189,8 @@ export default function TabsLayout() {
         options={{
           title: 'Avvisi',
           href: (isAdmin && !isArchived) ? '/avvisi' : null,
+          tabBarBadge: activeAnnouncementCount > 0 ? activeAnnouncementCount : undefined,
+          tabBarBadgeStyle: { backgroundColor: '#FF4D6D', color: '#fff', fontSize: 11, minWidth: 18, height: 18 },
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? 'megaphone' : 'megaphone-outline'}

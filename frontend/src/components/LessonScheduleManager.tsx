@@ -5,7 +5,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../utils/constants';
 import { FONTS } from '../theme';
-import { apiService, Activity, Lesson } from '../services/api';
+import { apiService, Activity, Lesson, ScheduleSnapshot } from '../services/api';
 
 /**
  * Pannello Admin per gestire l'orario settimanale.
@@ -41,6 +41,7 @@ export const LessonScheduleManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showLessonModal, setShowLessonModal] = useState(false);
   const [showActivitiesModal, setShowActivitiesModal] = useState(false);
+  const [showSnapshotsModal, setShowSnapshotsModal] = useState(false);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
 
   // Lesson form state
@@ -182,7 +183,16 @@ export const LessonScheduleManager: React.FC = () => {
           testID="schedule-manage-activities"
         >
           <Ionicons name="pricetags-outline" size={18} color={COLORS.text} />
-          <Text style={styles.actionsBtnSecondaryText}>Gestisci Attività</Text>
+          <Text style={styles.actionsBtnSecondaryText}>Attività</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.actionsBtnSecondary}
+          onPress={() => setShowSnapshotsModal(true)}
+          activeOpacity={0.85}
+          testID="schedule-manage-snapshots"
+        >
+          <Ionicons name="copy-outline" size={18} color={COLORS.text} />
+          <Text style={styles.actionsBtnSecondaryText}>Duplica Settimana</Text>
         </TouchableOpacity>
       </View>
 
@@ -378,6 +388,13 @@ export const LessonScheduleManager: React.FC = () => {
         activities={activities}
         onChanged={load}
       />
+
+      {/* Modal Duplica Settimana (Snapshots) */}
+      <SnapshotsModal
+        visible={showSnapshotsModal}
+        onClose={() => setShowSnapshotsModal(false)}
+        onRestored={load}
+      />
     </View>
   );
 };
@@ -511,6 +528,181 @@ const ActivitiesModal: React.FC<ActivitiesModalProps> = ({ visible, onClose, act
 
 
 export default LessonScheduleManager;
+
+
+// ================== Sotto-modale per gestire i backup dell'orario (Duplica Settimana) ==================
+interface SnapshotsModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onRestored: () => Promise<void>;
+}
+
+const SnapshotsModal: React.FC<SnapshotsModalProps> = ({ visible, onClose, onRestored }) => {
+  const [snapshots, setSnapshots] = useState<ScheduleSnapshot[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState('');
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      const res = await apiService.listScheduleSnapshots();
+      setSnapshots(res.data.snapshots || []);
+    } catch {
+      /* ignore */
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (visible) load();
+  }, [visible]);
+
+  const createSnapshot = async () => {
+    try {
+      setCreating(true);
+      await apiService.createScheduleSnapshot(newName.trim() || undefined);
+      setNewName('');
+      await load();
+    } catch (e: any) {
+      alertFn('Errore', e?.response?.data?.detail || 'Errore creazione backup');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const doRestore = async (s: ScheduleSnapshot) => {
+    try {
+      const res = await apiService.restoreScheduleSnapshot(s.id);
+      await onRestored();
+      onClose();
+      alertFn('Ripristinato', `Orario ripristinato con ${res.data.lessons_restored} lezioni da "${s.nome}"`);
+    } catch (e: any) {
+      alertFn('Errore', e?.response?.data?.detail || 'Errore ripristino');
+    }
+  };
+
+  const confirmRestore = (s: ScheduleSnapshot) => {
+    const msg = `Ripristinare l'orario dallo snapshot "${s.nome}" (${s.lessons_count} lezioni)?\n\nATTENZIONE: le lezioni correnti verranno SOSTITUITE.`;
+    if (Platform.OS === 'web') {
+      if (window.confirm(msg)) doRestore(s);
+      return;
+    }
+    Alert.alert('Ripristina Backup', msg, [
+      { text: 'Annulla', style: 'cancel' },
+      { text: 'Ripristina', style: 'destructive', onPress: () => doRestore(s) },
+    ]);
+  };
+
+  const doDelete = async (s: ScheduleSnapshot) => {
+    try {
+      await apiService.deleteScheduleSnapshot(s.id);
+      await load();
+    } catch (e: any) {
+      alertFn('Errore', e?.response?.data?.detail || 'Errore eliminazione');
+    }
+  };
+
+  const confirmDelete = (s: ScheduleSnapshot) => {
+    const msg = `Eliminare il backup "${s.nome}"?`;
+    if (Platform.OS === 'web') {
+      if (window.confirm(msg)) doDelete(s);
+      return;
+    }
+    Alert.alert('Elimina Backup', msg, [
+      { text: 'Annulla', style: 'cancel' },
+      { text: 'Elimina', style: 'destructive', onPress: () => doDelete(s) },
+    ]);
+  };
+
+  const formatDate = (iso: string | null): string => {
+    if (!iso) return '';
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    } catch { return ''; }
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalCard}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Duplica / Ripristina Settimana</Text>
+            <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="close" size={24} color={COLORS.text} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 500 }}>
+            <Text style={styles.helper}>
+              Salva un backup dell'orario attuale, così puoi sperimentare cambi (es. orario estivo/invernale) e ripristinare in un click se qualcosa non funziona.
+            </Text>
+
+            <Text style={styles.label}>Nome nuovo backup (opzionale)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Es. Orario Invernale 2026"
+              placeholderTextColor={COLORS.textSecondary}
+              value={newName}
+              onChangeText={setNewName}
+              maxLength={80}
+              testID="snapshot-input-name"
+            />
+            <TouchableOpacity
+              onPress={createSnapshot}
+              disabled={creating}
+              style={[styles.smallSaveBtn, creating && { opacity: 0.5 }]}
+              activeOpacity={0.85}
+              testID="snapshot-create-btn"
+            >
+              <Ionicons name="save-outline" size={16} color="#000" />
+              <Text style={styles.smallSaveBtnText}>{creating ? 'Salvataggio…' : 'SALVA BACKUP ORARIO ATTUALE'}</Text>
+            </TouchableOpacity>
+
+            <View style={styles.divider} />
+
+            <Text style={styles.label}>Backup salvati ({snapshots.length})</Text>
+            {loading ? (
+              <Text style={styles.helper}>Caricamento…</Text>
+            ) : snapshots.length === 0 ? (
+              <Text style={styles.helper}>Nessun backup ancora salvato.</Text>
+            ) : (
+              snapshots.map((s) => (
+                <View key={s.id} style={styles.snapshotRow} testID={`snapshot-row-${s.id}`}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.snapshotName} numberOfLines={1}>{s.nome}</Text>
+                    <Text style={styles.snapshotMeta}>
+                      {s.lessons_count} lezioni · {formatDate(s.created_at)}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => confirmRestore(s)}
+                    style={[styles.snapBtn, styles.snapBtnRestore]}
+                    activeOpacity={0.85}
+                    testID={`snapshot-restore-${s.id}`}
+                  >
+                    <Ionicons name="download-outline" size={14} color="#fff" />
+                    <Text style={styles.snapBtnText}>Ripristina</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => confirmDelete(s)}
+                    style={[styles.snapBtn, styles.snapBtnDelete]}
+                    activeOpacity={0.85}
+                    testID={`snapshot-delete-${s.id}`}
+                  >
+                    <Ionicons name="trash-outline" size={14} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+              ))
+            )}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+};
 
 const styles = StyleSheet.create({
   container: { paddingVertical: 8 },
@@ -778,4 +970,26 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   activityDelete: { padding: 4 },
+  // Snapshots
+  snapshotRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  snapshotName: { fontFamily: FONTS.bodyBlack, fontSize: 14, color: COLORS.text },
+  snapshotMeta: { fontFamily: FONTS.body, fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
+  snapBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  snapBtnRestore: { backgroundColor: '#00A852' },
+  snapBtnDelete: { backgroundColor: '#B00020' },
+  snapBtnText: { fontFamily: FONTS.bodyBlack, fontSize: 11, color: '#fff', letterSpacing: 0.5 },
 });

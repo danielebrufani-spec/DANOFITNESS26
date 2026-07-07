@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../utils/constants';
 import { FONTS } from '../theme';
 import { apiService, Announcement, AnnouncementColor } from '../services/api';
+import { playNotificationDing } from '../utils/notificationSound';
 
 /**
  * Popup avvisi configurati dall'Admin.
@@ -20,11 +21,13 @@ import { apiService, Announcement, AnnouncementColor } from '../services/api';
  * - Mostra i popup a cascata (uno alla volta)
  * - "Chiudi" chiude il singolo popup nella sessione corrente
  * - "Non mostrarmi più oggi" salva in localStorage (reset a mezzanotte)
+ * - Suona un "ding" UNA volta per ogni nuovo avviso mai visto prima (tracked in localStorage)
  * - Skippa avvisi archiviati (backend già filtra), scaduti (backend già filtra),
  *   e quelli che l'utente ha dismissato oggi.
  */
 
 const STORAGE_KEY_PREFIX = 'announce_hidden_today_';
+const STORAGE_KEY_SOUNDED = 'announce_sounds_played';
 
 function todayKey(): string {
   const d = new Date();
@@ -40,6 +43,29 @@ function readHiddenToday(): Set<string> {
     return new Set(Array.isArray(arr) ? arr : []);
   } catch {
     return new Set();
+  }
+}
+
+function readSounded(): Set<string> {
+  if (Platform.OS !== 'web') return new Set();
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY_SOUNDED);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function writeSounded(ids: string[]) {
+  if (Platform.OS !== 'web') return;
+  try {
+    // Keep at most last 500 IDs to avoid storage bloat
+    const trimmed = ids.slice(-500);
+    window.localStorage.setItem(STORAGE_KEY_SOUNDED, JSON.stringify(trimmed));
+  } catch {
+    /* noop */
   }
 }
 
@@ -87,6 +113,17 @@ export const AdminAnnouncementPopup: React.FC = () => {
         const items = (res.data.announcements || []).filter(a => !hidden.has(a.id));
         setQueue(items);
         setIndex(0);
+
+        // Suona il ding UNA volta per ogni nuovo avviso mai visto prima
+        if (items.length > 0) {
+          const sounded = readSounded();
+          const newOnes = items.filter(a => !sounded.has(a.id));
+          if (newOnes.length > 0) {
+            playNotificationDing();
+            const merged = Array.from(new Set([...sounded, ...newOnes.map(a => a.id)]));
+            writeSounded(merged);
+          }
+        }
       } catch {
         // se l'utente non è loggato o rete KO, semplicemente non mostriamo nulla
       }

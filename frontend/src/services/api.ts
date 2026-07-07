@@ -176,6 +176,13 @@ export interface LessonPayload {
   coach: string;
 }
 
+export interface ScheduleSnapshot {
+  id: string;
+  nome: string;
+  lessons_count: number;
+  created_at: string | null;
+}
+
 // API functions
 export const apiService = {
   // Lessons
@@ -306,6 +313,12 @@ export const apiService = {
   adminCreateLesson: (data: LessonPayload) => api.post<{lesson: Lesson}>('/admin/lessons', data),
   adminUpdateLesson: (id: string, data: Partial<LessonPayload>) => api.put<{lesson: Lesson}>(`/admin/lessons/${id}`, data),
   adminDeleteLesson: (id: string) => api.delete(`/admin/lessons/${id}`),
+
+  // Schedule Snapshots (backup/duplica settimana)
+  listScheduleSnapshots: () => api.get<{snapshots: ScheduleSnapshot[]}>('/admin/schedule-snapshots'),
+  createScheduleSnapshot: (nome?: string) => api.post<{snapshot: ScheduleSnapshot}>('/admin/schedule-snapshots', { nome }),
+  restoreScheduleSnapshot: (id: string) => api.post<{message: string; lessons_restored: number}>(`/admin/schedule-snapshots/${id}/restore`),
+  deleteScheduleSnapshot: (id: string) => api.delete(`/admin/schedule-snapshots/${id}`),
 
   // Streak bonus settimanale
   getStreakStatus: () => api.get('/streak/status'),

@@ -1,0 +1,27 @@
+{
+  "summary": "Full end-to-end testing of the two new features: (1) SCHEDULE SNAPSHOTS (Duplica Settimana) backend + frontend, and (2) NOTIFICATION SOUNDS + Avvisi tab BADGE. Backend: 13/13 pytest tests passed (auth gating on all 4 endpoints for anon + non-admin client, CRUD create/list/delete with default & custom name, list projection excludes 'lessons' field + descending order, restore E2E: 11 lessons -> delete 1 -> restore -> verify 11 lessons back with all (giorno/orario/tipo_attivita/coach) keys preserved, 400 bad id, 404 not found). Frontend: after supervisor restart the LessonScheduleManager rendered the third 'Duplica Settimana' button with testID schedule-manage-snapshots correctly; opened sub-modal with snapshot-input-name + snapshot-create-btn; created a snapshot from UI -> list refreshed with snapshot-row-*, snapshot-delete-*, snapshot-restore-* buttons visible. Notification sound: created a test announcement via API, then opened the app with empty localStorage -> popup with TEST_notif shown AND localStorage 'announce_sounds_played' populated with the announcement ID [\"6a4cf1fa9762c90828f69244\"]. Avvisi tab bottom-bar badge showed the numeric '1' as expected. Reloaded page a second time: popup shown again but 'announce_sounds_played' remained identical (ding NOT re-fired), as designed.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_schedule_snapshots.py",
+    "/app/test_reports/pytest/schedule_snapshots.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py continues to grow (now ~7724 lines including new snapshot section + announcements). Splitting into router modules (admin_schedule_router, admin_announcements_router, etc.) is increasingly important for maintainability.",
+    "Snapshot lessons cap: create_schedule_snapshot uses db.lessons.find({}).to_list(200). If schedule ever grows beyond 200 lessons, snapshot will silently truncate. Consider explicit unbounded or a much higher cap with logging.",
+    "list_schedule_snapshots returns max 100 snapshots (to_list(100)). Since snapshots are user-managed and can accumulate over time, consider adding pagination or a soft cap warning in the UI.",
+    "The 'ding' sound relies on Web Audio API on web only (Platform.OS !== 'web' is a noop) — mobile native users won't hear it. Not blocking but worth documenting for Daniele.",
+    "AnnouncementColor validation is case-sensitive (only 'blue/green/orange/red/yellow' accepted, not 'blu'). The AdminAnnouncementPopup UI presumably already enforces this, but any external API consumer could easily 400 out."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_schedule_snapshots.py"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "Admin: danielebrufani@gmail.com / Mariavittoria23 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "During UI test created one snapshot 'TEST_ui_pw_final' and one announcement 'TEST_notif' -> both deleted at end. Pytest suite auto-cleans TEST_-prefixed snapshots via fixture teardown.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Frontend service required a supervisor restart to pick up the latest LessonScheduleManager.tsx changes on first testing pass — data-testid schedule-manage-snapshots was initially absent from the DOM even though the source contained it. After 'sudo supervisorctl restart frontend' + waiting ~10s for Metro to re-bundle, everything rendered correctly. If a similar 'testid missing' anomaly appears in future iterations, restart frontend and retry before assuming a code bug. Also: the persistent admin popups '4 PROVE ATTIVATE' / '10 NUOVI ISCRITTI' can be bypassed by pressing Escape (not just clicking OK, VISTO! which re-triggers them). Announcements POST requires 'colore' in [blue|green|orange|red|yellow] (not italian 'blu').",
+  "rca of the issue": "N/A — no issues. Both features are functional end-to-end."
+}

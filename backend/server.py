@@ -1045,6 +1045,100 @@ async def admin_delete_lesson(lesson_id: str, admin_user: dict = Depends(get_adm
     return {"message": "Lezione eliminata"}
 
 
+# ==================== SCHEDULE SNAPSHOTS (Duplica/Backup Settimana) ====================
+class ScheduleSnapshotCreate(BaseModel):
+    nome: Optional[str] = None
+
+
+def _serialize_snapshot(doc: dict) -> dict:
+    if not doc:
+        return None
+    return {
+        "id": str(doc.get("_id")),
+        "nome": doc.get("nome", ""),
+        "lessons_count": int(doc.get("lessons_count", 0)),
+        "created_at": doc.get("created_at").isoformat() if isinstance(doc.get("created_at"), datetime) else None,
+    }
+
+
+@api_router.get("/admin/schedule-snapshots")
+async def list_schedule_snapshots(admin_user: dict = Depends(get_admin_user)):
+    """Elenco backup dell'orario settimanale (senza dettagli lezioni per essere leggero)."""
+    docs = await db.schedule_snapshots.find({}, {"lessons": 0}).sort("created_at", -1).to_list(100)
+    return {"snapshots": [_serialize_snapshot(d) for d in docs]}
+
+
+@api_router.post("/admin/schedule-snapshots")
+async def create_schedule_snapshot(data: ScheduleSnapshotCreate, admin_user: dict = Depends(get_admin_user)):
+    """Crea un backup dell'orario settimanale corrente (snapshot)."""
+    now = now_rome()
+    nome = (data.nome or "").strip() or f"Backup {now.strftime('%d/%m/%Y %H:%M')}"
+
+    lessons_cursor = await db.lessons.find({}).to_list(200)
+    lessons_data = []
+    for l in lessons_cursor:
+        lessons_data.append({
+            "giorno": l.get("giorno"),
+            "orario": l.get("orario"),
+            "tipo_attivita": l.get("tipo_attivita"),
+            "descrizione": l.get("descrizione"),
+            "coach": l.get("coach", "Daniele"),
+        })
+
+    doc = {
+        "nome": nome,
+        "lessons_count": len(lessons_data),
+        "lessons": lessons_data,
+        "created_at": now,
+        "created_by": str(admin_user["_id"]),
+    }
+    res = await db.schedule_snapshots.insert_one(doc)
+    doc["_id"] = res.inserted_id
+    logger.info(f"[SNAPSHOT] Creato snapshot '{nome}' con {len(lessons_data)} lezioni")
+    return {"snapshot": _serialize_snapshot(doc)}
+
+
+@api_router.post("/admin/schedule-snapshots/{snapshot_id}/restore")
+async def restore_schedule_snapshot(snapshot_id: str, admin_user: dict = Depends(get_admin_user)):
+    """Ripristina l'orario a partire da uno snapshot (sostituisce completamente le lezioni correnti)."""
+    try:
+        oid = ObjectId(snapshot_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="ID non valido")
+
+    doc = await db.schedule_snapshots.find_one({"_id": oid})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Snapshot non trovato")
+
+    lessons = doc.get("lessons", []) or []
+
+    # Delete current lessons + insert snapshot
+    await db.lessons.delete_many({})
+    if lessons:
+        await db.lessons.insert_many([{
+            "giorno": l.get("giorno"),
+            "orario": l.get("orario"),
+            "tipo_attivita": l.get("tipo_attivita"),
+            "descrizione": l.get("descrizione"),
+            "coach": l.get("coach", "Daniele"),
+        } for l in lessons])
+    cache.invalidate("all_lessons")
+    logger.info(f"[SNAPSHOT] Ripristinato snapshot '{doc.get('nome')}' ({len(lessons)} lezioni)")
+    return {"message": "Orario ripristinato", "lessons_restored": len(lessons)}
+
+
+@api_router.delete("/admin/schedule-snapshots/{snapshot_id}")
+async def delete_schedule_snapshot(snapshot_id: str, admin_user: dict = Depends(get_admin_user)):
+    try:
+        oid = ObjectId(snapshot_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="ID non valido")
+    res = await db.schedule_snapshots.delete_one({"_id": oid})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Snapshot non trovato")
+    return {"message": "Snapshot eliminato"}
+
+
 # ======================== SUBSCRIPTIONS ROUTES ========================
 
 @api_router.post("/subscriptions", response_model=SubscriptionResponse)
