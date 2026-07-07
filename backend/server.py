@@ -483,11 +483,11 @@ SCHEDULE = [
     {"giorno": "lunedi", "orario": "08:30", "tipo_attivita": ActivityType.CIRCUITO, "descrizione": "Allenamento a stazioni per resistenza, forza e velocità", "coach": "Daniele"},
     {"giorno": "lunedi", "orario": "20:30", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Daniele"},
     {"giorno": "martedi", "orario": "13:15", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Fabio"},
-    {"giorno": "martedi", "orario": "17:30", "tipo_attivita": ActivityType.CIRCUITO, "descrizione": "Allenamento a stazioni per resistenza, forza e velocità", "coach": "Daniele"},
+    {"giorno": "martedi", "orario": "18:30", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Davide"},
     {"giorno": "mercoledi", "orario": "08:30", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Daniele"},
     {"giorno": "mercoledi", "orario": "20:30", "tipo_attivita": ActivityType.CIRCUITO, "descrizione": "Allenamento a stazioni per resistenza, forza e velocità", "coach": "Daniele"},
     {"giorno": "giovedi", "orario": "13:15", "tipo_attivita": ActivityType.CIRCUITO, "descrizione": "Allenamento a stazioni per resistenza, forza e velocità", "coach": "Daniele"},
-    {"giorno": "giovedi", "orario": "17:30", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Daniele"},
+    {"giorno": "giovedi", "orario": "18:30", "tipo_attivita": ActivityType.CIRCUITO, "descrizione": "Allenamento a stazioni per resistenza, forza e velocità", "coach": "Daniele"},
     {"giorno": "venerdi", "orario": "08:30", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Fabio"},
     {"giorno": "venerdi", "orario": "20:15", "tipo_attivita": ActivityType.FUNZIONALE, "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Daniele"},
     {"giorno": "sabato", "orario": "13:30", "tipo_attivita": ActivityType.YOGA, "descrizione": "Disciplina che unisce respiro, movimento e meditazione", "coach": "Costanza"},
@@ -7018,6 +7018,48 @@ async def startup_event():
     except Exception:
         pass
 
+    # Auto-migration: switch orari estivi martedì/giovedì 17:30 → 18:30 + inversione attività/coach
+    # (Introduzione istruttore Davide sul martedì funzionale, giovedì torna al circuito con Daniele)
+    # Idempotente: se già in 18:30 non fa nulla.
+    try:
+        # Rimuove le vecchie lezioni invernali 17:30 se esistono ancora
+        old_removed = await db.lessons.delete_many({
+            "giorno": {"$in": ["martedi", "giovedi"]},
+            "orario": "17:30",
+        })
+        if old_removed.deleted_count > 0:
+            logger.info(f"[MIGRATION-ORARIO-ESTIVO] Rimosse {old_removed.deleted_count} lezioni invernali 17:30 (martedì/giovedì)")
+
+        # Upsert nuove lezioni estive 18:30 con inversione attività + istruttori
+        r1 = await db.lessons.update_one(
+            {"giorno": "martedi", "orario": "18:30"},
+            {"$set": {
+                "giorno": "martedi",
+                "orario": "18:30",
+                "tipo_attivita": "funzionale",
+                "descrizione": "Allenamento di gruppo con metodologia Tabata",
+                "coach": "Davide",
+            }},
+            upsert=True,
+        )
+        r2 = await db.lessons.update_one(
+            {"giorno": "giovedi", "orario": "18:30"},
+            {"$set": {
+                "giorno": "giovedi",
+                "orario": "18:30",
+                "tipo_attivita": "circuito",
+                "descrizione": "Allenamento a stazioni per resistenza, forza e velocità",
+                "coach": "Daniele",
+            }},
+            upsert=True,
+        )
+        if r1.upserted_id or r2.upserted_id or old_removed.deleted_count > 0:
+            logger.info("[MIGRATION-ORARIO-ESTIVO] Orario estivo 18:30 applicato: martedì FUNZIONALE/Davide, giovedì CIRCUITO/Daniele")
+        # Invalidate lessons cache
+        cache.invalidate("all_lessons")
+    except Exception as e:
+        logger.warning(f"[MIGRATION-ORARIO-ESTIVO] {e}")
+
     # Auto-fix migration: ripara le subscriptions self_activated col bug (manca attivo / datetime str)
     # Idempotente: aggiorna solo i record davvero rotti
     try:
@@ -7282,11 +7324,11 @@ async def import_lessons():
         {"giorno": "lunedi", "orario": "08:30", "tipo_attivita": "circuito", "descrizione": "Allenamento a stazioni per resistenza, forza e velocità", "coach": "Daniele"},
         {"giorno": "lunedi", "orario": "20:30", "tipo_attivita": "funzionale", "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Daniele"},
         {"giorno": "martedi", "orario": "13:15", "tipo_attivita": "funzionale", "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Fabio"},
-        {"giorno": "martedi", "orario": "17:30", "tipo_attivita": "circuito", "descrizione": "Allenamento a stazioni per resistenza, forza e velocità", "coach": "Daniele"},
+        {"giorno": "martedi", "orario": "18:30", "tipo_attivita": "funzionale", "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Davide"},
         {"giorno": "mercoledi", "orario": "08:30", "tipo_attivita": "funzionale", "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Daniele"},
         {"giorno": "mercoledi", "orario": "20:30", "tipo_attivita": "circuito", "descrizione": "Allenamento a stazioni per resistenza, forza e velocità", "coach": "Daniele"},
         {"giorno": "giovedi", "orario": "13:15", "tipo_attivita": "circuito", "descrizione": "Allenamento a stazioni per resistenza, forza e velocità", "coach": "Daniele"},
-        {"giorno": "giovedi", "orario": "17:30", "tipo_attivita": "funzionale", "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Daniele"},
+        {"giorno": "giovedi", "orario": "18:30", "tipo_attivita": "circuito", "descrizione": "Allenamento a stazioni per resistenza, forza e velocità", "coach": "Daniele"},
         {"giorno": "venerdi", "orario": "08:30", "tipo_attivita": "funzionale", "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Fabio"},
         {"giorno": "venerdi", "orario": "20:15", "tipo_attivita": "funzionale", "descrizione": "Allenamento di gruppo con metodologia Tabata", "coach": "Daniele"},
         {"giorno": "sabato", "orario": "13:30", "tipo_attivita": "yoga", "descrizione": "Disciplina che unisce respiro, movimento e meditazione", "coach": "Costanza"},
