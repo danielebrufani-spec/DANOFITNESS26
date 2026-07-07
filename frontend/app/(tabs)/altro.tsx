@@ -15,6 +15,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import { COLORS } from '../../src/utils/constants';
 import { FONTS } from '../../src/theme';
 import { SummerSilhouettes } from '../../src/components/SummerSilhouettes';
+import { PushNotificationButton } from '../../src/components/PushNotificationButton';
 
 type Section = {
   key: string;
@@ -170,6 +171,13 @@ export default function AltroScreen() {
             />
           ))}
         </View>
+
+        {/* Push Notifications activation (visibile a tutti gli utenti loggati) */}
+        {!isArchived && (
+          <View style={{ paddingHorizontal: 4, marginTop: 12 }}>
+            <PushNotificationButton />
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

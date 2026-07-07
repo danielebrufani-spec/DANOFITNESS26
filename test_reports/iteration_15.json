@@ -1,0 +1,45 @@
+{
+  "summary": "Backend Web Push suite fully passing (10/10 pytest). Frontend PushNotificationButton NOT rendering on Altro tab despite import + usage in altro.tsx and no JS errors — no push-btn-* testID, no 'Notifiche' text in DOM after login as admin (archived=false) via both tab navigation and direct /altro URL.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "PushNotificationButton (/app/frontend/src/components/PushNotificationButton.tsx)",
+        "issue": "Component does NOT render anywhere on the Altro tab. None of testIDs push-btn-subscribe / push-btn-unsubscribe / push-btn-denied / push-btn-unsupported appear in DOM. No 'ATTIVA NOTIFICHE PUSH', 'Notifiche bloccate', or 'Notifiche non supportate' text found. Verified with (1) admin login (archived=false) via tab click AND (2) direct URL navigation to /altro. Total testIDs on Altro = only the 6 grid cards (altro-card-*). No JS errors in console (only style deprecation warnings). Bundle rebuilds fresh (touched altro.tsx). Browser APIs are all available (serviceWorker+PushManager+Notification present, permission='denied'), so the expected fallback should be push-btn-denied card.",
+        "selector": "[data-testid=\"push-btn-subscribe\"] | [data-testid=\"push-btn-denied\"] | text=Notifiche",
+        "priority": "HIGH"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_web_push.py",
+    "/app/test_reports/pytest/web_push_results.xml"
+  ],
+  "action_items": [
+    "Investigate why PushNotificationButton component does not mount in Altro screen. Suggested checks: (a) add a top-level console.log inside PushNotificationButton to see if it renders at all, (b) verify /app/frontend/src/context/AuthContext exports user with archived===false (confirmed via localStorage: archived:false), (c) check if some ErrorBoundary catches a silent error (the `apiService.getPushStatus()` call succeeds from the browser: 200 {\"subscribed\":false,\"devices\":0}), (d) check that Metro isn't serving a stale bundle for this route (a hard restart of the frontend supervisor may be needed if hot reload didn't pick up the new component file — try `sudo supervisorctl restart frontend`), (e) verify /app/frontend/src/services/api.ts export path is consistent with the import in PushNotificationButton (`from '../services/api'`)."
+  ],
+  "critical_code_review_comments": [
+    "server.py: send_push_to_all_users uses .to_list(5000) — cap is documented, but for growing user bases (>5k subs) the loop silently drops the rest. Consider paginating or using a background job (Celery).",
+    "server.py: cleanup only removes subs on 404/410. Other failures (403 auth revoked, 400) are counted as `failed` but never cleaned; if a large fraction goes bad it can slow down every announcement send. Add a longer-term staleness cleanup.",
+    "The push broadcast is fully synchronous inside the create_announcement/toggle handler; with hundreds of subscribers a 10s timeout per call could exceed HTTP request limits. Should be dispatched as a background task (FastAPI BackgroundTasks or asyncio.create_task).",
+    "PushNotificationButton.tsx: `subscribed` UI state does not sync back to Notification.permission changes if user revokes permission from browser settings; consider a periodic re-check or a visibilitychange listener."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_web_push.py"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "0% (button not rendering)"
+  },
+  "test_credentials": "Admin danielebrufani@gmail.com / Mariavittoria23 (from /app/memory/test_credentials.md). testclient_kpi@test.com is stuck on a mandatory '7 giorni di prova' activation gate — cannot access tabs until activated; use admin for UI checks or activate the trial for the test client.",
+  "seed_data_creation": "None persisted (all test announcements and push subscriptions cleaned up in teardown).",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend endpoints fully covered in /app/backend/tests/test_web_push.py (10 tests, all green). Frontend blocker: PushNotificationButton absent from DOM on Altro. Backend API /api/push/status returned 200 from within the browser after admin login, so it's a pure frontend rendering bug. When retesting after fix, jump straight to admin login + click 'Altro' tab and look for [data-testid='push-btn-denied'] (chromium headless has Notification.permission='denied' by default) or push-btn-subscribe if permission is 'default'.",
+  "rca of the issue": "Symptom: PushNotificationButton mounts nowhere on Altro. Reproduction: login as admin danielebrufani@gmail.com → click Altro tab (or navigate to /altro) → scroll to bottom → no push button. Verified: (1) file imported correctly at altro.tsx L18, used at L178 within `!isArchived && <View><PushNotificationButton /></View>`; (2) user.archived === false (from localStorage user object); (3) no JS runtime errors; (4) apiService.getPushStatus() succeeds from browser console with 200 body {subscribed:false,devices:0}; (5) Notification API + serviceWorker + PushManager all present in Playwright chromium (Notification.permission === 'denied' → should trigger push-btn-denied render path). Suspected root cause: silent bundle issue OR the useEffect / apiService import path being resolved to an undefined at build-time. Recommend main agent add a debug console.log('[PushBtn] render', {isSupported, checking, permission}) at the top of PushNotificationButton and reload to isolate whether the component function is called at all."
+}

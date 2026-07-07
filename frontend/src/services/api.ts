@@ -320,6 +320,12 @@ export const apiService = {
   restoreScheduleSnapshot: (id: string) => api.post<{message: string; lessons_restored: number}>(`/admin/schedule-snapshots/${id}/restore`),
   deleteScheduleSnapshot: (id: string) => api.delete(`/admin/schedule-snapshots/${id}`),
 
+  // Push Notifications (Web Push)
+  getVapidPublicKey: () => api.get<{public_key: string}>('/push/vapid-public-key'),
+  getPushStatus: () => api.get<{subscribed: boolean; devices: number}>('/push/status'),
+  pushSubscribe: (data: {endpoint: string; keys: {p256dh: string; auth: string}}) => api.post<{message: string}>('/push/subscribe', data),
+  pushUnsubscribe: (data: {endpoint: string; keys: {p256dh: string; auth: string}}) => api.post<{message: string; removed: number}>('/push/unsubscribe', data),
+
   // Streak bonus settimanale
   getStreakStatus: () => api.get('/streak/status'),
 

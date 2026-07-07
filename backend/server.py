@@ -22,6 +22,7 @@ import random
 import time
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from quiz_domande import QUIZ_PER_CATEGORIA, CATEGORIE_INFO, CATEGORIE
+from pywebpush import webpush, WebPushException
 
 
 # ======================== IN-MEMORY CACHE ========================
@@ -1137,6 +1138,123 @@ async def delete_schedule_snapshot(snapshot_id: str, admin_user: dict = Depends(
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Snapshot non trovato")
     return {"message": "Snapshot eliminato"}
+
+
+# ==================== WEB PUSH NOTIFICATIONS ====================
+VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
+VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
+VAPID_SUBJECT = os.environ.get("VAPID_SUBJECT", "mailto:admin@danofitness.com")
+
+
+class PushSubscribeRequest(BaseModel):
+    endpoint: str
+    keys: dict  # {"p256dh": "...", "auth": "..."}
+
+
+@api_router.get("/push/vapid-public-key")
+async def get_vapid_public_key():
+    """Espone la chiave pubblica VAPID al client (necessaria per registrare la subscription)."""
+    return {"public_key": VAPID_PUBLIC_KEY}
+
+
+@api_router.post("/push/subscribe")
+async def push_subscribe(data: PushSubscribeRequest, current_user: dict = Depends(get_current_user)):
+    """Registra la push subscription di un utente. Idempotente (upsert per endpoint+user)."""
+    if not data.endpoint or not data.keys or "p256dh" not in data.keys or "auth" not in data.keys:
+        raise HTTPException(status_code=400, detail="Subscription non valida (endpoint/keys mancanti)")
+
+    user_id = str(current_user["_id"])
+    await db.push_subscriptions.update_one(
+        {"user_id": user_id, "endpoint": data.endpoint},
+        {"$set": {
+            "user_id": user_id,
+            "endpoint": data.endpoint,
+            "p256dh": data.keys["p256dh"],
+            "auth": data.keys["auth"],
+            "updated_at": now_rome(),
+        }, "$setOnInsert": {"created_at": now_rome()}},
+        upsert=True,
+    )
+    logger.info(f"[PUSH] Subscription registrata per user {user_id}")
+    return {"message": "Push subscription registrata"}
+
+
+@api_router.post("/push/unsubscribe")
+async def push_unsubscribe(data: PushSubscribeRequest, current_user: dict = Depends(get_current_user)):
+    """Rimuove la push subscription di un utente."""
+    user_id = str(current_user["_id"])
+    res = await db.push_subscriptions.delete_one({"user_id": user_id, "endpoint": data.endpoint})
+    return {"message": "Subscription rimossa", "removed": res.deleted_count}
+
+
+@api_router.get("/push/status")
+async def push_status(current_user: dict = Depends(get_current_user)):
+    """Verifica se l'utente ha almeno una subscription attiva."""
+    user_id = str(current_user["_id"])
+    count = await db.push_subscriptions.count_documents({"user_id": user_id})
+    return {"subscribed": count > 0, "devices": count}
+
+
+async def send_push_to_all_users(title: str, body: str, url: Optional[str] = None, tag: Optional[str] = None) -> dict:
+    """Invia una web push notification a TUTTI gli utenti sottoscritti (non archiviati).
+    Ritorna statistiche {sent, failed, expired_cleaned}.
+    """
+    if not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
+        logger.warning("[PUSH] VAPID keys non configurate, invio saltato")
+        return {"sent": 0, "failed": 0, "expired_cleaned": 0, "reason": "VAPID_NOT_CONFIGURED"}
+
+    # Lista utenti archiviati da escludere
+    archived_users = set()
+    async for u in db.users.find({"archived": True}, {"_id": 1}):
+        archived_users.add(str(u["_id"]))
+
+    subs = await db.push_subscriptions.find({}).to_list(5000)
+    payload = json.dumps({
+        "title": title[:100] if title else "DanoFitness",
+        "body": body[:200] if body else "",
+        "url": url or "/",
+        "tag": tag or "danofit-notif",
+    })
+    vapid_claims = {"sub": VAPID_SUBJECT}
+
+    sent = 0
+    failed = 0
+    expired_ids = []
+
+    for sub in subs:
+        if sub.get("user_id") in archived_users:
+            continue
+        try:
+            webpush(
+                subscription_info={
+                    "endpoint": sub["endpoint"],
+                    "keys": {"p256dh": sub.get("p256dh"), "auth": sub.get("auth")},
+                },
+                data=payload,
+                vapid_private_key=VAPID_PRIVATE_KEY,
+                vapid_claims=vapid_claims,
+                timeout=10,
+            )
+            sent += 1
+        except WebPushException as e:
+            resp = getattr(e, "response", None)
+            status_code = getattr(resp, "status_code", None)
+            # 404/410 = subscription non più valida → cleanup
+            if status_code in (404, 410):
+                expired_ids.append(sub["_id"])
+            else:
+                failed += 1
+                logger.warning(f"[PUSH] Errore invio ({status_code}): {e}")
+        except Exception as e:
+            failed += 1
+            logger.warning(f"[PUSH] Errore invio generico: {e}")
+
+    # Cleanup subscriptions expired
+    if expired_ids:
+        await db.push_subscriptions.delete_many({"_id": {"$in": expired_ids}})
+
+    logger.info(f"[PUSH] Broadcast: sent={sent}, failed={failed}, expired_cleaned={len(expired_ids)}")
+    return {"sent": sent, "failed": failed, "expired_cleaned": len(expired_ids)}
 
 
 # ======================== SUBSCRIPTIONS ROUTES ========================
@@ -7225,7 +7343,16 @@ async def admin_create_announcement(data: AnnouncementCreate, admin_user: dict =
     res = await db.admin_announcements.insert_one(doc)
     doc["_id"] = res.inserted_id
     logger.info(f"[ANNOUNCEMENT] Creato annuncio {res.inserted_id} titolo='{titolo}' attivo={doc['attivo']}")
-    return {"announcement": _serialize_announcement(doc)}
+
+    # Web push broadcast se attivo
+    push_stats = None
+    if doc["attivo"]:
+        push_stats = await send_push_to_all_users(
+            title=titolo,
+            body=messaggio,
+            tag=f"announcement-{str(res.inserted_id)}",
+        )
+    return {"announcement": _serialize_announcement(doc), "push_stats": push_stats}
 
 
 @api_router.put("/admin/announcements/{announcement_id}")
@@ -7293,7 +7420,16 @@ async def admin_toggle_announcement(announcement_id: str, admin_user: dict = Dep
         {"$set": {"attivo": new_val, "updated_at": now_rome()}},
     )
     doc["attivo"] = new_val
-    return {"announcement": _serialize_announcement(doc), "attivo": new_val}
+
+    # Se l'avviso viene RIATTIVATO (da off a on), invia push
+    push_stats = None
+    if new_val:
+        push_stats = await send_push_to_all_users(
+            title=doc.get("titolo", "DanoFitness"),
+            body=doc.get("messaggio", ""),
+            tag=f"announcement-{announcement_id}",
+        )
+    return {"announcement": _serialize_announcement(doc), "attivo": new_val, "push_stats": push_stats}
 
 
 @api_router.delete("/admin/announcements/{announcement_id}")
