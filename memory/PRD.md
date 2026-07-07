@@ -403,6 +403,30 @@ Sistema completo per gestire i popup di avviso dall'Admin senza dover richiedere
 
 **Aggiornamento (2 Luglio 2026 - richiesto da Daniele):** la voce "Avvisi" è stata **spostata dalla sub-tab interna del pannello Admin alla barra di navigazione in basso** (perché "si leggeva malissimo" tra le altre sub-tab). Ora è una tab dedicata top-level tipo Home/Prenota/Admin, visibile solo per l'admin.
 
+## Pannello Orari & Lezioni — Admin Self-Service (7 Luglio 2026)
+Nuova tab dedicata `📅 Orari` (icona calendar) nella barra bottom, visibile solo per admin.
+
+**Backend** (`server.py` sezioni ATTIVITÀ e ADMIN LESSONS CRUD):
+- Nuova collection `activities` con seed automatico di 6 attività di default (circuito, funzionale, pilates, yoga, acquapower, acquagag) su startup se collezione vuota. Ogni doc: `key`, `nome`, `colore`, `icona`, `is_default`.
+- Endpoints attività: `GET /api/activities`, `POST/PUT/DELETE /api/admin/activities`. Delete guard: rifiuta se attività ancora in uso da lezioni.
+- Endpoints lezioni: `POST/PUT/DELETE /api/admin/lessons` con validazione giorno (VALID_DAYS) + orario HH:MM regex + tipo_attivita esistente + no duplicati (stesso giorno+orario). Cache `all_lessons` invalidata su ogni CUD.
+
+**Frontend:**
+- `src/components/LessonScheduleManager.tsx` — componente principale: vista lista raggruppata per giorno (Lunedì..Domenica) con card lezione (orario, attività, coach, descrizione, Modifica/Elimina). Header con pulsanti "NUOVA LEZIONE" (form completo) e "Gestisci Attività" (sotto-modale). Ogni giorno ha un "Aggiungi" quick-shortcut.
+- Sotto-modale `ActivitiesModal`: aggiungi/rimuovi attività (nome + palette 10 colori). Attività default hanno badge "DEFAULT".
+- `app/(tabs)/orari.tsx` — route dedicata con `isAdmin` gate + `<LessonScheduleManager />`.
+- Tab bar entry in `_layout.tsx` con `href` admin-only + icona 📅.
+- `api.ts` aggiornato con tipi `Activity`, `ActivityPayload`, `LessonPayload` + 7 nuovi metodi API.
+
+**Test (iteration_13.json):** Backend 100% (6/6 pytest passati) — seed, CRUD, duplicate/in-use guards, validation, cache invalidation, admin auth. Frontend 100% — tab visibile, route caricata, lezioni renderizzate correttamente, modal creazione OK. Cleanup automatico. Nessun bug trovato.
+
+**Come si usa:**
+1. Tap sulla tab 📅 **Orari** nella barra in basso.
+2. **NUOVA LEZIONE** → scegli giorno chip, digita orario (HH:MM), scegli attività chip, coach, opzionale descrizione, SALVA.
+3. **Gestisci Attività** → aggiungi nuove tipologie (Zumba, Spinning, ecc.) con colore custom. Le default non si eliminano se usate.
+4. **Modifica/Elimina** dalla card della singola lezione.
+
+
 
 ## Task Pianificati Futuri
 ### P1
