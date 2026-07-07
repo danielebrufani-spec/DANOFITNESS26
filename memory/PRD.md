@@ -544,3 +544,13 @@ Frontend: nuovo sotto-modale `SnapshotsModal` in `LessonScheduleManager.tsx` acc
 2. Manual Deploy → "Deploy latest commit" (o verificare perché l'auto-deploy è fallito negli Events).
 3. Verifica: https://diobestia.onrender.com/api/push/vapid-public-key deve rispondere `{"public_key":"BEWmP8..."}` e NON `{"publicKey":"temp"}`.
 4. Nuovo "Save to Github" per portare online anche la pulizia dei duplicati.
+
+### Root cause CONFERMATA dai log Render forniti dall'utente (7 Lug 2026)
+- Build Render FALLITA: `ERROR: No matching distribution found for emergentintegrations==0.1.0` — il pip freeze della sessione precedente ha incluso `emergentintegrations` in requirements.txt SENZA l'extra index CDN.
+- Render usava anche Python 3.14.3 (default) vs 3.11.15 del pod.
+
+### Fix applicati
+1. `backend/requirements.txt`: aggiunta prima riga `--extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/` (verificato: tutte le altre 126 pin esistono su PyPI pubblico, incluso google-auth==2.49.0.dev0; solo emergentintegrations sta sul CDN). Dry-run pip OK.
+2. Creato `backend/.python-version` = `3.11.15` per allineare Render all'ambiente di sviluppo (alternativa: env var PYTHON_VERSION su Render).
+
+### Prossimi step utente: Save to Github → Render deploy → aggiungere 3 env VAPID su Render → verificare /api/push/vapid-public-key.
