@@ -554,3 +554,10 @@ Frontend: nuovo sotto-modale `SnapshotsModal` in `LessonScheduleManager.tsx` acc
 2. Creato `backend/.python-version` = `3.11.15` per allineare Render all'ambiente di sviluppo (alternativa: env var PYTHON_VERSION su Render).
 
 ### Prossimi step utente: Save to Github → Render deploy → aggiungere 3 env VAPID su Render → verificare /api/push/vapid-public-key.
+
+### Fix definitivo VAPID senza intervento su Render (7 Lug 2026, sera)
+- Utente ha chiesto "fallo tu" (non vuole/riesce a modificare le env su Render, dove VAPID_PUBLIC_KEY è settata al placeholder "temp").
+- Soluzione: in `server.py` (sezione WEB PUSH) le chiavi VAPID ora hanno fallback nel codice: `_vapid_from_env()` usa l'env solo se presente e != "temp", altrimenti le chiavi ufficiali del progetto (_DEFAULT_VAPID_PUBLIC_KEY/_DEFAULT_VAPID_PRIVATE_KEY, le stesse del .env locale). VAPID_SUBJECT default mailto:danielebrufani@gmail.com.
+- Testato: env="temp" → chiave vera; env mancante → chiave vera; env custom → rispettata. Endpoint preview OK.
+- NOTA: dopo il prossimo Save to Github, Render risponderà con la chiave vera SENZA toccare le env. Se in futuro si ruotano le chiavi, basta settare le env su Render (hanno precedenza, tranne "temp").
+- NOTA BROWSER: l'utente usa Brave su Android → per ricevere push serve attivare "Usa i servizi Google per la messaggistica push" in brave://settings/privacy (di default è OFF su Brave).

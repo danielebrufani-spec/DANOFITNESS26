@@ -1141,9 +1141,20 @@ async def delete_schedule_snapshot(snapshot_id: str, admin_user: dict = Depends(
 
 
 # ==================== WEB PUSH NOTIFICATIONS ====================
-VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
-VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
-VAPID_SUBJECT = os.environ.get("VAPID_SUBJECT", "mailto:admin@danofitness.com")
+# Chiavi VAPID: lette dall'ambiente. Se mancanti o lasciate al placeholder "temp"
+# (es. env di Render non configurato), usa le chiavi ufficiali del progetto.
+_DEFAULT_VAPID_PUBLIC_KEY = "BEWmP8EqJwktDrgEa7MMt-1xiAb0EriGb8890BufD8hs-coT5bYjbtlp9y8wQMScY9HXDfKg6hqyzzepvYeA4hk"
+_DEFAULT_VAPID_PRIVATE_KEY = "mSiTqugYm0lVs6UaNesc3PnnC1RervXEBNgH59lzYkY"
+
+
+def _vapid_from_env(name: str, default: str) -> str:
+    val = (os.environ.get(name) or "").strip()
+    return val if val and val != "temp" else default
+
+
+VAPID_PUBLIC_KEY = _vapid_from_env("VAPID_PUBLIC_KEY", _DEFAULT_VAPID_PUBLIC_KEY)
+VAPID_PRIVATE_KEY = _vapid_from_env("VAPID_PRIVATE_KEY", _DEFAULT_VAPID_PRIVATE_KEY)
+VAPID_SUBJECT = os.environ.get("VAPID_SUBJECT", "mailto:danielebrufani@gmail.com")
 
 
 class PushSubscribeRequest(BaseModel):
