@@ -1,0 +1,32 @@
+{
+  "summary": "Frontend-only retest of PushNotificationButton after fix in iteration_15. Verified rendering on /altro tab after admin login. All acceptance criteria met.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/test_reports/iteration_16.json"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "PushNotificationButton.tsx: fix is correct — removed `checking` gate and stabilized `isSupported` via lazy useState initializer. Component now renders synchronously with correct state on first paint.",
+    "Minor: the useEffect body reads Notification.permission and setState even though it matches the initial 'default' — no bug, just an extra render. Acceptable."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "100%"},
+  "test_credentials": "Admin: danielebrufani@gmail.com / Mariavittoria23 (from review_request)",
+  "seed_data_creation": "",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "PushNotificationButton renders correctly in Altro tab. Chromium headless env has Notification.permission='denied' so the push-btn-denied card appears at bottom of /altro with red border and text 'Notifiche bloccate ...'. All 6 altro-card-* grid items (maestro, alimentazione, classifica, curiosita, eventi, profilo) render above the push card as expected. serviceWorker + PushManager both available so unsupported branch is not triggered in this env. Backend was previously verified 10/10 in web_push_results.xml.",
+  "test_results_detail": {
+    "login_admin": "PASS — redirected to /home after ACCEDI click",
+    "navigate_altro": "PASS — URL becomes /altro",
+    "push_btn_denied_visible": "PASS — [data-testid='push-btn-denied'] found with text 'Notifiche bloccate Hai negato le notifiche dal browser. Per riattivarle: apri le impostazioni del sito, autorizza le notifiche, poi ricarica la pagina.'",
+    "push_btn_subscribe": "not shown (expected, permission=denied)",
+    "push_btn_unsupported": "not shown (expected, serviceWorker+PushManager available)",
+    "altro_cards_rendered": "PASS — all 6 altro-card-* present (maestro, alimentazione, classifica, curiosita, eventi, profilo). Push button did NOT block other grid rendering.",
+    "browser_env": "Notification.permission=denied, serviceWorker=true, PushManager=true",
+    "click_subscribe_test": "N/A — permission is denied so subscribe card doesn't render in this env. Cannot test requestPermission crash behavior here."
+  }
+}

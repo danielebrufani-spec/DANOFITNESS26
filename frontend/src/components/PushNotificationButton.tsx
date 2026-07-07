@@ -27,27 +27,32 @@ export const PushNotificationButton: React.FC = () => {
   const [permission, setPermission] = useState<PermState>('default');
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [checking, setChecking] = useState(true);
 
-  const isSupported = Platform.OS === 'web'
+  // Stabilizza il check di supporto una sola volta
+  const [isSupported] = useState<boolean>(() =>
+    Platform.OS === 'web'
     && typeof window !== 'undefined'
+    && typeof navigator !== 'undefined'
     && 'serviceWorker' in navigator
     && 'PushManager' in window
-    && 'Notification' in window;
+    && 'Notification' in window
+  );
 
   useEffect(() => {
     if (!isSupported) {
       setPermission('unsupported');
-      setChecking(false);
       return;
     }
-    const perm = Notification.permission as PermState;
-    setPermission(perm);
-    // Verifica se già subscribed via backend
+    try {
+      const perm = Notification.permission as PermState;
+      setPermission(perm);
+    } catch {
+      /* noop */
+    }
+    // Verifica se già subscribed via backend (best effort, non blocca la UI)
     apiService.getPushStatus()
-      .then((res) => setSubscribed(res.data.subscribed))
-      .catch(() => {})
-      .finally(() => setChecking(false));
+      .then((res) => setSubscribed(!!res.data.subscribed))
+      .catch(() => setSubscribed(false));
   }, [isSupported]);
 
   const subscribe = async () => {
@@ -147,8 +152,6 @@ export const PushNotificationButton: React.FC = () => {
       </View>
     );
   }
-
-  if (checking) return null;
 
   if (permission === 'denied') {
     return (
