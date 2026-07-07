@@ -504,3 +504,23 @@ Frontend: nuovo sotto-modale `SnapshotsModal` in `LessonScheduleManager.tsx` acc
 1. Ogni cliente apre l'app → tab **Altro** → in fondo trova il pulsante arancione **"ATTIVA NOTIFICHE PUSH"** → tap → il browser chiede il permesso → conferma.
 2. D'ora in avanti, ogni volta che Daniele pubblica un nuovo annuncio dalla tab **Avvisi**, quel cliente riceve una notifica di sistema sul telefono (con suono) anche se l'app è chiusa.
 3. Per disattivare: tap sul pulsante verde "NOTIFICHE ATTIVE ✓".
+
+## Popup Opt-in Notifiche per Utenti Esistenti (7 Luglio 2026)
+
+**Obiettivo**: al prossimo accesso, tutti i VECCHI utenti che non hanno ancora attivato le notifiche push vedono un popup con pulsante "ATTIVA NOTIFICHE". Frequenza scelta dall'utente: **una volta al giorno** finché non attivano (opzione b).
+
+### Implementazione
+- Nuovo util condiviso `src/utils/pushSubscribe.ts`: `isPushSupported()` + `subscribeToPush()` (logica estratta da `PushNotificationButton`, ora usata da entrambi i componenti — niente duplicazione).
+- Nuovo componente `src/components/PushOptInPopup.tsx` (Modal, palette arancione #FF6B00, titolo Bebas "NON PERDERTI NIENTE!"):
+  - Mostra SOLO se: web + push supportate + `Notification.permission !== 'denied'` + non già subscribed (check `GET /push/status`) + non dismissato oggi (localStorage `push_optin_dismissed_date`).
+  - Skip per nuovissimi iscritti (`onboardingStatus.is_brand_new && can_self_activate_trial`) perché hanno già il pulsante nel WelcomeGate. Il check onboarding è SALTATO per admin/istruttore (non vedono mai il gate ma l'endpoint li segna brand_new).
+  - CTA "ATTIVA NOTIFICHE" → `subscribeToPush()`; successo = stato verde "NOTIFICHE ATTIVE!" + auto-chiusura 2.2s; permesso negato dal prompt = dismiss silenzioso; errore = messaggio inline.
+  - "Non ora, ricordamelo domani" / X = salva data odierna in localStorage → riappare domani.
+  - testIDs: `push-optin-popup`, `push-optin-activate`, `push-optin-dismiss`, `push-optin-close`.
+- Montato in `app/(tabs)/_layout.tsx` dopo `AdminAnnouncementPopup` (`!isArchived`).
+
+### Test (self-test Playwright, 7 Lug 2026)
+- Admin login → popup visibile, CTA+dismiss presenti, dismiss chiude e salva localStorage, reload → non riappare oggi. ✓
+- Client nuovissimo → NO popup, WelcomeGate col suo pulsante push (refactor intatto). ✓
+- Nota headless: `Notification.permission` è 'denied' di default in chromium headless → testato con override init-script a 'default'.
+- Nota ambiente: dopo la creazione dei nuovi file Metro serviva un bundle stale → risolto con `supervisorctl restart frontend`.

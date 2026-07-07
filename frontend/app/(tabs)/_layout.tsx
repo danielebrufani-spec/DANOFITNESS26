@@ -6,6 +6,7 @@ import { COLORS } from '../../src/utils/constants';
 import { apiService } from '../../src/services/api';
 import { EventPopup } from '../../src/components/EventPopup';
 import { AdminAnnouncementPopup } from '../../src/components/AdminAnnouncementPopup';
+import { PushOptInPopup } from '../../src/components/PushOptInPopup';
 import { WelcomeGate } from '../../src/components/WelcomeGate';
 
 export default function TabsLayout() {
@@ -94,6 +95,8 @@ export default function TabsLayout() {
     {!isArchived && <EventPopup />}
     {/* Popup Avvisi Admin - configurabili dall'Admin, visibili ad ogni apertura */}
     {!isArchived && <AdminAnnouncementPopup />}
+    {/* Popup opt-in notifiche push per utenti esistenti che non le hanno ancora attivate */}
+    {!isArchived && <PushOptInPopup />}
     <Tabs
       screenOptions={{
         headerShown: false,
