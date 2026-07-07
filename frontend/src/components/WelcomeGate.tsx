@@ -14,6 +14,7 @@ import { COLORS } from '../utils/constants';
 import { FONTS } from '../theme';
 import { apiService } from '../services/api';
 import { SummerSilhouettes } from './SummerSilhouettes';
+import { PushNotificationButton } from './PushNotificationButton';
 
 /**
  * Gate per i nuovi iscritti: blocca completamente la navigazione finché
@@ -155,6 +156,17 @@ export const WelcomeGate: React.FC<{
               </>
             )}
           </TouchableOpacity>
+
+          {/* Push Notifications activation (opzionale, così il nuovo cliente non si perde gli avvisi) */}
+          <View style={styles.pushSection}>
+            <View style={styles.pushIntroRow}>
+              <Ionicons name="notifications-outline" size={18} color={COLORS.primary} />
+              <Text style={styles.pushIntroText}>
+                Attiva le notifiche per non perderti orari, cambi lezione e vincite alla lotteria!
+              </Text>
+            </View>
+            <PushNotificationButton />
+          </View>
 
           <Text style={styles.footer}>
             Hai dubbi? Scrivi a Daniele su WhatsApp{Platform.OS === 'web' ? ' · ' : '\n'}339 502 0625
@@ -339,6 +351,26 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: 18,
     textAlign: 'center',
+    lineHeight: 18,
+  },
+  pushSection: {
+    marginTop: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  pushIntroRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+    paddingHorizontal: 4,
+  },
+  pushIntroText: {
+    flex: 1,
+    fontFamily: FONTS.body,
+    fontSize: 13,
+    color: COLORS.text,
     lineHeight: 18,
   },
 });

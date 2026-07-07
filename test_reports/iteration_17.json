@@ -1,0 +1,27 @@
+{
+  "summary": "Frontend-only test of WelcomeGate with PushNotificationButton. Login as trial_test_wg@example.com triggered WelcomeGate. All required elements found in DOM with correct ordering (CTA -> push section -> WhatsApp footer). No runtime JS errors, no silent crash of PushNotificationButton.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100%"},
+  "test_credentials": "trial_test_wg@example.com / Test1234! (trial user, no subscription)",
+  "seed_data_creation": "None (user pre-created by main agent)",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "WelcomeGate shows correctly for trial users with no subscription. PushNotificationButton renders inside WelcomeGate with data-testid='push-btn-denied' in chromium headless (permission denied). DOM order: welcome-activate-trial (idx 7501) -> push-btn-denied (idx 8699) -> WhatsApp footer (idx 9662). Intro text 'Attiva le notifiche per non perderti orari, cambi lezione e vincite alla lotteria!' visible. ATTIVA SETTIMANA DI PROVA button visible and clickable (not tested activation flow, only DOM presence as requested).",
+  "test_results": {
+    "welcome-activate-trial_present": true,
+    "push-btn-denied_present": true,
+    "push_intro_text_present": true,
+    "whatsapp_footer_present": true,
+    "dom_order_correct": true,
+    "runtime_js_errors": false
+  }
+}
