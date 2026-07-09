@@ -261,21 +261,26 @@ export default function AdminScreen() {
   // ===== End manual booking management =====
 
 
-  // Filtered users based on search
-  const filteredUsers = users.filter(user => {
-    if (!userSearchQuery.trim()) return true;
+  // Filtered users based on search (la ricerca include ANCHE gli utenti archiviati)
+  const filteredUsers = (() => {
+    if (!userSearchQuery.trim()) return users;
     const searchLower = userSearchQuery.toLowerCase().trim();
-    const fullName = `${user.nome || ''} ${user.cognome || ''}`.toLowerCase().trim();
-    const fullNameInverted = `${user.cognome || ''} ${user.nome || ''}`.toLowerCase().trim();
-    return (
-      user.nome?.toLowerCase().includes(searchLower) ||
-      user.cognome?.toLowerCase().includes(searchLower) ||
-      fullName.includes(searchLower) ||
-      fullNameInverted.includes(searchLower) ||
-      user.email?.toLowerCase().includes(searchLower) ||
-      user.telefono?.includes(searchLower)
-    );
-  });
+    const matchesSearch = (user: User) => {
+      const fullName = `${user.nome || ''} ${user.cognome || ''}`.toLowerCase().trim();
+      const fullNameInverted = `${user.cognome || ''} ${user.nome || ''}`.toLowerCase().trim();
+      return (
+        user.nome?.toLowerCase().includes(searchLower) ||
+        user.cognome?.toLowerCase().includes(searchLower) ||
+        fullName.includes(searchLower) ||
+        fullNameInverted.includes(searchLower) ||
+        user.email?.toLowerCase().includes(searchLower) ||
+        user.telefono?.includes(searchLower)
+      );
+    };
+    const activeIds = new Set(users.map(u => u.id));
+    const archivedExtra = archivedUsers.filter(u => !activeIds.has(u.id));
+    return [...users, ...archivedExtra].filter(matchesSearch);
+  })();
 
   // Filtered users for subscription modal
   const filteredUsersForSubscription = users.filter(u => {
@@ -1413,7 +1418,7 @@ export default function AdminScreen() {
             </View>
 
             <Text style={styles.sectionTitle}>
-              Utenti Registrati ({filteredUsers.length}{userSearchQuery ? ` di ${users.length}` : ''})
+              Utenti Registrati ({filteredUsers.length}{userSearchQuery ? ` di ${users.length + archivedUsers.length}` : ''})
             </Text>
             {filteredUsers.map((user) => (
               <View key={user.id} style={styles.userCard}>
@@ -1454,6 +1459,11 @@ export default function AdminScreen() {
                       <Ionicons name="fitness" size={14} color="#FFF" />
                     </TouchableOpacity>
                   ) : null}
+                  {user.archived && (
+                    <View style={styles.archivedInlineBadge} data-testid={`archived-badge-${user.id}`}>
+                      <Text style={styles.archivedInlineBadgeText}>ARCHIVIATO</Text>
+                    </View>
+                  )}
                   {user.prova_attiva && (
                     <View style={styles.trialBadge} data-testid={`trial-badge-${user.id}`}>
                       <Text style={styles.trialBadgeText}>PROVA</Text>
@@ -1480,7 +1490,7 @@ export default function AdminScreen() {
                         <Text style={[styles.actionBtnText, { color: '#25D366' }]}>WhatsApp</Text>
                       </TouchableOpacity>
                     )}
-                    {user.role !== 'istruttore' && (
+                    {user.role !== 'istruttore' && !user.archived && (
                       <TouchableOpacity 
                         style={styles.actionBtnSmall}
                         onPress={() => handleSetRole(user.id, 'istruttore', `${user.nome} ${user.cognome}`)}
@@ -1503,13 +1513,24 @@ export default function AdminScreen() {
                       <Ionicons name="key-outline" size={16} color="#FF9800" />
                       <Text style={[styles.actionBtnText, { color: '#FF9800' }]}>Reset PW</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={[styles.actionBtnSmall, { backgroundColor: '#6366f120' }]}
-                      onPress={() => handleArchiveUser(user.id, `${user.nome} ${user.cognome}`)}
-                    >
-                      <Ionicons name="archive-outline" size={16} color="#6366f1" />
-                      <Text style={[styles.actionBtnText, { color: '#6366f1' }]}>Archivia</Text>
-                    </TouchableOpacity>
+                    {user.archived ? (
+                      <TouchableOpacity 
+                        style={[styles.actionBtnSmall, { backgroundColor: COLORS.success + '20' }]}
+                        onPress={() => handleRestoreUser(user.id, `${user.nome} ${user.cognome}`)}
+                        testID={`restore-user-${user.id}`}
+                      >
+                        <Ionicons name="refresh-circle-outline" size={16} color={COLORS.success} />
+                        <Text style={[styles.actionBtnText, { color: COLORS.success }]}>Riattiva</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity 
+                        style={[styles.actionBtnSmall, { backgroundColor: '#6366f120' }]}
+                        onPress={() => handleArchiveUser(user.id, `${user.nome} ${user.cognome}`)}
+                      >
+                        <Ionicons name="archive-outline" size={16} color="#6366f1" />
+                        <Text style={[styles.actionBtnText, { color: '#6366f1' }]}>Archivia</Text>
+                      </TouchableOpacity>
+                    )}
                     <TouchableOpacity 
                       style={[styles.actionBtnSmall, { backgroundColor: COLORS.error + '20' }]}
                       onPress={() => handleDeleteUser(user.id, `${user.nome} ${user.cognome}`)}
@@ -2693,6 +2714,18 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   trialBadgeText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+  },
+  archivedInlineBadge: {
+    backgroundColor: '#6366f1',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  archivedInlineBadgeText: {
     color: '#FFF',
     fontSize: 10,
     fontWeight: 'bold',

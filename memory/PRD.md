@@ -568,3 +568,10 @@ Frontend: nuovo sotto-modale `SnapshotsModal` in `LessonScheduleManager.tsx` acc
 - RESTA ATTIVO: tutto il sistema web push (backend + service worker + pulsante "ATTIVA NOTIFICHE PUSH" nel tab Altro e nel WelcomeGate + fallback chiavi VAPID in server.py). Solo il popup automatico è stato tolto.
 - Verificato con screenshot: login admin → nessun popup, dashboard OK.
 - Se in futuro l'utente rivuole il popup: recuperabile da git history (commit del 7/7 pomeriggio, componente PushOptInPopup).
+
+## Ricerca Utenti Admin: inclusi gli ARCHIVIATI (9 Lug 2026)
+- Richiesta: "inserisci nella ricerca utenti ANCHE GLI UTENTI ARCHIVIATI".
+- `admin.tsx`: `filteredUsers` ora, SOLO quando c'è una query di ricerca, unisce `users` + `archivedUsers` (dedup per id). Senza query la lista mostra solo gli attivi come prima (gli archiviati hanno la loro tab "Archivio").
+- Card utente archiviato nei risultati: badge viola "ARCHIVIATO" (testID `archived-badge-{id}`), pulsante verde "Riattiva" (testID `restore-user-{id}`, chiama `handleRestoreUser`) al posto di "Archivia"; nascosto il pulsante "Istruttore" per gli archiviati. Contatore "X di N" ora usa attivi+archiviati come denominatore.
+- Test Playwright: ricerca "Test Client" archiviato → badge+Riattiva OK; ricerca "Marco" attivo → nessun badge, Archivia presente. Utente di test poi ripristinato.
+- NOTA: 2 errori TS pre-esistenti in admin.tsx righe ~1205/1215 (prop 'cognome' su tipo booking) NON introdotti da questa modifica, non bloccanti per Metro.
