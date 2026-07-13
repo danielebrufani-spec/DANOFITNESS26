@@ -29,6 +29,7 @@ export interface Lesson {
   tipo_attivita: string;
   descrizione?: string;
   coach?: string;
+  data_specifica?: string; // YYYY-MM-DD: lezione UNA TANTUM valida solo in questa data
 }
 
 export interface Subscription {
@@ -174,6 +175,7 @@ export interface LessonPayload {
   tipo_attivita: string;  // activity key
   descrizione?: string;
   coach: string;
+  data_specifica?: string; // YYYY-MM-DD: lezione una tantum
 }
 
 export interface ScheduleSnapshot {

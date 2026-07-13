@@ -50,6 +50,7 @@ export const LessonScheduleManager: React.FC = () => {
   const [fTipo, setFTipo] = useState<string>('');
   const [fCoach, setFCoach] = useState<string>('Daniele');
   const [fDesc, setFDesc] = useState<string>('');
+  const [fData, setFData] = useState<string>('');
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
@@ -95,6 +96,7 @@ export const LessonScheduleManager: React.FC = () => {
     setFTipo(activities[0]?.key || '');
     setFCoach('Daniele');
     setFDesc('');
+    setFData('');
     setShowLessonModal(true);
   };
 
@@ -105,6 +107,7 @@ export const LessonScheduleManager: React.FC = () => {
     setFTipo(l.tipo_attivita);
     setFCoach(l.coach || 'Daniele');
     setFDesc(l.descrizione || '');
+    setFData(l.data_specifica || '');
     setShowLessonModal(true);
   };
 
@@ -113,6 +116,7 @@ export const LessonScheduleManager: React.FC = () => {
     if (!/^\d{2}:\d{2}$/.test(fOrario)) return 'Orario formato non valido (HH:MM, es. 18:30)';
     if (!fTipo) return 'Attività obbligatoria';
     if (!fCoach.trim()) return 'Coach obbligatorio';
+    if (fData.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(fData.trim())) return 'Data specifica non valida (formato AAAA-MM-GG, es. 2026-07-10)';
     return null;
   };
 
@@ -125,6 +129,7 @@ export const LessonScheduleManager: React.FC = () => {
       tipo_attivita: fTipo,
       coach: fCoach.trim(),
       descrizione: fDesc.trim() || undefined,
+      data_specifica: fData.trim() || undefined,
     };
     try {
       setSaving(true);
@@ -239,6 +244,14 @@ export const LessonScheduleManager: React.FC = () => {
                           <Ionicons name="time" size={14} color={COLORS.textSecondary} />
                           <Text style={styles.lessonTimeText}>{l.orario}</Text>
                         </View>
+                        {l.data_specifica ? (
+                          <View style={styles.oneOffBadge} testID={`lesson-oneoff-${l.id}`}>
+                            <Ionicons name="star" size={10} color="#FFEA00" />
+                            <Text style={styles.oneOffBadgeText}>
+                              SOLO {l.data_specifica.slice(8, 10)}/{l.data_specifica.slice(5, 7)}
+                            </Text>
+                          </View>
+                        ) : null}
                         <Text style={[styles.lessonActivity, { color }]}>{nome}</Text>
                       </View>
                       <View style={styles.lessonMid}>
@@ -365,6 +378,20 @@ export const LessonScheduleManager: React.FC = () => {
                 maxLength={200}
                 testID="lesson-form-desc"
               />
+
+              <Text style={styles.label}>⭐ Lezione speciale: solo per una data (opzionale)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="AAAA-MM-GG (es. 2026-07-10)"
+                placeholderTextColor={COLORS.textSecondary}
+                value={fData}
+                onChangeText={setFData}
+                maxLength={10}
+                testID="lesson-form-data-specifica"
+              />
+              <Text style={styles.helper}>
+                Se compili la data, la lezione vale SOLO per quel giorno (una tantum) e sparisce da sola dopo. Il giorno della settimana viene calcolato automaticamente dalla data.
+              </Text>
             </ScrollView>
 
             <TouchableOpacity
@@ -806,6 +833,19 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   lessonTimeText: { fontFamily: FONTS.bodyBlack, fontSize: 13, color: COLORS.text, letterSpacing: 0.5 },
+  oneOffBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(255,234,0,0.12)',
+    borderWidth: 1,
+    borderColor: '#FFEA00',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginLeft: 6,
+  },
+  oneOffBadgeText: { fontFamily: FONTS.bodyBlack, fontSize: 10, color: '#FFEA00', letterSpacing: 0.5 },
   lessonActivity: {
     fontFamily: FONTS.headline,
     fontSize: 16,

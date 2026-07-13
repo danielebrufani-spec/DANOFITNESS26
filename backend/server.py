@@ -204,6 +204,7 @@ class LessonResponse(BaseModel):
     tipo_attivita: str
     descrizione: Optional[str] = None
     coach: Optional[str] = None
+    data_specifica: Optional[str] = None  # YYYY-MM-DD: lezione UNA TANTUM valida solo in questa data
 
 class BookingCreate(BaseModel):
     lesson_id: str
@@ -753,6 +754,14 @@ async def get_cached_lessons():
     cache.set("all_lessons", lessons, 300)
     return lessons
 
+def _lesson_is_visible(lesson: dict) -> bool:
+    """Le lezioni con data_specifica (una tantum) sono visibili solo fino a quella data inclusa."""
+    ds = lesson.get("data_specifica")
+    if not ds:
+        return True
+    return ds >= now_rome().strftime("%Y-%m-%d")
+
+
 @api_router.get("/lessons", response_model=List[LessonResponse])
 async def get_lessons(current_user: dict = Depends(get_current_user)):
     lessons = await get_cached_lessons()
@@ -763,14 +772,15 @@ async def get_lessons(current_user: dict = Depends(get_current_user)):
             orario=lesson["orario"],
             tipo_attivita=lesson["tipo_attivita"],
             descrizione=lesson.get("descrizione"),
-            coach=lesson.get("coach", "Daniele")
-        ) for lesson in lessons
+            coach=lesson.get("coach", "Daniele"),
+            data_specifica=lesson.get("data_specifica")
+        ) for lesson in lessons if _lesson_is_visible(lesson)
     ]
 
 @api_router.get("/lessons/day/{giorno}", response_model=List[LessonResponse])
 async def get_lessons_by_day(giorno: str, current_user: dict = Depends(get_current_user)):
     all_lessons = await get_cached_lessons()
-    lessons = [l for l in all_lessons if l["giorno"] == giorno.lower()]
+    lessons = [l for l in all_lessons if l["giorno"] == giorno.lower() and _lesson_is_visible(l)]
     return [
         LessonResponse(
             id=str(lesson["_id"]),
@@ -778,7 +788,8 @@ async def get_lessons_by_day(giorno: str, current_user: dict = Depends(get_curre
             orario=lesson["orario"],
             tipo_attivita=lesson["tipo_attivita"],
             descrizione=lesson.get("descrizione"),
-            coach=lesson.get("coach", "Daniele")
+            coach=lesson.get("coach", "Daniele"),
+            data_specifica=lesson.get("data_specifica")
         ) for lesson in lessons
     ]
 
@@ -912,6 +923,7 @@ class LessonCreate(BaseModel):
     tipo_attivita: str
     descrizione: Optional[str] = None
     coach: str = "Daniele"
+    data_specifica: Optional[str] = None  # YYYY-MM-DD: se presente, lezione UNA TANTUM solo in quella data
 
 
 class LessonUpdate(BaseModel):
@@ -920,6 +932,21 @@ class LessonUpdate(BaseModel):
     tipo_attivita: Optional[str] = None
     descrizione: Optional[str] = None
     coach: Optional[str] = None
+    data_specifica: Optional[str] = None
+
+
+GIORNI_IT_ORDER = ["lunedi", "martedi", "mercoledi", "giovedi", "venerdi", "sabato", "domenica"]
+
+
+def _validate_data_specifica(data_specifica: Optional[str]) -> Optional[str]:
+    """Valida YYYY-MM-DD e ritorna il giorno della settimana italiano corrispondente."""
+    if not data_specifica:
+        return None
+    try:
+        d = datetime.strptime(data_specifica, "%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Data specifica non valida (formato YYYY-MM-DD)")
+    return GIORNI_IT_ORDER[d.weekday()]
 
 
 def _validate_lesson_fields(giorno: Optional[str], orario: Optional[str], tipo_attivita: Optional[str]):
@@ -945,22 +972,27 @@ async def admin_create_lesson(data: LessonCreate, admin_user: dict = Depends(get
     if not await _tipo_attivita_exists(tipo):
         raise HTTPException(status_code=400, detail=f"Attività '{tipo}' non esiste. Creala prima da 'Gestisci attività'.")
 
-    # Blocca duplicati (stesso giorno + stesso orario)
-    dup = await db.lessons.find_one({"giorno": data.giorno.lower(), "orario": data.orario})
+    # Se lezione una tantum, il giorno viene derivato automaticamente dalla data
+    giorno_da_data = _validate_data_specifica(data.data_specifica)
+    giorno_finale = giorno_da_data or data.giorno.lower()
+
+    # Blocca duplicati (stesso giorno + orario + stessa data specifica o entrambe ricorrenti)
+    dup = await db.lessons.find_one({"giorno": giorno_finale, "orario": data.orario, "data_specifica": data.data_specifica})
     if dup:
         raise HTTPException(status_code=400, detail="Esiste già una lezione in questo giorno/orario")
 
     doc = {
-        "giorno": data.giorno.lower(),
+        "giorno": giorno_finale,
         "orario": data.orario,
         "tipo_attivita": tipo,
         "descrizione": (data.descrizione or "").strip() or None,
         "coach": (data.coach or "Daniele").strip(),
+        "data_specifica": data.data_specifica,
     }
     res = await db.lessons.insert_one(doc)
     doc["_id"] = res.inserted_id
     cache.invalidate("all_lessons")
-    logger.info(f"[LESSON] Creata lezione {data.giorno} {data.orario} {tipo}/{doc['coach']}")
+    logger.info(f"[LESSON] Creata lezione {giorno_finale} {data.orario} {tipo}/{doc['coach']}" + (f" SOLO {data.data_specifica}" if data.data_specifica else ""))
     return {
         "lesson": {
             "id": str(doc["_id"]),
@@ -969,6 +1001,7 @@ async def admin_create_lesson(data: LessonCreate, admin_user: dict = Depends(get
             "tipo_attivita": doc["tipo_attivita"],
             "descrizione": doc.get("descrizione"),
             "coach": doc["coach"],
+            "data_specifica": doc.get("data_specifica"),
         }
     }
 
@@ -989,6 +1022,13 @@ async def admin_update_lesson(lesson_id: str, data: LessonUpdate, admin_user: di
     update = {}
     new_giorno = data.giorno.lower() if data.giorno else doc["giorno"]
     new_orario = data.orario if data.orario else doc["orario"]
+    # Se viene impostata/cambiata la data specifica, il giorno si deriva dalla data
+    if data.data_specifica is not None:
+        giorno_da_data = _validate_data_specifica(data.data_specifica)
+        if giorno_da_data:
+            new_giorno = giorno_da_data
+            update["giorno"] = new_giorno
+        update["data_specifica"] = data.data_specifica
     if data.giorno is not None:
         update["giorno"] = new_giorno
     if data.orario is not None:
@@ -1007,10 +1047,12 @@ async def admin_update_lesson(lesson_id: str, data: LessonUpdate, admin_user: di
         update["coach"] = c
 
     # Check duplicati se cambiano giorno/orario
-    if data.giorno is not None or data.orario is not None:
+    if data.giorno is not None or data.orario is not None or data.data_specifica is not None:
+        new_data_spec = data.data_specifica if data.data_specifica is not None else doc.get("data_specifica")
         dup = await db.lessons.find_one({
             "giorno": new_giorno,
             "orario": new_orario,
+            "data_specifica": new_data_spec,
             "_id": {"$ne": oid},
         })
         if dup:
@@ -1029,6 +1071,7 @@ async def admin_update_lesson(lesson_id: str, data: LessonUpdate, admin_user: di
             "tipo_attivita": updated["tipo_attivita"],
             "descrizione": updated.get("descrizione"),
             "coach": updated.get("coach", "Daniele"),
+            "data_specifica": updated.get("data_specifica"),
         }
     }
 
@@ -1868,6 +1911,14 @@ async def create_booking(data: BookingCreate, current_user: dict = Depends(get_c
     
     if not lesson:
         raise HTTPException(status_code=404, detail="Lezione non trovata")
+    
+    # LEZIONE UNA TANTUM: prenotabile SOLO nella sua data specifica
+    if lesson.get("data_specifica") and lesson["data_specifica"] != data.data_lezione:
+        ds = lesson["data_specifica"]
+        raise HTTPException(
+            status_code=400,
+            detail=f"Questa è una lezione speciale valida solo il {ds[8:10]}/{ds[5:7]}/{ds[0:4]}"
+        )
     
     # CHECK LEZIONE ANNULLATA
     cancelled = await db.cancelled_lessons.find_one({
@@ -7555,6 +7606,33 @@ async def startup_event():
         cache.invalidate("all_lessons")
     except Exception as e:
         logger.warning(f"[MIGRATION-ORARIO-ESTIVO] {e}")
+
+    # Auto-migration: LEZIONE SPECIALE una tantum - Acquagym venerdì 17/07/2026 18:30 PISCINA CAMPING
+    # Idempotente: upsert per (giorno, orario, data_specifica). Sparisce da sola dopo il 17/07.
+    try:
+        if not await db.activities.find_one({"key": "acquagym"}):
+            await db.activities.insert_one({
+                "key": "acquagym", "nome": "Acquagym", "colore": "#00C8FF",
+                "icona": "pool", "is_default": False, "created_at": now_rome(),
+            })
+            logger.info("[MIGRATION-LEZIONE-SPECIALE] Attività 'acquagym' creata")
+        # Cleanup di un eventuale tentativo precedente con data errata
+        await db.lessons.delete_many({"tipo_attivita": "acquagym", "data_specifica": "2026-07-10"})
+        special_key = {"giorno": "venerdi", "orario": "18:30", "data_specifica": "2026-07-17"}
+        await db.lessons.update_one(
+            special_key,
+            {"$set": {
+                **special_key,
+                "tipo_attivita": "acquagym",
+                "descrizione": "Lezione SPECIALE solo per questa settimana alla Piscina Camping!",
+                "coach": "Daniele",
+            }},
+            upsert=True,
+        )
+        cache.invalidate("all_lessons")
+        logger.info("[MIGRATION-LEZIONE-SPECIALE] Acquagym venerdì 17/07/2026 18:30 (Piscina Camping) assicurata")
+    except Exception as e:
+        logger.warning(f"[MIGRATION-LEZIONE-SPECIALE] {e}")
 
     # Auto-fix migration: ripara le subscriptions self_activated col bug (manca attivo / datetime str)
     # Idempotente: aggiorna solo i record davvero rotti

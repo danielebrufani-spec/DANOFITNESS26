@@ -575,3 +575,17 @@ Frontend: nuovo sotto-modale `SnapshotsModal` in `LessonScheduleManager.tsx` acc
 - Card utente archiviato nei risultati: badge viola "ARCHIVIATO" (testID `archived-badge-{id}`), pulsante verde "Riattiva" (testID `restore-user-{id}`, chiama `handleRestoreUser`) al posto di "Archivia"; nascosto il pulsante "Istruttore" per gli archiviati. Contatore "X di N" ora usa attivi+archiviati come denominatore.
 - Test Playwright: ricerca "Test Client" archiviato → badge+Riattiva OK; ricerca "Marco" attivo → nessun badge, Archivia presente. Utente di test poi ripristinato.
 - NOTA: 2 errori TS pre-esistenti in admin.tsx righe ~1205/1215 (prop 'cognome' su tipo booking) NON introdotti da questa modifica, non bloccanti per Metro.
+
+## Lezioni SPECIALI una tantum + Acquagym venerdì 17/07 (13 Lug 2026)
+- Richiesta: "lezione speciale solo per questa settimana venerdì 18.30 acquagym ALLA PISCINA CAMPING". Oggi (orologio server) = lunedì 13/07/2026 → venerdì = 2026-07-17. (Primo tentativo con 10/07 corretto: era già passato.)
+- **Backend** (`server.py`):
+  - Campo `data_specifica` (YYYY-MM-DD, opzionale) su lessons: LessonCreate/Update/Response.
+  - `_lesson_is_visible()`: le lezioni una tantum spariscono da GET /lessons e /lessons/day dopo la loro data.
+  - `_validate_data_specifica()`: valida formato e DERIVA il giorno della settimana dalla data (GIORNI_IT_ORDER).
+  - Dup-check giorno+orario ora include data_specifica (una speciale può coesistere con una ricorrente stesso slot).
+  - `create_booking`: se lesson.data_specifica != data_lezione → 400 "lezione speciale valida solo il DD/MM/YYYY".
+  - Startup migration idempotente: attività "acquagym" (#00C8FF, pool) + upsert lezione {venerdi, 18:30, data_specifica 2026-07-17, coach Daniele, descr Piscina Camping} + cleanup tentativo 10/07. Girerà su PROD al prossimo deploy Render.
+- **Frontend**: `Lesson`/`LessonPayload` +data_specifica; `constants.ts` ATTIVITA_INFO +acquagym; `prenota.tsx` getLessonsForDate (filtra per data, 3 call sites) + badge giallo "⭐ LEZIONE SPECIALE · SOLO QUESTA SETTIMANA"; `LessonScheduleManager.tsx` campo form "Lezione speciale: solo per una data (opzionale)" (testID lesson-form-data-specifica) + badge "SOLO DD/MM" nella lista (testID lesson-oneoff-{id}).
+- **Test**: curl prenotazione data sbagliata → 400 ✓; data giusta 17/07 → creata (poi cancellata) ✓; screenshot prenota: venerdì 17 mostra Acquagym+badge, lunedì no ✓. TSC pulito.
+- NOTA: testclient_kpi@test.com ora ha PROVA 7 GIORNI attiva (scade 20/07) — attivata per il test.
+- L'admin può creare future lezioni una tantum da Orari → Nuova Lezione → campo data.

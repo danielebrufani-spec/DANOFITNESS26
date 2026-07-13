@@ -246,7 +246,10 @@ export default function PrenotaScreen() {
   const findFirstAvailableDay = (lessonsList: Lesson[]) => {
     for (const date of weekDates) {
       const dayName = GIORNI[date.getDay()];
-      const dayLessons = lessonsList.filter(l => l.giorno === dayName);
+      const dateStr = getDateString(date);
+      const dayLessons = lessonsList.filter(
+        l => l.giorno === dayName && (!l.data_specifica || l.data_specifica === dateStr)
+      );
       if (!isDayClosed(date, dayLessons)) {
         return date;
       }
@@ -352,8 +355,13 @@ export default function PrenotaScreen() {
     return GIORNI[date.getDay()];
   };
 
-  const getLessonsForDay = (dayName: string) => {
-    return lessons.filter((lesson) => lesson.giorno === dayName);
+  const getLessonsForDate = (date: Date) => {
+    const dayName = getDayName(date);
+    const dateString = getDateString(date);
+    // Include lezioni ricorrenti del giorno + lezioni UNA TANTUM solo nella loro data specifica
+    return lessons.filter(
+      (lesson) => lesson.giorno === dayName && (!lesson.data_specifica || lesson.data_specifica === dateString)
+    );
   };
 
   const isBooked = (lessonId: string) => {
@@ -570,7 +578,7 @@ export default function PrenotaScreen() {
     }
   };
 
-  const dayLessons = selectedDate ? getLessonsForDay(getDayName(selectedDate)) : [];
+  const dayLessons = selectedDate ? getLessonsForDate(selectedDate) : [];
   dayLessons.sort((a, b) => a.orario.localeCompare(b.orario));
 
   // Get this week's bookings only
@@ -630,7 +638,7 @@ export default function PrenotaScreen() {
             const isSelected = selectedDate && getDateString(selectedDate) === dateString;
             const isToday = dateString === getTodayDateString();
             const dayName = getDayName(date);
-            const dayLessons = getLessonsForDay(dayName);
+            const dayLessons = getLessonsForDate(date);
             const isClosed = isDayClosed(date, dayLessons);
             
             return (
@@ -739,6 +747,12 @@ export default function PrenotaScreen() {
                         <Text style={[styles.lessonType, { color: (isPassed || isCancelled) ? COLORS.textSecondary : (info.colore || COLORS.primary) }]}>
                           {info.nome || lesson.tipo_attivita}
                         </Text>
+                        {lesson.data_specifica && !isCancelled && (
+                          <View style={styles.specialBadge} data-testid={`special-badge-${lesson.id}`}>
+                            <Ionicons name="star" size={12} color="#FFEA00" />
+                            <Text style={styles.specialBadgeText}>LEZIONE SPECIALE · SOLO QUESTA SETTIMANA</Text>
+                          </View>
+                        )}
                         {lesson.orario === '18:30' && !isCancelled && (
                           <View style={styles.poolBadge}>
                             <Ionicons name="water" size={13} color="#00C8FF" />
@@ -1225,6 +1239,26 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.bodyBlack,
     fontSize: 11,
     color: '#00C8FF',
+    letterSpacing: 1.2,
+  },
+  specialBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    backgroundColor: 'rgba(255,234,0,0.12)',
+    borderWidth: 1,
+    borderColor: '#FFEA00',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginTop: 6,
+    marginBottom: 2,
+  },
+  specialBadgeText: {
+    fontFamily: FONTS.bodyBlack,
+    fontSize: 11,
+    color: '#FFEA00',
     letterSpacing: 1.2,
   },
   participantsToggle: {
