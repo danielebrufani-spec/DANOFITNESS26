@@ -596,3 +596,12 @@ Frontend: nuovo sotto-modale `SnapshotsModal` in `LessonScheduleManager.tsx` acc
 - Fix in server.py: filtro `data_specifica == data del giorno` nelle 3 viste; migrazione sostituita con CLEANUP (delete_many acquagym data_specifica 10/07+17/07). Cancellazione sicura: lo storico prenotazioni gestisce lesson=None e usa lesson_data embedded.
 - Azione diretta su PROD: eliminata via DELETE /admin/lessons/6a5556d3a5b57eb614b79cb9 → vista settimanale prod ora mostra venerdì solo 08:30 e 20:15. ✓
 - ⚠️ Serve Save to Github: senza deploy, la vecchia migrazione su Render ricreerà la lezione al prossimo riavvio! Col deploy: cleanup automatico + fix permanenti.
+
+## Bug riaccredito lezione a pacchetto ESAURITO (27 Lug 2026)
+- Segnalazione: admin non riusciva a riaccreditare una lezione a Giacomo Betti (pacchetto lezioni_16 esaurito: ultima lezione scalata oggi per la 20:15, rimanenti=0, "scaduto").
+- ROOT CAUSE: `GET /subscriptions` (lista admin) SALTAVA tutti gli abbonamenti scaduti/esauriti → il pacchetto spariva dalla tab Abbonamenti e non c'era NESSUN modo di modificarlo/riaccreditarlo dall'app. (Lo state `expiredSubscriptions` nel frontend non era mai renderizzato; la UI card supportava già badge SCADUTO + matita.)
+- Flussi verificati SANI: admin-remove booking con riaccredita (+1 ok), force-add con scala, PUT /subscriptions.
+- FIX backend `get_all_subscriptions`: ora include anche l'ULTIMO abbonamento scaduto/esaurito per ogni utente che NON ha un abbonamento valido (esclusi archiviati), con scaduto=True → l'admin lo vede con badge SCADUTO e può modificarlo (matita → +1 lezioni).
+- DATO PROD SISTEMATO subito via API: Giacomo Betti rimanenti 0→1, ora visibile in lista. La prenotazione di stasera resta valida e già scalata.
+- Test preview: pacchetto a 0 → visibile scaduto:true → PUT +1 → scaduto:false. ✓
+- ⚠️ Save to Github necessario per portare il fix visibilità sull'app live.

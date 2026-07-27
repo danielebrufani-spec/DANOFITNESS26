@@ -1460,23 +1460,41 @@ async def get_all_subscriptions(admin_user: dict = Depends(get_admin_user)):
     ).to_list(len(user_ids))
     users_cache = {str(u["_id"]): u for u in users}
     
-    result = []
-    for sub in subscriptions:
-        # Converti data_scadenza se è una stringa
+    def _is_expired(sub) -> bool:
         data_scadenza = sub["data_scadenza"]
         if isinstance(data_scadenza, str):
             from dateutil import parser
             data_scadenza = parser.parse(data_scadenza).replace(tzinfo=ROME_TZ)
-        
-        # Controlla se è scaduto
-        is_expired = data_scadenza < now
+        expired = data_scadenza < now
         if sub["lezioni_rimanenti"] is not None and sub["lezioni_rimanenti"] <= 0:
-            is_expired = True
-        
-        # Salta gli abbonamenti scaduti (vanno solo nella home admin)
-        if is_expired:
+            expired = True
+        return expired
+    
+    # Utenti con almeno un abbonamento valido + ultimo abbonamento scaduto per utente
+    users_with_valid = set()
+    last_expired_by_user = {}
+    for sub in subscriptions:
+        if _is_expired(sub):
+            prev = last_expired_by_user.get(sub["user_id"])
+            if not prev or sub["created_at"] > prev["created_at"]:
+                last_expired_by_user[sub["user_id"]] = sub
+        else:
+            users_with_valid.add(sub["user_id"])
+    
+    visibili = [s for s in subscriptions if not _is_expired(s)]
+    # Mostra anche l'ULTIMO abbonamento scaduto/esaurito degli utenti SENZA un abbonamento
+    # valido: l'admin deve poterlo vedere e modificare (es. riaccreditare una lezione a
+    # un pacchetto esaurito). Esclusi gli utenti archiviati.
+    for uid, sub in last_expired_by_user.items():
+        if uid in users_with_valid:
             continue
-        
+        u = users_cache.get(uid)
+        if not u or u.get("archived"):
+            continue
+        visibili.append(sub)
+    
+    result = []
+    for sub in visibili:
         user = users_cache.get(sub["user_id"])
         
         result.append(SubscriptionResponse(
@@ -1490,7 +1508,7 @@ async def get_all_subscriptions(admin_user: dict = Depends(get_admin_user)):
             data_inizio=sub["data_inizio"],
             data_scadenza=sub["data_scadenza"],
             attivo=sub["attivo"],
-            scaduto=False,
+            scaduto=_is_expired(sub),
             pagato=sub.get("pagato", True),
             created_at=sub["created_at"]
         ))
