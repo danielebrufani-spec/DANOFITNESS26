@@ -589,3 +589,10 @@ Frontend: nuovo sotto-modale `SnapshotsModal` in `LessonScheduleManager.tsx` acc
 - **Test**: curl prenotazione data sbagliata → 400 ✓; data giusta 17/07 → creata (poi cancellata) ✓; screenshot prenota: venerdì 17 mostra Acquagym+badge, lunedì no ✓. TSC pulito.
 - NOTA: testclient_kpi@test.com ora ha PROVA 7 GIORNI attiva (scade 20/07) — attivata per il test.
 - L'admin può creare future lezioni una tantum da Orari → Nuova Lezione → campo data.
+
+## Rimozione lezione speciale scaduta + fix viste (27 Lug 2026)
+- Segnalazione: nel profilo admin restava la lezione venerdì 18:30 (acquagym speciale del 17/07, ormai scaduta).
+- Cause trovate: (1) la migrazione upsert la RICREAVA ad ogni riavvio del server (Render riavvia spesso); (2) tre viste leggevano le lezioni senza filtro data_specifica: /admin/weekly-bookings (riga ~3449), scheduler lezioni (riga ~3921), vista settimana istruttore (riga ~4361).
+- Fix in server.py: filtro `data_specifica == data del giorno` nelle 3 viste; migrazione sostituita con CLEANUP (delete_many acquagym data_specifica 10/07+17/07). Cancellazione sicura: lo storico prenotazioni gestisce lesson=None e usa lesson_data embedded.
+- Azione diretta su PROD: eliminata via DELETE /admin/lessons/6a5556d3a5b57eb614b79cb9 → vista settimanale prod ora mostra venerdì solo 08:30 e 20:15. ✓
+- ⚠️ Serve Save to Github: senza deploy, la vecchia migrazione su Render ricreerà la lezione al prossimo riavvio! Col deploy: cleanup automatico + fix permanenti.

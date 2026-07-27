@@ -3445,8 +3445,11 @@ async def get_weekly_bookings(admin_user: dict = Depends(get_admin_user)):
         date_obj = datetime.strptime(date_str, "%Y-%m-%d")
         day_name = ["lunedi", "martedi", "mercoledi", "giovedi", "venerdi", "sabato"][date_obj.weekday()]
         
-        # Get lessons for this day
-        day_lessons = [l for l in lessons if l["giorno"] == day_name]
+        # Get lessons for this day (le lezioni una tantum valgono SOLO nella loro data specifica)
+        day_lessons = [
+            l for l in lessons
+            if l["giorno"] == day_name and (not l.get("data_specifica") or l["data_specifica"] == date_str)
+        ]
         day_lessons.sort(key=lambda x: x["orario"])
         
         day_data = {
@@ -3922,6 +3925,10 @@ async def process_lessons_after_30min():
         lesson_time = lesson["orario"]
         lesson_id = str(lesson["_id"])
         
+        # Lezioni una tantum: processale solo nella loro data specifica
+        if lesson.get("data_specifica") and lesson["data_specifica"] != today:
+            continue
+        
         # Check se la lezione è annullata per oggi
         cancelled = await db.cancelled_lessons.find_one({
             "lesson_id": lesson_id,
@@ -4363,7 +4370,10 @@ async def get_istruttore_lezioni(current_user: dict = Depends(get_current_user))
     
     result = []
     for i, data in enumerate(week_dates):
-        day_lessons = lessons_by_day.get(giorni_db[i], [])
+        day_lessons = [
+            l for l in lessons_by_day.get(giorni_db[i], [])
+            if not l.get("data_specifica") or l["data_specifica"] == data
+        ]
         day_lessons.sort(key=lambda x: x["orario"])
         
         lezioni_list = []
@@ -7607,32 +7617,15 @@ async def startup_event():
     except Exception as e:
         logger.warning(f"[MIGRATION-ORARIO-ESTIVO] {e}")
 
-    # Auto-migration: LEZIONE SPECIALE una tantum - Acquagym venerdì 17/07/2026 18:30 PISCINA CAMPING
-    # Idempotente: upsert per (giorno, orario, data_specifica). Sparisce da sola dopo il 17/07.
+    # Auto-migration: cleanup lezione speciale Acquagym 17/07/2026 (evento passato).
+    # La lezione non deve più essere ricreata né apparire in alcuna vista.
     try:
-        if not await db.activities.find_one({"key": "acquagym"}):
-            await db.activities.insert_one({
-                "key": "acquagym", "nome": "Acquagym", "colore": "#00C8FF",
-                "icona": "pool", "is_default": False, "created_at": now_rome(),
-            })
-            logger.info("[MIGRATION-LEZIONE-SPECIALE] Attività 'acquagym' creata")
-        # Cleanup di un eventuale tentativo precedente con data errata
-        await db.lessons.delete_many({"tipo_attivita": "acquagym", "data_specifica": "2026-07-10"})
-        special_key = {"giorno": "venerdi", "orario": "18:30", "data_specifica": "2026-07-17"}
-        await db.lessons.update_one(
-            special_key,
-            {"$set": {
-                **special_key,
-                "tipo_attivita": "acquagym",
-                "descrizione": "Lezione SPECIALE solo per questa settimana alla Piscina Camping!",
-                "coach": "Daniele",
-            }},
-            upsert=True,
-        )
-        cache.invalidate("all_lessons")
-        logger.info("[MIGRATION-LEZIONE-SPECIALE] Acquagym venerdì 17/07/2026 18:30 (Piscina Camping) assicurata")
+        res = await db.lessons.delete_many({"tipo_attivita": "acquagym", "data_specifica": {"$in": ["2026-07-10", "2026-07-17"]}})
+        if res.deleted_count:
+            cache.invalidate("all_lessons")
+            logger.info(f"[MIGRATION-CLEANUP] Rimosse {res.deleted_count} lezioni speciali acquagym scadute")
     except Exception as e:
-        logger.warning(f"[MIGRATION-LEZIONE-SPECIALE] {e}")
+        logger.warning(f"[MIGRATION-CLEANUP] {e}")
 
     # Auto-fix migration: ripara le subscriptions self_activated col bug (manca attivo / datetime str)
     # Idempotente: aggiorna solo i record davvero rotti
