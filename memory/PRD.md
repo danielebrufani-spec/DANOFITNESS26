@@ -605,3 +605,12 @@ Frontend: nuovo sotto-modale `SnapshotsModal` in `LessonScheduleManager.tsx` acc
 - DATO PROD SISTEMATO subito via API: Giacomo Betti rimanenti 0→1, ora visibile in lista. La prenotazione di stasera resta valida e già scalata.
 - Test preview: pacchetto a 0 → visibile scaduto:true → PUT +1 → scaduto:false. ✓
 - ⚠️ Save to Github necessario per portare il fix visibilità sull'app live.
+
+## Prenotazione manuale = stessa modalità dei clienti (28 Lug 2026)
+- Richiesta: la prenotazione manuale admin NON deve scalare subito la lezione; deve seguire le regole delle prenotazioni clienti (scalatura via SCHEDULER ~30 min dopo l'inizio lezione).
+- Backend: `AdminForceBookingCreate.scala_lezione` default True→False (endpoint /admin/bookings/force-add).
+- Frontend admin.tsx: rimosso checkbox "Scala lezione dall'abbonamento" e stato `addParticipantScala`; la modale ora mostra nota informativa "Scalatura automatica"; handleConfirmAddParticipant invia sempre scala_lezione:false; messaggio aggiornato.
+- DATI PROD corretti per Anna Bertinelli (prenotata oggi 28/07 18:30 acquapower con scalatura immediata errata): rimossa con riaccredito (3→4 rimanenti) e ri-aggiunta senza scalatura → stasera ~19:00 lo scheduler scalerà normalmente (4→3).
+- BONUS FIX: rimossa corruzione in coda a admin.tsx (righe duplicate spezzate dopo StyleSheet, causava errori TS1005) — probabilmente residuo di un write precedente.
+- Test: force-add senza param → scalata False ✓; TSC pulito (restano solo 2 warning pre-esistenti 'cognome' righe ~1197/1207) ✓.
+- ⚠️ Save to Github necessario: sull'app live il vecchio toggle (default ON) scala ancora subito finché non deploya.

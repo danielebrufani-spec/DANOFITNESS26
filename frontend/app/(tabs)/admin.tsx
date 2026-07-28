@@ -135,7 +135,6 @@ export default function AdminScreen() {
   const [addParticipantTarget, setAddParticipantTarget] = useState<{lesson_id: string; data_lezione: string; orario: string; tipo: string} | null>(null);
   const [addParticipantUserId, setAddParticipantUserId] = useState<string>('');
   const [addParticipantSearch, setAddParticipantSearch] = useState<string>('');
-  const [addParticipantScala, setAddParticipantScala] = useState<boolean>(true);
   const [savingAddParticipant, setSavingAddParticipant] = useState(false);
 
   // AVVISA CLASSE Modal (WhatsApp)
@@ -193,7 +192,6 @@ export default function AdminScreen() {
     setAddParticipantTarget({ lesson_id, data_lezione, orario, tipo });
     setAddParticipantUserId('');
     setAddParticipantSearch('');
-    setAddParticipantScala(true);
     setShowAddParticipant(true);
   };
 
@@ -204,19 +202,13 @@ export default function AdminScreen() {
     }
     setSavingAddParticipant(true);
     try {
-      const res = await apiService.adminForceAddBooking({
+      await apiService.adminForceAddBooking({
         user_id: addParticipantUserId,
         lesson_id: addParticipantTarget.lesson_id,
         data_lezione: addParticipantTarget.data_lezione,
-        scala_lezione: addParticipantScala,
+        scala_lezione: false,
       });
-      const scaled = res.data.scaled;
-      let msg = 'Cliente aggiunto alla lezione';
-      if (addParticipantScala) {
-        msg += scaled.scalata
-          ? ` — Lezione scalata (${scaled.lezioni_rimanenti ?? 0} residue)`
-          : ' — Nessun pacchetto attivo da scalare';
-      }
+      const msg = 'Cliente aggiunto alla lezione — la lezione verrà scalata automaticamente all\'inizio della lezione, come per le prenotazioni normali';
       if (typeof window !== 'undefined') window.alert(msg);
       // Reload participants for this lesson
       const key = `${addParticipantTarget.data_lezione}-${addParticipantTarget.lesson_id}`;
@@ -2170,22 +2162,17 @@ export default function AdminScreen() {
                 ))}
             </ScrollView>
 
-            <TouchableOpacity
+            <View
               style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, marginTop: 8, borderRadius: 6, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.surface }}
-              onPress={() => setAddParticipantScala(!addParticipantScala)}
             >
-              <Ionicons
-                name={addParticipantScala ? 'checkbox' : 'square-outline'}
-                size={22}
-                color={addParticipantScala ? COLORS.primary : COLORS.textSecondary}
-              />
+              <Ionicons name="time-outline" size={22} color={COLORS.textSecondary} />
               <View style={{ flex: 1 }}>
-                <Text style={{ color: COLORS.text, fontFamily: FONTS.bodyBold, fontSize: 13 }}>Scala lezione dall'abbonamento</Text>
+                <Text style={{ color: COLORS.text, fontFamily: FONTS.bodyBold, fontSize: 13 }}>Scalatura automatica</Text>
                 <Text style={{ color: COLORS.textSecondary, fontSize: 11, marginTop: 2 }}>
-                  Se attivo, scala 1 lezione dal pacchetto attivo del cliente
+                  La lezione verrà scalata dal pacchetto all'inizio della lezione, come per le prenotazioni fatte dai clienti
                 </Text>
               </View>
-            </TouchableOpacity>
+            </View>
 
             <TouchableOpacity
               data-testid="confirm-add-participant"

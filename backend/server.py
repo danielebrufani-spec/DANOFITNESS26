@@ -2542,7 +2542,9 @@ class AdminForceBookingCreate(BaseModel):
     user_id: str
     lesson_id: str
     data_lezione: str
-    scala_lezione: bool = True
+    # Default False: la prenotazione manuale segue le stesse regole di quelle dei clienti
+    # (la lezione viene scalata dallo SCHEDULER 30 min dopo l'inizio, non subito)
+    scala_lezione: bool = False
 
 
 @api_router.post("/admin/bookings/force-add")
