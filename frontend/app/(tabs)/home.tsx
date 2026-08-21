@@ -23,6 +23,7 @@ import { StreakBanner } from '../../src/components/StreakBanner';
 import { KPIBanner } from '../../src/components/KPIBanner';
 import { PilatesEndBanner } from '../../src/components/PilatesEndBanner';
 import { SummerSilhouettes } from '../../src/components/SummerSilhouettes';
+import { NuoviOrariBanner } from '../../src/components/NuoviOrariBanner';
 import { FONTS, glow } from '../../src/theme';
 import { CountUp } from '../../src/components/CountUp';
 
@@ -1090,6 +1091,9 @@ export default function HomeScreen() {
             <Text style={styles.heroQuote}>"No excuses. Just results."</Text>
           </View>
         </View>
+
+        {/* BANNER NUOVI ORARI 2026/27 - in evidenza */}
+        <NuoviOrariBanner />
 
         {/* AVVISI LEZIONI ANNULLATE (dinamico) */}
         {cancelledLessons.filter((c: any) => {

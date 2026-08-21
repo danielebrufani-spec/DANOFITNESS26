@@ -614,3 +614,14 @@ Frontend: nuovo sotto-modale `SnapshotsModal` in `LessonScheduleManager.tsx` acc
 - BONUS FIX: rimossa corruzione in coda a admin.tsx (righe duplicate spezzate dopo StyleSheet, causava errori TS1005) — probabilmente residuo di un write precedente.
 - Test: force-add senza param → scalata False ✓; TSC pulito (restano solo 2 warning pre-esistenti 'cognome' righe ~1197/1207) ✓.
 - ⚠️ Save to Github necessario: sull'app live il vecchio toggle (default ON) scala ancora subito finché non deploya.
+
+## Popup + Banner NUOVI ORARI INVERNALI 2026/27 (21 Ago 2026)
+- Richiesta: popup all'apertura con "nuovi orari" + finestra per aprire/salvare l'immagine dello schema; popup SOLO alla prima apertura; poi banner in evidenza in home che apre lo schema consultabile.
+- Immagine schema (fornita dall'utente, orari invernali dal 8 settembre): salvata in `/app/frontend/public/orari-invernali-2026.png` (1024x572, servita staticamente anche su Vercel).
+- Nuovo componente `src/components/NuoviOrariBanner.tsx` con 3 export:
+  - `OrariSchemaModal`: viewer fullscreen con immagine + pulsante "SALVA IMMAGINE" (download via anchor, solo web) (testID orari-schema-modal, orari-save-btn, orari-close-btn).
+  - `NuoviOrariPopup`: popup SOLO PRIMA APERTURA (localStorage `nuovi_orari_2026_popup_seen`, marcato al dismiss), anteprima cliccabile "TOCCA PER INGRANDIRE", CTA "GUARDA LO SCHEMA", link "OK, visto! Lo ritrovi in Home" (testID nuovi-orari-popup, -view, -dismiss, -close, -preview). Montato in `(tabs)/_layout.tsx` per !isArchived.
+  - `NuoviOrariBanner`: banner arancione in home.tsx subito dopo l'hero (solo vista client, riga ~1084), apre il viewer (testID nuovi-orari-banner).
+- Test Playwright 5 step: popup prima apertura ✓, viewer+salva ✓, dismiss ✓, banner home→viewer ✓, reload→popup non riappare ✓.
+- NOTA: quando gli orari invernali entreranno in vigore (8 set) le lezioni nel DB andranno aggiornate (l'utente può farlo dal tab Orari admin o chiedere migrazione).
+- ⚠️ Save to Github per pubblicare su Vercel (immagine inclusa nell'export).
