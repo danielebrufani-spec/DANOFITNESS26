@@ -20,8 +20,8 @@ import { FONTS } from '../theme';
  * - NuoviOrariBanner: banner in evidenza nella home, apre lo schema consultabile.
  */
 
-const IMG_URL = '/orari-invernali-2026.png';
-const IMG_RATIO = 1024 / 572;
+const IMG_URL = '/orari-invernali-2026.png?v=2';
+const IMG_RATIO = 1375 / 768;
 const SEEN_KEY = 'nuovi_orari_2026_popup_seen';
 
 const downloadImage = () => {
@@ -59,7 +59,7 @@ export const OrariSchemaModal: React.FC<{ visible: boolean; onClose: () => void 
             resizeMode="contain"
           />
         </View>
-        <Text style={styles.viewerSub}>In vigore da lunedì 8 settembre</Text>
+        <Text style={styles.viewerSub}>In vigore da lunedì 7 settembre</Text>
         <TouchableOpacity onPress={downloadImage} style={styles.saveBtn} activeOpacity={0.85} testID="orari-save-btn">
           <Ionicons name="download" size={20} color="#000" />
           <Text style={styles.saveBtnText}>SALVA IMMAGINE</Text>
@@ -113,7 +113,7 @@ export const NuoviOrariPopup: React.FC = () => {
             <Text style={styles.title}>NUOVI ORARI!</Text>
             <View style={styles.accentBar} />
             <Text style={styles.subtitle}>
-              Da <Text style={styles.bold}>lunedì 8 settembre</Text> entra in vigore l'orario invernale 2026/27.
+              Da <Text style={styles.bold}>lunedì 7 settembre</Text> entra in vigore l'orario invernale 2026/27.
               Tocca lo schema per vederlo a schermo intero e salvarlo sul telefono!
             </Text>
 
@@ -157,7 +157,7 @@ export const NuoviOrariBanner: React.FC = () => {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.bannerTitle}>NUOVI ORARI 2026/27</Text>
-            <Text style={styles.bannerSub}>Da lunedì 8 settembre — tocca per vedere lo schema</Text>
+            <Text style={styles.bannerSub}>Da lunedì 7 settembre — tocca per vedere lo schema</Text>
           </View>
           <Ionicons name="chevron-forward" size={22} color="#FF6B00" />
         </View>

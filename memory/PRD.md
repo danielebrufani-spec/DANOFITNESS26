@@ -625,3 +625,8 @@ Frontend: nuovo sotto-modale `SnapshotsModal` in `LessonScheduleManager.tsx` acc
 - Test Playwright 5 step: popup prima apertura ✓, viewer+salva ✓, dismiss ✓, banner home→viewer ✓, reload→popup non riappare ✓.
 - NOTA: quando gli orari invernali entreranno in vigore (8 set) le lezioni nel DB andranno aggiornate (l'utente può farlo dal tab Orari admin o chiedere migrazione).
 - ⚠️ Save to Github per pubblicare su Vercel (immagine inclusa nell'export).
+
+### Sostituzione immagine orari (21 Ago 2026)
+- Sostituita `/app/frontend/public/orari-invernali-2026.png` con la nuova versione fornita (1375x768, "da Lunedì 7 Settembre" invece di 8).
+- `NuoviOrariBanner.tsx`: IMG_URL con cache-buster `?v=2`, IMG_RATIO 1375/768, testi aggiornati 8→7 settembre (popup, viewer, banner).
+- Verificato con screenshot: popup e anteprima mostrano la nuova immagine e "lunedì 7 settembre". ✓
