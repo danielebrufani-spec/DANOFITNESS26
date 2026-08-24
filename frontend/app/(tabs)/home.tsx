@@ -24,6 +24,7 @@ import { KPIBanner } from '../../src/components/KPIBanner';
 import { PilatesEndBanner } from '../../src/components/PilatesEndBanner';
 import { SummerSilhouettes } from '../../src/components/SummerSilhouettes';
 import { NuoviOrariBanner } from '../../src/components/NuoviOrariBanner';
+import { PausaEstivaBanner } from '../../src/components/PausaEstiva';
 import { FONTS, glow } from '../../src/theme';
 import { CountUp } from '../../src/components/CountUp';
 
@@ -1092,6 +1093,8 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {/* BANNER PAUSA ESTIVA (visibile solo dal 24/08 al 06/09) */}
+        <PausaEstivaBanner />
         {/* BANNER NUOVI ORARI 2026/27 - in evidenza */}
         <NuoviOrariBanner />
 

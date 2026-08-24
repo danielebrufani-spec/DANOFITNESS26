@@ -639,3 +639,27 @@ Frontend: nuovo sotto-modale `SnapshotsModal` in `LessonScheduleManager.tsx` acc
 - **Retrocompatibilità**: utenti registrati PRIMA del flusso (campo assente) → comportamento vecchio (prova self-service).
 - **Test**: curl completo (register→in_attesa→403→concedi→concessa→attiva OK; nega→403) ✓; screenshot schermata attesa pulita ✓; screenshot admin badge+pulsanti ✓. Push helper loggato (sent=0 in preview: nessuna subscription). Utenti test eliminati tranne demo attesa_ui@test.com.
 - NOTA DEBUG: i click Playwright falliti erano intercettati dal modal admin pre-esistente "PROVA ATTIVATA!" sovrapposto — non era un bug.
+
+## FIX Migrazione Orario Invernale 2026/27 (24 Ago 2026)
+Bug P0: la migrazione invernale (dry-run trigger 24/08) inseriva le 12 lezioni ma le vecchie migrazioni hardcoded le cancellavano subito (estiva rimuoveva i 17:30 mar/gio, rimozione Pilates cancellava i Pilates di Toto). DB corrotto a 10 lezioni miste.
+
+**Fix in `server.py`:**
+1. Migrazione ESTIVA: attiva solo fino al 28/08 (`< 2026-08-29`) E solo se il flag `orario_invernale_2026` NON esiste in `db.migrations` (guard anti-conflitto).
+2. Migrazione INVERNALE estratta in `apply_winter_schedule_if_due()`: trigger `>= 2026-08-29` (inizio pausa estiva, prenotazioni congelate), one-shot via flag DB + cache in-memory `_winter_migration_applied`. Chiamata sia da `startup_event` sia dal background task `auto_process_lessons_task` (ogni 2 min) → su Render parte anche SENZA restart. Crea anche l'attività `interval_step` (#FF1493) oltre a circuito/pilates.
+3. Rimozione Pilates: gated `< 2026-08-29` + flag DB assente (dal 29/08 il Pilates torna con Toto, non va più rimosso).
+4. Frontend `constants.ts`: aggiunta entry `interval_step` in ATTIVITA_INFO (nome, icona fitness-center, colore #FF1493, immagine Unsplash classe fitness).
+
+**Orario invernale (12 lezioni, verificato 1:1 con l'immagine orari-invernali-2026.png):**
+- Lun: 13:15 Circuito, 20:15 Funzionale (Daniele)
+- Mar: 08:30 Funzionale, 17:30 Circuito (Daniele), 20:15 Pilates (Toto)
+- Mer: 13:15 Funzionale, 20:15 Circuito (Daniele)
+- Gio: 08:30 Circuito, 17:30 Funzionale (Daniele), 20:15 Pilates (Toto)
+- Ven: 13:15 Circuito (Daniele), 20:15 Interval Step (Chiara)
+
+**DB preview riparato manualmente** (12 lezioni + attività interval_step, flag mantenuto) e verificato stabile dopo restart.
+
+**Test:** simulazione prod su DB temporaneo (`/tmp/test_winter_migration.py`): 28/08 → estivo intatto ✓; 29/08 → 12 lezioni, una-tantum preservate, flag+attività creati ✓; 2ª esecuzione idempotente ✓. API `/api/lessons` = 12 lezioni corrette ✓. Screenshot tab Orari: tutte le lezioni renderizzate, Interval Step fucsia OK ✓.
+
+**Comportamento PROD (dopo Save to Github):** fino al 28/08 orario estivo invariato; dal 29/08 (primo restart Render O entro 2 min dal background task) switch automatico all'orario invernale. Prenotazioni riaprono domenica 6/9 ore 9:00 col nuovo orario.
+
+**Task in sospeso:** integrazione Gemini Chat — l'utente ha chiesto "a cosa serve la chat?" → in attesa di conferma se procedere o accantonare.

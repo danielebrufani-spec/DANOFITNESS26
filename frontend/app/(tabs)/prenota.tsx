@@ -28,6 +28,7 @@ import {
   formatDate,
 } from '../../src/utils/constants';
 import { FONTS } from '../../src/theme';
+import { PausaEstivaScreen, pausaEstivaInCorso, isDataInPausa } from '../../src/components/PausaEstiva';
 
 // Get current booking week (Monday to Saturday)
 // Bookings for next week open ONLY on Sunday at 9:00 AM Rome time
@@ -358,6 +359,8 @@ export default function PrenotaScreen() {
   const getLessonsForDate = (date: Date) => {
     const dayName = getDayName(date);
     const dateString = getDateString(date);
+    // Nessuna lezione nei giorni di pausa estiva
+    if (isDataInPausa(dateString)) return [];
     // Include lezioni ricorrenti del giorno + lezioni UNA TANTUM solo nella loro data specifica
     return lessons.filter(
       (lesson) => lesson.giorno === dayName && (!lesson.data_specifica || lesson.data_specifica === dateString)
@@ -605,6 +608,15 @@ export default function PrenotaScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
         </View>
+      </SafeAreaView>
+    );
+  }
+
+  // PAUSA ESTIVA: dal 29/08 al 06/09 (ore 9:00) niente prenotazioni, solo schermata dedicata
+  if (pausaEstivaInCorso()) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <PausaEstivaScreen />
       </SafeAreaView>
     );
   }

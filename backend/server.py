@@ -2061,6 +2061,13 @@ async def create_booking(data: BookingCreate, current_user: dict = Depends(get_c
             detail=f"Questa è una lezione speciale valida solo il {ds[8:10]}/{ds[5:7]}/{ds[0:4]}"
         )
     
+    # PAUSA ESTIVA 2026: nessuna prenotazione dal 29/08 al 06/09 compresi
+    if "2026-08-29" <= data.data_lezione <= "2026-09-06":
+        raise HTTPException(
+            status_code=400,
+            detail="🏖️ Pausa estiva! Le attività riprendono lunedì 7 settembre con la nuova stagione invernale. Le prenotazioni riaprono domenica 6/9 alle 9:00."
+        )
+    
     # CHECK LEZIONE ANNULLATA
     cancelled = await db.cancelled_lessons.find_one({
         "lesson_id": data.lesson_id,
@@ -2687,6 +2694,10 @@ async def admin_force_add_booking(data: AdminForceBookingCreate, admin_user: dic
         raise HTTPException(status_code=404, detail="Lezione non trovata")
     if not lesson:
         raise HTTPException(status_code=404, detail="Lezione non trovata")
+
+    # PAUSA ESTIVA 2026: nessuna prenotazione dal 29/08 al 06/09 compresi
+    if "2026-08-29" <= data.data_lezione <= "2026-09-06":
+        raise HTTPException(status_code=400, detail="🏖️ Pausa estiva: nessuna lezione dal 29/08 al 06/09. Si riparte lunedì 7 settembre!")
 
     existing = await db.bookings.find_one({
         "user_id": data.user_id,
@@ -7652,6 +7663,55 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+_winter_migration_applied = False
+
+async def apply_winter_schedule_if_due():
+    """Orario invernale 2026/27: dal 29/08/2026 sostituisce tutte le lezioni ricorrenti. One-shot (flag db.migrations)."""
+    global _winter_migration_applied
+    if _winter_migration_applied:
+        return
+    if now_rome().strftime("%Y-%m-%d") < "2026-08-29":
+        return
+    flag = await db.migrations.find_one({"nome": "orario_invernale_2026"})
+    if flag:
+        _winter_migration_applied = True
+        return
+    for key, nome, colore, icona in [
+        ("circuito", "Circuito", "#FF4500", "refresh"),
+        ("pilates", "Pilates", "#00E676", "self-improvement"),
+        ("interval_step", "Interval Step", "#FF1493", "fitness-center"),
+    ]:
+        if not await db.activities.find_one({"key": key}):
+            await db.activities.insert_one({
+                "key": key, "nome": nome, "colore": colore,
+                "icona": icona, "is_default": False, "created_at": now_rome(),
+            })
+    # Rimuovi tutte le lezioni ricorrenti (le una-tantum restano)
+    await db.lessons.delete_many({"$or": [{"data_specifica": None}, {"data_specifica": {"$exists": False}}]})
+    winter = [
+        ("lunedi", "13:15", "circuito", "Daniele"),
+        ("lunedi", "20:15", "funzionale", "Daniele"),
+        ("martedi", "08:30", "funzionale", "Daniele"),
+        ("martedi", "17:30", "circuito", "Daniele"),
+        ("martedi", "20:15", "pilates", "Toto"),
+        ("mercoledi", "13:15", "funzionale", "Daniele"),
+        ("mercoledi", "20:15", "circuito", "Daniele"),
+        ("giovedi", "08:30", "circuito", "Daniele"),
+        ("giovedi", "17:30", "funzionale", "Daniele"),
+        ("giovedi", "20:15", "pilates", "Toto"),
+        ("venerdi", "13:15", "circuito", "Daniele"),
+        ("venerdi", "20:15", "interval_step", "Chiara"),
+    ]
+    await db.lessons.insert_many([
+        {"giorno": g, "orario": o, "tipo_attivita": t, "coach": c, "descrizione": None, "data_specifica": None}
+        for g, o, t, c in winter
+    ])
+    await db.migrations.insert_one({"nome": "orario_invernale_2026", "applied_at": now_rome()})
+    cache.invalidate("all_lessons")
+    _winter_migration_applied = True
+    logger.info("[MIGRATION-INVERNALE] Orario invernale 2026/27 applicato (12 lezioni, in vigore dal 7 settembre)")
+
+
 @app.on_event("startup")
 async def startup_event():
     """Start the scheduler and create MongoDB indexes for performance"""
@@ -7722,44 +7782,55 @@ async def startup_event():
 
     # Auto-migration: orario estivo martedì/giovedì 18:30 con nuove attività ACQUA
     # (Martedì ACQUAPOWER con Daniele, Giovedì ACQUAGAG con Davide)
-    # Idempotente: forza sempre i valori corretti sul DB.
+    # ATTIVO SOLO FINO AL 28/08/2026: dal 29/08 (pausa estiva) subentra l'orario invernale.
+    # Guard extra: se l'orario invernale è già stato applicato, NON toccare più le lezioni.
     try:
-        # Rimuove le vecchie lezioni invernali 17:30 se esistono ancora
-        old_removed = await db.lessons.delete_many({
-            "giorno": {"$in": ["martedi", "giovedi"]},
-            "orario": "17:30",
-        })
-        if old_removed.deleted_count > 0:
-            logger.info(f"[MIGRATION-ORARIO-ESTIVO] Rimosse {old_removed.deleted_count} lezioni invernali 17:30 (martedì/giovedì)")
+        _winter_flag = await db.migrations.find_one({"nome": "orario_invernale_2026"})
+        if now_rome().strftime("%Y-%m-%d") < "2026-08-29" and not _winter_flag:
+            # Rimuove le vecchie lezioni invernali 17:30 se esistono ancora
+            old_removed = await db.lessons.delete_many({
+                "giorno": {"$in": ["martedi", "giovedi"]},
+                "orario": "17:30",
+            })
+            if old_removed.deleted_count > 0:
+                logger.info(f"[MIGRATION-ORARIO-ESTIVO] Rimosse {old_removed.deleted_count} lezioni invernali 17:30 (martedì/giovedì)")
 
-        # Upsert nuove lezioni estive 18:30 acquatiche
-        await db.lessons.update_one(
-            {"giorno": "martedi", "orario": "18:30"},
-            {"$set": {
-                "giorno": "martedi",
-                "orario": "18:30",
-                "tipo_attivita": "acquapower",
-                "descrizione": "Allenamento in acqua ad alta intensità con esercizi di forza e resistenza",
-                "coach": "Daniele",
-            }},
-            upsert=True,
-        )
-        await db.lessons.update_one(
-            {"giorno": "giovedi", "orario": "18:30"},
-            {"$set": {
-                "giorno": "giovedi",
-                "orario": "18:30",
-                "tipo_attivita": "acquagag",
-                "descrizione": "Tonificazione in acqua di gambe, addominali e glutei",
-                "coach": "Davide",
-            }},
-            upsert=True,
-        )
-        logger.info("[MIGRATION-ORARIO-ESTIVO] Orario estivo 18:30 applicato: martedì ACQUAPOWER/Daniele, giovedì ACQUAGAG/Davide")
-        # Invalidate lessons cache
-        cache.invalidate("all_lessons")
+            # Upsert nuove lezioni estive 18:30 acquatiche
+            await db.lessons.update_one(
+                {"giorno": "martedi", "orario": "18:30"},
+                {"$set": {
+                    "giorno": "martedi",
+                    "orario": "18:30",
+                    "tipo_attivita": "acquapower",
+                    "descrizione": "Allenamento in acqua ad alta intensità con esercizi di forza e resistenza",
+                    "coach": "Daniele",
+                }},
+                upsert=True,
+            )
+            await db.lessons.update_one(
+                {"giorno": "giovedi", "orario": "18:30"},
+                {"$set": {
+                    "giorno": "giovedi",
+                    "orario": "18:30",
+                    "tipo_attivita": "acquagag",
+                    "descrizione": "Tonificazione in acqua di gambe, addominali e glutei",
+                    "coach": "Davide",
+                }},
+                upsert=True,
+            )
+            logger.info("[MIGRATION-ORARIO-ESTIVO] Orario estivo 18:30 applicato: martedì ACQUAPOWER/Daniele, giovedì ACQUAGAG/Davide")
+            # Invalidate lessons cache
+            cache.invalidate("all_lessons")
     except Exception as e:
         logger.warning(f"[MIGRATION-ORARIO-ESTIVO] {e}")
+
+    # Auto-migration: STAGIONE INVERNALE 2026/27 — si attiva dal 29/08 (inizio pausa estiva,
+    # prenotazioni congelate lato frontend fino a domenica 6/9 ore 9:00).
+    # Richiamata anche dal background task ogni 2 min: la migrazione parte anche SENZA restart.
+    try:
+        await apply_winter_schedule_if_due()
+    except Exception as e:
+        logger.warning(f"[MIGRATION-INVERNALE] {e}")
 
     # Auto-migration: cleanup lezione speciale Acquagym 17/07/2026 (evento passato).
     # La lezione non deve più essere ricreata né apparire in alcuna vista.
@@ -7833,12 +7904,13 @@ async def startup_event():
     except Exception as e:
         logger.warning(f"[MIGRATION-STREAK] Errore fix retroattivo: {e}")
 
-    # Auto-migration STAGIONALE: rimuove le lezioni di Pilates (corso concluso fino a settembre)
-    # Idempotente: se già rimosse, non fa nulla
+    # Auto-migration STAGIONALE: rimuove le lezioni di Pilates SOLO in orario estivo.
+    # Dal 29/08 il Pilates torna con l'orario invernale: NON deve più essere rimosso.
     try:
-        del_res = await db.lessons.delete_many({"tipo_attivita": "pilates"})
-        if del_res.deleted_count > 0:
-            logger.info(f"[MIGRATION] Rimosse {del_res.deleted_count} lezioni Pilates dalla programmazione (corso concluso - riprende a settembre)")
+        if now_rome().strftime("%Y-%m-%d") < "2026-08-29" and not await db.migrations.find_one({"nome": "orario_invernale_2026"}):
+            del_res = await db.lessons.delete_many({"tipo_attivita": "pilates"})
+            if del_res.deleted_count > 0:
+                logger.info(f"[MIGRATION] Rimosse {del_res.deleted_count} lezioni Pilates dalla programmazione (corso concluso - riprende a settembre)")
     except Exception as e:
         logger.warning(f"[MIGRATION] Errore rimozione lezioni Pilates: {e}")
 
@@ -7899,6 +7971,12 @@ async def auto_process_lessons_task():
     
     while True:
         try:
+            # Migrazione orario invernale: parte anche senza restart del server
+            try:
+                await apply_winter_schedule_if_due()
+            except Exception as e:
+                logger.warning(f"[MIGRATION-INVERNALE] {e}")
+
             now = now_rome()
             oggi = now.strftime("%Y-%m-%d")
             ora_corrente = now.strftime("%H:%M")

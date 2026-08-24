@@ -31,6 +31,12 @@ export const ATTIVITA_INFO: { [key: string]: { nome: string; icona: string; colo
     colore: '#00E676',
     image: 'https://images.pexels.com/photos/35553893/pexels-photo-35553893.jpeg'
   },
+  'interval_step': {
+    nome: 'Interval Step',
+    icona: 'fitness-center',
+    colore: '#FF1493',
+    image: 'https://images.unsplash.com/photo-1518611012118-696072aa579a'
+  },
   'yoga': {
     nome: 'Yoga',
     icona: 'spa',
