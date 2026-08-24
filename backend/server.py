@@ -167,6 +167,7 @@ class UserResponse(BaseModel):
     ultimo_abb_inizio: Optional[str] = None
     ultimo_abb_scadenza: Optional[str] = None
     ultimo_abb_pagato: Optional[bool] = None
+    prova_stato: Optional[str] = None  # 'in_attesa' | 'concessa' | 'negata' | None (utenti pre-flusso)
 
 class SubscriptionCreate(BaseModel):
     user_id: str
@@ -499,6 +500,14 @@ SCHEDULE = [
 
 # ======================== AUTH ROUTES ========================
 
+def _prova_stato(user: dict) -> Optional[str]:
+    """Stato autorizzazione prova: nuovo flusso approvato dall'admin."""
+    if "prova_autorizzata" not in user:
+        return None  # utenti registrati prima del nuovo flusso
+    val = user.get("prova_autorizzata")
+    return "concessa" if val is True else ("negata" if val is False else "in_attesa")
+
+
 @api_router.post("/auth/register")
 async def register(user_data: UserCreate):
     # Check if email exists
@@ -516,11 +525,23 @@ async def register(user_data: UserCreate):
         "soprannome": user_data.soprannome,
         "role": UserRole.CLIENT,
         "push_token": None,
+        "prova_autorizzata": None,  # in attesa: l'admin decide se concedere la prova o dare il bentornato
         "created_at": now_rome()
     }
     
     result = await db.users.insert_one(user)
     user_id = str(result.inserted_id)
+    
+    # Notifica push all'admin: nuovo iscritto da approvare
+    try:
+        asyncio.create_task(send_push_to_admins(
+            "🆕 Nuovo iscritto!",
+            f"{user['nome']} {user['cognome']} si è appena registrato. Concedi la prova o dagli il bentornato!",
+            url="/admin",
+            tag="nuovo-iscritto",
+        ))
+    except Exception as e:
+        logger.warning(f"[REGISTER] Push admin fallita: {e}")
     
     # Create token
     token = create_access_token({"sub": user_id})
@@ -1249,6 +1270,58 @@ async def push_status(current_user: dict = Depends(get_current_user)):
     return {"subscribed": count > 0, "devices": count}
 
 
+async def send_push_to_users(user_ids: List[str], title: str, body: str, url: Optional[str] = None, tag: Optional[str] = None) -> dict:
+    """Invia una web push notification solo agli utenti indicati."""
+    if not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
+        logger.warning("[PUSH] VAPID keys non configurate, invio saltato")
+        return {"sent": 0, "failed": 0, "reason": "VAPID_NOT_CONFIGURED"}
+    subs = await db.push_subscriptions.find({"user_id": {"$in": user_ids}}).to_list(1000)
+    payload = json.dumps({
+        "title": title[:100] if title else "DanoFitness",
+        "body": body[:200] if body else "",
+        "url": url or "/",
+        "tag": tag or "danofit-notif",
+    })
+    vapid_claims = {"sub": VAPID_SUBJECT}
+    sent = 0
+    failed = 0
+    expired_ids = []
+    for sub in subs:
+        try:
+            webpush(
+                subscription_info={
+                    "endpoint": sub["endpoint"],
+                    "keys": {"p256dh": sub.get("p256dh"), "auth": sub.get("auth")},
+                },
+                data=payload,
+                vapid_private_key=VAPID_PRIVATE_KEY,
+                vapid_claims=vapid_claims,
+                timeout=10,
+            )
+            sent += 1
+        except WebPushException as e:
+            resp = getattr(e, "response", None)
+            status_code = getattr(resp, "status_code", None)
+            if status_code in (404, 410):
+                expired_ids.append(sub["_id"])
+            else:
+                failed += 1
+        except Exception:
+            failed += 1
+    if expired_ids:
+        await db.push_subscriptions.delete_many({"_id": {"$in": expired_ids}})
+    logger.info(f"[PUSH] Mirata a {len(user_ids)} utenti: sent={sent}, failed={failed}")
+    return {"sent": sent, "failed": failed}
+
+
+async def send_push_to_admins(title: str, body: str, url: Optional[str] = None, tag: Optional[str] = None) -> dict:
+    """Invia una web push a tutti gli account admin."""
+    admin_ids = [str(u["_id"]) async for u in db.users.find({"role": "admin"}, {"_id": 1})]
+    if not admin_ids:
+        return {"sent": 0, "failed": 0}
+    return await send_push_to_users(admin_ids, title, body, url, tag)
+
+
 async def send_push_to_all_users(title: str, body: str, url: Optional[str] = None, tag: Optional[str] = None) -> dict:
     """Invia una web push notification a TUTTI gli utenti sottoscritti (non archiviati).
     Ritorna statistiche {sent, failed, expired_cleaned}.
@@ -1847,10 +1920,14 @@ async def onboarding_status(current_user: dict = Depends(get_current_user)):
 
     is_brand_new = sub_count == 0 and not has_legacy_trial
 
+    prova_stato = _prova_stato(current_user)
+    can_activate = is_brand_new and prova_stato in (None, "concessa")
+
     return {
         "is_brand_new": is_brand_new,
         "subscriptions_count": sub_count,
-        "can_self_activate_trial": is_brand_new,
+        "can_self_activate_trial": can_activate,
+        "prova_stato": prova_stato,
         "user_nome": current_user.get("nome", ""),
     }
 
@@ -1862,6 +1939,14 @@ async def self_activate_trial(current_user: dict = Depends(get_current_user)):
     e mai un prova_attiva legacy). Idempotente.
     """
     user_id = str(current_user["_id"])
+
+    # Nuovo flusso: la prova deve essere prima autorizzata dall'admin
+    stato = _prova_stato(current_user)
+    if stato is not None and stato != "concessa":
+        raise HTTPException(
+            status_code=403,
+            detail="La settimana di prova deve prima essere attivata da Daniele. Scrivigli su WhatsApp!"
+        )
 
     # Verifica brand-new
     sub_count = await db.subscriptions.count_documents({"user_id": user_id})
@@ -1913,6 +1998,44 @@ async def self_activate_trial(current_user: dict = Depends(get_current_user)):
         "data_scadenza": scadenza_str,
         "message": f"Settimana di prova attivata! Hai tempo fino al {scadenza_str} per prenotare quante lezioni vuoi.",
     }
+
+
+class ProvaDecisione(BaseModel):
+    decisione: str  # 'concedi' | 'nega'
+
+
+@api_router.post("/admin/users/{user_id}/prova-decisione")
+async def admin_prova_decisione(user_id: str, data: ProvaDecisione, admin_user: dict = Depends(get_admin_user)):
+    """L'admin decide se il nuovo iscritto può attivare la settimana di prova (concedi)
+    o è un vecchio cliente che torna (nega → gli assegnerà direttamente un abbonamento)."""
+    if data.decisione not in ("concedi", "nega"):
+        raise HTTPException(status_code=400, detail="Decisione non valida (concedi|nega)")
+    try:
+        oid = ObjectId(user_id)
+    except Exception:
+        raise HTTPException(status_code=404, detail="Utente non trovato")
+    user = await db.users.find_one({"_id": oid}, {"profile_image": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="Utente non trovato")
+
+    autorizzata = data.decisione == "concedi"
+    await db.users.update_one({"_id": oid}, {"$set": {"prova_autorizzata": autorizzata}})
+
+    if autorizzata:
+        # Avvisa il cliente con una push (se ha attivato le notifiche)
+        try:
+            asyncio.create_task(send_push_to_users(
+                [user_id],
+                "🎁 Settimana di prova sbloccata!",
+                f"Ciao {user.get('nome', '')}! Daniele ti ha regalato la settimana di prova: apri l'app e attivala quando vuoi.",
+                url="/",
+                tag="prova-concessa",
+            ))
+        except Exception as e:
+            logger.warning(f"[PROVA] Push utente fallita: {e}")
+
+    logger.info(f"[PROVA] Decisione '{data.decisione}' per {user.get('nome')} {user.get('cognome')}")
+    return {"ok": True, "decisione": data.decisione}
 
 
 # ======================== BOOKINGS ROUTES ========================
@@ -2755,6 +2878,7 @@ async def get_all_users(admin_user: dict = Depends(get_admin_user)):
             ultimo_abb_inizio=last_sub["data_inizio"].strftime("%Y-%m-%d") if last_sub and last_sub.get("data_inizio") else None,
             ultimo_abb_scadenza=last_sub["data_scadenza"].strftime("%Y-%m-%d") if last_sub and last_sub.get("data_scadenza") else None,
             ultimo_abb_pagato=last_sub.get("pagato") if last_sub else None,
+            prova_stato=_prova_stato(user),
         ))
     return result
 

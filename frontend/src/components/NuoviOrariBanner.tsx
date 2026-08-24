@@ -12,6 +12,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../utils/constants';
 import { FONTS } from '../theme';
+import { apiService } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 /**
  * Nuovi Orari Invernali 2026/27 (da lunedì 8 settembre).
@@ -71,17 +73,35 @@ export const OrariSchemaModal: React.FC<{ visible: boolean; onClose: () => void 
 
 // ---------- Popup alla prima apertura ----------
 export const NuoviOrariPopup: React.FC = () => {
+  const { isAdmin, isIstruttore } = useAuth();
   const [visible, setVisible] = useState(false);
   const [showSchema, setShowSchema] = useState(false);
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     try {
-      if (!window.localStorage.getItem(SEEN_KEY)) setVisible(true);
+      if (window.localStorage.getItem(SEEN_KEY)) return;
     } catch {
-      /* noop */
+      return;
     }
-  }, []);
+    let cancelled = false;
+    (async () => {
+      // Non sovrapporre il popup al WelcomeGate dei nuovissimi iscritti
+      // (lo vedranno alla prima apertura dopo l'attivazione dell'account)
+      if (!isAdmin && !isIstruttore) {
+        try {
+          const onb = await apiService.onboardingStatus();
+          if (cancelled) return;
+          const gateAttivo = onb.data.is_brand_new && (onb.data.can_self_activate_trial || onb.data.prova_stato === 'in_attesa');
+          if (gateAttivo) return;
+        } catch {
+          /* se il check fallisce mostriamo comunque */
+        }
+      }
+      if (!cancelled) setVisible(true);
+    })();
+    return () => { cancelled = true; };
+  }, [isAdmin, isIstruttore]);
 
   if (!visible) return null;
 

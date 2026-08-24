@@ -9,3 +9,8 @@
 - Password: Test123456
 
 Note: il client `testclient_kpi@test.com` è stato registrato dal testing agent per validare il flusso utente non-admin. Riutilizzabile per test successivi.
+
+## Utente demo "in attesa di approvazione" (flusso prova approvata dall'admin)
+- Email: attesa_ui@test.com
+- Password: Test123456
+- Stato: prova_stato=in_attesa → vede la schermata "ACCOUNT IN ATTIVAZIONE" (WelcomeGate mode attesa)

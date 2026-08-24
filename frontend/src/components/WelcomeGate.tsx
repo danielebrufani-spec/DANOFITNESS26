@@ -32,31 +32,37 @@ export const WelcomeGate: React.FC<{
   userNome?: string;
 }> = ({ enabled, onActivated, userNome }) => {
   const [status, setStatus] = useState<'checking' | 'show' | 'hidden'>('checking');
+  const [mode, setMode] = useState<'prova' | 'attesa'>('prova');
   const [activating, setActivating] = useState(false);
+  const [checkingAgain, setCheckingAgain] = useState(false);
   const [nome, setNome] = useState(userNome || '');
   const [error, setError] = useState<string | null>(null);
 
+  const checkStatus = async (mounted?: () => boolean) => {
+    try {
+      const res = await apiService.onboardingStatus();
+      if (mounted && !mounted()) return;
+      const inAttesa = res.data.prova_stato === 'in_attesa';
+      if (res.data.is_brand_new && (res.data.can_self_activate_trial || inAttesa)) {
+        setNome(res.data.user_nome || '');
+        setMode(inAttesa ? 'attesa' : 'prova');
+        setStatus('show');
+      } else {
+        setStatus('hidden');
+      }
+    } catch {
+      if (!mounted || mounted()) setStatus('hidden');
+    }
+  };
+
   useEffect(() => {
-    let mounted = true;
+    let alive = true;
     if (!enabled) {
       setStatus('hidden');
-      return () => { mounted = false; };
+      return () => { alive = false; };
     }
-    (async () => {
-      try {
-        const res = await apiService.onboardingStatus();
-        if (!mounted) return;
-        if (res.data.is_brand_new && res.data.can_self_activate_trial) {
-          setNome(res.data.user_nome || '');
-          setStatus('show');
-        } else {
-          setStatus('hidden');
-        }
-      } catch {
-        if (mounted) setStatus('hidden');
-      }
-    })();
-    return () => { mounted = false; };
+    checkStatus(() => alive);
+    return () => { alive = false; };
   }, [enabled]);
 
   const activate = async () => {
@@ -74,6 +80,91 @@ export const WelcomeGate: React.FC<{
   };
 
   if (status !== 'show') return null;
+
+  // ---------- SCHERMATA DI ATTESA: account da attivare da Daniele ----------
+  if (mode === 'attesa') {
+    const openWhatsApp = () => {
+      const text = encodeURIComponent(`Ciao Daniele! Mi sono appena registrato all'app DanoFitness23 👋${nome ? ` Sono ${nome}.` : ''}`);
+      const url = `https://wa.me/393395020625?text=${text}`;
+      if (Platform.OS === 'web' && typeof window !== 'undefined') window.open(url, '_blank');
+    };
+    const ricontrolla = async () => {
+      setCheckingAgain(true);
+      await checkStatus();
+      setCheckingAgain(false);
+    };
+    return (
+      <View style={styles.fullscreen}>
+        <SafeAreaView style={styles.safe}>
+          <SummerSilhouettes variant="login" />
+          <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+            <View style={styles.hero}>
+              <View style={[styles.iconCircle, styles.iconCircleWait]}>
+                <Ionicons name="hourglass" size={46} color="#00C8FF" />
+              </View>
+              <Text style={styles.kicker}>BENVENUTO IN DANO FITNESS</Text>
+              <Text style={styles.title}>
+                CIAO{nome ? `, ${nome.toUpperCase()}` : ''}!{'\n'}
+                <Text style={[styles.titleAccent, { color: '#00C8FF' }]}>ACCOUNT IN ATTIVAZIONE</Text>
+              </Text>
+              <View style={styles.accentBar} />
+            </View>
+
+            <View style={styles.descBox} testID="welcome-waiting-screen">
+              <Text style={[styles.descTitle, { color: '#00C8FF' }]}>⏳ MANCA POCHISSIMO</Text>
+              <Text style={styles.descText}>
+                La tua registrazione è andata a buon fine!{'\n\n'}
+                Il tuo account è <Text style={styles.bold}>in attesa di attivazione da parte di Daniele</Text>:
+                riceverai l'accesso a breve. Scrivigli su WhatsApp per accelerare i tempi!
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              onPress={openWhatsApp}
+              activeOpacity={0.88}
+              testID="welcome-waiting-whatsapp"
+              style={[styles.cta, { backgroundColor: '#25D366', shadowColor: '#25D366' }]}
+            >
+              <Ionicons name="logo-whatsapp" size={24} color="#000" />
+              <Text style={styles.ctaText}>SCRIVI A DANIELE SU WHATSAPP</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={ricontrolla}
+              disabled={checkingAgain}
+              activeOpacity={0.8}
+              testID="welcome-waiting-refresh"
+              style={styles.refreshBtn}
+            >
+              {checkingAgain ? (
+                <ActivityIndicator color="#00C8FF" size="small" />
+              ) : (
+                <>
+                  <Ionicons name="refresh" size={18} color="#00C8FF" />
+                  <Text style={styles.refreshBtnText}>CONTROLLA DI NUOVO</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            {/* Push: così riceve la notifica quando Daniele lo attiva */}
+            <View style={styles.pushSection}>
+              <View style={styles.pushIntroRow}>
+                <Ionicons name="notifications-outline" size={18} color={COLORS.primary} />
+                <Text style={styles.pushIntroText}>
+                  Attiva le notifiche: ti avvisiamo appena Daniele attiva il tuo account!
+                </Text>
+              </View>
+              <PushNotificationButton />
+            </View>
+
+            <Text style={styles.footer}>
+              Daniele · WhatsApp{Platform.OS === 'web' ? ' · ' : '\n'}339 502 0625
+            </Text>
+          </ScrollView>
+        </SafeAreaView>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.fullscreen}>
@@ -213,6 +304,31 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 0 },
     elevation: 8,
+  },
+  iconCircleWait: {
+    backgroundColor: 'rgba(0,200,255,0.12)',
+    borderColor: '#00C8FF',
+    shadowColor: '#00C8FF',
+  },
+  refreshBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 22,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#00C8FF',
+    width: '100%',
+    maxWidth: 480,
+  },
+  refreshBtnText: {
+    fontFamily: FONTS.bodyBlack,
+    fontSize: 13,
+    color: '#00C8FF',
+    letterSpacing: 1.5,
   },
   kicker: {
     fontFamily: FONTS.bodyBlack,

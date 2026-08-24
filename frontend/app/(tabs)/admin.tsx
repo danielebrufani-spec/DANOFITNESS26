@@ -656,6 +656,36 @@ export default function AdminScreen() {
   };
 
   // Archivia cliente (lo mette in stato non attivo)
+  const handleProvaDecisione = async (user: User, decisione: 'concedi' | 'nega') => {
+    const label = decisione === 'concedi'
+      ? `Concedere la SETTIMANA DI PROVA a ${user.nome} ${user.cognome}?\n\nPotrà attivarla in autonomia dall'app quando vuole (riceverà anche una notifica).`
+      : `Segnare ${user.nome} ${user.cognome} come VECCHIO CLIENTE (bentornato)?\n\nNiente settimana di prova: gli assegnerai direttamente un abbonamento dalla tab Abbonamenti.`;
+    if (Platform.OS === 'web' && !window.confirm(label)) return;
+    try {
+      await apiService.adminProvaDecisione(user.id, decisione);
+      loadData();
+      // Proponi il messaggio WhatsApp di benvenuto/bentornato
+      if (user.telefono && Platform.OS === 'web') {
+        const sendWa = window.confirm(
+          decisione === 'concedi'
+            ? 'Fatto! Vuoi mandargli anche il messaggio di BENVENUTO su WhatsApp?'
+            : 'Fatto! Vuoi mandargli il messaggio di BENTORNATO su WhatsApp (con richiesta scelta abbonamento)?'
+        );
+        if (sendWa) {
+          let n = (user.telefono || '').replace(/[^\d+]/g, '');
+          if (n.startsWith('+')) n = n.substring(1);
+          if (n && !n.startsWith('39') && n.length === 10) n = '39' + n;
+          const msg = decisione === 'concedi'
+            ? `Ciao ${user.nome}! 👋 Benvenuto in DanoFitness23! 💪\n\nTi ho sbloccato la SETTIMANA DI PROVA GRATUITA: apri l'app e attivala tu quando vuoi iniziare — da quel momento avrai 7 giorni di lezioni illimitate.\n\nA presto in palestra! 🔥`
+            : `Ciao ${user.nome}! 👋 Bentornato in DanoFitness23! 💪\n\nChe piacere riaverti! Fammi sapere quale abbonamento vuoi caricare (8 lezioni, 16 lezioni, mensile...) e te lo attivo subito.\n\nA presto! 🔥`;
+          if (n) window.open(`https://wa.me/${n}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+      }
+    } catch (error: any) {
+      if (Platform.OS === 'web') alert(`Errore: ${error.response?.data?.detail || 'Impossibile salvare la decisione'}`);
+    }
+  };
+
   const handleArchiveUser = async (userId: string, userName: string) => {
     if (Platform.OS === 'web') {
       if (window.confirm(`Vuoi archiviare ${userName}? Il cliente non verrà eliminato ma spostato nella sezione "Archiviati".`)) {
@@ -1456,12 +1486,37 @@ export default function AdminScreen() {
                       <Text style={styles.archivedInlineBadgeText}>ARCHIVIATO</Text>
                     </View>
                   )}
+                  {user.prova_stato === 'in_attesa' && !user.archived && user.role === 'client' && (
+                    <View style={styles.pendingBadge} data-testid={`pending-badge-${user.id}`}>
+                      <Text style={styles.pendingBadgeText}>DA APPROVARE</Text>
+                    </View>
+                  )}
                   {user.prova_attiva && (
                     <View style={styles.trialBadge} data-testid={`trial-badge-${user.id}`}>
                       <Text style={styles.trialBadgeText}>PROVA</Text>
                     </View>
                   )}
                 </View>
+                {user.prova_stato === 'in_attesa' && !user.archived && user.role === 'client' && (
+                  <View style={styles.provaDecisionRow}>
+                    <TouchableOpacity
+                      style={[styles.provaDecisionBtn, { backgroundColor: 'rgba(57,255,20,0.12)', borderColor: '#39FF14' }]}
+                      onPress={() => handleProvaDecisione(user, 'concedi')}
+                      testID={`concedi-prova-${user.id}`}
+                    >
+                      <Ionicons name="gift" size={16} color="#39FF14" />
+                      <Text style={[styles.provaDecisionText, { color: '#39FF14' }]}>Concedi prova 7gg</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.provaDecisionBtn, { backgroundColor: 'rgba(0,200,255,0.12)', borderColor: '#00C8FF' }]}
+                      onPress={() => handleProvaDecisione(user, 'nega')}
+                      testID={`bentornato-${user.id}`}
+                    >
+                      <Ionicons name="hand-left" size={16} color="#00C8FF" />
+                      <Text style={[styles.provaDecisionText, { color: '#00C8FF' }]}>Vecchio cliente</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
                 {user.role !== 'admin' && (
                   <View style={styles.userActionsRow}>
                     {user.telefono && (
@@ -2717,6 +2772,38 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
     letterSpacing: 1,
+  },
+  pendingBadge: {
+    backgroundColor: '#FFEA00',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  pendingBadgeText: {
+    color: '#000',
+    fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+  },
+  provaDecisionRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+  },
+  provaDecisionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1.5,
+  },
+  provaDecisionText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
   adminBadge: {
     backgroundColor: COLORS.primary,

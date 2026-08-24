@@ -98,6 +98,7 @@ export interface User {
   ultimo_abb_inizio?: string;
   ultimo_abb_scadenza?: string;
   ultimo_abb_pagato?: boolean;
+  prova_stato?: string | null;
 }
 
 export interface Reply {
@@ -258,6 +259,7 @@ export const apiService = {
   getAllUsers: () => api.get<User[]>('/admin/users'),
   getArchivedUsers: () => api.get<User[]>('/admin/users/archived'),
   archiveUser: (userId: string) => api.post(`/admin/users/${userId}/archive`),
+  adminProvaDecisione: (userId: string, decisione: 'concedi' | 'nega') => api.post<{ok: boolean; decisione: string}>(`/admin/users/${userId}/prova-decisione`, { decisione }),
   restoreUser: (userId: string) => api.post(`/admin/users/${userId}/restore`),
   deleteUser: (userId: string) => api.delete(`/admin/users/${userId}`),
   activateTrial: (userId: string) => api.post(`/admin/activate-trial/${userId}`),
@@ -488,7 +490,7 @@ export const apiService = {
   adminMaestroDeleteQuestion: (id: string) => api.delete<{deleted: string}>(`/admin/maestro/questions/${id}`),
 
   // ========== ONBOARDING NEW USER (Trial Self-Activation) ==========
-  onboardingStatus: () => api.get<{is_brand_new: boolean; subscriptions_count: number; can_self_activate_trial: boolean; user_nome: string}>('/onboarding/status'),
+  onboardingStatus: () => api.get<{is_brand_new: boolean; subscriptions_count: number; can_self_activate_trial: boolean; prova_stato?: string | null; user_nome: string}>('/onboarding/status'),
   selfActivateTrial: () => api.post<{ok: boolean; subscription_id: string; data_inizio: string; data_scadenza: string; message: string}>('/onboarding/self-activate-trial'),
 
   // ========== ADMIN: NEW TRIAL ACTIVATIONS NOTIFICATION ==========
