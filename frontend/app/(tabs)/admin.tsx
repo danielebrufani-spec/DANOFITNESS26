@@ -1018,6 +1018,24 @@ export default function AdminScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
+        {/* AVVISO: certificati da convalidare (visibile su ogni tab) */}
+        {users.filter(u => u.certificato_stato === 'in_verifica' && !u.archived && u.role === 'client').map(u => (
+          <TouchableOpacity
+            key={`cert-pending-${u.id}`}
+            style={adminCertStyles.pendingBanner}
+            onPress={() => setCertUser(u)}
+            activeOpacity={0.85}
+            testID={`cert-pending-banner-${u.id}`}
+          >
+            <Ionicons name="medkit" size={22} color="#00C8FF" />
+            <View style={{ flex: 1 }}>
+              <Text style={adminCertStyles.pendingTitle}>📄 CERTIFICATO DA CONVALIDARE</Text>
+              <Text style={adminCertStyles.pendingMsg}>{u.nome} {u.cognome} ha caricato il certificato — tocca per aprirlo e convalidarlo</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#00C8FF" />
+          </TouchableOpacity>
+        ))}
+
         {/* RIEPILOGO TAB - TODAY'S SUMMARY */}
         {activeTab === 'riepilogo' && (
           <View style={styles.riepilogoContainer}>
@@ -2314,6 +2332,31 @@ export default function AdminScreen() {
     </SafeAreaView>
   );
 }
+
+const adminCertStyles = StyleSheet.create({
+  pendingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(0,200,255,0.10)',
+    marginBottom: 12,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#00C8FF',
+  },
+  pendingTitle: {
+    color: '#00C8FF',
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  pendingMsg: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    marginTop: 2,
+  },
+});
 
 const styles = StyleSheet.create({
   container: {

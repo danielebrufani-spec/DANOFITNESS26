@@ -726,3 +726,10 @@ Richiesta: la data di scadenza al momento del caricamento del certificato deve e
 - Frontend `CertUploadForm` (CertificatoMedico.tsx): label con asterisco, bottone INVIA disabilitato senza data, messaggio di errore se si tenta l'invio senza data. Vale sia per upload cliente che admin (form condiviso).
 - Testato: curl 400 senza scadenza / upload_id con scadenza; screenshot conferma label * e bottone disabilitato.
 - NOTA RICORRENTE: expo web serve bundle stale dopo modifiche → `sudo supervisorctl restart frontend` prima di verificare.
+
+## Banner admin "Certificato da convalidare" (26 Ago 2026)
+Segnalazione: un cliente reale (su APP LIVE) ha caricato un certificato (stato in_verifica) ma l'admin "non ha visto nulla".
+- Diagnosi: il push a `send_push_to_admins` funziona a livello di codice ma richiede sottoscrizione push attiva sul device dell'admin; il badge 'DA CONVALIDARE' sulla card utente (tab Utenti) era poco visibile. La prova è avvenuta su PROD (DB preview vuoto).
+- Fix: nuovo banner ciano in cima al pannello Admin (`admin.tsx`, dentro lo ScrollView prima del tab riepilogo, quindi visibile su OGNI tab): una riga per ogni utente con `certificato_stato === 'in_verifica'` (testID `cert-pending-banner-{userId}`), tap → apre direttamente `CertificatoAdminModal` (setCertUser). Stili in `adminCertStyles`.
+- Testato: upload simulato lato cliente via API (in_verifica) → banner visibile su tab OGGI → tap apre il modal con CONVALIDA/RIFIUTA. Cert di test eliminato.
+- Per vederlo su app live serve Save to Github + redeploy Vercel. Il push su live richiede notifiche attivate sul telefono admin.
