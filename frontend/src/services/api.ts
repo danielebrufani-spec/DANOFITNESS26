@@ -543,6 +543,7 @@ export const apiService = {
   certUploadFinish: (data: { upload_id: string }) =>
     api.post<{ success: boolean; bonus_biglietti: number; certificato: CertificatoInfo }>('/certificato/upload/finish', data),
   adminGetCertificato: (userId: string) => api.get<CertificatoInfo>(`/admin/certificato/${userId}`),
+  adminGetCertificatiDaConvalidare: () => api.get<{ user_id: string; nome: string; cognome: string; uploaded_at: string | null }[]>('/admin/certificati/da-convalidare'),
   adminGetCertificatoBlob: (userId: string) => api.get(`/admin/certificato/${userId}/file`, { responseType: 'blob' }),
   adminUpdateCertScadenza: (userId: string, scadenza: string | null) =>
     api.put<CertificatoInfo>(`/admin/certificato/${userId}`, { scadenza }),

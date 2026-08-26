@@ -733,3 +733,12 @@ Segnalazione: un cliente reale (su APP LIVE) ha caricato un certificato (stato i
 - Fix: nuovo banner ciano in cima al pannello Admin (`admin.tsx`, dentro lo ScrollView prima del tab riepilogo, quindi visibile su OGNI tab): una riga per ogni utente con `certificato_stato === 'in_verifica'` (testID `cert-pending-banner-{userId}`), tap → apre direttamente `CertificatoAdminModal` (setCertUser). Stili in `adminCertStyles`.
 - Testato: upload simulato lato cliente via API (in_verifica) → banner visibile su tab OGGI → tap apre il modal con CONVALIDA/RIFIUTA. Cert di test eliminato.
 - Per vederlo su app live serve Save to Github + redeploy Vercel. Il push su live richiede notifiche attivate sul telefono admin.
+
+## Popup admin all'apertura: certificati da convalidare (26 Ago 2026)
+Richiesta: "mi basta un messaggio popup quando apro con tutti i nomi dei clienti da convalidare e il link diretto per farlo".
+- Backend: nuovo endpoint `GET /api/admin/certificati/da-convalidare` (server.py ~7965, prima di /admin/certificato/{user_id}) → lista {user_id, nome, cognome, uploaded_at} dei cert in_verifica (esclusi archiviati).
+- Frontend: nuovo componente `CertificatiDaConvalidarePopup` in CertificatoMedico.tsx (solo admin, appare ad OGNI apertura finché ci sono cert in_verifica, nessun throttle). Riga per cliente (testID `cert-pending-row-{userId}`), tap → `router.push('/admin', {cert_user, t})`.
+- Deep-link in admin.tsx: `useLocalSearchParams` legge `cert_user` → quando users caricati, `setCertUser(u)` apre direttamente CertificatoAdminModal.
+- Montato in `(tabs)/_layout.tsx` accanto a CertificatoObbligoPopup. api.ts: `adminGetCertificatiDaConvalidare`.
+- Testato con screenshot: login admin → popup con nome + data → tap → modal convalida aperto. Cleanup fatto.
+- NOTA: errori tsc pre-esistenti in admin.tsx righe ~1254/1264 (cognome su tipo booking) — non runtime, non introdotti da questa modifica.

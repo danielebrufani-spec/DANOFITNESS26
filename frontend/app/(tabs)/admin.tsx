@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
   apiService,
   Subscription,
@@ -117,6 +117,13 @@ export default function AdminScreen() {
   // Reset password modal
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [certUser, setCertUser] = useState<User | null>(null);
+  // Deep-link dal popup "certificati da convalidare": apre direttamente il modal certificato
+  const { cert_user: certUserParam, t: certLinkT } = useLocalSearchParams<{ cert_user?: string; t?: string }>();
+  useEffect(() => {
+    if (!certUserParam || users.length === 0) return;
+    const u = users.find((x) => x.id === certUserParam);
+    if (u) setCertUser(u);
+  }, [certUserParam, certLinkT, users]);
   const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');

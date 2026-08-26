@@ -523,6 +523,62 @@ export const CertificatoObbligoPopup: React.FC = () => {
   );
 };
 
+// ---------- Popup ADMIN: certificati in attesa di convalida (ad ogni apertura) ----------
+export const CertificatiDaConvalidarePopup: React.FC = () => {
+  const { isAdmin, user, loading: authLoading } = useAuth();
+  const [pending, setPending] = useState<{ user_id: string; nome: string; cognome: string; uploaded_at: string | null }[]>([]);
+  const [visible, setVisible] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (authLoading || !user || !isAdmin) return;
+    apiService.adminGetCertificatiDaConvalidare().then((res) => {
+      if (res.data.length > 0) {
+        setPending(res.data);
+        setVisible(true);
+      }
+    }).catch(() => {});
+  }, [authLoading, user, isAdmin]);
+
+  if (!isAdmin || !visible || pending.length === 0) return null;
+
+  const goTo = (uid: string) => {
+    setVisible(false);
+    router.push({ pathname: '/admin', params: { cert_user: uid, t: String(Date.now()) } });
+  };
+
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={() => setVisible(false)}>
+      <View style={styles.modalOverlay}>
+        <View style={[styles.modalCard, { borderColor: '#00C8FF', borderWidth: 1.5 }]} testID="cert-admin-pending-popup">
+          <View style={{ alignItems: 'center', marginBottom: 10 }}>
+            <Ionicons name="medkit" size={40} color="#00C8FF" />
+          </View>
+          <Text style={[styles.popupTitle, { color: '#00C8FF' }]}>CERTIFICATI DA CONVALIDARE</Text>
+          <Text style={styles.popupText}>
+            {pending.length === 1
+              ? 'Un cliente ha caricato il certificato medico. Tocca il nome per aprirlo e convalidarlo:'
+              : `${pending.length} clienti hanno caricato il certificato medico. Tocca un nome per aprirlo e convalidarlo:`}
+          </Text>
+          {pending.map((p) => (
+            <TouchableOpacity key={p.user_id} style={styles.pendingRow} onPress={() => goTo(p.user_id)} activeOpacity={0.85} testID={`cert-pending-row-${p.user_id}`}>
+              <Ionicons name="person-circle-outline" size={22} color="#00C8FF" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.pendingName}>{p.nome} {p.cognome}</Text>
+                {p.uploaded_at && <Text style={styles.pendingDate}>caricato il {p.uploaded_at}</Text>}
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#00C8FF" />
+            </TouchableOpacity>
+          ))}
+          <TouchableOpacity style={styles.cancelBtn} onPress={() => setVisible(false)} testID="cert-admin-pending-close">
+            <Text style={styles.cancelBtnText}>Più tardi</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
 const styles = StyleSheet.create({
   section: {
     marginBottom: 24,
@@ -555,6 +611,27 @@ const styles = StyleSheet.create({
   scadenzaText: {
     fontSize: 13,
     color: COLORS.textSecondary,
+  },
+  pendingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(0,200,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(0,200,255,0.35)',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 10,
+  },
+  pendingName: {
+    color: COLORS.text,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  pendingDate: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    marginTop: 2,
   },
   hintWarn: {
     marginTop: 8,

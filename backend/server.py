@@ -7962,6 +7962,27 @@ async def get_my_certificate_file(current_user: dict = Depends(get_current_user)
     )
 
 
+@api_router.get("/admin/certificati/da-convalidare")
+async def get_certificati_da_convalidare(admin_user: dict = Depends(get_admin_user)):
+    """Lista clienti con certificato caricato in attesa di convalida."""
+    certs = await db.medical_certificates.find({"stato_convalida": "in_verifica"}).to_list(200)
+    out = []
+    for c in certs:
+        try:
+            u = await db.users.find_one({"_id": ObjectId(c["user_id"])}, {"nome": 1, "cognome": 1, "archived": 1})
+        except Exception:
+            u = None
+        if not u or u.get("archived"):
+            continue
+        out.append({
+            "user_id": c["user_id"],
+            "nome": u.get("nome", ""),
+            "cognome": u.get("cognome", ""),
+            "uploaded_at": c["uploaded_at"].strftime("%d/%m/%Y %H:%M") if c.get("uploaded_at") else None,
+        })
+    return out
+
+
 @api_router.get("/admin/certificato/{user_id}")
 async def admin_get_certificate(user_id: str, admin_user: dict = Depends(get_admin_user)):
     cert = await db.medical_certificates.find_one({"user_id": user_id})
