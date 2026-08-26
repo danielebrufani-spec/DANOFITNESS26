@@ -1,0 +1,49 @@
+{
+  "summary": "Frontend-only E2E test of the new MEDICAL CERTIFICATE feature (DanoFitness23, React Native Web). Client flow (Home reminder banner -> profile card -> chunked upload of a PDF -> bonus +2 lottery tickets + confetti -> banner disappears -> date validation) and Admin flow (cert badge on user card, admin modal, expiry edit -> IN SCADENZA, delete -> NON CARICATO with badge sync) were all executed against the public preview URL. 8/8 requested scenarios passed after fixing one testability defect. Two real issues found (1 fixed in-scope, 1 reported).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "admin.tsx user card cert badge",
+        "issue": "Badge was rendered with the web prop `data-testid` on a react-native <View>; react-native-web drops unknown props so NO data-testid reached the DOM and the badge was not automatable. FIXED by testing agent: changed to testID for cert-badge-{userId} (both the 'valido' icon branch and the text badge branch). NOTE: 63 other `data-testid=` usages remain across /app/frontend/app (shop.tsx, admin.tsx pending-badge-{id}, trial-badge-{id}, etc.) and are equally invisible in the DOM - main agent should migrate them all to testID.",
+        "selector": "[data-testid=\"cert-badge-{userId}\"]",
+        "priority": "MEDIUM"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "Home KPI tickets counter after certificate bonus",
+        "issue": "KPIBanner reads `l.biglietti` from GET /api/lottery/status, but the endpoint returns `biglietti_utente` (verified: API returned biglietti_utente=2 while Home KPI showed 0). Result: the +2 certificate bonus (and any lottery ticket) is never reflected in the Home KPI band; the number is permanently 0. Fix: use `biglietti_utente` in /app/frontend/src/components/KPIBanner.tsx (line ~35).",
+        "affected_selectors": ["[data-testid=\"kpi-banner\"]"]
+      }
+    ],
+    "design_issues": [
+      {
+        "screen": "Admin > Utenti / Home (console)",
+        "issues": ["Repeated console errors on the admin users list: 'Unexpected text node: . A text node cannot be a child of a <View>' (~25 occurrences) - stray whitespace/text inside a View in admin.tsx; cosmetic but pollutes logs.", "Certificate card/banner colors, contrast, spacing and badge styling looked correct on desktop 1920x1080 (orange 'NON CARICATO', green 'VALIDO', yellow 'CERT IN SCAD.', orange 'NO CERT')."]
+      }
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Fix KPIBanner: use `biglietti_utente` from /api/lottery/status so bonus tickets (incl. certificate +2) show on Home.",
+    "Migrate remaining `data-testid=` props on react-native components to `testID` (63 occurrences in /app/frontend/app) - they are stripped by react-native-web and break automated testing.",
+    "Remove the stray text node inside a <View> in admin.tsx causing repeated console errors."
+  ],
+  "critical_code_review_comments": [
+    "admin.tsx is ~3800 lines - should be split into smaller modules (users list, cert wiring, abbonamenti, etc.).",
+    "CertificatoCard.handleDone merges `res.certificato` with `bonus_gia_dato: true` locally instead of refetching /api/certificato/me; state is correct in practice but a refetch would be more robust.",
+    "Client-side date validation (parseDataIt) accepts any well-formed GG/MM/AAAA; e.g. 31/02/2027 would be normalized by JS Date - backend should be the source of truth (backend already validated separately)."
+  ],
+  "updated_files": ["/app/frontend/app/(tabs)/admin.tsx"],
+  "success_rate": {"backend": "not tested (per request)", "frontend": "100% of the 8 requested cert scenarios passed (after testID fix)"},
+  "seed_data_creation": "Uploaded /tmp/cert_test.pdf for testclient_kpi@test.com; all test data removed afterwards.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "admin danielebrufani@gmail.com / Mariavittoria23 ; client testclient_kpi@test.com / Test123456 (userId 69f4b5d6e03695479f1354f3)",
+  "context_for_next_testing_agent": "Certificate feature verified end to end. CLEANUP DONE: medical_certificates doc deleted via admin UI, users.certificato_bonus_dato unset, wheel_tickets 2026-08 decremented back to 0 for testclient_kpi. Client is again in clean 'mancante' state. Tips: login page has no testIDs (use input[placeholder=\"Email\"]/\"Password\" and text 'ACCEDI'); admin users list requires searching in input[placeholder*='Cerca utente'] (only ~8 cards rendered initially); window.confirm on cert delete needs an ASYNC dialog handler (asyncio.create_task(d.accept())) otherwise the click hangs; file picker works with page.expect_file_chooser around cert-pick-file. NOT covered: 'Visualizza' (blob open in new tab) for client/admin, JPG/PNG upload+canvas compression path, 'scaduto' state, mobile 390x844 layout.",
+  "rca_of_the_issue": "cert-badge not automatable: react-native-web only forwards its supported props (testID, dataSet, accessibility*) to the DOM; a raw `data-testid` JSX prop on <View> is silently discarded. Reproduced by querying document.querySelectorAll('[data-testid]') on admin>Utenti: only cert-btn-{id} (which uses testID) was present. Fixed by switching the two cert badge Views to testID; verified badge then resolves and shows 'CERT IN SCAD.' / 'NO CERT'. Home ticket counter: field-name mismatch between API (biglietti_utente) and KPIBanner (biglietti)."
+}

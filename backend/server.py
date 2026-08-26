@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, BackgroundTasks
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, BackgroundTasks, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -168,6 +168,8 @@ class UserResponse(BaseModel):
     ultimo_abb_scadenza: Optional[str] = None
     ultimo_abb_pagato: Optional[bool] = None
     prova_stato: Optional[str] = None  # 'in_attesa' | 'concessa' | 'negata' | None (utenti pre-flusso)
+    certificato_stato: Optional[str] = None  # 'mancante' | 'valido' | 'in_scadenza' | 'scaduto'
+    certificato_scadenza: Optional[str] = None  # YYYY-MM-DD
 
 class SubscriptionCreate(BaseModel):
     user_id: str
@@ -2865,7 +2867,11 @@ async def get_all_users(admin_user: dict = Depends(get_admin_user)):
         uid = sub["user_id"]
         if uid not in last_sub_map:
             last_sub_map[uid] = sub
-    
+
+    # Mappa certificati medici: user_id -> cert (solo scadenza per lo stato)
+    certs = await db.medical_certificates.find({}, {"user_id": 1, "scadenza": 1}).to_list(3000)
+    cert_map = {c["user_id"]: c for c in certs}
+
     result = []
     for user in users:
         uid = str(user["_id"])
@@ -2890,6 +2896,8 @@ async def get_all_users(admin_user: dict = Depends(get_admin_user)):
             ultimo_abb_scadenza=last_sub["data_scadenza"].strftime("%Y-%m-%d") if last_sub and last_sub.get("data_scadenza") else None,
             ultimo_abb_pagato=last_sub.get("pagato") if last_sub else None,
             prova_stato=_prova_stato(user),
+            certificato_stato=_cert_status_from_doc(cert_map.get(uid))["status"],
+            certificato_scadenza=(cert_map.get(uid) or {}).get("scadenza"),
         ))
     return result
 
@@ -7645,6 +7653,286 @@ async def admin_delete_announcement(announcement_id: str, admin_user: dict = Dep
 
 
 # Include the router in the main app
+# ======================== CERTIFICATI MEDICI (Emergent Object Storage) ========================
+
+STORAGE_BASE = (os.environ.get("INTEGRATION_PROXY_URL") or "").strip() or "https://integrations.emergentagent.com"
+STORAGE_URL = STORAGE_BASE.rstrip("/") + "/objstore/api/v1/storage"
+CERT_STORAGE_PREFIX = "danofitness23/certificati"
+CERT_ALLOWED_TYPES = {"application/pdf": "pdf", "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
+CERT_MAX_BYTES = 10 * 1024 * 1024
+CERT_BONUS_BIGLIETTI = 2
+CERT_SOGLIA_SCADENZA_GG = 30
+
+_storage_key_cache = None
+
+
+async def _storage_init(force: bool = False) -> str:
+    global _storage_key_cache
+    if _storage_key_cache and not force:
+        return _storage_key_cache
+    import httpx
+    async with httpx.AsyncClient(timeout=30) as c:
+        resp = await c.post(f"{STORAGE_URL}/init", json={"emergent_key": os.environ.get("EMERGENT_LLM_KEY", "").strip()})
+        resp.raise_for_status()
+        _storage_key_cache = resp.json()["storage_key"]
+    return _storage_key_cache
+
+
+async def _storage_put(path: str, data: bytes, content_type: str) -> dict:
+    import httpx
+    key = await _storage_init()
+    async with httpx.AsyncClient(timeout=120) as c:
+        headers = {"X-Storage-Key": key, "Content-Type": content_type}
+        resp = await c.put(f"{STORAGE_URL}/objects/{path}", headers=headers, content=data)
+        if resp.status_code == 404:
+            headers["X-Storage-Key"] = await _storage_init(force=True)
+            resp = await c.put(f"{STORAGE_URL}/objects/{path}", headers=headers, content=data)
+        resp.raise_for_status()
+        return resp.json()
+
+
+async def _storage_get(path: str):
+    import httpx
+    key = await _storage_init()
+    async with httpx.AsyncClient(timeout=60) as c:
+        resp = await c.get(f"{STORAGE_URL}/objects/{path}", headers={"X-Storage-Key": key})
+        if resp.status_code == 404:
+            resp = await c.get(f"{STORAGE_URL}/objects/{path}", headers={"X-Storage-Key": await _storage_init(force=True)})
+        resp.raise_for_status()
+        return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
+
+
+def _cert_status_from_doc(cert: Optional[dict]) -> dict:
+    """Stato certificato: mancante | valido | in_scadenza | scaduto"""
+    if not cert:
+        return {"status": "mancante", "scadenza": None, "giorni_alla_scadenza": None}
+    scad = cert.get("scadenza")
+    if not scad:
+        return {"status": "valido", "scadenza": None, "giorni_alla_scadenza": None}
+    giorni = (datetime.strptime(scad, "%Y-%m-%d").date() - now_rome().date()).days
+    if giorni < 0:
+        return {"status": "scaduto", "scadenza": scad, "giorni_alla_scadenza": giorni}
+    if giorni <= CERT_SOGLIA_SCADENZA_GG:
+        return {"status": "in_scadenza", "scadenza": scad, "giorni_alla_scadenza": giorni}
+    return {"status": "valido", "scadenza": scad, "giorni_alla_scadenza": giorni}
+
+
+def _cert_public_info(cert: Optional[dict]) -> dict:
+    info = _cert_status_from_doc(cert)
+    if cert:
+        info.update({
+            "file_name": cert.get("file_name"),
+            "content_type": cert.get("content_type"),
+            "size": cert.get("size"),
+            "uploaded_at": cert["uploaded_at"].strftime("%Y-%m-%d %H:%M") if cert.get("uploaded_at") else None,
+            "uploaded_by": cert.get("uploaded_by"),
+        })
+    return info
+
+
+def _validate_cert_scadenza(scadenza: Optional[str]):
+    if scadenza is None:
+        return
+    try:
+        datetime.strptime(scadenza, "%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Scadenza non valida (formato YYYY-MM-DD)")
+
+
+class CertUploadStart(BaseModel):
+    file_name: str
+    content_type: str
+    total_chunks: int
+    scadenza: Optional[str] = None  # YYYY-MM-DD
+    target_user_id: Optional[str] = None  # solo admin: carica per un cliente
+
+
+class CertUploadChunk(BaseModel):
+    upload_id: str
+    index: int
+    data: str  # chunk base64
+
+
+class CertUploadFinish(BaseModel):
+    upload_id: str
+
+
+class CertScadenzaUpdate(BaseModel):
+    scadenza: Optional[str] = None  # None = rimuovi scadenza
+
+
+@api_router.post("/certificato/upload/start")
+async def cert_upload_start(payload: CertUploadStart, current_user: dict = Depends(get_current_user)):
+    if payload.content_type not in CERT_ALLOWED_TYPES:
+        raise HTTPException(status_code=400, detail="Formato non supportato: usa PDF, JPG o PNG")
+    if payload.total_chunks < 1 or payload.total_chunks > 30:
+        raise HTTPException(status_code=400, detail="File troppo grande (max 10 MB)")
+    _validate_cert_scadenza(payload.scadenza)
+    target_user_id = str(current_user["_id"])
+    if payload.target_user_id and payload.target_user_id != target_user_id:
+        if current_user.get("role") != UserRole.ADMIN:
+            raise HTTPException(status_code=403, detail="Non autorizzato")
+        if not await db.users.find_one({"_id": ObjectId(payload.target_user_id)}):
+            raise HTTPException(status_code=404, detail="Utente non trovato")
+        target_user_id = payload.target_user_id
+    upload_id = str(uuid.uuid4())
+    await db.cert_uploads.insert_one({
+        "upload_id": upload_id,
+        "target_user_id": target_user_id,
+        "caricato_da": str(current_user["_id"]),
+        "uploaded_by": "admin" if current_user.get("role") == UserRole.ADMIN else "client",
+        "file_name": (payload.file_name or "certificato")[:200],
+        "content_type": payload.content_type,
+        "total_chunks": payload.total_chunks,
+        "scadenza": payload.scadenza,
+        "created_at": now_rome(),
+    })
+    return {"upload_id": upload_id}
+
+
+@api_router.post("/certificato/upload/chunk")
+async def cert_upload_chunk(payload: CertUploadChunk, current_user: dict = Depends(get_current_user)):
+    up = await db.cert_uploads.find_one({"upload_id": payload.upload_id, "caricato_da": str(current_user["_id"])})
+    if not up:
+        raise HTTPException(status_code=404, detail="Upload non trovato o scaduto")
+    if payload.index < 0 or payload.index >= up["total_chunks"]:
+        raise HTTPException(status_code=400, detail="Indice chunk non valido")
+    if len(payload.data) > 1_500_000:
+        raise HTTPException(status_code=400, detail="Chunk troppo grande")
+    await db.cert_upload_chunks.update_one(
+        {"upload_id": payload.upload_id, "index": payload.index},
+        {"$set": {"data": payload.data, "created_at": now_rome()}},
+        upsert=True,
+    )
+    return {"ok": True}
+
+
+@api_router.post("/certificato/upload/finish")
+async def cert_upload_finish(payload: CertUploadFinish, current_user: dict = Depends(get_current_user)):
+    import base64 as _b64
+    up = await db.cert_uploads.find_one({"upload_id": payload.upload_id, "caricato_da": str(current_user["_id"])})
+    if not up:
+        raise HTTPException(status_code=404, detail="Upload non trovato o scaduto")
+    chunks = await db.cert_upload_chunks.find({"upload_id": payload.upload_id}).sort("index", 1).to_list(50)
+    if len(chunks) != up["total_chunks"]:
+        raise HTTPException(status_code=400, detail=f"Caricamento incompleto ({len(chunks)}/{up['total_chunks']} parti), riprova")
+    try:
+        data = _b64.b64decode("".join(c["data"] for c in chunks))
+    except Exception:
+        raise HTTPException(status_code=400, detail="Dati file corrotti, riprova")
+    if len(data) == 0 or len(data) > CERT_MAX_BYTES:
+        raise HTTPException(status_code=400, detail="File vuoto o troppo grande (max 10 MB)")
+    ext = CERT_ALLOWED_TYPES[up["content_type"]]
+    path = f"{CERT_STORAGE_PREFIX}/{up['target_user_id']}/{uuid.uuid4()}.{ext}"
+    try:
+        result = await _storage_put(path, data, up["content_type"])
+    except Exception as e:
+        logger.error(f"[CERT] Upload storage fallito: {e}")
+        raise HTTPException(status_code=502, detail="Archiviazione file non riuscita, riprova tra poco")
+    target_user_id = up["target_user_id"]
+    await db.medical_certificates.update_one(
+        {"user_id": target_user_id},
+        {"$set": {
+            "storage_path": result["path"],
+            "file_name": up["file_name"],
+            "content_type": up["content_type"],
+            "size": len(data),
+            "scadenza": up.get("scadenza"),
+            "uploaded_by": up["uploaded_by"],
+            "uploaded_at": now_rome(),
+        }},
+        upsert=True,
+    )
+    await db.cert_upload_chunks.delete_many({"upload_id": payload.upload_id})
+    await db.cert_uploads.delete_one({"upload_id": payload.upload_id})
+    # Bonus biglietti SOLO al primo caricamento fatto dal cliente stesso
+    bonus = 0
+    target_user = await db.users.find_one({"_id": ObjectId(target_user_id)})
+    if up["uploaded_by"] == "client" and target_user:
+        if not target_user.get("certificato_bonus_dato"):
+            mese = now_rome().strftime("%Y-%m")
+            await db.wheel_tickets.update_one(
+                {"user_id": target_user_id, "mese": mese},
+                {"$inc": {"biglietti": CERT_BONUS_BIGLIETTI}},
+                upsert=True,
+            )
+            await db.users.update_one({"_id": ObjectId(target_user_id)}, {"$set": {"certificato_bonus_dato": True}})
+            bonus = CERT_BONUS_BIGLIETTI
+        nome = f"{target_user.get('nome', '')} {target_user.get('cognome', '')}".strip()
+        asyncio.create_task(send_push_to_admins("📄 Certificato medico caricato!", f"{nome} ha caricato il suo certificato medico.", tag="certificato"))
+    cert = await db.medical_certificates.find_one({"user_id": target_user_id})
+    logger.info(f"[CERT] Certificato caricato per user {target_user_id} da {up['uploaded_by']}")
+    return {"success": True, "bonus_biglietti": bonus, "certificato": _cert_public_info(cert)}
+
+
+@api_router.get("/certificato/me")
+async def get_my_certificate(current_user: dict = Depends(get_current_user)):
+    cert = await db.medical_certificates.find_one({"user_id": str(current_user["_id"])})
+    info = _cert_public_info(cert)
+    info["bonus_gia_dato"] = bool(current_user.get("certificato_bonus_dato"))
+    info["bonus_biglietti"] = CERT_BONUS_BIGLIETTI
+    return info
+
+
+@api_router.get("/certificato/me/file")
+async def get_my_certificate_file(current_user: dict = Depends(get_current_user)):
+    cert = await db.medical_certificates.find_one({"user_id": str(current_user["_id"])})
+    if not cert:
+        raise HTTPException(status_code=404, detail="Nessun certificato caricato")
+    try:
+        data, ctype = await _storage_get(cert["storage_path"])
+    except Exception as e:
+        logger.error(f"[CERT] Download storage fallito: {e}")
+        raise HTTPException(status_code=502, detail="File non recuperabile al momento, riprova")
+    return Response(
+        content=data,
+        media_type=cert.get("content_type") or ctype,
+        headers={"Content-Disposition": f'inline; filename="{cert.get("file_name", "certificato")}"'},
+    )
+
+
+@api_router.get("/admin/certificato/{user_id}")
+async def admin_get_certificate(user_id: str, admin_user: dict = Depends(get_admin_user)):
+    cert = await db.medical_certificates.find_one({"user_id": user_id})
+    return _cert_public_info(cert)
+
+
+@api_router.get("/admin/certificato/{user_id}/file")
+async def admin_get_certificate_file(user_id: str, admin_user: dict = Depends(get_admin_user)):
+    cert = await db.medical_certificates.find_one({"user_id": user_id})
+    if not cert:
+        raise HTTPException(status_code=404, detail="Nessun certificato per questo utente")
+    try:
+        data, ctype = await _storage_get(cert["storage_path"])
+    except Exception as e:
+        logger.error(f"[CERT] Download storage fallito: {e}")
+        raise HTTPException(status_code=502, detail="File non recuperabile al momento, riprova")
+    return Response(
+        content=data,
+        media_type=cert.get("content_type") or ctype,
+        headers={"Content-Disposition": f'inline; filename="{cert.get("file_name", "certificato")}"'},
+    )
+
+
+@api_router.put("/admin/certificato/{user_id}")
+async def admin_update_certificate(user_id: str, payload: CertScadenzaUpdate, admin_user: dict = Depends(get_admin_user)):
+    _validate_cert_scadenza(payload.scadenza)
+    res = await db.medical_certificates.update_one({"user_id": user_id}, {"$set": {"scadenza": payload.scadenza}})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Nessun certificato per questo utente")
+    cert = await db.medical_certificates.find_one({"user_id": user_id})
+    return _cert_public_info(cert)
+
+
+@api_router.delete("/admin/certificato/{user_id}")
+async def admin_delete_certificate(user_id: str, admin_user: dict = Depends(get_admin_user)):
+    res = await db.medical_certificates.delete_one({"user_id": user_id})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Nessun certificato per questo utente")
+    logger.info(f"[CERT] Certificato eliminato per user {user_id} da admin")
+    return {"success": True}
+
+
 app.include_router(api_router)
 
 app.add_middleware(GZipMiddleware, minimum_size=500)
@@ -7736,10 +8024,20 @@ async def startup_event():
         await db.quiz_answers.create_index([("user_id", 1), ("date", 1)])
         await db.meal_plans.create_index([("user_id", 1), ("mese", 1)])
         await db.nutrition_profiles.create_index("user_id", unique=True)
+        await db.medical_certificates.create_index("user_id", unique=True)
+        await db.cert_uploads.create_index("created_at", expireAfterSeconds=86400)
+        await db.cert_upload_chunks.create_index("created_at", expireAfterSeconds=86400)
         logger.info("[DB] MongoDB indexes created successfully")
     except Exception as e:
         logger.warning(f"[DB] Index creation warning: {e}")
     
+    # Init Emergent Object Storage (certificati medici) — non bloccante
+    try:
+        await _storage_init()
+        logger.info("[CERT] Object storage inizializzato")
+    except Exception as e:
+        logger.warning(f"[CERT] Init storage fallito (retry al primo upload): {e}")
+
     # Blocca date specifiche (lezioni sospese)
     blocked_dates_to_add = [
         {"data": "2026-03-14", "motivo": "Costanza ha un corso di aggiornamento, scusate per il disagio! 🙏"},

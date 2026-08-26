@@ -18,6 +18,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import { COLORS } from '../../src/utils/constants';
 import { FONTS } from '../../src/theme';
 import { apiService } from '../../src/services/api';
+import { CertificatoCard } from '../../src/components/CertificatoMedico';
 
 // WhatsApp Daniele (proprietario)
 const DANIELE_WA_NUMBER = '393395020625';
@@ -468,6 +469,9 @@ export default function ProfiloScreen() {
             )}
           </View>
         </View>
+
+        {/* Certificato Medico (solo clienti) */}
+        {!isAdmin && !isIstruttore && <CertificatoCard />}
 
         {/* App Info */}
         <View style={styles.section}>

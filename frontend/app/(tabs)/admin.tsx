@@ -22,6 +22,7 @@ import {
   Subscription,
   User,
 } from '../../src/services/api';
+import { CertificatoAdminModal } from '../../src/components/CertificatoAdminModal';
 import {
   COLORS,
   ATTIVITA_INFO,
@@ -115,6 +116,7 @@ export default function AdminScreen() {
 
   // Reset password modal
   const [showResetPassword, setShowResetPassword] = useState(false);
+  const [certUser, setCertUser] = useState<User | null>(null);
   const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -1496,6 +1498,26 @@ export default function AdminScreen() {
                       <Text style={styles.trialBadgeText}>PROVA</Text>
                     </View>
                   )}
+                  {user.role !== 'admin' && user.role !== 'istruttore' && (() => {
+                    const st = user.certificato_stato || 'mancante';
+                    if (st === 'valido') {
+                      return (
+                        <View testID={`cert-badge-${user.id}`}>
+                          <Ionicons name="medkit" size={15} color="#39FF14" />
+                        </View>
+                      );
+                    }
+                    const cfg = st === 'scaduto'
+                      ? { c: '#FF4D6D', t: 'CERT SCADUTO' }
+                      : st === 'in_scadenza'
+                      ? { c: '#FFB300', t: 'CERT IN SCAD.' }
+                      : { c: '#FF9800', t: 'NO CERT' };
+                    return (
+                      <View style={[styles.certInlineBadge, { borderColor: cfg.c, backgroundColor: cfg.c + '22' }]} testID={`cert-badge-${user.id}`}>
+                        <Text style={[styles.certInlineBadgeText, { color: cfg.c }]}>{cfg.t}</Text>
+                      </View>
+                    );
+                  })()}
                 </View>
                 {user.prova_stato === 'in_attesa' && !user.archived && user.role === 'client' && (
                   <View style={styles.provaDecisionRow}>
@@ -1546,6 +1568,14 @@ export default function AdminScreen() {
                         <Text style={styles.actionBtnText}>Istruttore</Text>
                       </TouchableOpacity>
                     )}
+                    <TouchableOpacity
+                      style={[styles.actionBtnSmall, { backgroundColor: 'rgba(255,179,0,0.12)' }]}
+                      onPress={() => setCertUser(user)}
+                      testID={`cert-btn-${user.id}`}
+                    >
+                      <Ionicons name="document-text-outline" size={16} color="#FFB300" />
+                      <Text style={[styles.actionBtnText, { color: '#FFB300' }]}>Cert.</Text>
+                    </TouchableOpacity>
                     <TouchableOpacity 
                       style={styles.actionBtnSmall}
                       onPress={() => openEditUserModal(user)}
@@ -2260,6 +2290,16 @@ export default function AdminScreen() {
           }}
         />
       )}
+      {/* CERTIFICATO MEDICO modal */}
+      {certUser && (
+        <CertificatoAdminModal
+          user={{ id: certUser.id, nome: certUser.nome, cognome: certUser.cognome }}
+          onClose={(changed) => {
+            setCertUser(null);
+            if (changed) loadData(false);
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -2760,6 +2800,18 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
     letterSpacing: 1,
+  },
+  certInlineBadge: {
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    marginLeft: 4,
+  },
+  certInlineBadgeText: {
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.5,
   },
   archivedInlineBadge: {
     backgroundColor: '#6366f1',

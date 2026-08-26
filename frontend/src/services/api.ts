@@ -99,6 +99,21 @@ export interface User {
   ultimo_abb_scadenza?: string;
   ultimo_abb_pagato?: boolean;
   prova_stato?: string | null;
+  certificato_stato?: string | null;
+  certificato_scadenza?: string | null;
+}
+
+export interface CertificatoInfo {
+  status: 'mancante' | 'valido' | 'in_scadenza' | 'scaduto';
+  scadenza?: string | null;
+  giorni_alla_scadenza?: number | null;
+  file_name?: string;
+  content_type?: string;
+  size?: number;
+  uploaded_at?: string;
+  uploaded_by?: string;
+  bonus_gia_dato?: boolean;
+  bonus_biglietti?: number;
 }
 
 export interface Reply {
@@ -505,6 +520,21 @@ export const apiService = {
     api.post<{settimana: string; count: number}>('/admin/maestro/publish-top', data),
   adminMaestroUnpublishTop: (settimana: string) =>
     api.delete<{deleted: string}>(`/admin/maestro/publish-top/${settimana}`),
+
+  // ========== CERTIFICATO MEDICO ==========
+  getMioCertificato: () => api.get<CertificatoInfo>('/certificato/me'),
+  getMioCertificatoBlob: () => api.get('/certificato/me/file', { responseType: 'blob' }),
+  certUploadStart: (data: { file_name: string; content_type: string; total_chunks: number; scadenza?: string | null; target_user_id?: string | null }) =>
+    api.post<{ upload_id: string }>('/certificato/upload/start', data),
+  certUploadChunk: (data: { upload_id: string; index: number; data: string }) =>
+    api.post<{ ok: boolean }>('/certificato/upload/chunk', data),
+  certUploadFinish: (data: { upload_id: string }) =>
+    api.post<{ success: boolean; bonus_biglietti: number; certificato: CertificatoInfo }>('/certificato/upload/finish', data),
+  adminGetCertificato: (userId: string) => api.get<CertificatoInfo>(`/admin/certificato/${userId}`),
+  adminGetCertificatoBlob: (userId: string) => api.get(`/admin/certificato/${userId}/file`, { responseType: 'blob' }),
+  adminUpdateCertScadenza: (userId: string, scadenza: string | null) =>
+    api.put<CertificatoInfo>(`/admin/certificato/${userId}`, { scadenza }),
+  adminDeleteCertificato: (userId: string) => api.delete<{ success: boolean }>(`/admin/certificato/${userId}`),
 };
 
 export default api;

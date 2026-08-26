@@ -663,3 +663,35 @@ Bug P0: la migrazione invernale (dry-run trigger 24/08) inseriva le 12 lezioni m
 **Comportamento PROD (dopo Save to Github):** fino al 28/08 orario estivo invariato; dal 29/08 (primo restart Render O entro 2 min dal background task) switch automatico all'orario invernale. Prenotazioni riaprono domenica 6/9 ore 9:00 col nuovo orario.
 
 **Task in sospeso:** integrazione Gemini Chat — l'utente ha chiesto "a cosa serve la chat?" → in attesa di conferma se procedere o accantonare.
+
+## Certificato Medico — upload, archiviazione e scadenze (26 Ago 2026)
+Richiesta: caricare e archiviare il certificato medico nella scheda cliente, sempre disponibile. Scelte: carica il cliente dal profilo (admin gestisce dalla scheda), gestione scadenza con badge, PDF+JPG/PNG. Sprone: +2 biglietti lotteria alla prima consegna + banner promemoria in Home.
+
+**Storage:** Emergent Object Storage (playbook integration_expert). File su `danofitness23/certificati/{user_id}/{uuid}.{ext}`. Init non bloccante allo startup con retry al primo uso (`_storage_init`, httpx async, fallback URL `https://integrations.emergentagent.com` se `INTEGRATION_PROXY_URL` assente — funziona anche su Render). ⚠️ Su Render serve `EMERGENT_LLM_KEY` nelle env (già usata dalla dieta AI: se la dieta funziona in prod, c'è già).
+
+**Backend (`server.py` sezione CERTIFICATI MEDICI, prima di include_router):**
+- Upload CHUNKED base64 (bypass limiti proxy): `POST /api/certificato/upload/start` (valida tipo/chunks/scadenza, admin può passare `target_user_id`) → `upload/chunk` (upsert su `cert_upload_chunks`) → `upload/finish` (assembla, max 10MB, put su storage, upsert `medical_certificates` 1 doc per utente).
+- Bonus: +2 biglietti (`wheel_tickets` mese corrente) SOLO alla prima consegna self-service del cliente (flag `users.certificato_bonus_dato`); push agli admin "📄 Certificato medico caricato!" ad ogni upload del cliente.
+- `GET /api/certificato/me` (stato+bonus), `GET /api/certificato/me/file` (bytes inline).
+- Admin: `GET/PUT/DELETE /api/admin/certificato/{user_id}` (PUT solo scadenza), `GET .../file`.
+- Stati calcolati da `_cert_status_from_doc`: mancante | valido | in_scadenza (≤30gg) | scaduto. `GET /admin/users` ora include `certificato_stato` + `certificato_scadenza` (bulk map).
+- Indici: `medical_certificates.user_id` unique; TTL 24h su `cert_uploads`/`cert_upload_chunks`.
+
+**Frontend:**
+- `src/components/CertificatoMedico.tsx`: `CertificatoCard` (profilo cliente: stato colorato, scadenza, Visualizza via blob+window.open, Carica/Sostituisci con modal, banner bonus, confetti alla vincita), `CertificatoBanner` (Home, visibile se status ≠ valido, CTA → profilo), `CertUploadForm` condiviso (input file dinamico web, compressione immagini canvas 1600px JPEG 82%, PDF raw, progress bar, scadenza GG/MM/AAAA), helper `parseDataIt/formatDataIt/openCertificatoBlob`.
+- `src/components/CertificatoAdminModal.tsx`: modal admin (stato, Visualizza, Carica/Sostituisci, modifica Scadenza, Elimina con confirm).
+- `admin.tsx`: badge su card utente (verde medkit=valido, giallo CERT IN SCAD., rosso CERT SCADUTO, arancio NO CERT — testID `cert-badge-{id}`) per tutti i non-admin/istruttore (inclusi ruoli legacy 'utente'); pulsante "Cert." (`cert-btn-{id}`) apre il modal; reload lista alla chiusura se cambiato.
+- `profilo.tsx` (~473): CertificatoCard solo clienti. `home.tsx` (~1101): CertificatoBanner.
+- `api.ts`: tipo `CertificatoInfo`, campi User certificato_*, 9 metodi apiService.
+
+**Fix collaterali trovati dai test:**
+- **KPIBanner Home**: leggeva `l.biglietti` ma l'API ritorna `biglietti_utente` → il contatore BIGLIETTI era sempre 0 (bug pre-esistente). Fixato e verificato (mostra 3 con 3 biglietti in DB).
+- Badge cert: `data-testid` su View react-native-web non arriva al DOM → migrato a `testID` (fix del testing agent).
+- Badge cert esteso ai ruoli legacy 'utente' (nel DB esistono role 'client' E 'utente').
+
+**Test:** backend 24/24 via API reale (upload chunked 900KB→download byte-identico, bonus una tantum, stati scadenza, 403 security, upload admin senza bonus, delete). Testing agent frontend (iteration_18.json): 8/8 scenari UI passati (banner, card, upload con filechooser, confetti+bonus, validazione data, badge admin, modifica scadenza, delete). Cleanup completo: client test tornato a stato pulito.
+
+**Debiti noti (non bloccanti):**
+- Warning console "Unexpected text node: ." (~4 occorrenze, appare solo con certi popup admin, pre-esistente, cosmetico — fonte non individuata via grep, tutti i '.' trovati sono correttamente dentro <Text>).
+- ~63 `data-testid=` su componenti RN in /app/frontend/app invisibili nel DOM (usare testID) — migrazione massiva rimandata.
+- 'Visualizza' blob, path JPG/PNG con compressione e layout mobile 390x844 non coperti dal testing agent (funzionano da codice, da verificare manualmente).

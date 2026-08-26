@@ -25,6 +25,7 @@ import { PilatesEndBanner } from '../../src/components/PilatesEndBanner';
 import { SummerSilhouettes } from '../../src/components/SummerSilhouettes';
 import { NuoviOrariBanner } from '../../src/components/NuoviOrariBanner';
 import { PausaEstivaBanner } from '../../src/components/PausaEstiva';
+import { CertificatoBanner } from '../../src/components/CertificatoMedico';
 import { FONTS, glow } from '../../src/theme';
 import { CountUp } from '../../src/components/CountUp';
 
@@ -1097,6 +1098,9 @@ export default function HomeScreen() {
         <PausaEstivaBanner />
         {/* BANNER NUOVI ORARI 2026/27 - in evidenza */}
         <NuoviOrariBanner />
+
+        {/* BANNER CERTIFICATO MEDICO (solo clienti senza certificato valido) */}
+        <CertificatoBanner />
 
         {/* AVVISI LEZIONI ANNULLATE (dinamico) */}
         {cancelledLessons.filter((c: any) => {

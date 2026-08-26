@@ -32,7 +32,7 @@ export const KPIBanner: React.FC = () => {
         if (s?.streak_attuale != null) setStreak(s.streak_attuale);
 
         const l: any = lottoRes?.data;
-        if (l?.biglietti != null) setTickets(l.biglietti);
+        if (l?.biglietti_utente != null) setTickets(l.biglietti_utente);
 
         // Trova abbonamento attivo (non scaduto, non prova)
         const subs: any[] = subsRes?.data || [];
