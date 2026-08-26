@@ -742,3 +742,4 @@ Richiesta: "mi basta un messaggio popup quando apro con tutti i nomi dei clienti
 - Montato in `(tabs)/_layout.tsx` accanto a CertificatoObbligoPopup. api.ts: `adminGetCertificatiDaConvalidare`.
 - Testato con screenshot: login admin → popup con nome + data → tap → modal convalida aperto. Cleanup fatto.
 - NOTA: errori tsc pre-esistenti in admin.tsx righe ~1254/1264 (cognome su tipo booking) — non runtime, non introdotti da questa modifica.
+- VERIFICA LIVE (26 Ago sera): popup admin FUNZIONANTE su danofitness23.vercel.app (screenshot: Carla Starnini in_verifica mostrata all'apertura). Render + Vercel si auto-aggiornano dai push del repo. Se l'utente non lo vede: app vecchia in cache sul telefono → chiudere del tutto e riaprire.
