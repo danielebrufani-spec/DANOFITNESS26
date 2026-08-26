@@ -413,7 +413,7 @@ export const CertificatoBanner: React.FC = () => {
   return (
     <TouchableOpacity
       style={[styles.banner, { borderColor: cfg.color }]}
-      onPress={() => router.push('/profilo')}
+      onPress={() => router.push({ pathname: '/profilo', params: { cert: String(Date.now()) } })}
       activeOpacity={0.85}
       testID="certificato-banner"
     >
@@ -470,7 +470,7 @@ export const CertificatoObbligoPopup: React.FC = () => {
 
   const goCarica = () => {
     dismiss();
-    router.push('/profilo');
+    router.push({ pathname: '/profilo', params: { cert: String(Date.now()) } });
   };
 
   const motivoText =

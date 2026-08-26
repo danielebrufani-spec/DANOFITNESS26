@@ -713,3 +713,9 @@ Richiesta utente: per i nuovi iscritti i 30 giorni per consegnare il certificato
 - Backfill idempotente in startup_event: aggregazione min(data_inizio) su subscriptions (tipo != prova_7gg) → set campo per utenti che ne sono privi.
 - `_cert_blocco_info` (server.py ~7740): per status mancante/rifiutato l'anchor è max(07/09/2026, primo_abbonamento_il); se il campo manca → nessun motivo/countdown/blocco. Status 'scaduto' invariato (anchor = scadenza cert).
 - Testato via curl (4 scenari, tutti PASS): cliente storico → blocco dal 07/10; utente senza abbonamento → nessun countdown; primo abbonamento 15/10 → blocco dal 14/11; solo prova 7gg → nessun countdown. Utenti di test rimossi dal DB.
+
+## Auto-scroll alla sezione certificato (26 Ago 2026)
+Richiesta: cliccando il banner certificato si finiva sul profilo ma la card era in fondo, invisibile.
+- `profilo.tsx`: param `?cert=<timestamp>` via useLocalSearchParams; ref sullo ScrollView + onLayout sulla wrapper View di `<CertificatoCard />` (certY); doppio scrollTo temporizzato (400ms/1300ms) per gestire il layout che si assesta dopo il load.
+- Tutti e 3 gli entry point ora passano il param: banner home (`certificato-banner`), banner Prenota (`prenota-block-banner`), pulsante 'Carica ora' del popup (`goCarica`). Timestamp come valore → il re-tap ri-triggera lo scroll.
+- Verificato con screenshot mobile 390x844: dal banner home si atterra direttamente sulla card con pulsante CARICA visibile.

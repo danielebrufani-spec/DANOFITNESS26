@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { COLORS } from '../../src/utils/constants';
 import { FONTS } from '../../src/theme';
@@ -46,6 +46,18 @@ const LIVELLI_NOMI = [
 export default function ProfiloScreen() {
   const { user, logout, isAdmin, isIstruttore, refreshUser } = useAuth();
   const router = useRouter();
+  const { cert } = useLocalSearchParams<{ cert?: string }>();
+  const scrollRef = useRef<ScrollView>(null);
+  const certY = useRef(0);
+
+  // Auto-scroll alla sezione certificato quando si arriva da banner/popup
+  useEffect(() => {
+    if (!cert) return;
+    const scroll = () => scrollRef.current?.scrollTo({ y: Math.max(0, certY.current - 12), animated: true });
+    const t1 = setTimeout(scroll, 400);
+    const t2 = setTimeout(scroll, 1300);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [cert]);
   
   // Mostra livello solo per utenti normali (non admin/istruttori)
   const showLivello = !isAdmin && !isIstruttore;
@@ -295,6 +307,7 @@ export default function ProfiloScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
@@ -471,7 +484,11 @@ export default function ProfiloScreen() {
         </View>
 
         {/* Certificato Medico (solo clienti) */}
-        {!isAdmin && !isIstruttore && <CertificatoCard />}
+        {!isAdmin && !isIstruttore && (
+          <View onLayout={(e) => { certY.current = e.nativeEvent.layout.y; }}>
+            <CertificatoCard />
+          </View>
+        )}
 
         {/* App Info */}
         <View style={styles.section}>

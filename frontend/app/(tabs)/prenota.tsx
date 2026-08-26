@@ -670,7 +670,7 @@ export default function PrenotaScreen() {
       {certBlockInfo && (
         <TouchableOpacity
           style={styles.certBlockBanner}
-          onPress={() => router.push('/profilo')}
+          onPress={() => router.push({ pathname: '/profilo', params: { cert: String(Date.now()) } })}
           activeOpacity={0.85}
           testID="prenota-block-banner"
         >
