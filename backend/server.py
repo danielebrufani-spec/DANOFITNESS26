@@ -7841,6 +7841,8 @@ async def cert_upload_start(payload: CertUploadStart, current_user: dict = Depen
     if payload.total_chunks < 1 or payload.total_chunks > 30:
         raise HTTPException(status_code=400, detail="File troppo grande (max 10 MB)")
     _validate_cert_scadenza(payload.scadenza)
+    if not payload.scadenza:
+        raise HTTPException(status_code=400, detail="La data di scadenza del certificato è obbligatoria")
     target_user_id = str(current_user["_id"])
     if payload.target_user_id and payload.target_user_id != target_user_id:
         if current_user.get("role") != UserRole.ADMIN:

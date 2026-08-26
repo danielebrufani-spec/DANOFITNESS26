@@ -719,3 +719,10 @@ Richiesta: cliccando il banner certificato si finiva sul profilo ma la card era 
 - `profilo.tsx`: param `?cert=<timestamp>` via useLocalSearchParams; ref sullo ScrollView + onLayout sulla wrapper View di `<CertificatoCard />` (certY); doppio scrollTo temporizzato (400ms/1300ms) per gestire il layout che si assesta dopo il load.
 - Tutti e 3 gli entry point ora passano il param: banner home (`certificato-banner`), banner Prenota (`prenota-block-banner`), pulsante 'Carica ora' del popup (`goCarica`). Timestamp come valore → il re-tap ri-triggera lo scroll.
 - Verificato con screenshot mobile 390x844: dal banner home si atterra direttamente sulla card con pulsante CARICA visibile.
+
+## Scadenza obbligatoria al caricamento (26 Ago 2026)
+Richiesta: la data di scadenza al momento del caricamento del certificato deve essere obbligatoria.
+- Backend `cert_upload_start` (server.py ~7843): 400 "La data di scadenza del certificato è obbligatoria" se `payload.scadenza` assente.
+- Frontend `CertUploadForm` (CertificatoMedico.tsx): label con asterisco, bottone INVIA disabilitato senza data, messaggio di errore se si tenta l'invio senza data. Vale sia per upload cliente che admin (form condiviso).
+- Testato: curl 400 senza scadenza / upload_id con scadenza; screenshot conferma label * e bottone disabilitato.
+- NOTA RICORRENTE: expo web serve bundle stale dopo modifiche → `sudo supervisorctl restart frontend` prima di verificare.

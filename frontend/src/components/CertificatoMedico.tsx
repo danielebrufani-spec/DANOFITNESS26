@@ -173,13 +173,14 @@ export const CertUploadForm: React.FC<{
 
   const handleUpload = async () => {
     if (!picked || uploading) return;
-    let scadIso: string | null = null;
-    if (scadenzaInput.trim()) {
-      scadIso = parseDataIt(scadenzaInput);
-      if (!scadIso) {
-        setError('Data non valida: usa il formato GG/MM/AAAA');
-        return;
-      }
+    if (!scadenzaInput.trim()) {
+      setError('Inserisci la data di scadenza indicata sul certificato (GG/MM/AAAA)');
+      return;
+    }
+    const scadIso = parseDataIt(scadenzaInput);
+    if (!scadIso) {
+      setError('Data non valida: usa il formato GG/MM/AAAA');
+      return;
     }
     setUploading(true);
     setError(null);
@@ -228,7 +229,7 @@ export const CertUploadForm: React.FC<{
         </View>
       )}
 
-      <Text style={styles.fieldLabel}>Scadenza indicata sul certificato (opzionale)</Text>
+      <Text style={styles.fieldLabel}>Scadenza indicata sul certificato *</Text>
       <TextInput
         style={styles.dateInput}
         placeholder="GG/MM/AAAA"
@@ -248,9 +249,9 @@ export const CertUploadForm: React.FC<{
         </View>
       )}
       <TouchableOpacity
-        style={[styles.submitBtn, (!picked || uploading) && { opacity: 0.5 }]}
+        style={[styles.submitBtn, (!picked || !scadenzaInput.trim() || uploading) && { opacity: 0.5 }]}
         onPress={handleUpload}
-        disabled={!picked || uploading}
+        disabled={!picked || !scadenzaInput.trim() || uploading}
         testID="cert-submit-upload"
       >
         {uploading ? (
