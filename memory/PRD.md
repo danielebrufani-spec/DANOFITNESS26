@@ -695,3 +695,14 @@ Richiesta: caricare e archiviare il certificato medico nella scheda cliente, sem
 - Warning console "Unexpected text node: ." (~4 occorrenze, appare solo con certi popup admin, pre-esistente, cosmetico — fonte non individuata via grep, tutti i '.' trovati sono correttamente dentro <Text>).
 - ~63 `data-testid=` su componenti RN in /app/frontend/app invisibili nel DOM (usare testID) — migrazione massiva rimandata.
 - 'Visualizza' blob, path JPG/PNG con compressione e layout mobile 390x844 non coperti dal testing agent (funzionano da codice, da verificare manualmente).
+
+## Fix UI Certificato Medico v2 — popup, countdown, blocco Prenota (26 Ago 2026)
+Risolti i 4 bug frontend da iteration_19.json (retest iteration_20.json: 6/6 PASS, 100%).
+1. **Popup blocco ricorrente**: il popup rosso 'PRENOTAZIONI BLOCCATE' ora riappare ad OGNI apertura app; il throttle giornaliero localStorage `cert_info_popup_date` si applica SOLO alla variante informativa pre-stagione.
+2. **Countdown prioritario**: nuova funzione pura esportata `getPopupVariant(info, oggi)` in `CertificatoMedico.tsx` (priorità: bloccato > countdown se `blocco.motivo && status!=='mancante'` > preObbligo). Con cert scaduto in pre-stagione ora appare il countdown 'X GIORNI RIMASTI'. Rimosso `&& !preObbligo` da `cert-countdown-hint` nella card profilo.
+3. **Popup mai per admin/istruttore**: `CertificatoObbligoPopup` attende il caricamento auth (`authLoading`/`user` guard nel useEffect) e ritorna `null` se isAdmin/isIstruttore — eliminata la race condition che bloccava i click nel pannello admin.
+4. **Feedback blocco in Prenota** (`prenota.tsx`): helper `showAlert` (window.alert su web, Alert.alert su native) usato in tutto `handleBook`; nuovo state `certBlockInfo` caricato in loadData; banner rosso `prenota-block-banner` (tap → profilo); bottoni lezione con testID `book-btn-{id}`/`cancel-btn-{id}`, se bloccato mostrano lucchetto+'Bloccato' e al click spiegano il motivo; catch 403 ora visibile + refresh stato.
+5. **Minore**: modal admin non mostra più '· scade il ...' quando lo stato è RIFIUTATO.
+- NOTA AMBIENTE: expo web può servire bundle stale — se una modifica non appare, `sudo supervisorctl restart frontend`.
+- Helper test aggiornato: `/app/tests/cert_helper.py` (nuovo comando `upload`).
+- ⚠️ Save to Github necessario per portare i fix su Vercel.

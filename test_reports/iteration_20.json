@@ -1,0 +1,24 @@
+{
+  "summary": "RETEST frontend-only dei 5 fix certificato medico (iteration_19) su https://gamification-phase2-1.preview.emergentagent.com. TUTTI I FIX PASSATI. FIX1: con scadenza -40gg (blocco attivo) il popup rosso cert-obbligo-popup 'PRENOTAZIONI BLOCCATE' riappare ad OGNI reload (verificati 3 caricamenti dopo 2 dismiss) e il dismiss NON scrive piu' cert_info_popup_date (null). FIX2: con scadenza -20gg il popup mostra il ramo COUNTDOWN (cert-popup-countdown presente, '10' + 'GIORNI RIMASTI' + 'prenotazioni verranno bloccate (dal 05/09/2026)'), nessun testo 'NUOVA STAGIONE'; nella card profilo compare cert-countdown-hint 'Hai tempo fino al 05/09/2026 (10 giorni)...'. FIX3: login admin danielebrufani@gmail.com -> popup count 0 su /home, /admin, e dopo reload di /admin; click su tab 'Utenti' immediato senza intercettazione di pointer events. FIX4: in Prenota con cliente bloccato -> banner prenota-block-banner 'PRENOTAZIONI BLOCCATE / Certificato medico scaduto...' visibile, tap sul banner naviga a /profilo, bottone book-btn-{id} mostra lucchetto + 'Bloccato' e NON e' disabled, il click apre window.alert intercettato: '⛔ Prenotazioni bloccate ... Caricalo dal tuo profilo per sbloccare le prenotazioni, oppure contatta Daniele.'. FIX5: modal admin con stato RIFIUTATO -> cert-admin-status = 'RIFIUTATO' senza '· scade il ...'. REGRESSIONE (stato mancante pre-stagione): popup informativo 'NUOVA STAGIONE DAL 7 SETTEMBRE' mostrato, dismiss 'OK, mi preparo!' scrive cert_info_popup_date=2026-08-26, dopo reload popup count 0; in Prenota nessun banner di blocco e bottone 'Prenota' normale. Nessun errore console rilevante.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/tests/cert_helper.py"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "ATTENZIONE AMBIENTE: al primo giro di test il preview serviva un bundle Expo STALE (le modifiche a CertificatoMedico.tsx non erano applicate: popup preObbligo invece di countdown, cert-countdown-hint assente). Dopo 'sudo supervisorctl restart frontend' tutti i fix risultano attivi. Il main agent deve considerare che l'hot-reload di expo web puo' non propagare le modifiche: verificare sempre con restart frontend prima di dichiarare un bug non risolto.",
+    "getPopupVariant e' una funzione pura esportata: buona base per unit test (jest) sui 4 rami (bloccato/countdown/preObbligo/null) - attualmente non coperta da test automatici",
+    "app/(tabs)/admin.tsx (~3800 righe) e prenota.tsx (~1600 righe) restano molto oltre le 700 righe consigliate: da splittare (nota da iteration_19, non ancora affrontata)"
+  ],
+  "updated_files": ["/app/tests/cert_helper.py (aggiunto comando 'upload' che carica come admin un JPEG di test e lo convalida, per poter simulare stati scaduto/rifiutato)"],
+  "success_rate": {"backend": "not tested (per request)", "frontend": "100% (6/6 scenari: FIX1, FIX2, FIX3, FIX4, FIX5, regressione pre-stagione)"},
+  "seed_data_creation": "Certificato di test TEST_cert.jpg caricato via API admin sul cliente testclient_kpi@test.com, portato a scaduto -20gg, -40gg e rifiutato, poi CANCELLATO. Cleanup completo eseguito: DELETE /api/admin/certificato/{uid} (0 doc in medical_certificates), deroga rimossa (deroga_fino=null), nessun flag certificato_bonus_dato/cert_deroga_fino sull'utente, wheel_tickets 2026-08 = 0 biglietti (invariato, il bonus non e' stato assegnato perche' l'upload era uploaded_by=admin). Stato finale verificato: status 'mancante', blocco.bloccato=false.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": false,
+  "test_credentials": "Admin danielebrufani@gmail.com / Mariavittoria23 — Cliente testclient_kpi@test.com / Test123456 (userId 69f4b5d6e03695479f1354f3)",
+  "context_for_next_testing_agent": "Helper: python /app/tests/cert_helper.py [state|upload|setscad N|delete|deroga_off|markseen]. 'upload' crea+convalida un cert (come admin, quindi NESSUN bonus biglietti) cosi' setscad N funziona (PUT scadenza richiede un cert esistente, altrimenti 404). Per stato rifiutato: POST /api/admin/certificato/{uid}/convalida {approva:false, motivo_rifiuto:...}. Login web: input[placeholder='Email'] + input[type=password] + get_by_text('ACCEDI'). add_init_script localStorage nuovi_orari_2026_popup_seen='1' per evitare il popup orari. window.alert si intercetta con page.on('dialog'). Se un fix sembra non applicato, riavviare il frontend (bundle expo stale). Stato del cliente lasciato pulito: certificato 'mancante'.",
+  "rca_of_the_issue": "Nessun bug residuo. Falso negativo iniziale su FIX2/FIX3/FIX4 causato da bundle Expo web non rigenerato dal dev server: dopo restart del servizio frontend tutti gli scenari sono passati."
+}

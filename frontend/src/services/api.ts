@@ -101,10 +101,12 @@ export interface User {
   prova_stato?: string | null;
   certificato_stato?: string | null;
   certificato_scadenza?: string | null;
+  cert_bloccato?: boolean;
+  cert_deroga_fino?: string | null;
 }
 
 export interface CertificatoInfo {
-  status: 'mancante' | 'valido' | 'in_scadenza' | 'scaduto';
+  status: 'mancante' | 'in_verifica' | 'rifiutato' | 'valido' | 'in_scadenza' | 'scaduto';
   scadenza?: string | null;
   giorni_alla_scadenza?: number | null;
   file_name?: string;
@@ -112,8 +114,18 @@ export interface CertificatoInfo {
   size?: number;
   uploaded_at?: string;
   uploaded_by?: string;
+  stato_convalida?: string;
+  motivo_rifiuto?: string | null;
   bonus_gia_dato?: boolean;
   bonus_biglietti?: number;
+  obbligo_dal?: string;
+  blocco?: {
+    bloccato: boolean;
+    giorni_rimanenti: number | null;
+    blocco_dal: string | null;
+    deroga_fino: string | null;
+    motivo: string | null;
+  };
 }
 
 export interface Reply {
@@ -535,6 +547,10 @@ export const apiService = {
   adminUpdateCertScadenza: (userId: string, scadenza: string | null) =>
     api.put<CertificatoInfo>(`/admin/certificato/${userId}`, { scadenza }),
   adminDeleteCertificato: (userId: string) => api.delete<{ success: boolean }>(`/admin/certificato/${userId}`),
+  adminConvalidaCertificato: (userId: string, data: { approva: boolean; scadenza?: string | null; motivo?: string }) =>
+    api.post<{ success: boolean; bonus_biglietti: number; certificato: CertificatoInfo }>(`/admin/certificato/${userId}/convalida`, data),
+  adminCertDeroga: (userId: string, giorni: number | null) =>
+    api.post<{ success: boolean; deroga_fino: string | null; blocco: CertificatoInfo['blocco'] }>(`/admin/certificato/${userId}/deroga`, { giorni }),
 };
 
 export default api;

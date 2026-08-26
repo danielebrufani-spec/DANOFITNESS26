@@ -1500,6 +1500,13 @@ export default function AdminScreen() {
                   )}
                   {user.role !== 'admin' && user.role !== 'istruttore' && (() => {
                     const st = user.certificato_stato || 'mancante';
+                    if (user.cert_bloccato) {
+                      return (
+                        <View style={[styles.certInlineBadge, { borderColor: '#FF4D6D', backgroundColor: 'rgba(255,77,109,0.2)' }]} testID={`cert-badge-${user.id}`}>
+                          <Text style={[styles.certInlineBadgeText, { color: '#FF4D6D' }]}>⛔ PRENOT. BLOCCATE</Text>
+                        </View>
+                      );
+                    }
                     if (st === 'valido') {
                       return (
                         <View testID={`cert-badge-${user.id}`}>
@@ -1509,6 +1516,10 @@ export default function AdminScreen() {
                     }
                     const cfg = st === 'scaduto'
                       ? { c: '#FF4D6D', t: 'CERT SCADUTO' }
+                      : st === 'rifiutato'
+                      ? { c: '#FF4D6D', t: 'CERT RIFIUTATO' }
+                      : st === 'in_verifica'
+                      ? { c: '#00C8FF', t: 'DA CONVALIDARE' }
                       : st === 'in_scadenza'
                       ? { c: '#FFB300', t: 'CERT IN SCAD.' }
                       : { c: '#FF9800', t: 'NO CERT' };

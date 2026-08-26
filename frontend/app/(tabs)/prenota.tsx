@@ -16,7 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { apiService, Lesson, Booking } from '../../src/services/api';
+import { apiService, Lesson, Booking, CertificatoInfo } from '../../src/services/api';
 import { useAuth } from '../../src/context/AuthContext';
 import {
   COLORS,
@@ -96,6 +96,15 @@ const isDatePassed = (dateString: string) => {
   return dateString < today;
 };
 
+// Alert cross-platform: Alert.alert è un no-op su react-native-web
+const showAlert = (title: string, message: string) => {
+  if (Platform.OS === 'web') {
+    window.alert(`${title}\n\n${message}`);
+  } else {
+    Alert.alert(title, message);
+  }
+};
+
 // Check if a lesson has started (not bookable anymore)
 // Returns true if current time is after the lesson start time
 const isLessonPassed = (dateString: string, lessonTime: string) => {
@@ -150,6 +159,7 @@ export default function PrenotaScreen() {
   const [participants, setParticipants] = useState<{[key: string]: {nome: string}[]}>({});
   const [loadingParticipants, setLoadingParticipants] = useState<string | null>(null);
   const [cancelledLessons, setCancelledLessons] = useState<any[]>([]);
+  const [certBlockInfo, setCertBlockInfo] = useState<CertificatoInfo | null>(null);
   
   // Animazioni
   const [showConfetti, setShowConfetti] = useState(false);
@@ -289,6 +299,12 @@ export default function PrenotaScreen() {
         const cancelledRes = await apiService.getCancelledLessons();
         setCancelledLessons(cancelledRes.data);
       } catch { setCancelledLessons([]); }
+
+      // Stato blocco certificato medico
+      try {
+        const certRes = await apiService.getMioCertificato();
+        setCertBlockInfo(certRes.data?.blocco?.bloccato ? certRes.data : null);
+      } catch { setCertBlockInfo(null); }
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -400,15 +416,24 @@ export default function PrenotaScreen() {
 
   // Book a lesson - Date is calculated automatically from lesson day
   const handleBook = async (lessonId: string) => {
+    if (certBlockInfo) {
+      const motivo = certBlockInfo.status === 'scaduto'
+        ? 'Il tuo certificato medico è scaduto.'
+        : certBlockInfo.status === 'rifiutato'
+        ? 'Il tuo certificato medico è stato rifiutato.'
+        : 'Non hai ancora caricato il certificato medico.';
+      showAlert('⛔ Prenotazioni bloccate', `${motivo}\n\nCaricalo dal tuo profilo per sbloccare le prenotazioni, oppure contatta Daniele.`);
+      return;
+    }
     if (!bookingStatus.open) {
-      Alert.alert('Prenotazioni Chiuse', bookingStatus.message || 'Le prenotazioni non sono attive');
+      showAlert('Prenotazioni Chiuse', bookingStatus.message || 'Le prenotazioni non sono attive');
       return;
     }
     
     // Find the lesson to get its day
     const lesson = lessons.find(l => l.id === lessonId);
     if (!lesson) {
-      Alert.alert('Errore', 'Lezione non trovata');
+      showAlert('Errore', 'Lezione non trovata');
       return;
     }
     
@@ -423,14 +448,14 @@ export default function PrenotaScreen() {
     });
     
     if (!correctDate) {
-      Alert.alert('Errore', 'Data non disponibile per questa lezione');
+      showAlert('Errore', 'Data non disponibile per questa lezione');
       return;
     }
     
     const dateString = getDateString(correctDate);
     
     if (isDatePassed(dateString)) {
-      Alert.alert('Errore', 'Non puoi prenotare per una data passata');
+      showAlert('Errore', 'Non puoi prenotare per una data passata');
       return;
     }
     
@@ -455,7 +480,7 @@ export default function PrenotaScreen() {
       await loadData();
       
       if (response.data.abbonamento_scaduto) {
-        Alert.alert(
+        showAlert(
           'Attenzione',
           'Prenotazione effettuata, ma il tuo abbonamento è scaduto. Contatta Daniele per rinnovare.'
         );
@@ -482,7 +507,10 @@ export default function PrenotaScreen() {
           );
         }
       } else {
-        Alert.alert('Errore', errorDetail || 'Errore durante la prenotazione');
+        showAlert('⚠️ Prenotazione non riuscita', errorDetail || 'Errore durante la prenotazione');
+        if (error.response?.status === 403) {
+          loadData(false);
+        }
       }
     } finally {
       setBookingLoading(null);
@@ -636,6 +664,25 @@ export default function PrenotaScreen() {
           <Ionicons name="time-outline" size={20} color={COLORS.warning} />
           <Text style={styles.closedBannerText}>{bookingStatus.message}</Text>
         </View>
+      )}
+
+      {/* Blocco certificato medico */}
+      {certBlockInfo && (
+        <TouchableOpacity
+          style={styles.certBlockBanner}
+          onPress={() => router.push('/profilo')}
+          activeOpacity={0.85}
+          testID="prenota-block-banner"
+        >
+          <Ionicons name="lock-closed" size={22} color="#FF4D6D" />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.certBlockTitle}>PRENOTAZIONI BLOCCATE</Text>
+            <Text style={styles.certBlockMsg}>
+              Certificato medico {certBlockInfo.status === 'scaduto' ? 'scaduto' : certBlockInfo.status === 'rifiutato' ? 'rifiutato' : 'mancante'} — tocca qui per caricarlo dal profilo, o contatta Daniele.
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#FF4D6D" />
+        </TouchableOpacity>
       )}
 
       {/* Week Date Selector (Mon-Sat only) */}
@@ -792,12 +839,19 @@ export default function PrenotaScreen() {
                         styles.bookButton,
                         booked && styles.bookedButton,
                         !canBook && styles.disabledButton,
+                        (!booked && !!certBlockInfo) && styles.certBlockedButton,
                       ]}
                       onPress={() => booked ? handleCancel(lesson.id) : handleBook(lesson.id)}
                       disabled={isLoadingThis || !canBook}
+                      testID={booked ? `cancel-btn-${lesson.id}` : `book-btn-${lesson.id}`}
                     >
                       {isLoadingThis ? (
                         <ActivityIndicator size="small" color={COLORS.text} />
+                      ) : !booked && certBlockInfo ? (
+                        <>
+                          <Ionicons name="lock-closed" size={22} color="#FF4D6D" />
+                          <Text style={[styles.bookButtonText, { color: '#FF4D6D' }]}>Bloccato</Text>
+                        </>
                       ) : (
                         <>
                           <Ionicons
@@ -1070,6 +1124,32 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: FONTS.bodySemi,
     flex: 1,
+  },
+  certBlockBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(255,77,109,0.10)',
+    marginHorizontal: 16,
+    marginTop: 8,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#FF4D6D',
+  },
+  certBlockTitle: {
+    color: '#FF4D6D',
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  certBlockMsg: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  certBlockedButton: {
+    backgroundColor: 'rgba(255,77,109,0.12)',
   },
   dateSelector: {
     paddingVertical: 12,

@@ -168,8 +168,10 @@ class UserResponse(BaseModel):
     ultimo_abb_scadenza: Optional[str] = None
     ultimo_abb_pagato: Optional[bool] = None
     prova_stato: Optional[str] = None  # 'in_attesa' | 'concessa' | 'negata' | None (utenti pre-flusso)
-    certificato_stato: Optional[str] = None  # 'mancante' | 'valido' | 'in_scadenza' | 'scaduto'
+    certificato_stato: Optional[str] = None  # 'mancante' | 'in_verifica' | 'rifiutato' | 'valido' | 'in_scadenza' | 'scaduto'
     certificato_scadenza: Optional[str] = None  # YYYY-MM-DD
+    cert_bloccato: Optional[bool] = False  # prenotazioni bloccate per certificato
+    cert_deroga_fino: Optional[str] = None  # deroga admin YYYY-MM-DD
 
 class SubscriptionCreate(BaseModel):
     user_id: str
@@ -2070,6 +2072,15 @@ async def create_booking(data: BookingCreate, current_user: dict = Depends(get_c
             detail="🏖️ Pausa estiva! Le attività riprendono lunedì 7 settembre con la nuova stagione invernale. Le prenotazioni riaprono domenica 6/9 alle 9:00."
         )
     
+    # CHECK CERTIFICATO MEDICO: blocco prenotazioni dopo 30gg di tolleranza
+    _cert = await db.medical_certificates.find_one({"user_id": user_id})
+    _blocco = _cert_blocco_info(current_user, _cert)
+    if _blocco["bloccato"]:
+        raise HTTPException(
+            status_code=403,
+            detail="📋 Prenotazioni bloccate: certificato medico mancante o scaduto da oltre 30 giorni. Caricalo dal tuo profilo o contatta Daniele."
+        )
+
     # CHECK LEZIONE ANNULLATA
     cancelled = await db.cancelled_lessons.find_one({
         "lesson_id": data.lesson_id,
@@ -2868,8 +2879,8 @@ async def get_all_users(admin_user: dict = Depends(get_admin_user)):
         if uid not in last_sub_map:
             last_sub_map[uid] = sub
 
-    # Mappa certificati medici: user_id -> cert (solo scadenza per lo stato)
-    certs = await db.medical_certificates.find({}, {"user_id": 1, "scadenza": 1}).to_list(3000)
+    # Mappa certificati medici: user_id -> cert (per stato e blocco)
+    certs = await db.medical_certificates.find({}, {"user_id": 1, "scadenza": 1, "stato_convalida": 1, "motivo_rifiuto": 1}).to_list(3000)
     cert_map = {c["user_id"]: c for c in certs}
 
     result = []
@@ -2898,6 +2909,8 @@ async def get_all_users(admin_user: dict = Depends(get_admin_user)):
             prova_stato=_prova_stato(user),
             certificato_stato=_cert_status_from_doc(cert_map.get(uid))["status"],
             certificato_scadenza=(cert_map.get(uid) or {}).get("scadenza"),
+            cert_bloccato=_cert_blocco_info(user, cert_map.get(uid))["bloccato"],
+            cert_deroga_fino=user.get("cert_deroga_fino"),
         ))
     return result
 
@@ -7662,6 +7675,8 @@ CERT_ALLOWED_TYPES = {"application/pdf": "pdf", "image/jpeg": "jpg", "image/png"
 CERT_MAX_BYTES = 10 * 1024 * 1024
 CERT_BONUS_BIGLIETTI = 2
 CERT_SOGLIA_SCADENZA_GG = 30
+CERT_OBBLIGO_INIZIO = "2026-09-07"  # dalla nuova stagione il certificato è obbligatorio
+CERT_GRACE_GIORNI = 30  # giorni di tolleranza prima del blocco prenotazioni
 
 _storage_key_cache = None
 
@@ -7703,9 +7718,14 @@ async def _storage_get(path: str):
 
 
 def _cert_status_from_doc(cert: Optional[dict]) -> dict:
-    """Stato certificato: mancante | valido | in_scadenza | scaduto"""
+    """Stato certificato: mancante | in_verifica | rifiutato | valido | in_scadenza | scaduto"""
     if not cert:
         return {"status": "mancante", "scadenza": None, "giorni_alla_scadenza": None}
+    stato_conv = cert.get("stato_convalida", "convalidato")
+    if stato_conv == "in_verifica":
+        return {"status": "in_verifica", "scadenza": cert.get("scadenza"), "giorni_alla_scadenza": None}
+    if stato_conv == "rifiutato":
+        return {"status": "rifiutato", "scadenza": cert.get("scadenza"), "giorni_alla_scadenza": None, "motivo_rifiuto": cert.get("motivo_rifiuto")}
     scad = cert.get("scadenza")
     if not scad:
         return {"status": "valido", "scadenza": None, "giorni_alla_scadenza": None}
@@ -7717,6 +7737,42 @@ def _cert_status_from_doc(cert: Optional[dict]) -> dict:
     return {"status": "valido", "scadenza": scad, "giorni_alla_scadenza": giorni}
 
 
+def _cert_blocco_info(user: dict, cert: Optional[dict]) -> dict:
+    """Blocco prenotazioni: 30gg di tolleranza dalla scadenza del certificato
+    (o dal 07/09/2026 / dalla registrazione per chi non l'ha mai caricato).
+    L'admin può concedere una deroga (users.cert_deroga_fino, prenotazioni ok fino a quella data inclusa)."""
+    out = {"bloccato": False, "giorni_rimanenti": None, "blocco_dal": None, "deroga_fino": user.get("cert_deroga_fino"), "motivo": None}
+    if user.get("role") in (UserRole.ADMIN, UserRole.ISTRUTTORE):
+        return out
+    info = _cert_status_from_doc(cert)
+    st = info["status"]
+    if st in ("valido", "in_scadenza", "in_verifica"):
+        return out
+    today = now_rome().date()
+    if st == "scaduto":
+        anchor = datetime.strptime(info["scadenza"], "%Y-%m-%d").date()
+    else:  # mancante | rifiutato
+        anchor = datetime.strptime(CERT_OBBLIGO_INIZIO, "%Y-%m-%d").date()
+        created = user.get("created_at")
+        if isinstance(created, datetime) and created.date() > anchor:
+            anchor = created.date()
+    blocco_dal = anchor + timedelta(days=CERT_GRACE_GIORNI)
+    deroga = user.get("cert_deroga_fino")
+    if deroga:
+        try:
+            deroga_d = datetime.strptime(deroga, "%Y-%m-%d").date()
+            if deroga_d + timedelta(days=1) > blocco_dal:
+                blocco_dal = deroga_d + timedelta(days=1)
+        except ValueError:
+            pass
+    giorni = (blocco_dal - today).days
+    out["motivo"] = st
+    out["blocco_dal"] = blocco_dal.isoformat()
+    out["giorni_rimanenti"] = max(0, giorni)
+    out["bloccato"] = giorni <= 0
+    return out
+
+
 def _cert_public_info(cert: Optional[dict]) -> dict:
     info = _cert_status_from_doc(cert)
     if cert:
@@ -7726,6 +7782,8 @@ def _cert_public_info(cert: Optional[dict]) -> dict:
             "size": cert.get("size"),
             "uploaded_at": cert["uploaded_at"].strftime("%Y-%m-%d %H:%M") if cert.get("uploaded_at") else None,
             "uploaded_by": cert.get("uploaded_by"),
+            "stato_convalida": cert.get("stato_convalida", "convalidato"),
+            "motivo_rifiuto": cert.get("motivo_rifiuto"),
         })
     return info
 
@@ -7840,29 +7898,23 @@ async def cert_upload_finish(payload: CertUploadFinish, current_user: dict = Dep
             "scadenza": up.get("scadenza"),
             "uploaded_by": up["uploaded_by"],
             "uploaded_at": now_rome(),
+            "stato_convalida": "convalidato" if up["uploaded_by"] == "admin" else "in_verifica",
+            "motivo_rifiuto": None,
+            "convalidato_il": now_rome() if up["uploaded_by"] == "admin" else None,
         }},
         upsert=True,
     )
     await db.cert_upload_chunks.delete_many({"upload_id": payload.upload_id})
     await db.cert_uploads.delete_one({"upload_id": payload.upload_id})
-    # Bonus biglietti SOLO al primo caricamento fatto dal cliente stesso
-    bonus = 0
-    target_user = await db.users.find_one({"_id": ObjectId(target_user_id)})
-    if up["uploaded_by"] == "client" and target_user:
-        if not target_user.get("certificato_bonus_dato"):
-            mese = now_rome().strftime("%Y-%m")
-            await db.wheel_tickets.update_one(
-                {"user_id": target_user_id, "mese": mese},
-                {"$inc": {"biglietti": CERT_BONUS_BIGLIETTI}},
-                upsert=True,
-            )
-            await db.users.update_one({"_id": ObjectId(target_user_id)}, {"$set": {"certificato_bonus_dato": True}})
-            bonus = CERT_BONUS_BIGLIETTI
-        nome = f"{target_user.get('nome', '')} {target_user.get('cognome', '')}".strip()
-        asyncio.create_task(send_push_to_admins("📄 Certificato medico caricato!", f"{nome} ha caricato il suo certificato medico.", tag="certificato"))
+    # I caricamenti del cliente vanno in verifica: push all'admin per la convalida
+    if up["uploaded_by"] == "client":
+        target_user = await db.users.find_one({"_id": ObjectId(target_user_id)})
+        if target_user:
+            nome = f"{target_user.get('nome', '')} {target_user.get('cognome', '')}".strip()
+            asyncio.create_task(send_push_to_admins("📄 Certificato da convalidare!", f"{nome} ha caricato il certificato medico: aprilo e convalidalo dalla scheda cliente.", tag="certificato"))
     cert = await db.medical_certificates.find_one({"user_id": target_user_id})
     logger.info(f"[CERT] Certificato caricato per user {target_user_id} da {up['uploaded_by']}")
-    return {"success": True, "bonus_biglietti": bonus, "certificato": _cert_public_info(cert)}
+    return {"success": True, "bonus_biglietti": 0, "certificato": _cert_public_info(cert)}
 
 
 @api_router.get("/certificato/me")
@@ -7871,6 +7923,8 @@ async def get_my_certificate(current_user: dict = Depends(get_current_user)):
     info = _cert_public_info(cert)
     info["bonus_gia_dato"] = bool(current_user.get("certificato_bonus_dato"))
     info["bonus_biglietti"] = CERT_BONUS_BIGLIETTI
+    info["blocco"] = _cert_blocco_info(current_user, cert)
+    info["obbligo_dal"] = CERT_OBBLIGO_INIZIO
     return info
 
 
@@ -7894,7 +7948,91 @@ async def get_my_certificate_file(current_user: dict = Depends(get_current_user)
 @api_router.get("/admin/certificato/{user_id}")
 async def admin_get_certificate(user_id: str, admin_user: dict = Depends(get_admin_user)):
     cert = await db.medical_certificates.find_one({"user_id": user_id})
-    return _cert_public_info(cert)
+    info = _cert_public_info(cert)
+    try:
+        target = await db.users.find_one({"_id": ObjectId(user_id)})
+    except Exception:
+        target = None
+    if target:
+        info["blocco"] = _cert_blocco_info(target, cert)
+    return info
+
+
+class CertConvalida(BaseModel):
+    approva: bool
+    scadenza: Optional[str] = None  # se fornita, sovrascrive quella dichiarata dal cliente
+    motivo: Optional[str] = None  # motivo del rifiuto
+
+
+@api_router.post("/admin/certificato/{user_id}/convalida")
+async def admin_convalida_certificato(user_id: str, payload: CertConvalida, admin_user: dict = Depends(get_admin_user)):
+    cert = await db.medical_certificates.find_one({"user_id": user_id})
+    if not cert:
+        raise HTTPException(status_code=404, detail="Nessun certificato per questo utente")
+    bonus = 0
+    if payload.approva:
+        _validate_cert_scadenza(payload.scadenza)
+        update = {"stato_convalida": "convalidato", "convalidato_il": now_rome(), "motivo_rifiuto": None}
+        if payload.scadenza is not None:
+            update["scadenza"] = payload.scadenza
+        await db.medical_certificates.update_one({"user_id": user_id}, {"$set": update})
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        if cert.get("uploaded_by") == "client" and user and not user.get("certificato_bonus_dato"):
+            mese = now_rome().strftime("%Y-%m")
+            await db.wheel_tickets.update_one(
+                {"user_id": user_id, "mese": mese},
+                {"$inc": {"biglietti": CERT_BONUS_BIGLIETTI}},
+                upsert=True,
+            )
+            await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"certificato_bonus_dato": True}})
+            bonus = CERT_BONUS_BIGLIETTI
+        body = "Il tuo certificato medico è stato convalidato da Daniele. Sei a posto! 💪"
+        if bonus:
+            body += f" E hai vinto +{bonus} biglietti lotteria 🎟️"
+        asyncio.create_task(send_push_to_users([user_id], "✅ Certificato convalidato!", body, tag="certificato"))
+        logger.info(f"[CERT] Certificato CONVALIDATO per user {user_id} (bonus={bonus})")
+    else:
+        motivo = (payload.motivo or "").strip() or "Documento non valido o illeggibile"
+        await db.medical_certificates.update_one(
+            {"user_id": user_id},
+            {"$set": {"stato_convalida": "rifiutato", "motivo_rifiuto": motivo, "convalidato_il": None}},
+        )
+        asyncio.create_task(send_push_to_users([user_id], "❌ Certificato non convalidato", f"Motivo: {motivo}. Ricaricalo dal tuo profilo.", tag="certificato"))
+        logger.info(f"[CERT] Certificato RIFIUTATO per user {user_id}: {motivo}")
+    cert = await db.medical_certificates.find_one({"user_id": user_id})
+    info = _cert_public_info(cert)
+    target = await db.users.find_one({"_id": ObjectId(user_id)})
+    if target:
+        info["blocco"] = _cert_blocco_info(target, cert)
+    return {"success": True, "bonus_biglietti": bonus, "certificato": info}
+
+
+class CertDeroga(BaseModel):
+    giorni: Optional[int] = None  # None o 0 = rimuovi deroga
+
+
+@api_router.post("/admin/certificato/{user_id}/deroga")
+async def admin_cert_deroga(user_id: str, payload: CertDeroga, admin_user: dict = Depends(get_admin_user)):
+    try:
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+    except Exception:
+        user = None
+    if not user:
+        raise HTTPException(status_code=404, detail="Utente non trovato")
+    if payload.giorni and payload.giorni > 0:
+        if payload.giorni > 365:
+            raise HTTPException(status_code=400, detail="Massimo 365 giorni di deroga")
+        fino = (now_rome().date() + timedelta(days=payload.giorni)).isoformat()
+        await db.users.update_one({"_id": user["_id"]}, {"$set": {"cert_deroga_fino": fino}})
+        asyncio.create_task(send_push_to_users([user_id], "🕐 Tempo extra per il certificato", f"Daniele ti ha concesso {payload.giorni} giorni in più per caricare il certificato medico.", tag="certificato"))
+        logger.info(f"[CERT] Deroga fino al {fino} per user {user_id}")
+    else:
+        await db.users.update_one({"_id": user["_id"]}, {"$unset": {"cert_deroga_fino": ""}})
+        fino = None
+        logger.info(f"[CERT] Deroga rimossa per user {user_id}")
+    cert = await db.medical_certificates.find_one({"user_id": user_id})
+    user = await db.users.find_one({"_id": user["_id"]})
+    return {"success": True, "deroga_fino": fino, "blocco": _cert_blocco_info(user, cert)}
 
 
 @api_router.get("/admin/certificato/{user_id}/file")

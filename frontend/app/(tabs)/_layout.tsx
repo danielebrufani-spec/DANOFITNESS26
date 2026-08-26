@@ -7,6 +7,7 @@ import { apiService } from '../../src/services/api';
 import { EventPopup } from '../../src/components/EventPopup';
 import { AdminAnnouncementPopup } from '../../src/components/AdminAnnouncementPopup';
 import { NuoviOrariPopup } from '../../src/components/NuoviOrariBanner';
+import { CertificatoObbligoPopup } from '../../src/components/CertificatoMedico';
 import { WelcomeGate } from '../../src/components/WelcomeGate';
 
 export default function TabsLayout() {
@@ -97,6 +98,7 @@ export default function TabsLayout() {
     {!isArchived && <AdminAnnouncementPopup />}
     {/* Popup NUOVI ORARI 2026/27 - solo alla prima apertura */}
     {!isArchived && <NuoviOrariPopup />}
+    {!isArchived && <CertificatoObbligoPopup />}
     <Tabs
       screenOptions={{
         headerShown: false,

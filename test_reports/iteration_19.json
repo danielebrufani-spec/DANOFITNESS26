@@ -1,0 +1,83 @@
+{
+  "summary": "Frontend-only E2E test of certificato medico v2 (convalida admin, scatta foto/anteprima, blocco prenotazioni + deroga, popup pre-stagione/countdown) su https://gamification-phase2-1.preview.emergentagent.com con cliente testclient_kpi@test.com e admin danielebrufani@gmail.com. PASSATI: popup pre-stagione (titolo, CTA->profilo, dismiss 'OK, mi preparo!', non riappare dopo reload grazie a cert_info_popup_date), modal upload con SCEGLI FILE + SCATTA FOTO, anteprima immagine (cert-preview-img) con avviso 'Controlla che sia ben leggibile', invio con scadenza 31/12/2027 -> stato IN VERIFICA (banner Home nascosto), badge admin 'DA CONVALIDARE' + box convalida con scadenza precompilata, RIFIUTO con motivo -> feedback + stato RIFIUTATO + badge 'CERT RIFIUTATO' + card cliente con motivo e RICARICA + banner Home rosso, ricarica -> IN VERIFICA, CONVALIDA con correzione scadenza 15/03/2027 -> feedback '+2 biglietti assegnati' (verificato in DB wheel_tickets 0->2 e certificato_bonus_dato=true), badge admin icona verde, BLOCCO con scadenza -40gg -> badge '⛔ PRENOT. BLOCCATE' + box PRENOTAZIONI 'BLOCCATE dal 16/08/2026' + deroga +7/+15/+30 funzionanti e Rimuovi che riporta a BLOCCATE. FALLITI: popup blocco non riappare ad ogni apertura, countdown popup mai mostrato in pre-stagione, popup cliente mostrato anche all'ADMIN bloccando la UI, 403 su prenotazione senza alcun feedback a schermo su web.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "CertificatoObbligoPopup (src/components/CertificatoMedico.tsx ~riga 425-455)",
+        "issue": "REQ8 FALLITO: con certificato scaduto/bloccato (scadenza -40gg, blocco attivo) il popup rosso 'PRENOTAZIONI BLOCCATE' appare solo la PRIMA volta; dopo il dismiss ('Chiudi') e un reload NON riappare. Causa: il gate una-volta-al-giorno su localStorage cert_info_popup_date e' condizionato solo a preObbligo (oggi 26/08 < 07/09), quindi si applica anche agli utenti gia' bloccati; dismiss() scrive la data anche quando bloccato=true. Fix: saltare sia la scrittura sia il controllo di cert_info_popup_date quando d.blocco?.bloccato e' true (o quando status e' scaduto/rifiutato).",
+        "selector": "[data-testid='cert-obbligo-popup'] / [data-testid='cert-popup-dismiss']",
+        "priority": "HIGH"
+      },
+      {
+        "component": "CertificatoObbligoPopup (branch di render ~riga 478-498)",
+        "issue": "REQ9 FALLITO: con scadenza a -20gg (blocco.giorni_rimanenti=10, blocco_dal 05/09) il popup mostra il messaggio generico 'NUOVA STAGIONE DAL 7 SETTEMBRE' e cert-popup-countdown NON esiste (count=0), quindi il cliente non vede ne' il numero 10 ne' 'GIORNI RIMASTI'/'le prenotazioni verranno bloccate'. Causa: l'ordine dei rami e' bloccato -> preObbligo -> countdown, e preObbligo e' true per tutta la pre-stagione. Fix: dare priorita' al ramo countdown quando blocco?.motivo e' presente e derivato da certificato scaduto/rifiutato (es. status !== 'mancante').",
+        "selector": "[data-testid='cert-popup-countdown']",
+        "priority": "HIGH"
+      },
+      {
+        "component": "CertificatoCard (src/components/CertificatoMedico.tsx riga 325)",
+        "issue": "Stesso root cause del punto precedente: cert-countdown-hint ('Hai tempo fino al ... poi le prenotazioni si bloccano') non compare mai in pre-stagione perche' la condizione include '&& !preObbligo'; con cert scaduto e 10 giorni residui la card mostra solo 'Il certificato e' scaduto' senza countdown (il banner Home invece mostra correttamente 'Hai 10 giorni').",
+        "selector": "[data-testid='cert-countdown-hint']",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "CertificatoObbligoPopup montato in app/(tabs)/_layout.tsx",
+        "issue": "Il popup cliente 'NUOVA STAGIONE DAL 7 SETTEMBRE' viene mostrato anche all'ADMIN (danielebrufani@gmail.com) dopo un reload su /admin, e il suo overlay INTERCETTA I CLICK: il click sul tab 'Utenti' e' fallito con 'subtree intercepts pointer events' (30s timeout) fino alla chiusura manuale del popup. Causa: l'useEffect gira prima che isAdmin sia risolto dall'AuthContext (isAdmin=false al primo render), chiama /api/certificato/mio e fa setVisible(true); quando isAdmin diventa true il popup non viene piu' nascosto. Fix: attendere che user/auth sia caricato (guard su !user || loading) e/o nascondere il popup se isAdmin||isIstruttore diventa true nel render.",
+        "selector": "[data-testid='cert-obbligo-popup']",
+        "priority": "HIGH"
+      },
+      {
+        "component": "CertificatoAdminModal (statusRow riga 188)",
+        "issue": "Minore: con stato RIFIUTATO il modal admin mostra ancora '· scade il 31/12/2027' accanto al badge (la card cliente correttamente la nasconde per rifiutato).",
+        "selector": "[data-testid='cert-admin-status']",
+        "priority": "LOW"
+      },
+      {
+        "component": "CertificatoAdminModal box blocco (deroga)",
+        "issue": "Minore/cosmetico: dopo deroga +15 il box mostra 'Blocco dal 11/09/2026 (16 giorni rimasti)' con 'Deroga attiva fino al 10/09/2026' (conteggio inclusivo) mentre l'atteso da specifica era 15 giorni.",
+        "selector": "[data-testid='cert-admin-blocco-box']",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "Prenotazione con certificato bloccato (REQ3)",
+        "issue": "Il backend risponde correttamente 403 su POST /api/bookings, ma sul web NON viene mostrato alcun messaggio all'utente: cliccando PRENOTA non appare nessun alert/toast/testo (nessun dialog intercettato, nessun nodo errore). Causa: in app/(tabs)/prenota.tsx riga 485 l'errore generico usa Alert.alert(...) che su react-native-web e' un no-op; solo il caso NO_SUBSCRIPTION usa window.alert per Platform.OS==='web'. Inoltre il bottone PRENOTA resta abilitato per utenti bloccati (nessun indicatore di blocco nella schermata Prenota).",
+        "affected_selectors": ["Prenota card button (nessun data-testid)", "POST /api/bookings"]
+      }
+    ],
+    "design_issues": [
+      {
+        "screen": "Schermata Prenota (utente con prenotazioni bloccate)",
+        "issues": ["Nessun banner/stato di blocco nella schermata Prenota: le lezioni appaiono prenotabili e il click fallisce silenziosamente", "I bottoni di prenotazione non hanno data-testid, rendendo fragile il test automatico"]
+      }
+    ]
+  },
+  "test_report_links": ["/app/tests/cert_helper.py"],
+  "action_items": [
+    "Popup blocco: non applicare (e non scrivere) il gate cert_info_popup_date quando blocco.bloccato=true, cosi' il popup 'PRENOTAZIONI BLOCCATE' riappare ad ogni apertura app",
+    "Popup countdown: dare priorita' al ramo countdown rispetto a preObbligo quando esiste blocco.motivo derivato da certificato scaduto/rifiutato (e rimuovere '&& !preObbligo' da cert-countdown-hint nella card profilo)",
+    "Impedire che CertificatoObbligoPopup venga mostrato ad admin/istruttore: attendere il caricamento dell'auth prima del fetch e nascondere il popup se isAdmin/isIstruttore diventa true (attualmente blocca i click nell'area admin)",
+    "Mostrare il messaggio 403 di blocco certificato nella schermata Prenota su web (Alert.alert non funziona su react-native-web) e/o disabilitare il bottone PRENOTA con etichetta 'BLOCCATO — certificato medico'",
+    "Nascondere la scadenza nel modal admin quando lo stato e' RIFIUTATO",
+    "Aggiungere data-testid ai bottoni PRENOTA delle lezioni"
+  ],
+  "critical_code_review_comments": [
+    "CertificatoObbligoPopup: l'useEffect ha come deps [isAdmin, isIstruttore] ma legge anche user?.archived e non gestisce lo stato 'auth non ancora caricato' -> fetch e popup per utenti admin (race condition)",
+    "La logica di visibilita' del popup mescola tre condizioni (preObbligo, bloccato, countdown) in un'unica catena ternaria: estrarre una funzione pura getPopupVariant(info, today) testabile per evitare regressioni",
+    "prenota.tsx usa Alert.alert per l'error handling generico: su web e' un no-op, tutti gli errori di prenotazione (403 certificato, capienza, ecc.) risultano invisibili all'utente",
+    "app/(tabs)/admin.tsx e' ~3800 righe e prenota.tsx ~1600: superano largamente le 700 righe consigliate, da splittare"
+  ],
+  "updated_files": ["/app/tests/cert_helper.py"],
+  "success_rate": {"backend": "not tested (per request)", "frontend": "70% (7/10 scenari passati, 3 falliti: popup blocco ricorrente, countdown pre-stagione, popup mostrato all'admin; + 1 gap integrazione feedback 403)"},
+  "seed_data_creation": "Nessun nuovo utente. Certificato di test caricato/rifiutato/convalidato su testclient_kpi@test.com e poi CANCELLATO. Cleanup eseguito: DELETE /api/admin/certificato/{userId}, deroga rimossa, $unset certificato_bonus_dato e cert_deroga_fino, wheel_tickets mese 2026-08 riportato a biglietti=0. Stato finale verificato: status 'mancante', nessun flag cert sull'utente.",
+  "should_call_test_agent_after_fix": true,
+  "should_main_agent_self_test": false,
+  "test_credentials": "Admin danielebrufani@gmail.com / Mariavittoria23 — Cliente testclient_kpi@test.com / Test123456 (userId 69f4b5d6e03695479f1354f3)",
+  "context_for_next_testing_agent": "Helper API pronto: python /app/tests/cert_helper.py [state|setscad N(giorni fa)|delete|deroga_off|markseen]. Immagine di test JPG generabile con PIL in /tmp/certificato_test.jpg. Login: input[placeholder='Email'] + input[type=password] + testo 'ACCEDI'. Admin: usare get_by_text('Utenti', exact=True) (NON 'UTENTI', il maiuscolo e' textTransform CSS) poi input[placeholder*='Cerca utente']. Il file picker si intercetta con page.expect_file_chooser attorno al click su cert-pick-file (l'input viene creato dinamicamente). Per evitare popup: add_init_script con localStorage nuovi_orari_2026_popup_seen='1' e, se non si testa il popup cert, cert_info_popup_date='YYYY-MM-DD' odierna — ATTENZIONE: add_init_script viene rieseguito ad ogni reload, non usarlo per rimuovere la chiave se si testa la persistenza. Dopo i fix ri-testare: (a) popup bloccato ricorrente su reload, (b) cert-popup-countdown con scadenza -20gg, (c) admin non deve vedere il popup su /admin dopo reload, (d) messaggio d'errore visibile cliccando PRENOTA con blocco attivo.",
+  "rca_of_the_issue": "Tutti e tre i bug del popup derivano dalla variabile preObbligo (todayRome() < 2026-09-07) usata sia come gate del throttling giornaliero sia come ramo di render prioritario: in pre-stagione qualsiasi utente (anche scaduto/bloccato) ricade nel messaggio informativo e nel throttling una-volta-al-giorno, sopprimendo il popup di blocco e il countdown. Il popup mostrato all'admin e' invece una race condition dell'useEffect che parte con isAdmin=false prima del caricamento dell'AuthContext. Il silenzio sul 403 in prenotazione dipende da Alert.alert non implementato in react-native-web."
+}
