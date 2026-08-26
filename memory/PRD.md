@@ -706,3 +706,10 @@ Risolti i 4 bug frontend da iteration_19.json (retest iteration_20.json: 6/6 PAS
 - NOTA AMBIENTE: expo web può servire bundle stale — se una modifica non appare, `sudo supervisorctl restart frontend`.
 - Helper test aggiornato: `/app/tests/cert_helper.py` (nuovo comando `upload`).
 - ⚠️ Save to Github necessario per portare i fix su Vercel.
+
+## Regola nuovi iscritti — 30gg dal primo abbonamento vero (26 Ago 2026)
+Richiesta utente: per i nuovi iscritti i 30 giorni per consegnare il certificato partono dalla data del PRIMO ABBONAMENTO (la prova gratuita NON conta). Confermato da Daniele: chi non ha mai avuto un abbonamento vero non vede countdown né blocco.
+- Nuovo campo `users.primo_abbonamento_il` (YYYY-MM-DD): settato in `create_subscription` (server.py ~1450) al primo abbonamento con tipo != prova_7gg (solo se il campo non esiste già); NON settato dalla prova self-activate.
+- Backfill idempotente in startup_event: aggregazione min(data_inizio) su subscriptions (tipo != prova_7gg) → set campo per utenti che ne sono privi.
+- `_cert_blocco_info` (server.py ~7740): per status mancante/rifiutato l'anchor è max(07/09/2026, primo_abbonamento_il); se il campo manca → nessun motivo/countdown/blocco. Status 'scaduto' invariato (anchor = scadenza cert).
+- Testato via curl (4 scenari, tutti PASS): cliente storico → blocco dal 07/10; utente senza abbonamento → nessun countdown; primo abbonamento 15/10 → blocco dal 14/11; solo prova 7gg → nessun countdown. Utenti di test rimossi dal DB.

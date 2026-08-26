@@ -1448,6 +1448,13 @@ async def create_subscription(data: SubscriptionCreate, admin_user: dict = Depen
     }
     
     result = await db.subscriptions.insert_one(subscription)
+
+    # Primo abbonamento vero: da qui partono i 30gg per il certificato medico
+    if data.tipo != SubscriptionType.PROVA_7GG:
+        await db.users.update_one(
+            {"_id": ObjectId(data.user_id), "primo_abbonamento_il": {"$exists": False}},
+            {"$set": {"primo_abbonamento_il": start_date.strftime("%Y-%m-%d")}}
+        )
     
     # Se è prova 7gg, attiva anche i flag prova sull'utente
     if data.tipo == SubscriptionType.PROVA_7GG:
@@ -7738,8 +7745,10 @@ def _cert_status_from_doc(cert: Optional[dict]) -> dict:
 
 
 def _cert_blocco_info(user: dict, cert: Optional[dict]) -> dict:
-    """Blocco prenotazioni: 30gg di tolleranza dalla scadenza del certificato
-    (o dal 07/09/2026 / dalla registrazione per chi non l'ha mai caricato).
+    """Blocco prenotazioni: 30gg di tolleranza dalla scadenza del certificato.
+    Per chi non l'ha mai caricato (mancante/rifiutato) i 30gg partono dal primo
+    abbonamento vero (la prova non conta), non prima del 07/09/2026.
+    Chi non ha mai avuto un abbonamento vero non ha countdown né blocco.
     L'admin può concedere una deroga (users.cert_deroga_fino, prenotazioni ok fino a quella data inclusa)."""
     out = {"bloccato": False, "giorni_rimanenti": None, "blocco_dal": None, "deroga_fino": user.get("cert_deroga_fino"), "motivo": None}
     if user.get("role") in (UserRole.ADMIN, UserRole.ISTRUTTORE):
@@ -7752,10 +7761,16 @@ def _cert_blocco_info(user: dict, cert: Optional[dict]) -> dict:
     if st == "scaduto":
         anchor = datetime.strptime(info["scadenza"], "%Y-%m-%d").date()
     else:  # mancante | rifiutato
+        primo_abb = user.get("primo_abbonamento_il")
+        if not primo_abb:
+            return out
         anchor = datetime.strptime(CERT_OBBLIGO_INIZIO, "%Y-%m-%d").date()
-        created = user.get("created_at")
-        if isinstance(created, datetime) and created.date() > anchor:
-            anchor = created.date()
+        try:
+            primo_d = datetime.strptime(primo_abb, "%Y-%m-%d").date()
+            if primo_d > anchor:
+                anchor = primo_d
+        except ValueError:
+            pass
     blocco_dal = anchor + timedelta(days=CERT_GRACE_GIORNI)
     deroga = user.get("cert_deroga_fino")
     if deroga:
@@ -8175,6 +8190,32 @@ async def startup_event():
         logger.info("[CERT] Object storage inizializzato")
     except Exception as e:
         logger.warning(f"[CERT] Init storage fallito (retry al primo upload): {e}")
+
+    # Backfill primo_abbonamento_il: data del primo abbonamento vero (prova esclusa)
+    try:
+        pipeline = [
+            {"$match": {"tipo": {"$ne": "prova_7gg"}}},
+            {"$sort": {"data_inizio": 1}},
+            {"$group": {"_id": "$user_id", "prima": {"$first": "$data_inizio"}}},
+        ]
+        async for row in db.subscriptions.aggregate(pipeline):
+            prima = row.get("prima")
+            if isinstance(prima, datetime):
+                prima_str = prima.strftime("%Y-%m-%d")
+            elif isinstance(prima, str) and len(prima) >= 10:
+                prima_str = prima[:10]
+            else:
+                continue
+            try:
+                uid = ObjectId(row["_id"])
+            except Exception:
+                continue
+            await db.users.update_one(
+                {"_id": uid, "primo_abbonamento_il": {"$exists": False}},
+                {"$set": {"primo_abbonamento_il": prima_str}}
+            )
+    except Exception as e:
+        logger.warning(f"[CERT] Backfill primo_abbonamento_il fallito: {e}")
 
     # Blocca date specifiche (lezioni sospese)
     blocked_dates_to_add = [
