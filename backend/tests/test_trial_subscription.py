@@ -49,7 +49,7 @@ class TestTrialSubscription:
         # Cleanup: Deactivate trial after tests
         try:
             self.session.post(f"{BASE_URL}/api/admin/deactivate-trial/{TEST_USER_ID}")
-        except:
+        except Exception:
             pass
     
     # ==================== ACTIVATE TRIAL TESTS ====================

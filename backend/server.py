@@ -687,7 +687,7 @@ async def cancel_lesson(data: CancelLessonCreate, admin_user: dict = Depends(get
     # Verifica che la lezione esista
     try:
         lesson = await db.lessons.find_one({"_id": ObjectId(data.lesson_id)})
-    except:
+    except Exception:
         raise HTTPException(status_code=404, detail="Lezione non trovata")
     if not lesson:
         raise HTTPException(status_code=404, detail="Lezione non trovata")
@@ -1395,7 +1395,7 @@ async def create_subscription(data: SubscriptionCreate, admin_user: dict = Depen
     # Verify user exists
     try:
         user = await db.users.find_one({"_id": ObjectId(data.user_id)})
-    except:
+    except Exception:
         raise HTTPException(status_code=404, detail="Utente non trovato")
     
     if not user:
@@ -1705,7 +1705,7 @@ async def mark_subscription_paid(subscription_id: str, admin_user: dict = Depend
     """Segna un abbonamento come pagato"""
     try:
         sub = await db.subscriptions.find_one({"_id": ObjectId(subscription_id)})
-    except:
+    except Exception:
         raise HTTPException(status_code=404, detail="Abbonamento non trovato")
     
     if not sub:
@@ -1724,7 +1724,7 @@ async def update_subscription(subscription_id: str, data: SubscriptionUpdate, ad
     """Update subscription - admin only. Can modify remaining lessons, expiry date, or active status."""
     try:
         sub = await db.subscriptions.find_one({"_id": ObjectId(subscription_id)})
-    except:
+    except Exception:
         raise HTTPException(status_code=404, detail="Abbonamento non trovato")
     
     if not sub:
@@ -1756,7 +1756,7 @@ async def update_subscription(subscription_id: str, data: SubscriptionUpdate, ad
     # Get user info
     try:
         user = await db.users.find_one({"_id": ObjectId(updated_sub["user_id"])}, {"nome": 1, "cognome": 1})
-    except:
+    except Exception:
         user = None
     
     is_expired = updated_sub["data_scadenza"] < now_rome()
@@ -2058,7 +2058,7 @@ async def create_booking(data: BookingCreate, current_user: dict = Depends(get_c
     # Verify lesson exists
     try:
         lesson = await db.lessons.find_one({"_id": ObjectId(data.lesson_id)})
-    except:
+    except Exception:
         raise HTTPException(status_code=404, detail="Lezione non trovata")
     
     if not lesson:
@@ -2265,7 +2265,7 @@ async def get_my_bookings(current_user: dict = Depends(get_current_user)):
         try:
             all_lessons = await get_cached_lessons()
             lessons_cache = {str(l["_id"]): l for l in all_lessons}
-        except:
+        except Exception:
             pass
     
     result = []
@@ -2506,7 +2506,7 @@ async def get_subscription_log_ingressi(sub_id: str, current_user: dict = Depend
             if data_lezione:
                 data_obj = datetime.strptime(data_lezione[:10], "%Y-%m-%d")
                 giorno_settimana = giorni_map.get(data_obj.weekday(), "")
-        except:
+        except Exception:
             pass
         
         log_entries.append({
@@ -2532,7 +2532,7 @@ async def cancel_booking(booking_id: str, current_user: dict = Depends(get_curre
     
     try:
         booking = await db.bookings.find_one({"_id": ObjectId(booking_id)})
-    except:
+    except Exception:
         raise HTTPException(status_code=404, detail="Prenotazione non trovata")
     
     if not booking:
@@ -2554,7 +2554,7 @@ async def confirm_presence_and_deduct(booking_id: str, admin_user: dict = Depend
     """
     try:
         booking = await db.bookings.find_one({"_id": ObjectId(booking_id)})
-    except:
+    except Exception:
         raise HTTPException(status_code=404, detail="Prenotazione non trovata")
     
     if not booking:
@@ -2703,14 +2703,14 @@ async def admin_force_add_booking(data: AdminForceBookingCreate, admin_user: dic
     Se scala_lezione=True, scala 1 lezione dal pacchetto attivo (se presente)."""
     try:
         user = await db.users.find_one({"_id": ObjectId(data.user_id)})
-    except:
+    except Exception:
         raise HTTPException(status_code=404, detail="Utente non trovato")
     if not user:
         raise HTTPException(status_code=404, detail="Utente non trovato")
 
     try:
         lesson = await db.lessons.find_one({"_id": ObjectId(data.lesson_id)})
-    except:
+    except Exception:
         raise HTTPException(status_code=404, detail="Lezione non trovata")
     if not lesson:
         raise HTTPException(status_code=404, detail="Lezione non trovata")
@@ -2782,7 +2782,7 @@ async def admin_remove_booking(booking_id: str, riaccredita: bool = False, admin
     """Admin-only: rimuove una prenotazione. Se riaccredita=True e la lezione era stata scalata, riaccredita +1 al pacchetto attivo più recente."""
     try:
         booking = await db.bookings.find_one({"_id": ObjectId(booking_id)})
-    except:
+    except Exception:
         raise HTTPException(status_code=404, detail="Prenotazione non trovata")
     if not booking:
         raise HTTPException(status_code=404, detail="Prenotazione non trovata")
@@ -2948,7 +2948,7 @@ async def archive_user(user_id: str, admin_user: dict = Depends(get_admin_user))
     """Archivia un cliente (lo mette in stato non attivo senza cancellarlo)"""
     try:
         user = await db.users.find_one({"_id": ObjectId(user_id)}, {"role": 1, "nome": 1, "cognome": 1})
-    except:
+    except Exception:
         raise HTTPException(status_code=404, detail="Utente non trovato")
     
     if not user:
@@ -2972,7 +2972,7 @@ async def restore_user(user_id: str, admin_user: dict = Depends(get_admin_user))
     """Riattiva un cliente archiviato"""
     try:
         user = await db.users.find_one({"_id": ObjectId(user_id)}, {"nome": 1, "cognome": 1})
-    except:
+    except Exception:
         raise HTTPException(status_code=404, detail="Utente non trovato")
     
     if not user:
@@ -3152,7 +3152,7 @@ async def process_started_lessons(admin_user: dict = Depends(get_admin_user)):
                     lesson = await db.lessons.find_one({"_id": ObjectId(lesson_id)})
                     if lesson:
                         orario_lezione = lesson.get("orario", "")
-            except:
+            except Exception:
                 pass
         
         if not orario_lezione:
@@ -4287,7 +4287,7 @@ async def update_user(user_id: str, data: UserUpdate, admin_user: dict = Depends
     """Admin: Update user data"""
     try:
         user = await db.users.find_one({"_id": ObjectId(user_id)})
-    except:
+    except Exception:
         raise HTTPException(status_code=404, detail="Utente non trovato")
     
     if not user:
@@ -4629,7 +4629,7 @@ async def mark_notification_read(notification_id: str, current_user: dict = Depe
             {"$set": {"letta": True}}
         )
         return {"message": "Notifica segnata come letta"}
-    except:
+    except Exception:
         raise HTTPException(status_code=404, detail="Notifica non trovata")
 
 # ======================== CHAT/COMUNICAZIONI ========================
@@ -4739,7 +4739,7 @@ async def get_unread_count(last_read: str = None, current_user: dict = Depends(g
                 # Make it naive for comparison
                 if last_read_dt.tzinfo:
                     last_read_dt = last_read_dt.replace(tzinfo=None)
-            except:
+            except Exception:
                 last_read_dt = datetime(1970, 1, 1)
         else:
             last_read_dt = datetime(1970, 1, 1)
@@ -7962,6 +7962,25 @@ async def get_my_certificate_file(current_user: dict = Depends(get_current_user)
     )
 
 
+@api_router.get("/admin/registrazioni/in-attesa")
+async def get_registrazioni_in_attesa(admin_user: dict = Depends(get_admin_user)):
+    """Nuovi iscritti in attesa di attivazione (concedi prova / bentornato)."""
+    out = []
+    async for u in db.users.find(
+        {"role": "client", "archived": {"$ne": True}, "prova_autorizzata": {"$exists": True}},
+        {"nome": 1, "cognome": 1, "created_at": 1, "prova_autorizzata": 1},
+    ):
+        if u.get("prova_autorizzata") is not None:
+            continue
+        out.append({
+            "user_id": str(u["_id"]),
+            "nome": u.get("nome", ""),
+            "cognome": u.get("cognome", ""),
+            "registrato_il": u["created_at"].strftime("%d/%m/%Y %H:%M") if u.get("created_at") else None,
+        })
+    return out
+
+
 @api_router.get("/admin/certificati/da-convalidare")
 async def get_certificati_da_convalidare(admin_user: dict = Depends(get_admin_user)):
     """Lista clienti con certificato caricato in attesa di convalida."""
@@ -8511,7 +8530,7 @@ async def auto_process_lessons_task():
                             lesson = await db.lessons.find_one({"_id": ObjectId(lesson_id)})
                             if lesson:
                                 orario_lezione = lesson.get("orario", "")
-                    except:
+                    except Exception:
                         pass
                 
                 if not orario_lezione:

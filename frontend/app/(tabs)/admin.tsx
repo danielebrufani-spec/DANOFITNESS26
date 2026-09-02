@@ -117,13 +117,18 @@ export default function AdminScreen() {
   // Reset password modal
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [certUser, setCertUser] = useState<User | null>(null);
-  // Deep-link dal popup "certificati da convalidare": apre direttamente il modal certificato
-  const { cert_user: certUserParam, t: certLinkT } = useLocalSearchParams<{ cert_user?: string; t?: string }>();
+  // Deep-link dal popup "richieste in attesa": apre modal certificato o cerca l'utente
+  const { cert_user: certUserParam, user_search: userSearchParam, t: certLinkT } = useLocalSearchParams<{ cert_user?: string; user_search?: string; t?: string }>();
   useEffect(() => {
     if (!certUserParam || users.length === 0) return;
     const u = users.find((x) => x.id === certUserParam);
     if (u) setCertUser(u);
   }, [certUserParam, certLinkT, users]);
+  useEffect(() => {
+    if (!userSearchParam) return;
+    setActiveTab('utenti');
+    setUserSearchQuery(String(userSearchParam));
+  }, [userSearchParam, certLinkT]);
   const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');

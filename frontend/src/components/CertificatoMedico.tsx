@@ -523,28 +523,38 @@ export const CertificatoObbligoPopup: React.FC = () => {
   );
 };
 
-// ---------- Popup ADMIN: certificati in attesa di convalida (ad ogni apertura) ----------
+// ---------- Popup ADMIN: richieste in attesa (certificati + nuovi iscritti) ad ogni apertura ----------
 export const CertificatiDaConvalidarePopup: React.FC = () => {
   const { isAdmin, user, loading: authLoading } = useAuth();
   const [pending, setPending] = useState<{ user_id: string; nome: string; cognome: string; uploaded_at: string | null }[]>([]);
+  const [registrazioni, setRegistrazioni] = useState<{ user_id: string; nome: string; cognome: string; registrato_il: string | null }[]>([]);
   const [visible, setVisible] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     if (authLoading || !user || !isAdmin) return;
-    apiService.adminGetCertificatiDaConvalidare().then((res) => {
-      if (res.data.length > 0) {
-        setPending(res.data);
-        setVisible(true);
-      }
-    }).catch(() => {});
+    Promise.allSettled([
+      apiService.adminGetCertificatiDaConvalidare(),
+      apiService.adminGetRegistrazioniInAttesa(),
+    ]).then(([certs, regs]) => {
+      const c = certs.status === 'fulfilled' ? certs.value.data : [];
+      const r = regs.status === 'fulfilled' ? regs.value.data : [];
+      setPending(c);
+      setRegistrazioni(r);
+      if (c.length > 0 || r.length > 0) setVisible(true);
+    });
   }, [authLoading, user, isAdmin]);
 
-  if (!isAdmin || !visible || pending.length === 0) return null;
+  if (!isAdmin || !visible || (pending.length === 0 && registrazioni.length === 0)) return null;
 
   const goTo = (uid: string) => {
     setVisible(false);
     router.push({ pathname: '/admin', params: { cert_user: uid, t: String(Date.now()) } });
+  };
+
+  const goToUser = (nome: string, cognome: string) => {
+    setVisible(false);
+    router.push({ pathname: '/admin', params: { user_search: `${nome} ${cognome}`.trim(), t: String(Date.now()) } });
   };
 
   return (
@@ -552,24 +562,42 @@ export const CertificatiDaConvalidarePopup: React.FC = () => {
       <View style={styles.modalOverlay}>
         <View style={[styles.modalCard, { borderColor: '#00C8FF', borderWidth: 1.5 }]} testID="cert-admin-pending-popup">
           <View style={{ alignItems: 'center', marginBottom: 10 }}>
-            <Ionicons name="medkit" size={40} color="#00C8FF" />
+            <Ionicons name="notifications" size={40} color="#00C8FF" />
           </View>
-          <Text style={[styles.popupTitle, { color: '#00C8FF' }]}>CERTIFICATI DA CONVALIDARE</Text>
-          <Text style={styles.popupText}>
-            {pending.length === 1
-              ? 'Un cliente ha caricato il certificato medico. Tocca il nome per aprirlo e convalidarlo:'
-              : `${pending.length} clienti hanno caricato il certificato medico. Tocca un nome per aprirlo e convalidarlo:`}
-          </Text>
-          {pending.map((p) => (
-            <TouchableOpacity key={p.user_id} style={styles.pendingRow} onPress={() => goTo(p.user_id)} activeOpacity={0.85} testID={`cert-pending-row-${p.user_id}`}>
-              <Ionicons name="person-circle-outline" size={22} color="#00C8FF" />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.pendingName}>{p.nome} {p.cognome}</Text>
-                {p.uploaded_at && <Text style={styles.pendingDate}>caricato il {p.uploaded_at}</Text>}
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="#00C8FF" />
-            </TouchableOpacity>
-          ))}
+          <Text style={[styles.popupTitle, { color: '#00C8FF' }]}>RICHIESTE IN ATTESA</Text>
+
+          {registrazioni.length > 0 && (
+            <>
+              <Text style={styles.pendingSection}>🆕 Nuovi iscritti da attivare — tocca per decidere:</Text>
+              {registrazioni.map((r) => (
+                <TouchableOpacity key={r.user_id} style={[styles.pendingRow, { borderColor: 'rgba(57,255,20,0.4)', backgroundColor: 'rgba(57,255,20,0.08)' }]} onPress={() => goToUser(r.nome, r.cognome)} activeOpacity={0.85} testID={`reg-pending-row-${r.user_id}`}>
+                  <Ionicons name="person-add" size={20} color="#39FF14" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.pendingName}>{r.nome} {r.cognome}</Text>
+                    {r.registrato_il && <Text style={styles.pendingDate}>registrato il {r.registrato_il}</Text>}
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="#39FF14" />
+                </TouchableOpacity>
+              ))}
+            </>
+          )}
+
+          {pending.length > 0 && (
+            <>
+              <Text style={styles.pendingSection}>📄 Certificati da convalidare — tocca per aprire:</Text>
+              {pending.map((p) => (
+                <TouchableOpacity key={p.user_id} style={styles.pendingRow} onPress={() => goTo(p.user_id)} activeOpacity={0.85} testID={`cert-pending-row-${p.user_id}`}>
+                  <Ionicons name="person-circle-outline" size={22} color="#00C8FF" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.pendingName}>{p.nome} {p.cognome}</Text>
+                    {p.uploaded_at && <Text style={styles.pendingDate}>caricato il {p.uploaded_at}</Text>}
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="#00C8FF" />
+                </TouchableOpacity>
+              ))}
+            </>
+          )}
+
           <TouchableOpacity style={styles.cancelBtn} onPress={() => setVisible(false)} testID="cert-admin-pending-close">
             <Text style={styles.cancelBtnText}>Più tardi</Text>
           </TouchableOpacity>
@@ -622,6 +650,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     marginTop: 10,
+  },
+  pendingSection: {
+    color: COLORS.text,
+    fontSize: 13,
+    fontWeight: '800',
+    marginTop: 14,
   },
   pendingName: {
     color: COLORS.text,

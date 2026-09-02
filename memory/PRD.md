@@ -743,3 +743,11 @@ Richiesta: "mi basta un messaggio popup quando apro con tutti i nomi dei clienti
 - Testato con screenshot: login admin → popup con nome + data → tap → modal convalida aperto. Cleanup fatto.
 - NOTA: errori tsc pre-esistenti in admin.tsx righe ~1254/1264 (cognome su tipo booking) — non runtime, non introdotti da questa modifica.
 - VERIFICA LIVE (26 Ago sera): popup admin FUNZIONANTE su danofitness23.vercel.app (screenshot: Carla Starnini in_verifica mostrata all'apertura). Render + Vercel si auto-aggiornano dai push del repo. Se l'utente non lo vede: app vecchia in cache sul telefono → chiudere del tutto e riaprire.
+
+## Popup admin esteso: RICHIESTE IN ATTESA (certificati + nuovi iscritti)
+Richiesta: per i nuovi iscritti arrivava solo il push, l'admin vuole anche il popup all'apertura con i nomi e link diretto.
+- Backend: nuovo `GET /api/admin/registrazioni/in-attesa` → utenti client non archiviati con `prova_autorizzata` presente e null (= in_attesa). NB: query con $exists per escludere utenti legacy senza campo.
+- Popup `CertificatiDaConvalidarePopup` rinominato concettualmente "RICHIESTE IN ATTESA": 2 sezioni — 🆕 nuovi iscritti (righe verdi, testID `reg-pending-row-{id}`, tap → `/admin?user_search=Nome Cognome` → tab Utenti con ricerca precompilata e pulsanti Concedi prova/Vecchio cliente) e 📄 certificati (righe ciano, invariate, tap → modal convalida).
+- admin.tsx: nuovo param `user_search` → setActiveTab('utenti') + setUserSearchQuery.
+- Fix lint: sostituiti tutti i 20 `except:` bare con `except Exception:` in server.py (pre-esistenti).
+- Testato con screenshot: popup con entrambe le sezioni → tap su nuova iscritta → scheda con "Concedi prova 7gg" visibile. Cleanup cert test fatto.

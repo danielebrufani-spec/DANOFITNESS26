@@ -54,7 +54,7 @@ class TestProva7ggSubscription:
                 for sub in subs_response.json():
                     if sub.get("user_id") == self.test_user_id and sub.get("tipo") == "prova_7gg":
                         requests.delete(f"{BASE_URL}/api/subscriptions/{sub['id']}", headers=self.headers)
-        except:
+        except Exception:
             pass
     
     def test_create_prova_7gg_subscription_success(self):
