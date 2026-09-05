@@ -773,3 +773,8 @@ Richiesta: cambio look d'impatto su sfondo nero, colorato, con immagini grafiche
 - Verifica visiva: 5 screenshot (login/home/prenota-locandine/premi/admin) tutti OK. Per vedere le locandine in Prenota ho temporaneamente spostato PAUSA_FINE e poi RIPRISTINATO a '2026-09-06' (verificato).
 - Errori tsc pre-esistenti non correlati: home.tsx 399, admin.tsx 1254/1264.
 - NON ancora fatto: restyle schema orari modal (OrariSchemaModal) e admin LessonScheduleManager con immagini; StreakBanner/PausaEstiva/NuoviOrari banner mantengono i loro colori originali (già compatti e neon).
+
+## Tab Abbonamento in barra principale (5 Set 2026)
+- `_layout.tsx`: Tabs.Screen "abbonamento" spostato subito dopo "home" (ordine = ordine dichiarazione), title 'Abbonam.', href visibile solo ai clienti (null per admin/istruttore/archiviati).
+- `altro.tsx`: rimossa la card ABBONAMENTO dalla griglia.
+- Verificato: barra = Home | Abbonam. | Prenota | Ruota Quiz | Shop | Altro; schermata abbonamento ok sul nuovo tema.

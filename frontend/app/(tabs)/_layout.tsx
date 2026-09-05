@@ -131,6 +131,16 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="abbonamento"
+        options={{
+          title: 'Abbonam.',
+          href: (isAdmin || isIstruttore || isArchived) ? null : '/abbonamento',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="card-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="alimentazione"
         options={{
           title: 'Dieta AI',
@@ -158,16 +168,6 @@ export default function TabsLayout() {
         name="comunicazioni"
         options={{
           href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="abbonamento"
-        options={{
-          title: 'Abbonamento',
-          href: null, // accessibile dal tab "Altro"
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="card-outline" size={size} color={color} />
-          ),
         }}
       />
       <Tabs.Screen

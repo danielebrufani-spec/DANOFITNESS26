@@ -74,15 +74,6 @@ const SECTIONS: Section[] = [
     show: ({ isArchived }) => !isArchived,
   },
   {
-    key: 'abbonamento',
-    label: 'ABBONAMENTO',
-    sub: 'Stato e scadenza',
-    icon: 'card-outline',
-    color: '#00B0FF',
-    route: '/abbonamento',
-    show: ({ isAdmin, isIstruttore, isArchived }) => !isAdmin && !isIstruttore && !isArchived,
-  },
-  {
     key: 'profilo',
     label: 'PROFILO',
     sub: 'Account & impostazioni',
