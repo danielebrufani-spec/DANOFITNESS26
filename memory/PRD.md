@@ -779,3 +779,8 @@ Richiesta: cambio look d'impatto su sfondo nero, colorato, con immagini grafiche
 - `altro.tsx`: rimossa la card ABBONAMENTO dalla griglia.
 - Verificato: barra = Home | Abbonam. | Prenota | Ruota Quiz | Shop | Altro; schermata abbonamento ok sul nuovo tema.
 - Rimossa anche la card CHIEDI AL MAESTRO da Altro (route /maestro resta nel codice ma non raggiungibile dalla griglia). Altro ora: Dieta AI, Classifica, Curiosità, Eventi, Profilo.
+
+## Restyle sezione Abbonamento (5 Set 2026)
+Richiesta: sezione più curata, font più grandi, info chiare circoscritte in quadrati.
+- `abbonamento.tsx`: titolo Bebas 32 uppercase; badge stato più grande con bordo glow verde; NUOVA griglia 2x2 di quadrati (tilesGrid/tile): PACCHETTO (rosso), PAGAMENTO Saldato/Da saldare (verde/arancio), INIZIO (ciano), SCADENZA (oro) — icona in cerchio + label + valore Bebas 24; card LEZIONI RIMASTE con numero Bebas 76; pacchetti disponibili con prezzi Bebas 30 e bordi rossi; contatto più grande. Rimossi i vecchi blocchi packageNameCard/datesRow.
+- Verificato con screenshot mobile: griglia e font ok, warning "Solo 1 lezione rimaste" intatto.

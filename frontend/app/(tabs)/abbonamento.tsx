@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { apiService, Subscription } from '../../src/services/api';
 import { COLORS, formatDate } from '../../src/utils/constants';
+import { FONTS } from '../../src/theme';
 import { useAuth } from '../../src/context/AuthContext';
 
 interface LogEntry {
@@ -169,7 +170,7 @@ export default function AbbonamentoScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Il Mio Abbonamento</Text>
+        <Text style={styles.title}>IL MIO ABBONAMENTO</Text>
 
         {/* PROVA GRATUITA ATTIVA */}
         {user?.prova_attiva && user?.prova_scadenza && (
@@ -227,27 +228,41 @@ export default function AbbonamentoScreen() {
                 </View>
               )}
 
-              {/* Nome Pacchetto */}
-              <View style={styles.packageNameCard}>
-                <Text style={styles.packageNameText}>
-                  {PACCHETTO_NOME[activeSubscription.tipo] || activeSubscription.tipo}
-                </Text>
-              </View>
-
-              {/* Date */}
-              <View style={styles.datesRow}>
-                <View style={styles.dateBox}>
-                  <Ionicons name="calendar-outline" size={14} color={COLORS.primary} />
-                  <Text style={styles.dateLabel} numberOfLines={1} adjustsFontSizeToFit>Inizio</Text>
-                  <Text style={styles.dateValue} numberOfLines={1} adjustsFontSizeToFit>
+              {/* GRIGLIA INFO - quadrati */}
+              <View style={styles.tilesGrid}>
+                <View style={[styles.tile, { borderColor: 'rgba(255,59,48,0.55)' }]} data-testid="tile-pacchetto">
+                  <View style={[styles.tileIcon, { backgroundColor: 'rgba(255,59,48,0.14)' }]}>
+                    <Ionicons name="barbell" size={24} color={COLORS.primary} />
+                  </View>
+                  <Text style={styles.tileLabel}>PACCHETTO</Text>
+                  <Text style={styles.tileValue} numberOfLines={1} adjustsFontSizeToFit>
+                    {PACCHETTO_NOME[activeSubscription.tipo] || activeSubscription.tipo}
+                  </Text>
+                </View>
+                <View style={[styles.tile, { borderColor: activeSubscription.pagato ? 'rgba(57,255,20,0.55)' : 'rgba(255,149,0,0.6)' }]} data-testid="tile-pagamento">
+                  <View style={[styles.tileIcon, { backgroundColor: activeSubscription.pagato ? 'rgba(57,255,20,0.12)' : 'rgba(255,149,0,0.14)' }]}>
+                    <Ionicons name={activeSubscription.pagato ? 'checkmark-done' : 'wallet-outline'} size={24} color={activeSubscription.pagato ? COLORS.success : '#FF9500'} />
+                  </View>
+                  <Text style={styles.tileLabel}>PAGAMENTO</Text>
+                  <Text style={[styles.tileValue, { color: activeSubscription.pagato ? COLORS.success : '#FF9500' }]} numberOfLines={1} adjustsFontSizeToFit>
+                    {activeSubscription.pagato ? 'SALDATO' : 'DA SALDARE'}
+                  </Text>
+                </View>
+                <View style={[styles.tile, { borderColor: 'rgba(0,229,255,0.5)' }]} data-testid="tile-inizio">
+                  <View style={[styles.tileIcon, { backgroundColor: 'rgba(0,229,255,0.12)' }]}>
+                    <Ionicons name="calendar-outline" size={24} color={COLORS.secondary} />
+                  </View>
+                  <Text style={styles.tileLabel}>INIZIO</Text>
+                  <Text style={styles.tileValue} numberOfLines={1} adjustsFontSizeToFit>
                     {activeSubscription.data_inizio ? formatDate(activeSubscription.data_inizio) : 'N/D'}
                   </Text>
                 </View>
-                <View style={styles.dateDivider} />
-                <View style={styles.dateBox}>
-                  <Ionicons name="time-outline" size={14} color={COLORS.error} />
-                  <Text style={styles.dateLabel} numberOfLines={1} adjustsFontSizeToFit>Fine</Text>
-                  <Text style={styles.dateValue} numberOfLines={1} adjustsFontSizeToFit>
+                <View style={[styles.tile, { borderColor: 'rgba(255,215,0,0.5)' }]} data-testid="tile-scadenza">
+                  <View style={[styles.tileIcon, { backgroundColor: 'rgba(255,215,0,0.12)' }]}>
+                    <Ionicons name="time-outline" size={24} color="#FFD700" />
+                  </View>
+                  <Text style={styles.tileLabel}>SCADENZA</Text>
+                  <Text style={[styles.tileValue, { color: '#FFD700' }]} numberOfLines={1} adjustsFontSizeToFit>
                     {activeSubscription.data_scadenza ? formatDate(activeSubscription.data_scadenza) : 'N/D'}
                   </Text>
                 </View>
@@ -474,7 +489,14 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scrollContent: { padding: 14, paddingBottom: 30 },
-  title: { fontSize: 20, fontWeight: 'bold', color: COLORS.text, marginBottom: 16 },
+  title: {
+    fontFamily: FONTS.headline,
+    fontSize: 32,
+    color: COLORS.text,
+    letterSpacing: 2,
+    marginBottom: 16,
+    textTransform: 'uppercase',
+  },
 
   // Trial Card
   trialCard: {
@@ -545,14 +567,58 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0, 150, 136, 0.15)',
-    paddingVertical: 10,
+    backgroundColor: 'rgba(57,255,20,0.10)',
+    paddingVertical: 14,
     paddingHorizontal: 16,
-    borderRadius: 10,
-    gap: 8,
+    borderRadius: 14,
+    gap: 10,
+    marginBottom: 12,
+    borderWidth: 1.5,
+    borderColor: 'rgba(57,255,20,0.45)',
+  },
+  statusText: { fontSize: 19, fontWeight: 'bold', color: COLORS.success, letterSpacing: 0.5, textTransform: 'uppercase' },
+
+  // Griglia quadrati info
+  tilesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
     marginBottom: 12,
   },
-  statusText: { fontSize: 16, fontWeight: 'bold', color: COLORS.success },
+  tile: {
+    flexBasis: '47%',
+    flexGrow: 1,
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    paddingVertical: 18,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    minHeight: 128,
+    justifyContent: 'center',
+  },
+  tileIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  tileLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: COLORS.textSecondary,
+    letterSpacing: 1.8,
+    marginBottom: 4,
+  },
+  tileValue: {
+    fontFamily: FONTS.headline,
+    fontSize: 24,
+    color: COLORS.text,
+    letterSpacing: 1,
+    textAlign: 'center',
+  },
 
   // Package Name
   packageNameCard: {
@@ -596,11 +662,11 @@ const styles = StyleSheet.create({
   // Lessons Card
   lessonsCard: {
     backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 20,
+    padding: 24,
     alignItems: 'center',
     marginBottom: 12,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: COLORS.border,
   },
   lessonsCardHighlight: {
@@ -662,21 +728,21 @@ const styles = StyleSheet.create({
   },
   lessonsLabel: { fontSize: 14, fontWeight: '600', color: COLORS.text, marginBottom: 4 },
   lessonsLabelBig: { 
-    fontSize: 16, 
-    fontWeight: '700', 
+    fontSize: 17, 
+    fontWeight: '800', 
     color: COLORS.textSecondary, 
-    letterSpacing: 1,
+    letterSpacing: 2,
     marginBottom: 8,
   },
   lessonsCount: { fontSize: 40, fontWeight: 'bold', color: COLORS.primary },
   lessonsCountBig: { 
-    fontSize: 56, 
-    fontWeight: 'bold', 
+    fontFamily: FONTS.headline,
+    fontSize: 76, 
     color: COLORS.primary,
-    lineHeight: 60,
+    lineHeight: 80,
   },
   lessonsSubtext: {
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.textSecondary,
     marginTop: 4,
   },
@@ -892,19 +958,21 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 14,
   },
-  packagesTitle: { fontSize: 15, fontWeight: '600', color: COLORS.text, marginBottom: 12, textAlign: 'center' },
+  packagesTitle: { fontFamily: FONTS.headline, fontSize: 22, color: COLORS.text, marginBottom: 12, textAlign: 'center', letterSpacing: 1.5, textTransform: 'uppercase' },
   packagesRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
   packageBox: {
     flex: 1,
     backgroundColor: COLORS.background,
-    borderRadius: 10,
-    padding: 12,
+    borderRadius: 16,
+    padding: 16,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,59,48,0.35)',
+    minHeight: 92,
+    justifyContent: 'center',
   },
-  packageBoxName: { fontSize: 15, fontWeight: '600', color: COLORS.text },
-  packageBoxPrice: { fontSize: 18, fontWeight: 'bold', color: COLORS.primary, marginTop: 4 },
+  packageBoxName: { fontSize: 16, fontWeight: '800', color: COLORS.text, letterSpacing: 0.5, textTransform: 'uppercase' },
+  packageBoxPrice: { fontFamily: FONTS.headline, fontSize: 30, color: COLORS.primary, marginTop: 4, letterSpacing: 1 },
   packageBoxNote: { fontSize: 9, color: COLORS.textSecondary, marginTop: 2 },
   registrationNote: { 
     flexDirection: 'row', 
@@ -916,18 +984,20 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
   },
-  registrationText: { fontSize: 13, color: COLORS.textSecondary },
+  registrationText: { fontSize: 15, color: COLORS.textSecondary },
 
   // Contact
   contactCard: {
     backgroundColor: COLORS.card,
-    borderRadius: 10,
-    padding: 12,
+    borderRadius: 16,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,59,48,0.35)',
   },
   contactInfo: { flex: 1 },
-  contactLabel: { fontSize: 12, color: COLORS.textSecondary },
-  contactNumber: { fontSize: 15, fontWeight: '600', color: COLORS.text, marginTop: 1 },
+  contactLabel: { fontSize: 13, color: COLORS.textSecondary, textTransform: 'uppercase', letterSpacing: 1 },
+  contactNumber: { fontSize: 19, fontWeight: '800', color: COLORS.text, marginTop: 2 },
 });
