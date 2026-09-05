@@ -778,3 +778,4 @@ Richiesta: cambio look d'impatto su sfondo nero, colorato, con immagini grafiche
 - `_layout.tsx`: Tabs.Screen "abbonamento" spostato subito dopo "home" (ordine = ordine dichiarazione), title 'Abbonam.', href visibile solo ai clienti (null per admin/istruttore/archiviati).
 - `altro.tsx`: rimossa la card ABBONAMENTO dalla griglia.
 - Verificato: barra = Home | Abbonam. | Prenota | Ruota Quiz | Shop | Altro; schermata abbonamento ok sul nuovo tema.
+- Rimossa anche la card CHIEDI AL MAESTRO da Altro (route /maestro resta nel codice ma non raggiungibile dalla griglia). Altro ora: Dieta AI, Classifica, Curiosità, Eventi, Profilo.

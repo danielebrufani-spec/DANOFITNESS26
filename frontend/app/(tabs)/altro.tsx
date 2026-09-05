@@ -29,15 +29,6 @@ type Section = {
 
 const SECTIONS: Section[] = [
   {
-    key: 'maestro',
-    label: 'CHIEDI AL MAESTRO',
-    sub: 'Amore · Sesso · Lavoro',
-    icon: 'help-circle-outline',
-    color: '#FF3D7F',
-    route: '/maestro',
-    show: ({ isIstruttore, isArchived }) => !isIstruttore && !isArchived,
-  },
-  {
     key: 'alimentazione',
     label: 'DIETA AI',
     sub: 'Piano nutrizione',
