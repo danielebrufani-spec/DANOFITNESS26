@@ -1,162 +1,90 @@
 {
-  "theme_identity": {
-    "name": "Tropical Pop Italian Riviera Summer 2026",
-    "archetype": "Pastel & Soft / Vibrant Play",
-    "mode": "light",
-    "primary_accent": "Azzurro Mare",
-    "vibe": "Audace, festoso, da apericena, solare, fresco."
+  "theme_archetype": "ARCHETYPE 2: THE PERFORMANCE PRO - Tactical Obsidian & Winter Kinetic Inferno 2026/27",
+  "seasonal_context": {
+    "title": "Nuova Stagione Invernale 2026/27 - DanoFitness23",
+    "launch_date": "7 Settembre 2026",
+    "transition": "Da Night Beach Estivo ad Assetto Tattico Invernale Dark Obsidian",
+    "vibe": "Ultra-impatto, sfondi nero pece opaco (#0A0A0C), accenti neon elettrici kinetic (Electric Blaze Red/Orange, Frost Cyan, Volt Lime, Electric Gold), grafica ad altissima energia, badges di stato vividi e leggibilità impeccabile al 100%"
   },
   "colors": {
-    "background": "#F0F9FF",
-    "surface": "#FFFFFF",
-    "primary": "#0099DD",
-    "primaryLight": "#4DD0E1",
-    "secondary": "#FF1493",
-    "accentYellow": "#FFEA00",
+    "background": "#0A0A0C",
+    "surface": "#121216",
+    "surfaceElevated": "#1A1A24",
+    "surfaceHover": "#222230",
+    "card": "#121216",
+    "cardLight": "#1A1A24",
+    "primary": "#FF3B30",
+    "primaryDark": "#D02018",
+    "primaryLight": "#FF6B60",
+    "secondary": "#00E5FF",
+    "secondaryDark": "#00B2CC",
+    "accent": "#FFD700",
     "accentLime": "#39FF14",
-    "text": "#0C2333",
-    "textSecondary": "#597A8E",
-    "border": "#BAE6FD",
-    "success": "#00E676",
-    "warning": "#FFEA00",
-    "error": "#FF1493",
-    "gradientPrimary": ["#0099DD", "#00D4FF"],
-    "gradientSunset": ["#FF1493", "#FF9E00"]
+    "text": "#FFFFFF",
+    "textSecondary": "#A0A0B2",
+    "textMuted": "#68687A",
+    "success": "#39FF14",
+    "warning": "#FF9500",
+    "error": "#FF2D55",
+    "danger": "#FF2D55",
+    "border": "#262633",
+    "borderStrong": "#3A3A4D",
+    "overlay": "rgba(0, 0, 0, 0.85)",
+    "glowPrimary": "rgba(255, 59, 48, 0.4)",
+    "glowCyan": "rgba(0, 229, 255, 0.35)",
+    "glowLime": "rgba(57, 255, 20, 0.35)",
+    "gradientPrimaryFrom": "#FF3B30",
+    "gradientPrimaryTo": "#FF9500",
+    "gradientCyanFrom": "#00E5FF",
+    "gradientCyanTo": "#007AFF"
   },
   "typography": {
-    "titleFont": "Bebas Neue",
-    "bodyFont": "Montserrat",
-    "scales": {
-      "h1": { "fontSize": 48, "fontFamily": "Bebas Neue", "lineHeight": 52, "letterSpacing": 1.2 },
-      "h2": { "fontSize": 32, "fontFamily": "Bebas Neue", "lineHeight": 36, "letterSpacing": 1.0 },
-      "h3": { "fontSize": 24, "fontFamily": "Bebas Neue", "lineHeight": 28, "letterSpacing": 0.5 },
-      "bodyLarge": { "fontSize": 18, "fontFamily": "Montserrat", "fontWeight": "700" },
-      "body": { "fontSize": 16, "fontFamily": "Montserrat", "fontWeight": "400" },
-      "bodySmall": { "fontSize": 14, "fontFamily": "Montserrat", "fontWeight": "400" },
-      "label": { "fontSize": 12, "fontFamily": "Montserrat", "fontWeight": "900", "textTransform": "uppercase", "letterSpacing": 1.5 }
-    }
+    "headlineFont": "BebasNeue_400Regular",
+    "bodyFont": "Montserrat_400Regular",
+    "bodySemiBold": "Montserrat_600SemiBold",
+    "bodyBold": "Montserrat_700Bold",
+    "bodyExtraBold": "Montserrat_800ExtraBold",
+    "bodyBlack": "Montserrat_900Black",
+    "h1": "text-4xl sm:text-5xl uppercase tracking-wider font-extrabold text-white",
+    "h2": "text-2xl sm:text-3xl uppercase tracking-wide font-bold text-white",
+    "h3": "text-xl sm:text-2xl uppercase tracking-normal font-semibold text-white",
+    "body": "text-base leading-relaxed text-gray-300",
+    "caption": "text-xs tracking-widest uppercase text-gray-400 font-semibold"
   },
-  "visual_language": {
-    "silhouettes": {
-      "strategy": "Overlay decorative absolute positioned elements (SVG or Ionicons) across screens to ensure a summery feel.",
-      "opacity": 0.1,
-      "base_color": "#0099DD",
-      "elements": [
-        { "name": "Palma", "icon": "leaf-outline", "placement": "Top corners, overlapping headers." },
-        { "name": "Onde", "icon": "water-outline", "placement": "Bottom edges of screens or cards as repeating patterns." },
-        { "name": "Sole", "icon": "sunny-outline", "placement": "Behind the main hero banners or top center of dashboard." },
-        { "name": "Ombrellone", "icon": "umbrella-outline", "placement": "Scattered in background of Shop and Booking screens." },
-        { "name": "Occhiali da sole", "icon": "glasses-outline", "placement": "Decorative corner accents in Altro grid." },
-        { "name": "Gelato/Cocktail", "icon": "ice-cream-outline", "placement": "Events or Quiz backgrounds." }
-      ]
-    },
-    "shapes": {
-      "borderRadius": {
-        "sm": 12,
-        "md": 16,
-        "lg": 24,
-        "pill": 999
-      },
-      "shadows": {
-        "summerSoft": {
-          "shadowColor": "#0099DD",
-          "shadowOffset": { "width": 0, "height": 8 },
-          "shadowOpacity": 0.12,
-          "shadowRadius": 24,
-          "elevation": 5
-        }
-      }
-    }
+  "spacing_and_layout": {
+    "philosophy": "Mobile-First PWA 95% usage. Generous 16px/24px padding with sharp 1px metallic borders, high contrast tactical cards, zero text collisions.",
+    "container_padding": "p-4 sm:p-6 lg:p-8",
+    "card_padding": "p-5 sm:p-6",
+    "grid_mode": "Bento Tactical Grid (High Density Analytics & Course Cards)",
+    "border_radius": "rounded-xl (16px) per le schede, rounded-full per i badge di stato e i pulsanti CTA pillola"
   },
-  "components": {
-    "buttons": {
-      "primary": {
-        "backgroundColor": "#0099DD",
-        "borderRadius": 999,
-        "paddingVertical": 16,
-        "paddingHorizontal": 32,
-        "shadow": "summerSoft"
-      },
-      "primaryText": {
-        "color": "#FFFFFF",
-        "fontFamily": "Montserrat",
-        "fontWeight": "900",
-        "textTransform": "uppercase",
-        "letterSpacing": 1
-      },
-      "secondary": {
-        "backgroundColor": "#FF1493",
-        "borderRadius": 999,
-        "paddingVertical": 16,
-        "paddingHorizontal": 32,
-        "shadow": "summerSoft"
-      }
-    },
-    "cards": {
-      "base": {
-        "backgroundColor": "#FFFFFF",
-        "borderRadius": 24,
-        "padding": 20,
-        "borderColor": "#BAE6FD",
-        "borderWidth": 1,
-        "shadow": "summerSoft"
-      }
-    },
-    "badges": {
-      "backgroundColor": "#FFEA00",
-      "borderRadius": 12,
-      "paddingVertical": 4,
-      "paddingHorizontal": 10,
-      "textColor": "#0C2333"
-    },
-    "bottom_tab_bar": {
-      "backgroundColor": "#FFFFFF",
-      "activeTintColor": "#0099DD",
-      "inactiveTintColor": "#BAE6FD",
-      "borderTopColor": "#E0F2FE",
-      "borderTopWidth": 1
-    }
+  "visual_enhancers": {
+    "glow_effects": "Inner/Outer glow neon su bottoni e schede attive",
+    "tactical_borders": "1px solid #262633 con bordi reattivi all'hover #FF3B30 o #00E5FF",
+    "glassmorphism": "backdrop-blur-md bg-[#121216]/80 con stroke 1px border-[#262633]",
+    "hero_graphics": "Banner stagionale d'impatto 'STAGIONE 2026/27 - START 7 SETTEMBRE' con contatore streak, badge corsi e slot posti disponibili"
   },
-  "screens": {
-    "login": {
-      "style": "WOW estivo. Background gradientPrimary. Huge 'sunny' silhouette watermark centered behind the login card. Card is stark white with rounded corners (24px) and soft shadow."
-    },
-    "home_dashboard": {
-      "header": "Subtle sun-ray gradient. Silhouette of palm trees top-right.",
-      "kpi_banner": "White card, Azzurro primary metrics. Streak uses Fuchsia (#FF1493) to pop."
-    },
-    "class_booking": {
-      "calendar": "Current day highlighted in Banana Yellow (#FFEA00).",
-      "slots": "Available: White with Azzurro border. Full: Light gray with crossed umbrella silhouette."
-    },
-    "wheel_quiz": {
-      "wheel": "Sections use full Tropical Pop palette: Cyan, Fuchsia, Yellow, Lime.",
-      "background": "Scattered silhouettes: stars, ice creams, flamingos."
-    },
-    "ask_master": {
-      "layout": "Chat bubbles: Azzurro for Master, Fuchsia/Light blue for user. Sarcastic tone maintained with tropical aesthetic."
-    },
-    "shop": {
-      "cards": "Summery, clean. 24px border radius. Buy buttons in Lime Green or Azzurro."
-    },
-    "altro_grid": {
-      "cards": "7 cards with soft borders, each featuring a faint 10% opacity silhouette icon corresponding to the feature."
-    },
-    "leaderboard": {
-      "podium": "1st: Yellow/Gold, 2nd: Cyan, 3rd: Fuchsia. Fun, summery energetic feel."
-    },
-    "popups": {
-      "style": "Modal content centered. 24px radius. Large Azzurro Mare CTA button for WhatsApp."
-    }
+  "image_urls": {
+    "hero": "https://images.unsplash.com/photo-1770513649465-2c60c8039806?w=1200&q=80",
+    "darkGymAthletes": "https://images.unsplash.com/photo-1605296867724-fa87a8ef53fd?w=1200&q=80",
+    "crossfitCircuit": "https://images.unsplash.com/photo-1578924608828-79a71150f711?w=1200&q=80",
+    "functionalWorkout": "https://images.unsplash.com/photo-1609377375724-8fadc82cd50e?w=1200&q=80",
+    "pilatesDark": "https://images.unsplash.com/photo-1522898467493-49726bf28798?w=1200&q=80",
+    "spinCycle": "https://images.unsplash.com/photo-1637870473618-8c9fa7d11f0a?w=1200&q=80",
+    "shopMerch": "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=1200&q=80"
   },
-  "technical_instructions_to_dev_agent": {
-    "files_to_modify": ["/app/frontend/src/utils/constants.ts", "/app/frontend/src/theme.ts"],
-    "rules": [
-      "Keep all Italian text strictly unchanged.",
-      "Implement design tokens mapped to React Native StyleSheet objects.",
-      "Use @expo/vector-icons (Ionicons) configured as absolute positioned layers for the silhouettes.",
-      "Avoid raw CSS. Map to RN properties (e.g. shadowColor, shadowOffset, shadowOpacity).",
-      "Include testID=\"[kebab-case-name]\" on all interactive elements to comply with testing rules."
-    ]
+  "instructions_to_main_agent": [
+    "1. Aggiorna i token cromatici in `frontend/src/utils/constants.ts` sostituendo il tema 'Night Beach' con il nuovo tema 'Winter Kinetic Obsidian' (sfondo #0A0A0C, carte #121216, primario #FF3B30, secondario #00E5FF, lime #39FF14, oro #FFD700).",
+    "2. Mantieni compatibilità totale con le chiavi COLORS esistenti senza rompere alcun riferimento negli altri componenti.",
+    "3. Aggiorna la mappa FITNESS_IMAGES in `frontend/src/utils/constants.ts` inserendo le nuove immagini grafiche d'impatto ad alta risoluzione selezionate per la stagione invernale.",
+    "4. Aggiorna `frontend/src/theme.ts` per calcolare ombre e bagliori luminosi neon (`glow Primary #FF3B30` e `glow Cyan #00E5FF`).",
+    "5. Aggiorna i banner promozionali di benvenuto/cambio stagione con il testo celebrativo 'NUOVA STAGIONE 2026/27 - VIA DAL 7 SETTEMBRE!' e grafica accattivante.",
+    "6. Inserisci l'attributo `data-testid` su tutti gli elementi interattivi (prenota lezione, nav tabs, ruota della fortuna, upload certificato, filtri orari, admin actions) in formato kebab-case.",
+    "7. Assicurati che tutti i badge di stato (Certificato medico valido/scaduto, Abbonamento attivo/in scadenza, Posti disponibili) abbiano un elevato contrasto cromatico sul fondo nero pece."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": {
+    "dark_mode": "Usa sfondi nero opaco (#0A0A0C) anziché grigi piatti per una profondità visiva di livello premium.",
+    "typography": "Sfrutta Bebas Neue per i titoli di sezione e Montserrat per testi e pulsanti.",
+    "testing_attribute": "TUTTI gli elementi interattivi deveno contenere data-testid unico ed esplicito (es: data-testid='prenota-lezione-circuito-button')."
   }
 }

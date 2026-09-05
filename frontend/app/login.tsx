@@ -15,8 +15,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../src/context/AuthContext';
-import { COLORS } from '../src/utils/constants';
-import { SummerSilhouettes } from '../src/components/SummerSilhouettes';
+import { COLORS, BRAND_IMAGES } from '../src/utils/constants';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -107,7 +106,8 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <SummerSilhouettes variant="login" />
+      <Image source={{ uri: BRAND_IMAGES.loginBg }} style={styles.bgImage} resizeMode="cover" />
+      <View style={styles.bgOverlay} />
       <View style={styles.content}>
         {/* Logo Section con grafica fitness */}
         <View style={styles.logoSection}>
@@ -250,6 +250,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  bgImage: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    width: '100%',
+    height: '100%',
+  },
+  bgOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.62)',
   },
   content: {
     flex: 1,

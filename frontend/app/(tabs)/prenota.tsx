@@ -12,6 +12,7 @@ import {
   Animated,
   Dimensions,
   Image,
+  ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,6 +27,8 @@ import {
   getTodayDateString,
   getDateString,
   formatDate,
+  COURSE_IMAGES,
+  FITNESS_IMAGES,
 } from '../../src/utils/constants';
 import { FONTS } from '../../src/theme';
 import { PausaEstivaScreen, pausaEstivaInCorso, isDataInPausa } from '../../src/components/PausaEstiva';
@@ -792,6 +795,11 @@ export default function PrenotaScreen() {
 
             return (
               <View key={lesson.id} style={[styles.lessonCard, (isPassed || isCancelled) && styles.lessonCardPassed]}>
+                <ImageBackground
+                  source={{ uri: COURSE_IMAGES[lesson.tipo_attivita] || FITNESS_IMAGES.abstractGym }}
+                  imageStyle={styles.lessonBgImage}
+                >
+                <View style={styles.lessonDarkOverlay} />
                 <View style={styles.lessonRow}>
                   <View
                     style={[
@@ -871,6 +879,7 @@ export default function PrenotaScreen() {
                     </View>
                   )}
                 </View>
+                </ImageBackground>
 
                 {/* Lista Partecipanti - Solo se prenotato (full-width sotto la riga) */}
                 {booked && (
@@ -1259,16 +1268,24 @@ const styles = StyleSheet.create({
   },
   lessonCard: {
     backgroundColor: COLORS.surface,
-    borderRadius: 8,
-    marginBottom: 10,
+    borderRadius: 16,
+    marginBottom: 12,
     overflow: 'hidden',
     flexDirection: 'column',
     borderWidth: 1,
     borderColor: COLORS.border,
   },
+  lessonBgImage: {
+    borderRadius: 16,
+  },
+  lessonDarkOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.68)',
+  },
   lessonRow: {
     flexDirection: 'row',
     alignItems: 'stretch',
+    minHeight: 96,
   },
   lessonCardPassed: {
     opacity: 0.5,
@@ -1285,9 +1302,11 @@ const styles = StyleSheet.create({
   },
   lessonTime: {
     fontFamily: FONTS.headline,
-    fontSize: 24,
+    fontSize: 32,
     color: COLORS.text,
-    letterSpacing: 1.5,
+    letterSpacing: 2,
+    textShadowColor: 'rgba(0,0,0,0.7)',
+    textShadowRadius: 5,
   },
   lessonTimePassed: {
     color: COLORS.textSecondary,

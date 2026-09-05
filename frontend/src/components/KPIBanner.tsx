@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../utils/constants';
 import { FONTS } from '../theme';
@@ -72,45 +72,41 @@ export const KPIBanner: React.FC = () => {
   return (
     <View style={styles.wrap} testID="kpi-banner">
       {/* Streak */}
-      <View style={[styles.cell, { borderLeftColor: '#00E676' }]}>
+      <View style={[styles.cell, styles.cellStreak]}>
         <View style={styles.iconRow}>
           <Text style={styles.flame}>🔥</Text>
         </View>
-        <Text style={styles.value}>{streak}</Text>
+        <Text style={[styles.value, { color: '#39FF14' }]}>{streak}</Text>
         <Text style={styles.label}>STREAK</Text>
       </View>
 
-      <View style={styles.divider} />
-
       {/* Biglietti lotteria */}
-      <View style={[styles.cell, { borderLeftColor: COLORS.primary }]}>
+      <View style={[styles.cell, styles.cellTickets]}>
         <View style={styles.iconRow}>
-          <Ionicons name="ticket" size={18} color={COLORS.primary} />
+          <Ionicons name="ticket" size={20} color="#FFD700" />
         </View>
-        <Text style={styles.value}>{tickets}</Text>
+        <Text style={[styles.value, { color: '#FFD700' }]}>{tickets}</Text>
         <Text style={styles.label}>BIGLIETTI</Text>
       </View>
 
-      <View style={styles.divider} />
-
       {/* Abbonamento */}
-      <View style={[styles.cell, { borderLeftColor: '#00B0FF' }]}>
+      <View style={[styles.cell, styles.cellSub]}>
         <View style={styles.iconRow}>
-          <Ionicons name="time" size={18} color="#00B0FF" />
+          <Ionicons name="time" size={20} color={COLORS.primary} />
         </View>
         {lessonsLeft != null ? (
           <>
-            <Text style={styles.value}>{lessonsLeft}</Text>
+            <Text style={[styles.value, { color: COLORS.primary }]}>{lessonsLeft}</Text>
             <Text style={styles.label}>LEZIONI</Text>
           </>
         ) : days != null ? (
           <>
-            <Text style={styles.value}>{days}</Text>
+            <Text style={[styles.value, { color: COLORS.primary }]}>{days}</Text>
             <Text style={styles.label}>{days === 1 ? 'GIORNO' : 'GIORNI'}</Text>
           </>
         ) : (
           <>
-            <Text style={[styles.value, { fontSize: 16 }]}>—</Text>
+            <Text style={[styles.value, { fontSize: 18, color: COLORS.primary }]}>—</Text>
             <Text style={styles.label}>ABBONAM.</Text>
           </>
         )}
@@ -119,25 +115,39 @@ export const KPIBanner: React.FC = () => {
   );
 };
 
+const tileGlow = (color: string) =>
+  Platform.select({
+    web: { boxShadow: `0 0 14px ${color}` },
+    default: {},
+  }) as object;
+
 const styles = StyleSheet.create({
   wrap: {
     flexDirection: 'row',
-    backgroundColor: COLORS.surface || '#141416',
-    borderRadius: 14,
-    padding: 12,
+    gap: 10,
     marginBottom: 14,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    minHeight: 78,
-    alignItems: 'center',
-    overflow: 'hidden',
+    minHeight: 96,
   },
   cell: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 4,
+    paddingVertical: 12,
     paddingHorizontal: 6,
-    borderLeftWidth: 3,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    backgroundColor: '#121216',
+  },
+  cellStreak: {
+    borderColor: 'rgba(57,255,20,0.55)',
+    ...tileGlow('rgba(57,255,20,0.22)'),
+  },
+  cellTickets: {
+    borderColor: 'rgba(255,215,0,0.55)',
+    ...tileGlow('rgba(255,215,0,0.22)'),
+  },
+  cellSub: {
+    borderColor: 'rgba(255,59,48,0.55)',
+    ...tileGlow('rgba(255,59,48,0.22)'),
   },
   iconRow: {
     height: 22,
@@ -150,23 +160,18 @@ const styles = StyleSheet.create({
   },
   value: {
     fontFamily: FONTS.headline,
-    fontSize: 26,
+    fontSize: 40,
     color: COLORS.text,
     letterSpacing: 1,
-    lineHeight: 30,
+    lineHeight: 42,
   },
   label: {
     fontFamily: FONTS.bodyBlack,
     fontSize: 9,
     color: COLORS.textSecondary,
-    letterSpacing: 1.4,
+    letterSpacing: 1.6,
     marginTop: 2,
-  },
-  divider: {
-    width: 1,
-    height: '60%',
-    backgroundColor: COLORS.border,
-    marginHorizontal: 4,
+    textTransform: 'uppercase',
   },
 });
 

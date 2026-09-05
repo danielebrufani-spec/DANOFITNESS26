@@ -758,3 +758,18 @@ Richiesta: azzerare la lotteria e ripartire da lunedì 7/9 con la lotteria mensi
 - I doc `streak_bonuses` (flag bonus_3/5_dato) NON vengono toccati → il retro-fix streak allo startup non ri-crea i biglietti cancellati.
 - Meccanica invariata: biglietti = allenamenti del mese + bonus (mese corrente '2026-09' parte da 0, prenotazioni possibili solo dal 7/9). Prima estrazione nuova lotteria: 1 OTTOBRE ore 12:00, 3 vincitori, esclusi vincitori estrazione precedente.
 - Verificato via API: biglietti_utente 0, totale_biglietti 0, prossima_estrazione 2026-10-01T12:00.
+
+## RESTYLE "WINTER KINETIC OBSIDIAN" — nuova stagione (5 Set 2026)
+Richiesta: cambio look d'impatto su sfondo nero, colorato, con immagini grafiche nelle sezioni. Scelte utente: TUTTI i punti, colore dominante ROSSO fuoco (#FF3B30), font maiuscolo, biglietto dorato stile Willy Wonka.
+- Design guidelines in /app/design_guidelines.json (design_agent, archetype Performance Pro).
+- **Token** (`constants.ts` COLORS): background #0A0A0C, surface #121216, primary #FF3B30, secondary #00E5FF, accent oro #FFD700, lime #39FF14. `theme.ts`: glow rossi. Chiavi invariate (compatibilità totale).
+- **8 grafiche custom generate** (Gemini image) hostate su static.prod-images.emergentagent.com, salvate in constants.ts: FITNESS_IMAGES.hero (atleta battle ropes red neon), COURSE_IMAGES{circuito,funzionale,pilates,interval_step}, BRAND_IMAGES{goldenTicket (Willy Wonka DANO FITNESS), premiOroBg, loginBg}.
+- **Home** (`home.tsx`): hero 300px "STAGIONE / 2026/27" gigante con banda diagonale rossa glow + saluto; benessereTitle uppercase.
+- **KPIBanner.tsx**: riscritto — 3 tiles tattiche separate con bordi glow (verde streak/oro biglietti/rosso abbonamento), numeri Bebas 40.
+- **Prenota** (`prenota.tsx`): card lezione = locandina con ImageBackground COURSE_IMAGES per tipo_attivita + overlay nero 0.68 + orario Bebas 32. Struttura: lessonCard > ImageBackground > overlay + lessonRow; partecipanti fuori dall'immagine.
+- **Premi** (`premi.tsx`): VEGAS_COLORS → nero #0A0A0C/oro #FFD700/rosso #FF3B30; immagine golden ticket nella card I TUOI BIGLIETTI (import BRAND_IMAGES sopra VEGAS_COLORS).
+- **Login** (`login.tsx`): sfondo atleta silhouette rossa full-screen + overlay nero 0.62 (rimosso SummerSilhouettes dal login).
+- Nav bar eredita nero+rosso dai token. Admin verificato ok su nero.
+- Verifica visiva: 5 screenshot (login/home/prenota-locandine/premi/admin) tutti OK. Per vedere le locandine in Prenota ho temporaneamente spostato PAUSA_FINE e poi RIPRISTINATO a '2026-09-06' (verificato).
+- Errori tsc pre-esistenti non correlati: home.tsx 399, admin.tsx 1254/1264.
+- NON ancora fatto: restyle schema orari modal (OrariSchemaModal) e admin LessonScheduleManager con immagini; StreakBanner/PausaEstiva/NuoviOrari banner mantengono i loro colori originali (già compatti e neon).

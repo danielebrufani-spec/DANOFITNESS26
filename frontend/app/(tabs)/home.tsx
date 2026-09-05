@@ -1082,15 +1082,17 @@ export default function HomeScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* HERO - Functional training image + greeting */}
+        {/* HERO - Stagione 2026/27 */}
         <View style={styles.heroCard}>
           <Image source={{ uri: FITNESS_IMAGES.hero }} style={styles.heroImage} resizeMode="cover" />
           <View style={styles.heroOverlay} />
+          <View style={styles.heroDiagonal} />
           <View style={styles.heroContent}>
-            <Text style={styles.heroKicker}>TRAIN HARD • STAY STRONG</Text>
-            <Text style={styles.heroGreeting}>CIAO, {user?.nome?.toUpperCase()}</Text>
+            <Text style={styles.heroKicker}>DANOFITNESS23 • TRAIN HARD</Text>
+            <Text style={styles.heroSeason}>STAGIONE</Text>
+            <Text style={styles.heroSeasonYear}>2026/27</Text>
             <View style={styles.heroAccentBar} />
-            <Text style={styles.heroQuote}>"No excuses. Just results."</Text>
+            <Text style={styles.heroGreeting}>CIAO, {user?.nome?.toUpperCase()}</Text>
           </View>
         </View>
 
@@ -1272,13 +1274,14 @@ const styles = StyleSheet.create({
   // Star Wars Card
   // Hero Card (Functional / CrossFit)
   heroCard: {
-    height: 210,
-    borderRadius: 18,
+    height: 300,
+    borderRadius: 20,
     marginBottom: 16,
     overflow: 'hidden',
     position: 'relative',
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    borderWidth: 1.5,
+    borderColor: '#FF3B30',
+    ...Platform.select({ web: { boxShadow: '0 0 26px rgba(255,59,48,0.35)' }, default: {} }),
   },
   heroImage: {
     position: 'absolute',
@@ -1289,7 +1292,18 @@ const styles = StyleSheet.create({
   heroOverlay: {
     position: 'absolute',
     top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(13,27,42,0.55)',
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  heroDiagonal: {
+    position: 'absolute',
+    left: -40,
+    right: -40,
+    bottom: 52,
+    height: 7,
+    backgroundColor: '#FF3B30',
+    transform: [{ rotate: '-5deg' }],
+    opacity: 0.95,
+    ...Platform.select({ web: { boxShadow: '0 0 18px rgba(255,59,48,0.8)' }, default: {} }),
   },
   heroContent: {
     position: 'absolute',
@@ -1299,28 +1313,47 @@ const styles = StyleSheet.create({
   },
   heroKicker: {
     fontFamily: FONTS.bodyBold,
-    fontSize: 13,
-    color: '#FFEA00',
+    fontSize: 12,
+    color: '#FF6B60',
     letterSpacing: 3,
-    marginBottom: 6,
-    textShadowColor: 'rgba(0,0,0,0.5)',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    textShadowColor: 'rgba(0,0,0,0.6)',
     textShadowRadius: 4,
+  },
+  heroSeason: {
+    fontFamily: FONTS.headline,
+    fontSize: 30,
+    color: '#FF3B30',
+    letterSpacing: 8,
+    lineHeight: 32,
+    textShadowColor: 'rgba(0,0,0,0.7)',
+    textShadowRadius: 6,
+  },
+  heroSeasonYear: {
+    fontFamily: FONTS.headline,
+    fontSize: 66,
+    color: '#fff',
+    letterSpacing: 3,
+    lineHeight: 68,
+    textShadowColor: 'rgba(255,59,48,0.75)',
+    textShadowRadius: 14,
+  },
+  heroAccentBar: {
+    width: 56,
+    height: 5,
+    backgroundColor: '#FF3B30',
+    marginVertical: 8,
+    borderRadius: 2,
   },
   heroGreeting: {
     fontFamily: FONTS.headline,
-    fontSize: 42,
-    color: '#fff',
+    fontSize: 22,
+    color: '#FFFFFF',
     letterSpacing: 2,
-    lineHeight: 44,
-    textShadowColor: 'rgba(0,0,0,0.45)',
-    textShadowRadius: 6,
-  },
-  heroAccentBar: {
-    width: 48,
-    height: 4,
-    backgroundColor: '#FFEA00',
-    marginVertical: 10,
-    borderRadius: 2,
+    textTransform: 'uppercase',
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowRadius: 5,
   },
   heroQuote: {
     fontFamily: FONTS.bodySemi,
@@ -1671,6 +1704,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: COLORS.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
   },
 
   // Ricetta Card

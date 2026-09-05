@@ -24,16 +24,18 @@ import { Audio } from 'expo-av';
 import { ConfettiBurst } from '../../src/components/ConfettiBurst';
 
 // Colori Tactical Obsidian (Functional/CrossFit theme)
+import { BRAND_IMAGES } from '../../src/utils/constants';
+
 const VEGAS_COLORS = {
-  background: '#0D1B2A',
-  card: '#1A2B3D',
-  gold: '#FFEA00',        // Lemon neon yellow
-  red: '#FF1493',         // Fucsia neon
-  darkRed: '#C71585',
-  neonPink: '#FF1493',
-  neonBlue: '#00C8FF',
+  background: '#0A0A0C',
+  card: '#121216',
+  gold: '#FFD700',        // Electric gold
+  red: '#FF3B30',         // Electric blaze red
+  darkRed: '#D02018',
+  neonPink: '#FF6B60',
+  neonBlue: '#00E5FF',
   text: '#FFFFFF',
-  textSecondary: '#B8C6D9',
+  textSecondary: '#A0A0B2',
 };
 
 // Premi della ruota
@@ -787,6 +789,7 @@ export default function PremiScreen() {
               <Text style={styles.ticketsTitle}>I TUOI BIGLIETTI</Text>
               <Text style={styles.ticketsEmoji}>🎟️</Text>
             </View>
+            <Image source={{ uri: BRAND_IMAGES.goldenTicket }} style={styles.goldenTicketImg} resizeMode="cover" />
             <Text style={styles.ticketsNumber}>{status?.biglietti_utente || 0}</Text>
             <Text style={styles.ticketsSubtitle}>
               {!status?.biglietti_utente || status.biglietti_utente === 0 
@@ -1771,6 +1774,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: VEGAS_COLORS.gold,
     letterSpacing: 2,
+  },
+  goldenTicketImg: {
+    width: '100%',
+    height: 140,
+    borderRadius: 14,
+    marginTop: 10,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,215,0,0.6)',
   },
   ticketsNumber: {
     fontSize: 72,

@@ -145,46 +145,61 @@ export const getDayNameFromDate = (dateString: string): string => {
 
 // Colors - "Night Beach" Tropical Dark Theme — Mare Notturno + Neon Estate
 export const COLORS = {
-  primary: '#00C8FF',          // Turquoise neon - main accent
-  primaryDark: '#0099CC',
-  primaryLight: '#7DF9FF',     // Light cyan
-  secondary: '#FF1493',        // Fucsia neon
-  secondaryDark: '#C71585',
-  accent: '#FFEA00',           // Banana / lemon yellow neon
+  primary: '#FF3B30',          // Electric Blaze red - main accent (Winter Kinetic)
+  primaryDark: '#D02018',
+  primaryLight: '#FF6B60',
+  secondary: '#00E5FF',        // Frost cyan
+  secondaryDark: '#00B2CC',
+  accent: '#FFD700',           // Electric gold
   accentLime: '#39FF14',       // Neon lime
-  background: '#0D1B2A',       // Deep night sea
-  surface: '#1A2B3D',          // Card slightly lighter navy
-  surfaceElevated: '#243447',  // Elevated cards
-  surfaceHover: '#2F4358',
-  card: '#1A2B3D',
-  cardLight: '#243447',
+  background: '#0A0A0C',       // Pitch black obsidian
+  surface: '#121216',          // Tactical card
+  surfaceElevated: '#1A1A24',  // Elevated cards
+  surfaceHover: '#222230',
+  card: '#121216',
+  cardLight: '#1A1A24',
   text: '#FFFFFF',
-  textSecondary: '#B8C6D9',    // Soft light slate
-  textMuted: '#7E8FA5',
+  textSecondary: '#A0A0B2',
+  textMuted: '#68687A',
   success: '#39FF14',          // Neon lime
-  warning: '#FF9E00',
-  error: '#FF4D6D',
-  danger: '#FF4D6D',
-  border: '#2F4358',
-  borderStrong: '#456381',
-  overlay: 'rgba(0,0,0,0.75)',
-  glowOrange: 'rgba(255,158,0,0.4)',
+  warning: '#FF9500',
+  error: '#FF2D55',
+  danger: '#FF2D55',
+  border: '#262633',
+  borderStrong: '#3A3A4D',
+  overlay: 'rgba(0,0,0,0.85)',
+  glowOrange: 'rgba(255,149,0,0.4)',
   glowGreen: 'rgba(57,255,20,0.35)',
-  // Summer-specific tokens (kept for compatibility)
-  gradientPrimaryFrom: '#00C8FF',
-  gradientPrimaryTo: '#7DF9FF',
-  gradientSunsetFrom: '#FF1493',
-  gradientSunsetTo: '#FF9E00',
+  // Gradient tokens (kept for compatibility)
+  gradientPrimaryFrom: '#FF3B30',
+  gradientPrimaryTo: '#FF9500',
+  gradientSunsetFrom: '#00E5FF',
+  gradientSunsetTo: '#007AFF',
   sand: '#FEF3C7',
   coral: '#FF6B6B',
 };
 
 // Fitness images (from design guidelines - Pexels/Unsplash) - Summer Tropical
 export const FITNESS_IMAGES = {
-  hero: 'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=1200&q=80', // pool/beach summer vibes
-  abstractGym: 'https://images.unsplash.com/photo-1770513649465-2c60c8039806',
-  circuit: 'https://images.pexels.com/photos/9958668/pexels-photo-9958668.jpeg',
-  functional: 'https://images.unsplash.com/photo-1578762560042-46ad127c95ea',
-  pilates: 'https://images.pexels.com/photos/35553893/pexels-photo-35553893.jpeg',
-  yoga: 'https://images.unsplash.com/photo-1590915202637-31dbc5528371',
+  hero: 'https://static.prod-images.emergentagent.com/jobs/120068e1-741e-430e-86ee-0f10594d3f2d/images/569b8b5c6f8e52c11cdb54ed8923599b4c91a6edba944941438509a0769354ed.jpeg', // dark athlete battle ropes red neon
+  abstractGym: 'https://images.unsplash.com/photo-1770513649465-2c60c8039806?w=1200&q=80',
+  circuit: 'https://static.prod-images.emergentagent.com/jobs/120068e1-741e-430e-86ee-0f10594d3f2d/images/a813fe6e19528594636702c4b388b7b704175585fe8a0d2b970f7ae81c9eac14.jpeg',
+  functional: 'https://static.prod-images.emergentagent.com/jobs/120068e1-741e-430e-86ee-0f10594d3f2d/images/c66580fd4f60ea5c75958c1fabba752e03db728845de2e2f42609f9d0a8702ff.jpeg',
+  pilates: 'https://static.prod-images.emergentagent.com/jobs/120068e1-741e-430e-86ee-0f10594d3f2d/images/f3f0724e88253d09ae08065c7f69e671c64a84072bc0c54c2d74b5c6f14c86d8.jpeg',
+  yoga: 'https://static.prod-images.emergentagent.com/jobs/120068e1-741e-430e-86ee-0f10594d3f2d/images/f3f0724e88253d09ae08065c7f69e671c64a84072bc0c54c2d74b5c6f14c86d8.jpeg',
+};
+
+// Locandine corsi (generate su misura - Winter Kinetic 2026/27)
+export const COURSE_IMAGES: Record<string, string> = {
+  circuito: 'https://static.prod-images.emergentagent.com/jobs/120068e1-741e-430e-86ee-0f10594d3f2d/images/a813fe6e19528594636702c4b388b7b704175585fe8a0d2b970f7ae81c9eac14.jpeg',
+  funzionale: 'https://static.prod-images.emergentagent.com/jobs/120068e1-741e-430e-86ee-0f10594d3f2d/images/c66580fd4f60ea5c75958c1fabba752e03db728845de2e2f42609f9d0a8702ff.jpeg',
+  pilates: 'https://static.prod-images.emergentagent.com/jobs/120068e1-741e-430e-86ee-0f10594d3f2d/images/f3f0724e88253d09ae08065c7f69e671c64a84072bc0c54c2d74b5c6f14c86d8.jpeg',
+  interval_step: 'https://static.prod-images.emergentagent.com/jobs/120068e1-741e-430e-86ee-0f10594d3f2d/images/5af00642d72b4b49ab350ddf4be7f5f09f99930e2feb0bd5532f213993c2c114.jpeg',
+};
+
+// Grafiche brand (generate su misura)
+export const BRAND_IMAGES = {
+  goldenTicket: 'https://static.prod-images.emergentagent.com/jobs/120068e1-741e-430e-86ee-0f10594d3f2d/images/0cea0f9026411c2cb6232a128e8a964c4db824543a10cab082f9edad3ba0d00e.jpeg',
+  premiOroBg: 'https://static.prod-images.emergentagent.com/jobs/120068e1-741e-430e-86ee-0f10594d3f2d/images/7caf78ea70d0eb93e9bb78814f1fae0bcdb65f610945273fd924645f61c4af4f.jpeg',
+  loginBg: 'https://static.prod-images.emergentagent.com/jobs/120068e1-741e-430e-86ee-0f10594d3f2d/images/f2070f041f16e056ad58b04d45654a7c646b8b45ed597eb6fc3e06d73702f09e.jpeg',
 };

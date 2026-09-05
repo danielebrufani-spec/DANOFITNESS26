@@ -43,13 +43,13 @@ export const glow = (color: string, radius = 14, opacity = 0.6) =>
     },
   }) as object;
 
-// Soft summer shadow (Night Beach - neon glow)
+// Soft tactical shadow (Winter Kinetic - neon glow)
 export const summerSoft = Platform.select({
-  web: { boxShadow: '0 6px 18px rgba(0,200,255,0.18)' },
+  web: { boxShadow: '0 6px 18px rgba(255,59,48,0.20)' },
   default: {
-    shadowColor: '#00C8FF',
+    shadowColor: '#FF3B30',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
+    shadowOpacity: 0.2,
     shadowRadius: 18,
     elevation: 5,
   },
@@ -58,9 +58,9 @@ export const summerSoft = Platform.select({
 export const SHADOWS = {
   card: summerSoft,
   button: Platform.select({
-    web: { boxShadow: '0 4px 14px rgba(0,200,255,0.35)' },
+    web: { boxShadow: '0 4px 14px rgba(255,59,48,0.35)' },
     default: {
-      shadowColor: '#00C8FF',
+      shadowColor: '#FF3B30',
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.35,
       shadowRadius: 14,
