@@ -8233,6 +8233,22 @@ async def startup_event():
     except Exception as e:
         logger.warning(f"[CERT] Init storage fallito (retry al primo upload): {e}")
 
+    # AZZERAMENTO LOTTERIA — nuova stagione 2026/27 (una tantum).
+    # Rimuove i biglietti bonus residui dei mesi passati: tutti ripartono da 0.
+    # I bonus di settembre (es. +2 certificato convalidato) restano validi.
+    # Prima estrazione nuova lotteria: 1 ottobre ore 12:00 (biglietti dal 7/9 al 30/9).
+    try:
+        if not await db.migrations.find_one({"nome": "lottery_reset_stagione_2026_27"}):
+            res = await db.wheel_tickets.delete_many({"mese": {"$lte": "2026-08"}})
+            await db.migrations.insert_one({
+                "nome": "lottery_reset_stagione_2026_27",
+                "applied_at": now_rome(),
+                "wheel_tickets_rimossi": res.deleted_count,
+            })
+            logger.info(f"[LOTTERY-RESET] Nuova stagione: rimossi {res.deleted_count} doc wheel_tickets residui (mesi <= 2026-08)")
+    except Exception as e:
+        logger.warning(f"[LOTTERY-RESET] {e}")
+
     # Backfill primo_abbonamento_il: data del primo abbonamento vero (prova esclusa)
     try:
         pipeline = [

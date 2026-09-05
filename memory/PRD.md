@@ -751,3 +751,10 @@ Richiesta: per i nuovi iscritti arrivava solo il push, l'admin vuole anche il po
 - admin.tsx: nuovo param `user_search` → setActiveTab('utenti') + setUserSearchQuery.
 - Fix lint: sostituiti tutti i 20 `except:` bare con `except Exception:` in server.py (pre-esistenti).
 - Testato con screenshot: popup con entrambe le sezioni → tap su nuova iscritta → scheda con "Concedi prova 7gg" visibile. Cleanup cert test fatto.
+
+## Azzeramento lotteria — nuova stagione (5 Set 2026)
+Richiesta: azzerare la lotteria e ripartire da lunedì 7/9 con la lotteria mensile. Scelte utente: bonus certificato (+2) restano validi; storico vincitori conservato; bonus cert SOLO alla convalida admin (verificato: già così, flag `certificato_bonus_dato` anti-doppione, nessun bonus se rifiutato).
+- Migrazione one-shot in startup_event (flag db.migrations `lottery_reset_stagione_2026_27`): `wheel_tickets.delete_many({mese: {$lte: '2026-08'}})`. In preview: 6 doc rimossi. Su PROD si applica da sola al prossimo deploy.
+- I doc `streak_bonuses` (flag bonus_3/5_dato) NON vengono toccati → il retro-fix streak allo startup non ri-crea i biglietti cancellati.
+- Meccanica invariata: biglietti = allenamenti del mese + bonus (mese corrente '2026-09' parte da 0, prenotazioni possibili solo dal 7/9). Prima estrazione nuova lotteria: 1 OTTOBRE ore 12:00, 3 vincitori, esclusi vincitori estrazione precedente.
+- Verificato via API: biglietti_utente 0, totale_biglietti 0, prossima_estrazione 2026-10-01T12:00.
