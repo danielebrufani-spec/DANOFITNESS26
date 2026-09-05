@@ -7,6 +7,8 @@ import {
   RefreshControl,
   ActivityIndicator,
   TouchableOpacity,
+  Platform,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -144,6 +146,18 @@ export default function AbbonamentoScreen() {
   };
 
   const warningStatus = getSubscriptionWarningStatus();
+
+  const openWhatsAppRinnovo = () => {
+    const msg = encodeURIComponent(
+      `Ciao Daniele! 💪 Sono ${user?.nome || ''} ${user?.cognome || ''} e vorrei rinnovare il mio abbonamento. Il pagamento lo sistemiamo quando ci vediamo in palestra!`
+    );
+    const url = `https://wa.me/393395020625?text=${msg}`;
+    if (Platform.OS === 'web') {
+      window.open(url, '_blank');
+    } else {
+      Linking.openURL(url);
+    }
+  };
 
   const formatLogDate = (dateStr: string) => {
     const date = new Date(dateStr + 'T00:00:00');
@@ -439,6 +453,24 @@ export default function AbbonamentoScreen() {
             ))}
           </View>
         )}
+
+        {/* RINNOVO RAPIDO SU WHATSAPP */}
+        <TouchableOpacity style={styles.waCard} onPress={openWhatsAppRinnovo} activeOpacity={0.85} testID="whatsapp-rinnovo-btn">
+          <View style={styles.waIcon}>
+            <Ionicons name="logo-whatsapp" size={28} color="#fff" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.waTitle}>RINNOVO RAPIDO</Text>
+            <Text style={styles.waSub}>Chiedi il rinnovo al Maestro su WhatsApp</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={22} color="#25D366" />
+        </TouchableOpacity>
+        <View style={styles.waNoteBox}>
+          <Ionicons name="cash-outline" size={18} color={COLORS.textSecondary} />
+          <Text style={styles.waNote}>
+            Qui chiedi solo il rinnovo: il pagamento si fa tranquillamente <Text style={{ fontWeight: '800', color: COLORS.text }}>in presenza</Text>, quando incontri il Maestro. Nessun problema!
+          </Text>
+        </View>
 
         {/* PACCHETTI DISPONIBILI */}
         <View style={styles.packagesSection}>
@@ -950,6 +982,52 @@ const styles = StyleSheet.create({
   },
   expiredType: { fontSize: 14, fontWeight: '500', color: COLORS.text },
   expiredDates: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
+
+  // WhatsApp Rinnovo
+  waCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: 'rgba(37,211,102,0.10)',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1.5,
+    borderColor: 'rgba(37,211,102,0.55)',
+    ...Platform.select({ web: { boxShadow: '0 0 16px rgba(37,211,102,0.25)' }, default: {} }),
+  },
+  waIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#25D366',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  waTitle: {
+    fontFamily: FONTS.headline,
+    fontSize: 22,
+    color: '#25D366',
+    letterSpacing: 1.5,
+  },
+  waSub: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  waNoteBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 10,
+    marginBottom: 14,
+  },
+  waNote: {
+    flex: 1,
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    lineHeight: 18,
+  },
 
   // Packages Section
   packagesSection: {

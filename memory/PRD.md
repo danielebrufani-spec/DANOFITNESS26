@@ -784,3 +784,8 @@ Richiesta: cambio look d'impatto su sfondo nero, colorato, con immagini grafiche
 Richiesta: sezione più curata, font più grandi, info chiare circoscritte in quadrati.
 - `abbonamento.tsx`: titolo Bebas 32 uppercase; badge stato più grande con bordo glow verde; NUOVA griglia 2x2 di quadrati (tilesGrid/tile): PACCHETTO (rosso), PAGAMENTO Saldato/Da saldare (verde/arancio), INIZIO (ciano), SCADENZA (oro) — icona in cerchio + label + valore Bebas 24; card LEZIONI RIMASTE con numero Bebas 76; pacchetti disponibili con prezzi Bebas 30 e bordi rossi; contatto più grande. Rimossi i vecchi blocchi packageNameCard/datesRow.
 - Verificato con screenshot mobile: griglia e font ok, warning "Solo 1 lezione rimaste" intatto.
+
+## Popup Nuova Stagione + Rinnovo WhatsApp (5 Set 2026)
+1. **NuovaStagionePopup** (`src/components/NuovaStagionePopup.tsx`, montato in `(tabs)/_layout.tsx`): popup festoso per i clienti dal 07/09 al 21/09, UNA volta (localStorage `stagione_2026_popup_seen`). Hero image + "NUOVA STAGIONE 2026/27", righe: nuovi orari (Pilates Toto/Interval Step Chiara), lotteria azzerata (estrazione 1/10), promemoria certificato. CTA "PRENOTA LA PRIMA LEZIONE" → /prenota. testID: nuova-stagione-popup/-prenota/-close. Testato con POPUP_DAL temporaneo poi RIPRISTINATO a 2026-09-07.
+2. **Rinnovo Rapido WhatsApp** (`abbonamento.tsx`): card verde con logo WhatsApp (testID whatsapp-rinnovo-btn) → wa.me/393395020625 con messaggio precompilato (nome+cognome, richiesta rinnovo); nota sotto: "il pagamento si fa in presenza quando incontri il Maestro". window.open su web / Linking su native. Verificato con screenshot.
+- LEZIONE IMPARATA: su TouchableOpacity usare `testID` (non `data-testid`) per avere data-testid nel DOM web.
