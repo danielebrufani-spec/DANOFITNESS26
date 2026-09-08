@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { COLORS } from '../utils/constants';
 import { useAuth } from '../context/AuthContext';
 import { apiService, CertificatoInfo } from '../services/api';
+import { requestPopup, releasePopup } from '../utils/popupQueue';
 
 export const CERT_STATUS_UI: { [key: string]: { label: string; color: string; icon: any } } = {
   mancante: { label: 'NON CARICATO', color: '#FF9800', icon: 'alert-circle' },
@@ -450,7 +451,7 @@ export const CertificatoObbligoPopup: React.FC = () => {
         } catch {}
       }
       setInfo(d);
-      setVisible(true);
+      requestPopup('cert-obbligo', () => setVisible(true));
     }).catch(() => {});
   }, [authLoading, user, isAdmin, isIstruttore]);
 
@@ -467,6 +468,7 @@ export const CertificatoObbligoPopup: React.FC = () => {
       try { window.localStorage.setItem('cert_info_popup_date', oggi); } catch {}
     }
     setVisible(false);
+    releasePopup('cert-obbligo');
   };
 
   const goCarica = () => {
@@ -541,24 +543,29 @@ export const CertificatiDaConvalidarePopup: React.FC = () => {
       const r = regs.status === 'fulfilled' ? regs.value.data : [];
       setPending(c);
       setRegistrazioni(r);
-      if (c.length > 0 || r.length > 0) setVisible(true);
+      if (c.length > 0 || r.length > 0) requestPopup('cert-admin-pending', () => setVisible(true));
     });
   }, [authLoading, user, isAdmin]);
 
   if (!isAdmin || !visible || (pending.length === 0 && registrazioni.length === 0)) return null;
 
-  const goTo = (uid: string) => {
+  const chiudi = () => {
     setVisible(false);
+    releasePopup('cert-admin-pending');
+  };
+
+  const goTo = (uid: string) => {
+    chiudi();
     router.push({ pathname: '/admin', params: { cert_user: uid, t: String(Date.now()) } });
   };
 
   const goToUser = (nome: string, cognome: string) => {
-    setVisible(false);
+    chiudi();
     router.push({ pathname: '/admin', params: { user_search: `${nome} ${cognome}`.trim(), t: String(Date.now()) } });
   };
 
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={() => setVisible(false)}>
+    <Modal visible transparent animationType="fade" onRequestClose={chiudi}>
       <View style={styles.modalOverlay}>
         <View style={[styles.modalCard, { borderColor: '#00C8FF', borderWidth: 1.5 }]} testID="cert-admin-pending-popup">
           <View style={{ alignItems: 'center', marginBottom: 10 }}>
@@ -598,7 +605,7 @@ export const CertificatiDaConvalidarePopup: React.FC = () => {
             </>
           )}
 
-          <TouchableOpacity style={styles.cancelBtn} onPress={() => setVisible(false)} testID="cert-admin-pending-close">
+          <TouchableOpacity style={styles.cancelBtn} onPress={chiudi} testID="cert-admin-pending-close">
             <Text style={styles.cancelBtnText}>Più tardi</Text>
           </TouchableOpacity>
         </View>

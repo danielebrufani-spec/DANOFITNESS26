@@ -14,6 +14,7 @@ import { COLORS } from '../utils/constants';
 import { FONTS } from '../theme';
 import { apiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { requestPopup, releasePopup } from '../utils/popupQueue';
 
 /**
  * Nuovi Orari Invernali 2026/27 (da lunedì 8 settembre).
@@ -98,7 +99,7 @@ export const NuoviOrariPopup: React.FC = () => {
           /* se il check fallisce mostriamo comunque */
         }
       }
-      if (!cancelled) setVisible(true);
+      if (!cancelled) requestPopup('nuovi-orari', () => setVisible(true));
     })();
     return () => { cancelled = true; };
   }, [isAdmin, isIstruttore]);
@@ -113,6 +114,7 @@ export const NuoviOrariPopup: React.FC = () => {
     }
     setShowSchema(false);
     setVisible(false);
+    releasePopup('nuovi-orari');
   };
 
   return (

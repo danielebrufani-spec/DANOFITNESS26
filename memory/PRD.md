@@ -799,3 +799,17 @@ Richiesta: sezione più curata, font più grandi, info chiare circoscritte in qu
    - Montati in home.tsx: sezione client dopo CertificatoBanner + HOME ADMIN separata (branch `if (isAdmin && dashboard)` riga ~741) dopo header.
    - TESTATO: curl tutti i 6 endpoint (400 senza telefono, 409 doppio, cancellazioni) + UI screenshot (prenotazione 10:00 dal client, vista admin con nome+telefono). Cleanup fatto (0 prenotazioni).
    - NOTA: da 8/9 il popup countdown certificato appare a ogni apertura per i clienti senza cert (by design) — nei test UI va chiuso con 'Ricordamelo dopo' prima di cliccare altro.
+
+## FIX: "Non riesco a prenotare un orario" — visita medica (8 Set 2026, fork)
+Cause trovate (riprodotte via Playwright mobile 390x844):
+1. **Popup stack sovrapposti al login**: NuovaStagionePopup + CertificatoObbligoPopup + NuoviOrariPopup montati insieme in _layout.tsx → i Modal RN-web si sovrappongono in ordine non deterministico (dipende dai tempi delle API); l'overlay in cima intercettava i click sui bottoni dei popup sotto → utente bloccato.
+2. **Confirm box fuori viewport**: nel VisitaMedicaModal il box con PRENOTA era in fondo allo ScrollView dopo 30 chip → selezionando uno slot non appariva nulla di visibile.
+Fix:
+- Nuovo `src/utils/popupQueue.ts` (requestPopup/releasePopup): UN popup alla volta, gli altri in coda. Integrato in: NuovaStagionePopup, CertificatoObbligoPopup, CertificatiDaConvalidarePopup (chiudi()), NuoviOrariPopup, AdminAnnouncementPopup (stato granted). REGOLA: ogni nuovo popup globale DEVE usare popupQueue.
+- VisitaMedica.tsx: confirm box spostato FUORI dallo ScrollView come footer fisso sempre visibile; aggiunto messaggio successo verde (testID visita-success-box) dopo prenotazione/cancellazione; success resettato a nuova selezione.
+- Fix errori TS che bloccavano il linter della piattaforma: User type (prova_attiva/inizio/scadenza in AuthContext), cognome in admin.tsx participants, display_name in istruttore.tsx Partecipante, splitSlots generico, lezioni_rimanenti != null in home.tsx.
+TESTATO e2e Playwright: login → popup in sequenza (stagione→orari→cert) → banner → slot 09:00 → confirm box visibile (y=723) → PRENOTA ok → success box → cancellazione ok. DB pulito.
+
+## FIX: Linter engine piattaforma (8 Set 2026, fork)
+Causa: ESLint 9 senza `eslint.config.js` → il linter piattaforma crashava con "linter engine error" bloccando finish/ask_human.
+Fix: creato `/app/frontend/eslint.config.js` (flat config, eslint-config-expo/flat) con ignores per i residui template (src/components/ui, src/App.js, src/index.js, craco.config.js, plugins/**, public/sw.js) e regola react/no-unescaped-entities off (testi italiani). Risultato: 0 errori, solo warning.

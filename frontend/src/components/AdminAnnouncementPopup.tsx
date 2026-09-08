@@ -14,6 +14,7 @@ import { COLORS } from '../utils/constants';
 import { FONTS } from '../theme';
 import { apiService, Announcement, AnnouncementColor } from '../services/api';
 import { playNotificationDing } from '../utils/notificationSound';
+import { requestPopup, releasePopup } from '../utils/popupQueue';
 
 /**
  * Popup avvisi configurati dall'Admin.
@@ -100,6 +101,7 @@ const COLOR_MAP: Record<AnnouncementColor, { primary: string; bg: string; border
 export const AdminAnnouncementPopup: React.FC = () => {
   const [queue, setQueue] = useState<Announcement[]>([]);
   const [index, setIndex] = useState(0);
+  const [granted, setGranted] = useState(false);
   const blinkAnim = useRef(new Animated.Value(1)).current;
 
   // Fetch active announcements una tantum all'apertura
@@ -133,6 +135,14 @@ export const AdminAnnouncementPopup: React.FC = () => {
 
   const current: Announcement | undefined = queue[index];
 
+  useEffect(() => {
+    if (queue.length > 0) requestPopup('admin-announcements', () => setGranted(true));
+  }, [queue.length]);
+
+  useEffect(() => {
+    if (granted && !current) releasePopup('admin-announcements');
+  }, [granted, current]);
+
   // Blink loop attivo solo se l'annuncio corrente ha lampeggiante = true
   useEffect(() => {
     if (!current || !current.lampeggiante) {
@@ -149,7 +159,7 @@ export const AdminAnnouncementPopup: React.FC = () => {
     return () => loop.stop();
   }, [current, blinkAnim]);
 
-  if (!current) return null;
+  if (!granted || !current) return null;
 
   const palette = COLOR_MAP[current.colore] || COLOR_MAP.orange;
 

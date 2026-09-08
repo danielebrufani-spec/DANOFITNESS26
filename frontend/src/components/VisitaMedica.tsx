@@ -74,6 +74,7 @@ const VisitaMedicaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [telefonoSalvato, setTelefonoSalvato] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const load = useCallback(() => {
     apiService.getVisitaSlots().then((res) => {
@@ -96,8 +97,10 @@ const VisitaMedicaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     try {
       if (selected.mio) {
         await apiService.cancellaVisita(selected.orario);
+        setSuccess('Prenotazione cancellata.');
       } else {
         await apiService.prenotaVisita(selected.orario, telefono.trim());
+        setSuccess(`✅ Visita prenotata! Sabato 3 ottobre ore ${selected.orario}`);
       }
       setSelected(null);
       load();
@@ -120,7 +123,7 @@ const VisitaMedicaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         selected?.orario === s.orario && styles.chipSelected,
       ]}
       disabled={s.occupato && !s.mio}
-      onPress={() => { setSelected(s); setError(null); }}
+      onPress={() => { setSelected(s); setError(null); setSuccess(null); }}
       testID={`visita-slot-${s.orario.replace(':', '')}`}
     >
       <Text style={[styles.chipText, s.mio && { color: '#39FF14' }, s.occupato && !s.mio && { color: COLORS.textMuted }]}>
@@ -156,49 +159,56 @@ const VisitaMedicaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   <View style={[styles.legendDot, { backgroundColor: '#39FF14' }]} /><Text style={styles.legendText}>Tuo</Text>
                   <View style={[styles.legendDot, { backgroundColor: COLORS.textMuted }]} /><Text style={styles.legendText}>Occupato</Text>
                 </View>
-
-                {selected && (
-                  <View style={styles.confirmBox} testID="visita-confirm-box">
-                    {selected.mio ? (
-                      <Text style={styles.confirmText}>Vuoi cancellare la tua visita delle <Text style={styles.confirmBold}>{selected.orario}</Text>?</Text>
-                    ) : (
-                      <>
-                        <Text style={styles.confirmText}>Confermi la visita di sabato 3 ottobre alle <Text style={styles.confirmBold}>{selected.orario}</Text>?</Text>
-                        {!telefonoSalvato && (
-                          <TextInput
-                            style={styles.phoneInput}
-                            placeholder="Il tuo numero di telefono *"
-                            placeholderTextColor={COLORS.textMuted}
-                            value={telefono}
-                            onChangeText={setTelefono}
-                            keyboardType="phone-pad"
-                            testID="visita-telefono-input"
-                          />
-                        )}
-                      </>
-                    )}
-                    {error && <Text style={styles.errorText}>{error}</Text>}
-                    <View style={styles.confirmBtnRow}>
-                      <TouchableOpacity style={styles.cancelBtn} onPress={() => setSelected(null)}>
-                        <Text style={styles.cancelBtnText}>Annulla</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.confirmBtn, selected.mio && { backgroundColor: '#FF2D55' }]}
-                        onPress={conferma}
-                        disabled={saving}
-                        testID="visita-confirm-btn"
-                      >
-                        {saving ? <ActivityIndicator size="small" color="#fff" /> : (
-                          <Text style={styles.confirmBtnText}>{selected.mio ? 'CANCELLA VISITA' : 'PRENOTA'}</Text>
-                        )}
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
               </>
             )}
             <View style={{ height: 20 }} />
           </ScrollView>
+
+          {success && !selected && (
+            <View style={styles.successBox} testID="visita-success-box">
+              <Ionicons name="checkmark-circle" size={20} color="#39FF14" />
+              <Text style={styles.successText}>{success}</Text>
+            </View>
+          )}
+
+          {selected && !loading && (
+            <View style={styles.confirmBox} testID="visita-confirm-box">
+              {selected.mio ? (
+                <Text style={styles.confirmText}>Vuoi cancellare la tua visita delle <Text style={styles.confirmBold}>{selected.orario}</Text>?</Text>
+              ) : (
+                <>
+                  <Text style={styles.confirmText}>Confermi la visita di sabato 3 ottobre alle <Text style={styles.confirmBold}>{selected.orario}</Text>?</Text>
+                  {!telefonoSalvato && (
+                    <TextInput
+                      style={styles.phoneInput}
+                      placeholder="Il tuo numero di telefono *"
+                      placeholderTextColor={COLORS.textMuted}
+                      value={telefono}
+                      onChangeText={setTelefono}
+                      keyboardType="phone-pad"
+                      testID="visita-telefono-input"
+                    />
+                  )}
+                </>
+              )}
+              {error && <Text style={styles.errorText}>{error}</Text>}
+              <View style={styles.confirmBtnRow}>
+                <TouchableOpacity style={styles.cancelBtn} onPress={() => setSelected(null)}>
+                  <Text style={styles.cancelBtnText}>Annulla</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.confirmBtn, selected.mio && { backgroundColor: '#FF2D55' }]}
+                  onPress={conferma}
+                  disabled={saving}
+                  testID="visita-confirm-btn"
+                >
+                  {saving ? <ActivityIndicator size="small" color="#fff" /> : (
+                    <Text style={styles.confirmBtnText}>{selected.mio ? 'CANCELLA VISITA' : 'PRENOTA'}</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
         </View>
       </View>
     </Modal>
@@ -525,6 +535,24 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#FF3B30',
     padding: 14,
+    marginTop: 10,
+  },
+  successBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(57,255,20,0.08)',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#39FF14',
+    padding: 14,
+    marginTop: 10,
+  },
+  successText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#39FF14',
   },
   confirmText: {
     fontSize: 14,

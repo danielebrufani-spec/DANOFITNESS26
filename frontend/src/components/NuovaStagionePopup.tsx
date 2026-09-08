@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { COLORS, FITNESS_IMAGES } from '../utils/constants';
 import { FONTS } from '../theme';
 import { useAuth } from '../context/AuthContext';
+import { requestPopup, releasePopup } from '../utils/popupQueue';
 
 const POPUP_DAL = '2026-09-07';
 const POPUP_AL = '2026-09-21';
@@ -30,7 +31,7 @@ export const NuovaStagionePopup: React.FC = () => {
         if (window.localStorage.getItem(LS_KEY)) return;
       } catch {}
     }
-    setVisible(true);
+    requestPopup('nuova-stagione', () => setVisible(true));
   }, [authLoading, user, isAdmin, isIstruttore]);
 
   if (!visible) return null;
@@ -40,6 +41,7 @@ export const NuovaStagionePopup: React.FC = () => {
       try { window.localStorage.setItem(LS_KEY, '1'); } catch {}
     }
     setVisible(false);
+    releasePopup('nuova-stagione');
   };
 
   const goPrenota = () => {
