@@ -15,6 +15,9 @@ interface User {
   profile_image?: string;
   must_reset_password?: boolean;
   archived?: boolean;
+  prova_attiva?: boolean;
+  prova_inizio?: string;
+  prova_scadenza?: string;
 }
 
 interface RegisterData {

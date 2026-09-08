@@ -7,7 +7,7 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   console.log('[SW] Service Worker activated');
-  event.waitUntil(clients.claim());
+  event.waitUntil(self.clients.claim());
 });
 
 self.addEventListener('push', (event) => {
@@ -54,7 +54,7 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true })
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
         // If app is already open, focus it
         for (const client of clientList) {
@@ -63,8 +63,8 @@ self.addEventListener('notificationclick', (event) => {
           }
         }
         // Otherwise open new window
-        if (clients.openWindow) {
-          return clients.openWindow('/');
+        if (self.clients.openWindow) {
+          return self.clients.openWindow('/');
         }
       })
   );

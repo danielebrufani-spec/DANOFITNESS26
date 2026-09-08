@@ -142,7 +142,7 @@ export default function AdminScreen() {
   // ===== Manual booking management (admin force add/remove) =====
   // Key format: `${data}-${lesson_id}` to identify a specific lesson instance
   const [expandedLessonKey, setExpandedLessonKey] = useState<string | null>(null);
-  const [lessonParticipants, setLessonParticipants] = useState<Record<string, Array<{nome: string; booking_id?: string; user_id?: string; lezione_scalata?: boolean}>>>({});
+  const [lessonParticipants, setLessonParticipants] = useState<Record<string, Array<{nome: string; cognome?: string; booking_id?: string; user_id?: string; lezione_scalata?: boolean}>>>({});
   const [loadingParticipants, setLoadingParticipants] = useState<string | null>(null);
   // Add participant modal
   const [showAddParticipant, setShowAddParticipant] = useState(false);

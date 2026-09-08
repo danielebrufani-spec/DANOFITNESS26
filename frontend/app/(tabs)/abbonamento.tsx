@@ -454,23 +454,27 @@ export default function AbbonamentoScreen() {
           </View>
         )}
 
-        {/* RINNOVO RAPIDO SU WHATSAPP */}
-        <TouchableOpacity style={styles.waCard} onPress={openWhatsAppRinnovo} activeOpacity={0.85} testID="whatsapp-rinnovo-btn">
-          <View style={styles.waIcon}>
-            <Ionicons name="logo-whatsapp" size={28} color="#fff" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.waTitle}>RINNOVO RAPIDO</Text>
-            <Text style={styles.waSub}>Chiedi il rinnovo al Maestro su WhatsApp</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={22} color="#25D366" />
-        </TouchableOpacity>
-        <View style={styles.waNoteBox}>
-          <Ionicons name="cash-outline" size={18} color={COLORS.textSecondary} />
-          <Text style={styles.waNote}>
-            Qui chiedi solo il rinnovo: il pagamento si fa tranquillamente <Text style={{ fontWeight: '800', color: COLORS.text }}>in presenza</Text>, quando incontri il Maestro. Nessun problema!
-          </Text>
-        </View>
+        {/* RINNOVO RAPIDO SU WHATSAPP - solo ad abbonamento scaduto */}
+        {warningStatus.isExpired && (
+          <>
+            <TouchableOpacity style={styles.waCard} onPress={openWhatsAppRinnovo} activeOpacity={0.85} testID="whatsapp-rinnovo-btn">
+              <View style={styles.waIcon}>
+                <Ionicons name="logo-whatsapp" size={28} color="#fff" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.waTitle}>RINNOVO RAPIDO</Text>
+                <Text style={styles.waSub}>Chiedi il rinnovo al Maestro su WhatsApp</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={22} color="#25D366" />
+            </TouchableOpacity>
+            <View style={styles.waNoteBox}>
+              <Ionicons name="cash-outline" size={18} color={COLORS.textSecondary} />
+              <Text style={styles.waNote}>
+                Qui chiedi solo il rinnovo: il pagamento si fa tranquillamente <Text style={{ fontWeight: '800', color: COLORS.text }}>in presenza</Text>, quando incontri il Maestro. Nessun problema!
+              </Text>
+            </View>
+          </>
+        )}
 
         {/* PACCHETTI DISPONIBILI */}
         <View style={styles.packagesSection}>

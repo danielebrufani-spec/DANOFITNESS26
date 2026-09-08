@@ -7962,6 +7962,134 @@ async def get_my_certificate_file(current_user: dict = Depends(get_current_user)
     )
 
 
+# ======================== VISITA MEDICA (certificato non agonistico) ========================
+VISITA_MEDICA_DATA = "2026-10-03"
+
+def _visita_slots():
+    slots = []
+    def _rng(sh, sm, eh, em):
+        t = sh * 60 + sm
+        end = eh * 60 + em
+        while t <= end:
+            slots.append(f"{t//60:02d}:{t%60:02d}")
+            t += 15
+    _rng(8, 30, 12, 15)
+    _rng(14, 30, 17, 45)
+    return slots
+
+
+class VisitaPrenotaPayload(BaseModel):
+    orario: str
+    telefono: Optional[str] = None
+
+
+class VisitaAdminPayload(BaseModel):
+    orario: str
+    nome: str
+    telefono: Optional[str] = ""
+
+
+@api_router.get("/visita-medica/slots")
+async def get_visita_slots(current_user: dict = Depends(get_current_user)):
+    uid = str(current_user["_id"])
+    prenotazioni = await db.visite_mediche.find({"data": VISITA_MEDICA_DATA}).to_list(200)
+    occupati = {p["orario"]: p for p in prenotazioni}
+    out = []
+    for orario in _visita_slots():
+        p = occupati.get(orario)
+        out.append({
+            "orario": orario,
+            "occupato": p is not None,
+            "mio": bool(p and p.get("user_id") == uid),
+        })
+    return {"data": VISITA_MEDICA_DATA, "slots": out, "telefono": current_user.get("telefono")}
+
+
+@api_router.post("/visita-medica/prenota")
+async def prenota_visita(payload: VisitaPrenotaPayload, current_user: dict = Depends(get_current_user)):
+    if payload.orario not in _visita_slots():
+        raise HTTPException(status_code=400, detail="Orario non valido")
+    telefono = (payload.telefono or current_user.get("telefono") or "").strip()
+    if not telefono:
+        raise HTTPException(status_code=400, detail="Inserisci il tuo numero di telefono per prenotare la visita")
+    esistente = await db.visite_mediche.find_one({"data": VISITA_MEDICA_DATA, "orario": payload.orario})
+    if esistente:
+        raise HTTPException(status_code=409, detail="Questo orario è già stato prenotato, scegline un altro")
+    await db.visite_mediche.insert_one({
+        "data": VISITA_MEDICA_DATA,
+        "orario": payload.orario,
+        "user_id": str(current_user["_id"]),
+        "nome": current_user.get("nome", ""),
+        "cognome": current_user.get("cognome", ""),
+        "telefono": telefono,
+        "manuale": False,
+        "created_at": now_rome(),
+    })
+    if payload.telefono and not current_user.get("telefono"):
+        await db.users.update_one({"_id": current_user["_id"]}, {"$set": {"telefono": telefono}})
+    asyncio.create_task(send_push_to_admins(
+        "🩺 Nuova visita medica prenotata!",
+        f"{current_user.get('nome','')} {current_user.get('cognome','')} — sabato 3 ottobre ore {payload.orario}",
+        url="/home",
+    ))
+    return {"success": True, "orario": payload.orario}
+
+
+@api_router.delete("/visita-medica/prenota/{orario}")
+async def cancella_visita(orario: str, current_user: dict = Depends(get_current_user)):
+    res = await db.visite_mediche.delete_one({"data": VISITA_MEDICA_DATA, "orario": orario, "user_id": str(current_user["_id"])})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Prenotazione non trovata")
+    return {"success": True}
+
+
+@api_router.get("/admin/visita-medica")
+async def admin_get_visite(admin_user: dict = Depends(get_admin_user)):
+    prenotazioni = await db.visite_mediche.find({"data": VISITA_MEDICA_DATA}).to_list(200)
+    occupati = {p["orario"]: p for p in prenotazioni}
+    out = []
+    for orario in _visita_slots():
+        p = occupati.get(orario)
+        out.append({
+            "orario": orario,
+            "occupato": p is not None,
+            "nome": f"{p.get('nome', '')} {p.get('cognome', '')}".strip() if p else None,
+            "telefono": p.get("telefono") if p else None,
+            "manuale": p.get("manuale", False) if p else False,
+        })
+    return {"data": VISITA_MEDICA_DATA, "slots": out, "totale_prenotati": len(prenotazioni)}
+
+
+@api_router.post("/admin/visita-medica")
+async def admin_prenota_visita(payload: VisitaAdminPayload, admin_user: dict = Depends(get_admin_user)):
+    if payload.orario not in _visita_slots():
+        raise HTTPException(status_code=400, detail="Orario non valido")
+    if not payload.nome.strip():
+        raise HTTPException(status_code=400, detail="Inserisci il nome")
+    esistente = await db.visite_mediche.find_one({"data": VISITA_MEDICA_DATA, "orario": payload.orario})
+    if esistente:
+        raise HTTPException(status_code=409, detail="Orario già occupato")
+    await db.visite_mediche.insert_one({
+        "data": VISITA_MEDICA_DATA,
+        "orario": payload.orario,
+        "user_id": None,
+        "nome": payload.nome.strip(),
+        "cognome": "",
+        "telefono": (payload.telefono or "").strip(),
+        "manuale": True,
+        "created_at": now_rome(),
+    })
+    return {"success": True}
+
+
+@api_router.delete("/admin/visita-medica/{orario}")
+async def admin_cancella_visita(orario: str, admin_user: dict = Depends(get_admin_user)):
+    res = await db.visite_mediche.delete_one({"data": VISITA_MEDICA_DATA, "orario": orario})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Nessuna prenotazione a questo orario")
+    return {"success": True}
+
+
 @api_router.get("/admin/registrazioni/in-attesa")
 async def get_registrazioni_in_attesa(admin_user: dict = Depends(get_admin_user)):
     """Nuovi iscritti in attesa di attivazione (concedi prova / bentornato)."""

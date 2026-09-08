@@ -26,6 +26,7 @@ import { SummerSilhouettes } from '../../src/components/SummerSilhouettes';
 import { NuoviOrariBanner } from '../../src/components/NuoviOrariBanner';
 import { PausaEstivaBanner } from '../../src/components/PausaEstiva';
 import { CertificatoBanner } from '../../src/components/CertificatoMedico';
+import { VisitaMedicaBanner, VisitaMedicaAdminBanner } from '../../src/components/VisitaMedica';
 import { FONTS, glow } from '../../src/theme';
 import { CountUp } from '../../src/components/CountUp';
 
@@ -396,7 +397,7 @@ export default function HomeScreen() {
       if (activeSub) {
         const isLezioni = activeSub.tipo?.includes('lezioni');
         
-        if (isLezioni && activeSub.lezioni_rimanenti !== null && activeSub.lezioni_rimanenti <= 2) {
+        if (isLezioni && activeSub.lezioni_rimanenti != null && activeSub.lezioni_rimanenti <= 2) {
           notifs.push({
             id: 'sub_expiring_lessons',
             type: 'warning',
@@ -745,6 +746,9 @@ export default function HomeScreen() {
             </View>
             <Image source={require('../../assets/images/logo.jpg')} style={styles.logoImage} resizeMode="contain" />
           </View>
+
+          {/* Visite mediche - gestione admin */}
+          <VisitaMedicaAdminBanner />
 
           {/* AVVISI LEZIONI ANNULLATE (dinamico) */}
           {cancelledLessons.filter((c: any) => {
@@ -1103,6 +1107,10 @@ export default function HomeScreen() {
 
         {/* BANNER CERTIFICATO MEDICO (solo clienti senza certificato valido) */}
         <CertificatoBanner />
+
+        {/* Visita medica - certificato non agonistico */}
+        <VisitaMedicaBanner />
+        <VisitaMedicaAdminBanner />
 
         {/* AVVISI LEZIONI ANNULLATE (dinamico) */}
         {cancelledLessons.filter((c: any) => {

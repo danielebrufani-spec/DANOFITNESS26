@@ -17,6 +17,7 @@ import { COLORS, ATTIVITA_INFO } from '../../src/utils/constants';
 interface Partecipante {
   nome: string;
   soprannome: string;
+  display_name?: string;
   lezione_scalata: boolean;
 }
 

@@ -545,6 +545,14 @@ export const apiService = {
   adminGetCertificato: (userId: string) => api.get<CertificatoInfo>(`/admin/certificato/${userId}`),
   adminGetCertificatiDaConvalidare: () => api.get<{ user_id: string; nome: string; cognome: string; uploaded_at: string | null }[]>('/admin/certificati/da-convalidare'),
   adminGetRegistrazioniInAttesa: () => api.get<{ user_id: string; nome: string; cognome: string; registrato_il: string | null }[]>('/admin/registrazioni/in-attesa'),
+
+  // Visita medica (certificato non agonistico)
+  getVisitaSlots: () => api.get<{ data: string; slots: { orario: string; occupato: boolean; mio: boolean }[]; telefono: string | null }>('/visita-medica/slots'),
+  prenotaVisita: (orario: string, telefono?: string) => api.post('/visita-medica/prenota', { orario, telefono }),
+  cancellaVisita: (orario: string) => api.delete(`/visita-medica/prenota/${orario}`),
+  adminGetVisite: () => api.get<{ data: string; slots: { orario: string; occupato: boolean; nome: string | null; telefono: string | null; manuale: boolean }[]; totale_prenotati: number }>('/admin/visita-medica'),
+  adminPrenotaVisita: (orario: string, nome: string, telefono?: string) => api.post('/admin/visita-medica', { orario, nome, telefono }),
+  adminCancellaVisita: (orario: string) => api.delete(`/admin/visita-medica/${orario}`),
   adminGetCertificatoBlob: (userId: string) => api.get(`/admin/certificato/${userId}/file`, { responseType: 'blob' }),
   adminUpdateCertScadenza: (userId: string, scadenza: string | null) =>
     api.put<CertificatoInfo>(`/admin/certificato/${userId}`, { scadenza }),
