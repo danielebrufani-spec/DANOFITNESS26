@@ -102,12 +102,14 @@ export const CertificatoAdminModal: React.FC<Props> = ({ user, onClose }) => {
         scadenza: approva ? scadIso : undefined,
         motivo: approva ? undefined : motivoInput.trim(),
       });
+      if (approva) {
+        onClose(true);
+        return;
+      }
       setInfo(res.data.certificato);
       setChanged(true);
       setShowRifiuta(false);
-      setFeedback(approva
-        ? `✅ Convalidato!${res.data.bonus_biglietti ? ` +${res.data.bonus_biglietti} biglietti assegnati al cliente 🎟️` : ''}`
-        : '❌ Rifiutato — il cliente ha ricevuto la notifica');
+      setFeedback('❌ Rifiutato — il cliente ha ricevuto la notifica');
     } catch (e: any) {
       setError(e?.response?.data?.detail || 'Errore, riprova');
     } finally {

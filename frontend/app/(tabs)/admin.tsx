@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -119,10 +119,16 @@ export default function AdminScreen() {
   const [certUser, setCertUser] = useState<User | null>(null);
   // Deep-link dal popup "richieste in attesa": apre modal certificato o cerca l'utente
   const { cert_user: certUserParam, user_search: userSearchParam, t: certLinkT } = useLocalSearchParams<{ cert_user?: string; user_search?: string; t?: string }>();
+  const processedCertLink = useRef<string | null>(null);
   useEffect(() => {
     if (!certUserParam || users.length === 0) return;
+    const linkKey = `${certUserParam}-${certLinkT || ''}`;
+    if (processedCertLink.current === linkKey) return;
     const u = users.find((x) => x.id === certUserParam);
-    if (u) setCertUser(u);
+    if (u) {
+      processedCertLink.current = linkKey;
+      setCertUser(u);
+    }
   }, [certUserParam, certLinkT, users]);
   useEffect(() => {
     if (!userSearchParam) return;

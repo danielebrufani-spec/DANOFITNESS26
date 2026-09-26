@@ -813,3 +813,9 @@ TESTATO e2e Playwright: login → popup in sequenza (stagione→orari→cert) �
 ## FIX: Linter engine piattaforma (8 Set 2026, fork)
 Causa: ESLint 9 senza `eslint.config.js` → il linter piattaforma crashava con "linter engine error" bloccando finish/ask_human.
 Fix: creato `/app/frontend/eslint.config.js` (flat config, eslint-config-expo/flat) con ignores per i residui template (src/components/ui, src/App.js, src/index.js, craco.config.js, plugins/**, public/sw.js) e regola react/no-unescaped-entities off (testi italiani). Risultato: 0 errori, solo warning.
+
+## FIX: Convalida certificato — scheda che si riapriva (26 Set 2026)
+Bug segnalato: dopo CONVALIDA la scheda non si chiudeva subito e "si ripeteva".
+Cause: 1) il modal restava aperto col feedback dopo l'approvazione; 2) LOOP di riapertura: onClose → loadData → users ricaricati → useEffect deep-link (cert_user ancora nell'URL) → setCertUser di nuovo → modal riaperto.
+Fix: CertificatoAdminModal.handleConvalida chiama onClose(true) subito dopo approvazione riuscita (rifiuto resta aperto col feedback); admin.tsx usa ref processedCertLink (chiave cert_user+t) per processare ogni deep-link UNA sola volta.
+TESTATO e2e: cert fittizio in_verifica → popup RICHIESTE IN ATTESA → riga cliente → modal → CONVALIDA → chiuso subito, nessuna riapertura dopo 5s, stato_convalida=convalidato nel DB. Cleanup fatto.
