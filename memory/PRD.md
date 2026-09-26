@@ -819,3 +819,14 @@ Bug segnalato: dopo CONVALIDA la scheda non si chiudeva subito e "si ripeteva".
 Cause: 1) il modal restava aperto col feedback dopo l'approvazione; 2) LOOP di riapertura: onClose → loadData → users ricaricati → useEffect deep-link (cert_user ancora nell'URL) → setCertUser di nuovo → modal riaperto.
 Fix: CertificatoAdminModal.handleConvalida chiama onClose(true) subito dopo approvazione riuscita (rifiuto resta aperto col feedback); admin.tsx usa ref processedCertLink (chiave cert_user+t) per processare ogni deep-link UNA sola volta.
 TESTATO e2e: cert fittizio in_verifica → popup RICHIESTE IN ATTESA → riga cliente → modal → CONVALIDA → chiuso subito, nessuna riapertura dopo 5s, stato_convalida=convalidato nel DB. Cleanup fatto.
+
+## Proroga certificato vecchi clienti fino a fine ottobre (26 Set 2026)
+Richiesta: allungare il tempo di caricamento certificato per i vecchi clienti fino a fine ottobre.
+- `server.py`: nuova costante `CERT_PROROGA_VECCHI_FINO = "2026-10-31"`. In `_cert_blocco_info`: se `primo_abbonamento_il <= CERT_OBBLIGO_INIZIO (07/09/2026)` → "vecchio cliente" → `blocco_dal` mai prima del 01/11/2026 (vale sia per cert MANCANTE/RIFIUTATO sia per cert SCADUTO). Nuovi clienti invariati (30gg dal primo abbonamento). La deroga admin oltre il 31/10 vince comunque.
+- TESTATO: unit test 6 scenari (vecchio+mancante→1/11, vecchio+scaduto ago→1/11, valido→nessun blocco, nuovo→invariato 30gg, mai abbonato→nessun blocco, deroga 15/11→16/11) + curl /api/certificato/me (giorni_rimanenti 36, blocco_dal 2026-11-01). Frontend countdown/popup si aggiornano da soli (dati dal backend).
+
+## Azzeramento nomi estrazioni lotteria — stagione invernale (26 Set 2026)
+Richiesta: via i nomi delle estrazioni passate, il 1/10 riparte la prima della stagione invernale.
+- `server.py` startup: nuova migrazione one-shot `lottery_winners_reset_2026_10` → `delete_many` su `lottery_winners` con mese < "2026-10". Idempotente (flag in db.migrations). Al prossimo deploy pulisce anche il DB di PRODUZIONE automaticamente.
+- Nessun impatto sull'estrazione automatica del 1/10 ore 12 (biglietti settembre da bookings scalate + wheel_tickets); l'esclusione "vincitori mese precedente" semplicemente non esclude nessuno (fresh start voluto).
+- TESTATO: seed 2 estrazioni finte (2026-06, 2026-08) + restart → log "rimosse 2 estrazioni pre-ottobre"; /api/lottery/winners → []; migrazione non si ripete al secondo avvio.

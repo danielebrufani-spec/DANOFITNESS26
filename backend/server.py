@@ -7684,6 +7684,7 @@ CERT_BONUS_BIGLIETTI = 2
 CERT_SOGLIA_SCADENZA_GG = 30
 CERT_OBBLIGO_INIZIO = "2026-09-07"  # dalla nuova stagione il certificato è obbligatorio
 CERT_GRACE_GIORNI = 30  # giorni di tolleranza prima del blocco prenotazioni
+CERT_PROROGA_VECCHI_FINO = "2026-10-31"  # vecchi clienti (primo abb. prima della stagione): tempo extra fino a fine ottobre
 
 _storage_key_cache = None
 
@@ -7748,6 +7749,8 @@ def _cert_blocco_info(user: dict, cert: Optional[dict]) -> dict:
     """Blocco prenotazioni: 30gg di tolleranza dalla scadenza del certificato.
     Per chi non l'ha mai caricato (mancante/rifiutato) i 30gg partono dal primo
     abbonamento vero (la prova non conta), non prima del 07/09/2026.
+    PROROGA vecchi clienti (primo abbonamento entro il 07/09/2026): il blocco
+    non scatta mai prima del 01/11/2026 (tempo fino a fine ottobre).
     Chi non ha mai avuto un abbonamento vero non ha countdown né blocco.
     L'admin può concedere una deroga (users.cert_deroga_fino, prenotazioni ok fino a quella data inclusa)."""
     out = {"bloccato": False, "giorni_rimanenti": None, "blocco_dal": None, "deroga_fino": user.get("cert_deroga_fino"), "motivo": None}
@@ -7758,13 +7761,20 @@ def _cert_blocco_info(user: dict, cert: Optional[dict]) -> dict:
     if st in ("valido", "in_scadenza", "in_verifica"):
         return out
     today = now_rome().date()
+    obbligo_inizio = datetime.strptime(CERT_OBBLIGO_INIZIO, "%Y-%m-%d").date()
+    primo_abb = user.get("primo_abbonamento_il")
+    vecchio_cliente = False
+    if primo_abb:
+        try:
+            vecchio_cliente = datetime.strptime(primo_abb, "%Y-%m-%d").date() <= obbligo_inizio
+        except ValueError:
+            pass
     if st == "scaduto":
         anchor = datetime.strptime(info["scadenza"], "%Y-%m-%d").date()
     else:  # mancante | rifiutato
-        primo_abb = user.get("primo_abbonamento_il")
         if not primo_abb:
             return out
-        anchor = datetime.strptime(CERT_OBBLIGO_INIZIO, "%Y-%m-%d").date()
+        anchor = obbligo_inizio
         try:
             primo_d = datetime.strptime(primo_abb, "%Y-%m-%d").date()
             if primo_d > anchor:
@@ -7772,6 +7782,10 @@ def _cert_blocco_info(user: dict, cert: Optional[dict]) -> dict:
         except ValueError:
             pass
     blocco_dal = anchor + timedelta(days=CERT_GRACE_GIORNI)
+    if vecchio_cliente:
+        proroga_blocco = datetime.strptime(CERT_PROROGA_VECCHI_FINO, "%Y-%m-%d").date() + timedelta(days=1)
+        if proroga_blocco > blocco_dal:
+            blocco_dal = proroga_blocco
     deroga = user.get("cert_deroga_fino")
     if deroga:
         try:
@@ -8376,6 +8390,20 @@ async def startup_event():
             logger.info(f"[LOTTERY-RESET] Nuova stagione: rimossi {res.deleted_count} doc wheel_tickets residui (mesi <= 2026-08)")
     except Exception as e:
         logger.warning(f"[LOTTERY-RESET] {e}")
+
+    # AZZERAMENTO STORICO VINCITORI (richiesta admin 26/09): via i nomi delle estrazioni
+    # della stagione passata — il 1° ottobre si riparte con la PRIMA estrazione invernale.
+    try:
+        if not await db.migrations.find_one({"nome": "lottery_winners_reset_2026_10"}):
+            res = await db.lottery_winners.delete_many({"mese": {"$lt": "2026-10"}})
+            await db.migrations.insert_one({
+                "nome": "lottery_winners_reset_2026_10",
+                "applied_at": now_rome(),
+                "estrazioni_rimosse": res.deleted_count,
+            })
+            logger.info(f"[LOTTERY-RESET] Storico vincitori azzerato: rimosse {res.deleted_count} estrazioni pre-ottobre")
+    except Exception as e:
+        logger.warning(f"[LOTTERY-RESET storico] {e}")
 
     # Backfill primo_abbonamento_il: data del primo abbonamento vero (prova esclusa)
     try:
