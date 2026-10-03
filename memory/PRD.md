@@ -843,3 +843,10 @@ Richiesta: sezione admin dedicata alla raccolta di tutti i certificati (consulta
 - Frontend: nuovo `src/components/ArchivioCertificati.tsx` (search bar nome/cognome client-side, badge VALIDO verde / SCADE TRA Xg arancio / IN VERIFICA ciano, pulsanti Apri+Scarica via blob con nome file Certificato_Nome_Cognome.ext, box rosso "SCADUTI — RIMOSSI AUTOMATICAMENTE"). admin.tsx: nuova tab 'certificati' ("Cert.", testID admin-tab-certificati) tra Insoluti e Archivio.
 - TESTATO: seed 1 valido + 1 scaduto → restart → push admin + scaduto rimosso dagli attivi e mostrato nel box scaduti; API corretta; UI screenshot (tab, ricerca client/zzzz, badge, bottoni). Cleanup seed fatto.
 - LEZIONE: a volte il bundle web servito è vecchio → restart frontend prima dello screenshot se un edit UI non appare.
+
+## Archivio Certificati spostato nel tab ALTRO (3 Ott 2026)
+Richiesta: non intasare la barra admin → pulsante dedicato nel tab "Altro".
+- Rimossa la tab "Cert." da admin.tsx (bottone, rendering, tipo union, import).
+- Nuova pagina `app/(tabs)/certificati.tsx` (guard solo admin, back button, monta ArchivioCertificati) registrata in _layout.tsx con href:null.
+- altro.tsx: card "CERTIFICATI — Archivio medico clienti" (icona medkit ciano #00C8FF, show solo isAdmin) in prima posizione.
+- TESTATO: screenshot card in Altro → pagina archivio funzionante → tab Cert. assente dall'admin.

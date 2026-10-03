@@ -269,6 +269,16 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="certificati"
+        options={{
+          title: 'Certificati',
+          href: null, // accessibile dal tab "Altro" (solo admin)
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="medkit-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="classifica"
         options={{
           title: 'Classifica',

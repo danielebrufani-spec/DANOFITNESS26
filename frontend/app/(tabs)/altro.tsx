@@ -29,6 +29,15 @@ type Section = {
 
 const SECTIONS: Section[] = [
   {
+    key: 'certificati',
+    label: 'CERTIFICATI',
+    sub: 'Archivio medico clienti',
+    icon: 'medkit-outline',
+    color: '#00C8FF',
+    route: '/certificati',
+    show: ({ isAdmin }) => isAdmin,
+  },
+  {
     key: 'alimentazione',
     label: 'DIETA AI',
     sub: 'Piano nutrizione',
