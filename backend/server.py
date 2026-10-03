@@ -7725,6 +7725,16 @@ async def _storage_get(path: str):
         return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
 
 
+async def _storage_delete(path: str):
+    import httpx
+    key = await _storage_init()
+    async with httpx.AsyncClient(timeout=30) as c:
+        resp = await c.delete(f"{STORAGE_URL}/objects/{path}", headers={"X-Storage-Key": key})
+        if resp.status_code == 404:
+            return
+        resp.raise_for_status()
+
+
 def _cert_status_from_doc(cert: Optional[dict]) -> dict:
     """Stato certificato: mancante | in_verifica | rifiutato | valido | in_scadenza | scaduto"""
     if not cert:
@@ -7932,6 +7942,8 @@ async def cert_upload_finish(payload: CertUploadFinish, current_user: dict = Dep
             "stato_convalida": "convalidato" if up["uploaded_by"] == "admin" else "in_verifica",
             "motivo_rifiuto": None,
             "convalidato_il": now_rome() if up["uploaded_by"] == "admin" else None,
+            "scaduto_processato": False,
+            "file_eliminato": False,
         }},
         upsert=True,
     )
@@ -8232,6 +8244,47 @@ async def admin_cert_deroga(user_id: str, payload: CertDeroga, admin_user: dict 
     cert = await db.medical_certificates.find_one({"user_id": user_id})
     user = await db.users.find_one({"_id": user["_id"]})
     return {"success": True, "deroga_fino": fino, "blocco": _cert_blocco_info(user, cert)}
+
+
+@api_router.get("/admin/certificati/archivio")
+async def admin_archivio_certificati(admin_user: dict = Depends(get_admin_user)):
+    """Raccolta certificati medici: attivi (consultabili/stampabili) + scaduti rimossi di recente."""
+    oggi = now_rome().date()
+    oggi_str = oggi.isoformat()
+    certs = await db.medical_certificates.find({}).to_list(2000)
+    ids = []
+    for c in certs:
+        try:
+            ids.append(ObjectId(c["user_id"]))
+        except Exception:
+            pass
+    users = {str(u["_id"]): u for u in await db.users.find({"_id": {"$in": ids}}).to_list(2000)}
+    attivi, scaduti = [], []
+    for c in certs:
+        u = users.get(c["user_id"])
+        if not u:
+            continue
+        scad = c.get("scadenza")
+        base = {
+            "user_id": c["user_id"],
+            "nome": u.get("nome", ""),
+            "cognome": u.get("cognome", ""),
+            "file_name": c.get("file_name"),
+            "scadenza": scad,
+            "stato_convalida": c.get("stato_convalida", "convalidato"),
+            "uploaded_at": c["uploaded_at"].strftime("%d/%m/%Y") if c.get("uploaded_at") else None,
+            "file_eliminato": bool(c.get("file_eliminato")),
+        }
+        if c.get("scaduto_processato") or (scad and scad < oggi_str):
+            scaduti.append(base)
+            continue
+        if base["stato_convalida"] == "rifiutato":
+            continue
+        base["giorni_alla_scadenza"] = (datetime.strptime(scad, "%Y-%m-%d").date() - oggi).days if scad else None
+        attivi.append(base)
+    attivi.sort(key=lambda x: (x["cognome"].lower(), x["nome"].lower()))
+    scaduti.sort(key=lambda x: x.get("scadenza") or "", reverse=True)
+    return {"attivi": attivi, "scaduti_recenti": scaduti[:20], "totale_attivi": len(attivi)}
 
 
 @api_router.get("/admin/certificato/{user_id}/file")
@@ -8664,6 +8717,39 @@ async def startup_event():
 
 
 # Background task per processare automaticamente le lezioni iniziate
+async def process_certificati_scaduti():
+    """Una volta al giorno: certificati scaduti → rimozione automatica + avviso push all'admin."""
+    oggi_str = now_rome().date().isoformat()
+    flag = await db.migrations.find_one({"nome": "cert_scaduti_daily_check"})
+    if flag and flag.get("ultima_data") == oggi_str:
+        return
+    await db.migrations.update_one({"nome": "cert_scaduti_daily_check"}, {"$set": {"ultima_data": oggi_str}}, upsert=True)
+    certs = await db.medical_certificates.find({"scadenza": {"$lt": oggi_str}, "scaduto_processato": {"$ne": True}}).to_list(500)
+    for c in certs:
+        try:
+            user = await db.users.find_one({"_id": ObjectId(c["user_id"])})
+        except Exception:
+            user = None
+        nome = f"{user.get('nome', '')} {user.get('cognome', '')}".strip() if user else "Cliente"
+        file_del = False
+        try:
+            await _storage_delete(c["storage_path"])
+            file_del = True
+        except Exception as e:
+            logger.warning(f"[CERT-SCADUTI] Delete storage fallito per {c['user_id']}: {e}")
+        await db.medical_certificates.update_one(
+            {"_id": c["_id"]},
+            {"$set": {"scaduto_processato": True, "file_eliminato": file_del, "scaduto_processato_il": now_rome()}}
+        )
+        scad_it = "/".join(reversed((c.get("scadenza") or "").split("-")))
+        asyncio.create_task(send_push_to_admins(
+            "⚠️ Certificato scaduto",
+            f"Il certificato di {nome} è scaduto il {scad_it} ed è stato rimosso dall'archivio. Ricordagli di portare quello nuovo!",
+            tag="certificato",
+        ))
+        logger.info(f"[CERT-SCADUTI] {nome}: certificato scaduto il {c.get('scadenza')}, rimosso (file eliminato: {file_del})")
+
+
 async def auto_process_lessons_task():
     """
     Task che gira in background e processa automaticamente le lezioni
@@ -8680,6 +8766,12 @@ async def auto_process_lessons_task():
                 await apply_winter_schedule_if_due()
             except Exception as e:
                 logger.warning(f"[MIGRATION-INVERNALE] {e}")
+
+            # Certificati scaduti: rimozione automatica + avviso admin (check giornaliero)
+            try:
+                await process_certificati_scaduti()
+            except Exception as e:
+                logger.warning(f"[CERT-SCADUTI] {e}")
 
             now = now_rome()
             oggi = now.strftime("%Y-%m-%d")

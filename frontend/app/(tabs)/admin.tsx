@@ -23,6 +23,7 @@ import {
   User,
 } from '../../src/services/api';
 import { CertificatoAdminModal } from '../../src/components/CertificatoAdminModal';
+import { ArchivioCertificati } from '../../src/components/ArchivioCertificati';
 import {
   COLORS,
   ATTIVITA_INFO,
@@ -64,7 +65,7 @@ interface WeeklyBookings {
 export default function AdminScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'riepilogo' | 'abbonamenti' | 'insoluti' | 'utenti' | 'archiviati'>('riepilogo');
+  const [activeTab, setActiveTab] = useState<'riepilogo' | 'abbonamenti' | 'insoluti' | 'utenti' | 'archiviati' | 'certificati'>('riepilogo');
   
   const [weeklyBookings, setWeeklyBookings] = useState<WeeklyBookings | null>(null);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -999,6 +1000,15 @@ export default function AdminScreen() {
           )}
         </TouchableOpacity>
         <TouchableOpacity
+          style={[styles.tab, activeTab === 'certificati' && styles.tabActive]}
+          onPress={() => setActiveTab('certificati')}
+          testID="admin-tab-certificati"
+        >
+          <Text style={[styles.tabText, activeTab === 'certificati' && styles.tabTextActive]}>
+            Cert.
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'archiviati' && styles.tabActive]}
           onPress={() => setActiveTab('archiviati')}
         >
@@ -1456,6 +1466,9 @@ export default function AdminScreen() {
             )}
           </>
         )}
+
+        {/* CERTIFICATI TAB */}
+        {activeTab === 'certificati' && <ArchivioCertificati />}
 
         {/* USERS TAB */}
         {activeTab === 'utenti' && (

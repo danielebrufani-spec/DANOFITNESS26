@@ -554,6 +554,7 @@ export const apiService = {
   adminPrenotaVisita: (orario: string, nome: string, telefono?: string) => api.post('/admin/visita-medica', { orario, nome, telefono }),
   adminCancellaVisita: (orario: string) => api.delete(`/admin/visita-medica/${orario}`),
   adminGetCertificatoBlob: (userId: string) => api.get(`/admin/certificato/${userId}/file`, { responseType: 'blob' }),
+  adminArchivioCertificati: () => api.get('/admin/certificati/archivio'),
   adminUpdateCertScadenza: (userId: string, scadenza: string | null) =>
     api.put<CertificatoInfo>(`/admin/certificato/${userId}`, { scadenza }),
   adminDeleteCertificato: (userId: string) => api.delete<{ success: boolean }>(`/admin/certificato/${userId}`),
