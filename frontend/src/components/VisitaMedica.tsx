@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView,
-  TextInput, ActivityIndicator, Platform,
+  TextInput, ActivityIndicator, Platform, Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../utils/constants';
@@ -9,7 +9,7 @@ import { FONTS } from '../theme';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
 
-const VISITA_DATA_LIMITE = '2026-10-03';
+const VISITA_DATA_LIMITE = '2026-10-17';
 
 const oggiStr = () => {
   const d = new Date();
@@ -23,7 +23,7 @@ type AdminSlot = { orario: string; occupato: boolean; nome: string | null; telef
 
 const InfoHeader = () => (
   <View style={styles.infoBox}>
-    <Text style={styles.infoDate}>📅 SABATO 3 OTTOBRE</Text>
+    <Text style={styles.infoDate}>📅 SABATO 17 OTTOBRE</Text>
     <Text style={styles.infoText}>
       Visita per <Text style={styles.infoBold}>certificato medico non agonistico</Text> con{' '}
       <Text style={styles.infoBold}>elettrocardiogramma</Text>.
@@ -44,22 +44,38 @@ const splitSlots = <T extends { orario: string }>(slots: T[]) => ({
 export const VisitaMedicaBanner: React.FC = () => {
   const { isAdmin, isIstruttore, user } = useAuth();
   const [open, setOpen] = useState(false);
+  const blink = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(blink, { toValue: 0.25, duration: 550, useNativeDriver: false }),
+        Animated.timing(blink, { toValue: 1, duration: 550, useNativeDriver: false }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [blink]);
 
   if (isAdmin || isIstruttore || user?.archived || visitaPassata()) return null;
 
   return (
     <>
-      <TouchableOpacity style={styles.banner} onPress={() => setOpen(true)} activeOpacity={0.85} testID="visita-medica-banner">
-        <View style={styles.bannerIcon}>
-          <Ionicons name="medkit" size={24} color="#fff" />
+      <TouchableOpacity style={styles.bigBanner} onPress={() => setOpen(true)} activeOpacity={0.85} testID="visita-medica-banner">
+        <Animated.View pointerEvents="none" style={[styles.bigBannerGlow, { opacity: blink }]} />
+        <View style={styles.bigBannerRow}>
+          <View style={styles.bigIcon}>
+            <Ionicons name="medkit" size={28} color="#fff" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.bigTitle}>PRENOTAZIONE CERTIFICATO MEDICO</Text>
+            <Animated.Text style={[styles.bigDate, { opacity: blink }]}>SABATO 17 OTTOBRE</Animated.Text>
+            <Text style={styles.bannerSub}>
+              Visita non agonistica con elettrocardiogramma · 30€ in contanti al dottore · tocca per scegliere il tuo orario
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={24} color="#FF3B30" />
         </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.bannerTitle}>PRENOTA LA VISITA MEDICA</Text>
-          <Text style={styles.bannerSub}>
-            Certificato non agonistico con elettrocardiogramma · Sabato 3 ottobre · 30€ in contanti al dottore
-          </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={20} color="#00E5FF" />
       </TouchableOpacity>
       {open && <VisitaMedicaModal onClose={() => setOpen(false)} />}
     </>
@@ -100,7 +116,7 @@ const VisitaMedicaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setSuccess('Prenotazione cancellata.');
       } else {
         await apiService.prenotaVisita(selected.orario, telefono.trim());
-        setSuccess(`✅ Visita prenotata! Sabato 3 ottobre ore ${selected.orario}`);
+        setSuccess(`✅ Visita prenotata! Sabato 17 ottobre ore ${selected.orario}`);
       }
       setSelected(null);
       load();
@@ -177,7 +193,7 @@ const VisitaMedicaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <Text style={styles.confirmText}>Vuoi cancellare la tua visita delle <Text style={styles.confirmBold}>{selected.orario}</Text>?</Text>
               ) : (
                 <>
-                  <Text style={styles.confirmText}>Confermi la visita di sabato 3 ottobre alle <Text style={styles.confirmBold}>{selected.orario}</Text>?</Text>
+                  <Text style={styles.confirmText}>Confermi la visita di sabato 17 ottobre alle <Text style={styles.confirmBold}>{selected.orario}</Text>?</Text>
                   {!telefonoSalvato && (
                     <TextInput
                       style={styles.phoneInput}
@@ -229,7 +245,7 @@ export const VisitaMedicaAdminBanner: React.FC = () => {
           <Ionicons name="medkit" size={24} color="#fff" />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.bannerTitle, { color: '#FFD700' }]}>VISITE MEDICHE — SABATO 3 OTTOBRE</Text>
+          <Text style={[styles.bannerTitle, { color: '#FFD700' }]}>VISITE MEDICHE — SABATO 17 OTTOBRE</Text>
           <Text style={styles.bannerSub}>Gestisci le prenotazioni: vedi nomi e telefoni, aggiungi o cancella</Text>
         </View>
         <Ionicons name="chevron-forward" size={20} color="#FFD700" />
@@ -290,7 +306,7 @@ const VisitaMedicaAdminModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
       <View style={styles.overlay}>
         <View style={styles.card} testID="visita-medica-admin-modal">
           <View style={styles.headerRow}>
-            <Text style={[styles.title, { color: '#FFD700' }]}>VISITE — 3 OTTOBRE</Text>
+            <Text style={[styles.title, { color: '#FFD700' }]}>VISITE — 17 OTTOBRE</Text>
             <TouchableOpacity onPress={onClose} testID="visita-admin-close">
               <Ionicons name="close" size={26} color={COLORS.textSecondary} />
             </TouchableOpacity>
@@ -368,6 +384,52 @@ const VisitaMedicaAdminModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
 };
 
 const styles = StyleSheet.create({
+  bigBanner: {
+    backgroundColor: '#16090A',
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: '#FF3B30',
+    padding: 16,
+    marginBottom: 12,
+    position: 'relative',
+    ...Platform.select({ web: { boxShadow: '0 0 14px rgba(255,59,48,0.35)' }, default: {} }),
+  },
+  bigBannerGlow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 18,
+    borderWidth: 3,
+    borderColor: '#FF5252',
+    ...Platform.select({ web: { boxShadow: '0 0 28px rgba(255,59,48,0.75)' }, default: {} }),
+  },
+  bigBannerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  bigIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#FF3B30',
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({ web: { boxShadow: '0 0 16px rgba(255,59,48,0.6)' }, default: {} }),
+  },
+  bigTitle: {
+    fontFamily: FONTS.headline,
+    fontSize: 21,
+    color: '#fff',
+    letterSpacing: 1.2,
+    lineHeight: 24,
+  },
+  bigDate: {
+    fontFamily: FONTS.headline,
+    fontSize: 27,
+    color: '#FF3B30',
+    letterSpacing: 2,
+    marginTop: 2,
+    ...Platform.select({ web: { textShadow: '0 0 12px rgba(255,59,48,0.8)' }, default: {} }),
+  },
   banner: {
     flexDirection: 'row',
     alignItems: 'center',

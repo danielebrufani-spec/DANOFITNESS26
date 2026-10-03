@@ -830,3 +830,9 @@ Richiesta: via i nomi delle estrazioni passate, il 1/10 riparte la prima della s
 - `server.py` startup: nuova migrazione one-shot `lottery_winners_reset_2026_10` → `delete_many` su `lottery_winners` con mese < "2026-10". Idempotente (flag in db.migrations). Al prossimo deploy pulisce anche il DB di PRODUZIONE automaticamente.
 - Nessun impatto sull'estrazione automatica del 1/10 ore 12 (biglietti settembre da bookings scalate + wheel_tickets); l'esclusione "vincitori mese precedente" semplicemente non esclude nessuno (fresh start voluto).
 - TESTATO: seed 2 estrazioni finte (2026-06, 2026-08) + restart → log "rimosse 2 estrazioni pre-ottobre"; /api/lottery/winners → []; migrazione non si ripete al secondo avvio.
+
+## Visita medica spostata a SABATO 17 OTTOBRE + banner lampeggiante (3 Ott 2026)
+Richiesta: azzerare le prenotazioni del 3/10, nuova lista per sabato 17/10 (stessi orari), banner Home lampeggiante "PRENOTAZIONE CERTIFICATO MEDICO SABATO 17 OTTOBRE".
+- Backend: `VISITA_MEDICA_DATA = "2026-10-17"`; push admin aggiornata; migrazione one-shot `visite_mediche_reset_2026_10_17` → delete_many prenotazioni data 2026-10-03 (pulisce anche PRODUZIONE al deploy).
+- Frontend `VisitaMedica.tsx`: `VISITA_DATA_LIMITE='2026-10-17'` (banner sparisce dopo il 17/10); tutti i testi aggiornati (InfoHeader, conferma, successo, admin). NUOVO banner cliente (stili bigBanner/bigBannerGlow/bigTitle/bigDate): bordo rosso con glow LAMPEGGIANTE (Animated.loop opacity 0.25↔1, 550ms) + data "SABATO 17 OTTOBRE" rossa pulsante Bebas 27.
+- TESTATO: migrazione (seed 3/10 → rimossa al restart, idempotente), API slots → data 2026-10-17, 30 slot liberi; screenshot banner Home + modal 17/10. NOTA: hot-reload esegue le migrazioni startup appena si salva server.py.

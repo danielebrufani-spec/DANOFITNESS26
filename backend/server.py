@@ -7977,7 +7977,7 @@ async def get_my_certificate_file(current_user: dict = Depends(get_current_user)
 
 
 # ======================== VISITA MEDICA (certificato non agonistico) ========================
-VISITA_MEDICA_DATA = "2026-10-03"
+VISITA_MEDICA_DATA = "2026-10-17"
 
 def _visita_slots():
     slots = []
@@ -8043,7 +8043,7 @@ async def prenota_visita(payload: VisitaPrenotaPayload, current_user: dict = Dep
         await db.users.update_one({"_id": current_user["_id"]}, {"$set": {"telefono": telefono}})
     asyncio.create_task(send_push_to_admins(
         "🩺 Nuova visita medica prenotata!",
-        f"{current_user.get('nome','')} {current_user.get('cognome','')} — sabato 3 ottobre ore {payload.orario}",
+        f"{current_user.get('nome','')} {current_user.get('cognome','')} — sabato 17 ottobre ore {payload.orario}",
         url="/home",
     ))
     return {"success": True, "orario": payload.orario}
@@ -8404,6 +8404,19 @@ async def startup_event():
             logger.info(f"[LOTTERY-RESET] Storico vincitori azzerato: rimosse {res.deleted_count} estrazioni pre-ottobre")
     except Exception as e:
         logger.warning(f"[LOTTERY-RESET storico] {e}")
+
+    # Reset prenotazioni visita medica: nuova data 17/10 (richiesta admin 26/09)
+    try:
+        if not await db.migrations.find_one({"nome": "visite_mediche_reset_2026_10_17"}):
+            res = await db.visite_mediche.delete_many({"data": "2026-10-03"})
+            await db.migrations.insert_one({
+                "nome": "visite_mediche_reset_2026_10_17",
+                "applied_at": now_rome(),
+                "prenotazioni_rimosse": res.deleted_count,
+            })
+            logger.info(f"[VISITA-RESET] Rimosse {res.deleted_count} prenotazioni del 3/10, nuova data 17/10")
+    except Exception as e:
+        logger.warning(f"[VISITA-RESET] {e}")
 
     # Backfill primo_abbonamento_il: data del primo abbonamento vero (prova esclusa)
     try:
