@@ -28,6 +28,7 @@ import { PausaEstivaBanner } from '../../src/components/PausaEstiva';
 import { CertificatoBanner, CertificatoHomeCard } from '../../src/components/CertificatoMedico';
 import { VisitaMedicaBanner, VisitaMedicaAdminBanner } from '../../src/components/VisitaMedica';
 import { FONTS, glow } from '../../src/theme';
+import { requestPopup, releasePopup } from '../../src/utils/popupQueue';
 import { CountUp } from '../../src/components/CountUp';
 
 const FRASI_DIVERTENTI = [
@@ -531,7 +532,7 @@ export default function HomeScreen() {
           const ordersNotif = await apiService.adminPendingOrderNotifications();
           if (ordersNotif.data.count > 0) {
             setNewShopOrders(ordersNotif.data.orders);
-            setShowShopOrdersAlert(true);
+            requestPopup('home-shop-orders', () => setShowShopOrdersAlert(true));
           }
         } catch (e) { /* silenzioso se shop non ancora caricato */ }
       } else {
@@ -665,7 +666,7 @@ export default function HomeScreen() {
       apiService.getNewRegistrations().then(res => {
         if (res.data.count > 0) {
           setNewRegistrations(res.data.nuovi_utenti);
-          setShowNewUsersAlert(true);
+          requestPopup('home-new-users', () => setShowNewUsersAlert(true));
         }
       }).catch(() => {});
 
@@ -673,7 +674,7 @@ export default function HomeScreen() {
       apiService.adminNewTrialActivations().then(res => {
         if (res.data.count > 0) {
           setNewTrialActivations(res.data.nuove_attivazioni_prova);
-          setShowTrialAlert(true);
+          requestPopup('home-trial-activations', () => setShowTrialAlert(true));
         }
       }).catch(() => {});
     }
@@ -699,6 +700,7 @@ export default function HomeScreen() {
 
   const handleDismissNewUsers = async () => {
     setShowNewUsersAlert(false);
+    releasePopup('home-new-users');
     try {
       await apiService.markRegistrationsSeen();
     } catch {}
@@ -706,6 +708,7 @@ export default function HomeScreen() {
 
   const handleDismissTrialAlert = async () => {
     setShowTrialAlert(false);
+    releasePopup('home-trial-activations');
     try {
       await apiService.adminMarkTrialActivationsSeen();
     } catch {}
@@ -963,7 +966,7 @@ export default function HomeScreen() {
         <Modal visible={showNewUsersAlert} transparent animationType="fade" onRequestClose={handleDismissNewUsers}>
           <View style={styles.newUserOverlay}>
             <View style={styles.newUserModal}>
-              <TouchableOpacity style={styles.newUserDismissBtn} onPress={handleDismissNewUsers} data-testid="dismiss-new-users">
+              <TouchableOpacity style={styles.newUserDismissBtn} onPress={handleDismissNewUsers} testID="dismiss-new-users">
                 <Text style={styles.newUserDismissText}>OK, VISTO!</Text>
               </TouchableOpacity>
               <View style={styles.newUserHeader}>
@@ -1027,6 +1030,7 @@ export default function HomeScreen() {
           animationType="fade"
           onRequestClose={async () => {
             setShowShopOrdersAlert(false);
+            releasePopup('home-shop-orders');
             try { await apiService.adminMarkOrdersNotified(); } catch {}
           }}
         >
@@ -1036,9 +1040,10 @@ export default function HomeScreen() {
                 style={[styles.newUserDismissBtn, { backgroundColor: COLORS.primary }]}
                 onPress={async () => {
                   setShowShopOrdersAlert(false);
+                  releasePopup('home-shop-orders');
                   try { await apiService.adminMarkOrdersNotified(); } catch {}
                 }}
-                data-testid="dismiss-new-shop-orders"
+                testID="dismiss-new-shop-orders"
               >
                 <Text style={styles.newUserDismissText}>OK, GESTIRÒ TUTTO!</Text>
               </TouchableOpacity>

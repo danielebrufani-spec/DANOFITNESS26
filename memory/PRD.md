@@ -864,3 +864,13 @@ TESTATO e2e in preview: pick → preview → scadenza → INVIA → IN VERIFICA.
 Richiesta: bottone in Home per inserire/visualizzare/scaricare (per stampa) il certificato.
 - CertificatoMedico.tsx: nuovo export `CertificatoHomeCard` (card Home solo client, badge stato colorato live, apre Modal con CertificatoCard completa; badge ricaricato alla chiusura; testID cert-home-btn / cert-home-modal / cert-home-modal-close). Nuovo helper `downloadCertificatoBlob(fileName)` → download "Certificato_Medico.ext". Aggiunto bottone SCARICA verde (testID cert-download-btn) nella CertificatoCard (anche nel profilo). btnRow con flexWrap (3 bottoni su mobile andavano fuori schermo). home.tsx: <CertificatoHomeCard /> sotto i banner visita medica.
 - TESTATO e2e: card in Home (badge NON CARICATO) → modal → upload → IN VERIFICA → Visualizza+Scarica (download verificato: Certificato_Medico.png) → chiusura → badge aggiornato. Layout bottoni ok dopo flexWrap. Cleanup fatto.
+
+## FIX WhatsApp "numero sconosciuto" + benvenuto nuovi iscritti (6 Ott 2026)
+Bug segnalato: messaggio benvenuto WhatsApp non inviabile a nuovi iscritti con numero non in rubrica (caso Federica Pozzoli).
+ROOT CAUSE: normalizzazione numeri buggata — cellulari IT che iniziano con 39 (391/392/393 TIM ecc.) a 10 cifre NON ricevevano il prefisso +39 (il check !startsWith('39') li saltava) → wa.me apriva un numero inesistente → "sconosciuto".
+Fix:
+- Nuovo helper `src/utils/whatsapp.ts` (waLink/openWhatsApp): normalizzazione robusta (10 cifre con 3→prefisso 39 SEMPRE, gestione 00/+/spazi). Unit test 5 casi ok.
+- Sostituita la vecchia normalizzazione in admin.tsx (lista utenti + flusso concedi prova) e AvvisaClasseModal.tsx.
+- Popup admin "RICHIESTE IN ATTESA": bottone WhatsApp verde per ogni nuovo iscritto (testID reg-whatsapp-{id}) con messaggio di benvenuto precompilato; endpoint /admin/registrazioni/in-attesa ora include telefono.
+- Popup admin home (NUOVO ISCRITTO / PROVE ATTIVATE / ORDINI SHOP) integrati nella popupQueue (si sovrapponevano come il vecchio bug); data-testid→testID sui dismiss.
+TESTATO e2e: login admin → popup in sequenza → popup richieste con 2 iscritti + bottoni WA → click apre api.whatsapp.com/send/?phone=39333... con prefisso corretto e testo precompilato. wa.me apre la chat SENZA bisogno della rubrica. Cleanup utente test fatto.

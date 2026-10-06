@@ -17,6 +17,7 @@ import { COLORS } from '../utils/constants';
 import { useAuth } from '../context/AuthContext';
 import { apiService, CertificatoInfo } from '../services/api';
 import { requestPopup, releasePopup } from '../utils/popupQueue';
+import { openWhatsApp } from '../utils/whatsapp';
 
 export const CERT_STATUS_UI: { [key: string]: { label: string; color: string; icon: any } } = {
   mancante: { label: 'NON CARICATO', color: '#FF9800', icon: 'alert-circle' },
@@ -700,7 +701,7 @@ export const CertificatoObbligoPopup: React.FC = () => {
 export const CertificatiDaConvalidarePopup: React.FC = () => {
   const { isAdmin, user, loading: authLoading } = useAuth();
   const [pending, setPending] = useState<{ user_id: string; nome: string; cognome: string; uploaded_at: string | null }[]>([]);
-  const [registrazioni, setRegistrazioni] = useState<{ user_id: string; nome: string; cognome: string; registrato_il: string | null }[]>([]);
+  const [registrazioni, setRegistrazioni] = useState<{ user_id: string; nome: string; cognome: string; telefono?: string | null; registrato_il: string | null }[]>([]);
   const [visible, setVisible] = useState(false);
   const router = useRouter();
 
@@ -735,6 +736,14 @@ export const CertificatiDaConvalidarePopup: React.FC = () => {
     router.push({ pathname: '/admin', params: { user_search: `${nome} ${cognome}`.trim(), t: String(Date.now()) } });
   };
 
+  const salutaWhatsApp = (r: { nome: string; telefono?: string | null }) => {
+    if (!r.telefono) return;
+    openWhatsApp(
+      r.telefono,
+      `Ciao ${r.nome}! 👋 Benvenuto/a in DanoFitness23! 💪\n\nHo visto la tua iscrizione all'app: a breve ti attivo tutto. Se hai domande scrivimi pure qui!\n\nA presto in palestra! 🔥`
+    );
+  };
+
   return (
     <Modal visible transparent animationType="fade" onRequestClose={chiudi}>
       <View style={styles.modalOverlay}>
@@ -748,14 +757,23 @@ export const CertificatiDaConvalidarePopup: React.FC = () => {
             <>
               <Text style={styles.pendingSection}>🆕 Nuovi iscritti da attivare — tocca per decidere:</Text>
               {registrazioni.map((r) => (
-                <TouchableOpacity key={r.user_id} style={[styles.pendingRow, { borderColor: 'rgba(57,255,20,0.4)', backgroundColor: 'rgba(57,255,20,0.08)' }]} onPress={() => goToUser(r.nome, r.cognome)} activeOpacity={0.85} testID={`reg-pending-row-${r.user_id}`}>
-                  <Ionicons name="person-add" size={20} color="#39FF14" />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.pendingName}>{r.nome} {r.cognome}</Text>
-                    {r.registrato_il && <Text style={styles.pendingDate}>registrato il {r.registrato_il}</Text>}
-                  </View>
-                  <Ionicons name="chevron-forward" size={18} color="#39FF14" />
-                </TouchableOpacity>
+                <View key={r.user_id} style={[styles.pendingRow, { borderColor: 'rgba(57,255,20,0.4)', backgroundColor: 'rgba(57,255,20,0.08)' }]} testID={`reg-pending-row-${r.user_id}`}>
+                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }} onPress={() => goToUser(r.nome, r.cognome)} activeOpacity={0.85}>
+                    <Ionicons name="person-add" size={20} color="#39FF14" />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.pendingName}>{r.nome} {r.cognome}</Text>
+                      {r.registrato_il && <Text style={styles.pendingDate}>registrato il {r.registrato_il}</Text>}
+                    </View>
+                  </TouchableOpacity>
+                  {r.telefono && (
+                    <TouchableOpacity style={styles.waBtn} onPress={() => salutaWhatsApp(r)} testID={`reg-whatsapp-${r.user_id}`}>
+                      <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity onPress={() => goToUser(r.nome, r.cognome)}>
+                    <Ionicons name="chevron-forward" size={18} color="#39FF14" />
+                  </TouchableOpacity>
+                </View>
               ))}
             </>
           )}
@@ -828,6 +846,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     marginTop: 10,
+  },
+  waBtn: {
+    padding: 8,
+    borderRadius: 10,
+    backgroundColor: 'rgba(37,211,102,0.15)',
   },
   pendingSection: {
     color: COLORS.text,

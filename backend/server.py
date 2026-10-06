@@ -8122,7 +8122,7 @@ async def get_registrazioni_in_attesa(admin_user: dict = Depends(get_admin_user)
     out = []
     async for u in db.users.find(
         {"role": "client", "archived": {"$ne": True}, "prova_autorizzata": {"$exists": True}},
-        {"nome": 1, "cognome": 1, "created_at": 1, "prova_autorizzata": 1},
+        {"nome": 1, "cognome": 1, "created_at": 1, "prova_autorizzata": 1, "telefono": 1},
     ):
         if u.get("prova_autorizzata") is not None:
             continue
@@ -8130,6 +8130,7 @@ async def get_registrazioni_in_attesa(admin_user: dict = Depends(get_admin_user)
             "user_id": str(u["_id"]),
             "nome": u.get("nome", ""),
             "cognome": u.get("cognome", ""),
+            "telefono": u.get("telefono"),
             "registrato_il": u["created_at"].strftime("%d/%m/%Y %H:%M") if u.get("created_at") else None,
         })
     return out

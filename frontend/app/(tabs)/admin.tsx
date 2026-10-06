@@ -23,6 +23,7 @@ import {
   User,
 } from '../../src/services/api';
 import { CertificatoAdminModal } from '../../src/components/CertificatoAdminModal';
+import { openWhatsApp } from '../../src/utils/whatsapp';
 import {
   COLORS,
   ATTIVITA_INFO,
@@ -692,13 +693,10 @@ export default function AdminScreen() {
             : 'Fatto! Vuoi mandargli il messaggio di BENTORNATO su WhatsApp (con richiesta scelta abbonamento)?'
         );
         if (sendWa) {
-          let n = (user.telefono || '').replace(/[^\d+]/g, '');
-          if (n.startsWith('+')) n = n.substring(1);
-          if (n && !n.startsWith('39') && n.length === 10) n = '39' + n;
           const msg = decisione === 'concedi'
             ? `Ciao ${user.nome}! 👋 Benvenuto in DanoFitness23! 💪\n\nTi ho sbloccato la SETTIMANA DI PROVA GRATUITA: apri l'app e attivala tu quando vuoi iniziare — da quel momento avrai 7 giorni di lezioni illimitate.\n\nA presto in palestra! 🔥`
             : `Ciao ${user.nome}! 👋 Bentornato in DanoFitness23! 💪\n\nChe piacere riaverti! Fammi sapere quale abbonamento vuoi caricare (8 lezioni, 16 lezioni, mensile...) e te lo attivo subito.\n\nA presto! 🔥`;
-          if (n) window.open(`https://wa.me/${n}?text=${encodeURIComponent(msg)}`, '_blank');
+          openWhatsApp(user.telefono || '', msg);
         }
       }
     } catch (error: any) {
@@ -1593,13 +1591,7 @@ export default function AdminScreen() {
                         testID={`whatsapp-${user.id}`}
                         style={[styles.actionBtnSmall, { backgroundColor: 'rgba(37,211,102,0.15)' }]}
                         onPress={() => {
-                          let n = (user.telefono || '').replace(/[^\d+]/g, '');
-                          if (n.startsWith('+')) n = n.substring(1);
-                          if (n && !n.startsWith('39') && n.length === 10) n = '39' + n;
-                          if (!n) return;
-                          const msg = encodeURIComponent(`Ciao ${user.nome}!`);
-                          const url = `https://wa.me/${n}?text=${msg}`;
-                          if (typeof window !== 'undefined') window.open(url, '_blank');
+                          openWhatsApp(user.telefono || '', `Ciao ${user.nome}!`);
                         }}
                       >
                         <Ionicons name="logo-whatsapp" size={16} color="#25D366" />

@@ -36,12 +36,15 @@ interface Props {
 /** Normalizza il numero telefono in formato wa.me (solo cifre, prefisso 39 se manca) */
 function normalizePhone(raw: string): string | null {
   if (!raw) return null;
-  let n = raw.replace(/[^\d+]/g, '');
-  if (n.startsWith('+')) n = n.substring(1);
+  let n = raw.replace(/\D/g, '');
+  if (n.startsWith('00')) n = n.slice(2);
   if (!n) return null;
-  // Se non inizia con prefisso internazionale, assume Italia (39)
-  if (!n.startsWith('39') && n.length === 10) n = '39' + n;
-  return n;
+  if (n.length === 10 && n.startsWith('3')) {
+    n = '39' + n; // cellulare IT senza prefisso (anche 391/392/393)
+  } else if (!n.startsWith('39') && (n.length === 9 || n.length === 11)) {
+    n = '39' + n;
+  }
+  return n.length >= 10 ? n : null;
 }
 
 const STORAGE_KEY_PREFIX = 'avvisa_classe_sent_';
