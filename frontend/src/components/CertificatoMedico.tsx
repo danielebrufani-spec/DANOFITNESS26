@@ -67,34 +67,38 @@ async function fileToBase64(file: File): Promise<{ base64: string; contentType: 
     });
     return { base64: dataUrl.split(',')[1], contentType: 'application/pdf', previewUrl: null };
   }
-  // Immagini: compressione ALTA QUALITÀ per leggibilità (max 2000px, JPEG 85%)
-  const dataUrl: string = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
+  // Immagini (anche HEIC da iPhone): decodifica + compressione ALTA QUALITÀ (max 2000px, JPEG 85%)
+  const objUrl = URL.createObjectURL(file);
+  try {
+    const dataUrl: string = await new Promise((resolve, reject) => {
       const img = new (window as any).Image();
       img.onload = () => {
-        let { width, height } = img;
-        const MAX = 2000;
-        if (width > MAX || height > MAX) {
-          const scale = Math.min(MAX / width, MAX / height);
-          width = Math.round(width * scale);
-          height = Math.round(height * scale);
+        try {
+          let { width, height } = img;
+          const MAX = 2000;
+          if (width > MAX || height > MAX) {
+            const scale = Math.min(MAX / width, MAX / height);
+            width = Math.round(width * scale);
+            height = Math.round(height * scale);
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return reject(new Error('canvas non disponibile'));
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.85));
+        } catch (err) {
+          reject(err);
         }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return reject(new Error('canvas non disponibile'));
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.85));
       };
       img.onerror = reject;
-      img.src = reader.result as string;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-  return { base64: dataUrl.split(',')[1], contentType: 'image/jpeg', previewUrl: dataUrl };
+      img.src = objUrl;
+    });
+    return { base64: dataUrl.split(',')[1], contentType: 'image/jpeg', previewUrl: dataUrl };
+  } finally {
+    URL.revokeObjectURL(objUrl);
+  }
 }
 
 export async function uploadCertificato(
@@ -117,7 +121,13 @@ export async function uploadCertificato(
   });
   const uploadId = startRes.data.upload_id;
   for (let i = 0; i < total; i++) {
-    await apiService.certUploadChunk({ upload_id: uploadId, index: i, data: base64.slice(i * CHUNK, (i + 1) * CHUNK) });
+    const chunkPayload = { upload_id: uploadId, index: i, data: base64.slice(i * CHUNK, (i + 1) * CHUNK) };
+    try {
+      await apiService.certUploadChunk(chunkPayload);
+    } catch {
+      await new Promise((r) => setTimeout(r, 1500));
+      await apiService.certUploadChunk(chunkPayload);
+    }
     onProgress(5 + Math.round(((i + 1) / total) * 85));
   }
   const finishRes = await apiService.certUploadFinish({ upload_id: uploadId });
@@ -131,6 +141,9 @@ export async function openCertificatoBlob(userId?: string) {
   const url = URL.createObjectURL(res.data as Blob);
   window.open(url, '_blank');
 }
+
+// Riferimento persistente all'input file: evita che iOS Safari lo scarti mentre l'utente sceglie la foto
+let activeFileInput: HTMLInputElement | null = null;
 
 // ---------- Form di caricamento (riusato da profilo cliente e modale admin) ----------
 export const CertUploadForm: React.FC<{
@@ -147,15 +160,28 @@ export const CertUploadForm: React.FC<{
 
   const pickFile = (camera: boolean) => {
     if (Platform.OS !== 'web') return;
+    if (activeFileInput) {
+      activeFileInput.remove();
+      activeFileInput = null;
+    }
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = camera ? 'image/*' : 'application/pdf,image/jpeg,image/png,image/webp';
+    input.accept = camera ? 'image/*' : 'application/pdf,image/*';
     if (camera) input.setAttribute('capture', 'environment');
+    input.style.position = 'fixed';
+    input.style.top = '-1000px';
+    input.style.left = '-1000px';
+    input.style.opacity = '0';
+    document.body.appendChild(input);
+    activeFileInput = input;
     input.onchange = async (e: any) => {
       const f: File | undefined = e.target.files?.[0];
+      input.remove();
+      activeFileInput = null;
       if (!f) return;
-      if (f.size > 10 * 1024 * 1024) {
-        setError('File troppo grande (max 10 MB)');
+      const isPdf = f.type === 'application/pdf';
+      if (f.size > (isPdf ? 10 : 50) * 1024 * 1024) {
+        setError(isPdf ? 'PDF troppo grande (max 10 MB)' : 'Foto troppo grande (max 50 MB)');
         return;
       }
       setError(null);
@@ -164,7 +190,7 @@ export const CertUploadForm: React.FC<{
         const { base64, contentType, previewUrl } = await fileToBase64(f);
         setPicked({ base64, contentType, fileName: f.name || 'certificato.jpg', previewUrl });
       } catch {
-        setError('Impossibile leggere il file, riprova');
+        setError('Impossibile leggere questo file: prova con un PDF, una foto JPG o uno screenshot del certificato');
       } finally {
         setProcessing(false);
       }

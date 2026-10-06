@@ -850,3 +850,12 @@ Richiesta: non intasare la barra admin → pulsante dedicato nel tab "Altro".
 - Nuova pagina `app/(tabs)/certificati.tsx` (guard solo admin, back button, monta ArchivioCertificati) registrata in _layout.tsx con href:null.
 - altro.tsx: card "CERTIFICATI — Archivio medico clienti" (icona medkit ciano #00C8FF, show solo isAdmin) in prima posizione.
 - TESTATO: screenshot card in Altro → pagina archivio funzionante → tab Cert. assente dall'admin.
+
+## FIX caricamento certificato da telefono (6 Ott 2026)
+Bug segnalato su APP LIVE: "non riesco a scegliere il file/foto dal telefono, si blocca, non fa fare nulla".
+Cause trovate in CertificatoMedico.tsx (pickFile/fileToBase64):
+1. input file creato con createElement MA MAI appeso al DOM né referenziato → su iOS Safari viene garbage-collected mentre l'utente sceglie la foto → onchange mai chiamato ("non fa nulla").
+2. accept ristretto 'application/pdf,image/jpeg,image/png,image/webp' → foto HEIC iPhone non selezionabili/convertite.
+3. limite 10MB verificato PRIMA della compressione → foto moderne (>10MB) rifiutate inutilmente.
+Fix: input appeso al body (hidden) + riferimento module-level activeFileInput + cleanup; accept 'application/pdf,image/*'; limite 50MB per foto (compressione canvas → JPEG 2000px 85%) e 10MB per PDF; fileToBase64 usa URL.createObjectURL (decodifica HEIC su Safari) con revoke; retry automatico (1x) per ogni chunk in uploadCertificato; messaggio d'errore più chiaro.
+TESTATO e2e in preview: pick → preview → scadenza → INVIA → IN VERIFICA. IMPORTANTE: il fix va DEPLOYATO per essere attivo sull'app live.
