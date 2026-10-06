@@ -25,7 +25,7 @@ import { PilatesEndBanner } from '../../src/components/PilatesEndBanner';
 import { SummerSilhouettes } from '../../src/components/SummerSilhouettes';
 import { NuoviOrariBanner } from '../../src/components/NuoviOrariBanner';
 import { PausaEstivaBanner } from '../../src/components/PausaEstiva';
-import { CertificatoBanner } from '../../src/components/CertificatoMedico';
+import { CertificatoBanner, CertificatoHomeCard } from '../../src/components/CertificatoMedico';
 import { VisitaMedicaBanner, VisitaMedicaAdminBanner } from '../../src/components/VisitaMedica';
 import { FONTS, glow } from '../../src/theme';
 import { CountUp } from '../../src/components/CountUp';
@@ -1111,6 +1111,9 @@ export default function HomeScreen() {
         {/* Visita medica - certificato non agonistico */}
         <VisitaMedicaBanner />
         <VisitaMedicaAdminBanner />
+
+        {/* Certificato medico: carica / visualizza / scarica */}
+        <CertificatoHomeCard />
 
         {/* AVVISI LEZIONI ANNULLATE (dinamico) */}
         {cancelledLessons.filter((c: any) => {

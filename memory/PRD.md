@@ -859,3 +859,8 @@ Cause trovate in CertificatoMedico.tsx (pickFile/fileToBase64):
 3. limite 10MB verificato PRIMA della compressione → foto moderne (>10MB) rifiutate inutilmente.
 Fix: input appeso al body (hidden) + riferimento module-level activeFileInput + cleanup; accept 'application/pdf,image/*'; limite 50MB per foto (compressione canvas → JPEG 2000px 85%) e 10MB per PDF; fileToBase64 usa URL.createObjectURL (decodifica HEIC su Safari) con revoke; retry automatico (1x) per ogni chunk in uploadCertificato; messaggio d'errore più chiaro.
 TESTATO e2e in preview: pick → preview → scadenza → INVIA → IN VERIFICA. IMPORTANTE: il fix va DEPLOYATO per essere attivo sull'app live.
+
+## Card CERTIFICATO MEDICO nella Home cliente (6 Ott 2026)
+Richiesta: bottone in Home per inserire/visualizzare/scaricare (per stampa) il certificato.
+- CertificatoMedico.tsx: nuovo export `CertificatoHomeCard` (card Home solo client, badge stato colorato live, apre Modal con CertificatoCard completa; badge ricaricato alla chiusura; testID cert-home-btn / cert-home-modal / cert-home-modal-close). Nuovo helper `downloadCertificatoBlob(fileName)` → download "Certificato_Medico.ext". Aggiunto bottone SCARICA verde (testID cert-download-btn) nella CertificatoCard (anche nel profilo). btnRow con flexWrap (3 bottoni su mobile andavano fuori schermo). home.tsx: <CertificatoHomeCard /> sotto i banner visita medica.
+- TESTATO e2e: card in Home (badge NON CARICATO) → modal → upload → IN VERIFICA → Visualizza+Scarica (download verificato: Certificato_Medico.png) → chiusura → badge aggiornato. Layout bottoni ok dopo flexWrap. Cleanup fatto.

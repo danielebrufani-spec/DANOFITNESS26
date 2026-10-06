@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Platform,
   Image,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -140,6 +141,19 @@ export async function openCertificatoBlob(userId?: string) {
   const res = userId ? await apiService.adminGetCertificatoBlob(userId) : await apiService.getMioCertificatoBlob();
   const url = URL.createObjectURL(res.data as Blob);
   window.open(url, '_blank');
+}
+
+export async function downloadCertificatoBlob(fileName?: string | null) {
+  if (Platform.OS !== 'web') return;
+  const res = await apiService.getMioCertificatoBlob();
+  const url = URL.createObjectURL(res.data as Blob);
+  const ext = fileName && fileName.includes('.') ? fileName.slice(fileName.lastIndexOf('.')) : '';
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Certificato_Medico${ext}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }
 
 // Riferimento persistente all'input file: evita che iOS Safari lo scarti mentre l'utente sceglie la foto
@@ -299,6 +313,7 @@ export const CertificatoCard: React.FC = () => {
   const [info, setInfo] = useState<CertificatoInfo | null>(null);
   const [showUpload, setShowUpload] = useState(false);
   const [opening, setOpening] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -323,6 +338,15 @@ export const CertificatoCard: React.FC = () => {
       await openCertificatoBlob();
     } catch {}
     setOpening(false);
+  };
+
+  const handleDownload = async () => {
+    if (downloading) return;
+    setDownloading(true);
+    try {
+      await downloadCertificatoBlob(info?.file_name);
+    } catch {}
+    setDownloading(false);
   };
 
   const status = info?.status || 'mancante';
@@ -387,6 +411,18 @@ export const CertificatoCard: React.FC = () => {
               )}
             </TouchableOpacity>
           )}
+          {status !== 'mancante' && (
+            <TouchableOpacity style={[styles.viewBtn, { borderColor: 'rgba(57,255,20,0.5)' }]} onPress={handleDownload} testID="cert-download-btn">
+              {downloading ? (
+                <ActivityIndicator color="#39FF14" size="small" />
+              ) : (
+                <>
+                  <Ionicons name="download" size={16} color="#39FF14" />
+                  <Text style={[styles.viewBtnText, { color: '#39FF14' }]}>Scarica</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
           <TouchableOpacity style={styles.uploadBtn} onPress={() => setShowUpload(true)} testID="cert-upload-btn">
             <Ionicons name="cloud-upload" size={16} color="#FFF" />
             <Text style={styles.uploadBtnText}>{status === 'mancante' ? 'CARICA' : status === 'rifiutato' ? 'RICARICA' : 'SOSTITUISCI'}</Text>
@@ -406,6 +442,115 @@ export const CertificatoCard: React.FC = () => {
     </View>
   );
 };
+
+// ---------- Bottone in Home: carica / visualizza / scarica ----------
+export const CertificatoHomeCard: React.FC = () => {
+  const { isAdmin, isIstruttore, user } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [status, setStatus] = useState<string>('mancante');
+
+  const loadStatus = useCallback(() => {
+    apiService.getMioCertificato().then((r) => setStatus(r.data.status || 'mancante')).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (isAdmin || isIstruttore || !user) return;
+    loadStatus();
+  }, [isAdmin, isIstruttore, user, loadStatus]);
+
+  if (isAdmin || isIstruttore || !user || user.archived) return null;
+
+  const ui = CERT_STATUS_UI[status] || CERT_STATUS_UI.mancante;
+
+  return (
+    <>
+      <TouchableOpacity style={homeCardStyles.card} onPress={() => setOpen(true)} activeOpacity={0.85} testID="cert-home-btn">
+        <View style={homeCardStyles.iconWrap}>
+          <Ionicons name="document-text" size={24} color="#fff" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={homeCardStyles.title}>CERTIFICATO MEDICO</Text>
+          <View style={[homeCardStyles.badge, { borderColor: ui.color }]}>
+            <Ionicons name={ui.icon} size={12} color={ui.color} />
+            <Text style={[homeCardStyles.badgeText, { color: ui.color }]}>{ui.label}</Text>
+          </View>
+          <Text style={homeCardStyles.sub}>Carica, visualizza o scarica il tuo certificato</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={22} color={COLORS.textSecondary} />
+      </TouchableOpacity>
+
+      <Modal visible={open} transparent animationType="slide" onRequestClose={() => { setOpen(false); loadStatus(); }}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { maxHeight: '90%', padding: 14 }]} testID="cert-home-modal">
+            <TouchableOpacity
+              style={homeCardStyles.closeBtn}
+              onPress={() => { setOpen(false); loadStatus(); }}
+              testID="cert-home-modal-close"
+            >
+              <Ionicons name="close" size={26} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <CertificatoCard />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+    </>
+  );
+};
+
+const homeCardStyles = StyleSheet.create({
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0,200,255,0.35)',
+    padding: 14,
+    marginBottom: 12,
+  },
+  iconWrap: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: '#0077B6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#fff',
+    letterSpacing: 0.8,
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginTop: 4,
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.6,
+  },
+  sub: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginTop: 4,
+  },
+  closeBtn: {
+    alignSelf: 'flex-end',
+    padding: 4,
+  },
+});
 
 // ---------- Banner promemoria in Home ----------
 export const CertificatoBanner: React.FC = () => {
@@ -752,6 +897,7 @@ const styles = StyleSheet.create({
   },
   btnRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
     marginTop: 14,
   },
