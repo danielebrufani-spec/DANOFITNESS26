@@ -240,7 +240,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="premi"
         options={{
-          title: 'Ruota e Quiz',
+          title: 'Ruota Quiz Crono',
           href: (isIstruttore || isArchived) ? null : '/premi',
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons 
@@ -263,7 +263,7 @@ export default function TabsLayout() {
                 width: 70,
               }}
             >
-              Ruota{'\n'}Quiz
+              Ruota Quiz{'\n'}Crono
             </Text>
           ),
         }}
