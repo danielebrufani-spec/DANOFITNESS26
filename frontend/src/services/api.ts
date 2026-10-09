@@ -362,6 +362,8 @@ export const apiService = {
 
   // Ruota della Fortuna
   getWheelStatus: () => api.get('/wheel/status'),
+  getTimerGameStatus: () => api.get('/timer-game/status'),
+  playTimerGame: (elapsedMs: number) => api.post('/timer-game/play', { elapsed_ms: elapsedMs }),
   spinWheel: () => api.post('/wheel/spin'),
 
   // Leaderboard settimanale

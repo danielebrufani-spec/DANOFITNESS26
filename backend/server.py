@@ -6600,6 +6600,79 @@ async def spin_wheel(current_user: dict = Depends(get_current_user)):
     }
 
 
+# ==================== GIOCO "STOP AL 10" (cronometro) ====================
+TIMER_GAME_WIN_MIN_MS = 9950
+TIMER_GAME_WIN_MAX_MS = 10050
+TIMER_GAME_PREMIO_BIGLIETTI = 3
+
+
+class TimerPlayRequest(BaseModel):
+    elapsed_ms: int
+
+
+@api_router.get("/timer-game/status")
+async def get_timer_game_status(current_user: dict = Depends(get_current_user)):
+    """Verifica se l'utente può giocare a Stop al 10 oggi"""
+    user_id = str(current_user["_id"])
+    today = today_rome()
+    play_today, allenamento_oggi = await asyncio.gather(
+        db.timer_plays.find_one({"user_id": user_id, "data": today}),
+        db.bookings.find_one({"user_id": user_id, "data_lezione": today, "lezione_scalata": True}),
+    )
+    if play_today:
+        return {
+            "can_play": False,
+            "reason": "already_played",
+            "last_elapsed_ms": play_today.get("elapsed_ms"),
+            "last_vinto": play_today.get("vinto", False),
+            "message": "Hai già giocato oggi! Torna dopo il prossimo allenamento ⏱️",
+        }
+    if not allenamento_oggi:
+        return {"can_play": False, "reason": "no_workout", "message": "Completa un allenamento oggi per sbloccare il cronometro! 💪"}
+    return {"can_play": True, "message": "Ferma il cronometro a 10.00! ⏱️"}
+
+
+@api_router.post("/timer-game/play")
+async def play_timer_game(payload: TimerPlayRequest, current_user: dict = Depends(get_current_user)):
+    """Registra il tentativo: vince 3 biglietti chi ferma tra 9.95 e 10.05"""
+    user_id = str(current_user["_id"])
+    today = today_rome()
+    if payload.elapsed_ms < 500 or payload.elapsed_ms > 120000:
+        raise HTTPException(status_code=400, detail="Tempo non valido")
+    play_today = await db.timer_plays.find_one({"user_id": user_id, "data": today})
+    if play_today:
+        raise HTTPException(status_code=400, detail="Hai già giocato oggi!")
+    allenamento_oggi = await db.bookings.find_one({"user_id": user_id, "data_lezione": today, "lezione_scalata": True})
+    if not allenamento_oggi:
+        raise HTTPException(status_code=400, detail="Devi completare un allenamento per giocare!")
+    vinto = TIMER_GAME_WIN_MIN_MS <= payload.elapsed_ms <= TIMER_GAME_WIN_MAX_MS
+    biglietti = TIMER_GAME_PREMIO_BIGLIETTI if vinto else 0
+    if biglietti:
+        current_month = datetime.now(ROME_TZ).strftime("%Y-%m")
+        await db.wheel_tickets.update_one(
+            {"user_id": user_id, "mese": current_month},
+            {"$inc": {"biglietti": biglietti}},
+            upsert=True,
+        )
+    await db.timer_plays.insert_one({
+        "user_id": user_id,
+        "data": today,
+        "elapsed_ms": payload.elapsed_ms,
+        "vinto": vinto,
+        "biglietti": biglietti,
+        "timestamp": now_rome(),
+    })
+    secs = payload.elapsed_ms / 1000
+    logger.info(f"[TIMER-GAME] {current_user.get('nome')} ha fermato a {secs:.2f}s -> {'VINTO' if vinto else 'perso'}")
+    return {
+        "success": True,
+        "vinto": vinto,
+        "elapsed_ms": payload.elapsed_ms,
+        "biglietti_vinti": biglietti,
+        "message": "PERFETTO! +3 BIGLIETTI 🎟️" if vinto else f"{secs:.2f}... Ci sei quasi! Riprova domani 💪",
+    }
+
+
 @api_router.get("/wheel/prizes")
 async def get_wheel_prizes():
     """Ottieni la lista dei premi della ruota"""
@@ -8412,6 +8485,7 @@ async def startup_event():
         await db.blocked_dates.create_index("data", unique=True)
         await db.medals.create_index("user_id")
         await db.wheel_spins.create_index([("user_id", 1), ("data", 1)])
+        await db.timer_plays.create_index([("user_id", 1), ("data", 1)])
         await db.quiz_answers.create_index([("user_id", 1), ("date", 1)])
         await db.meal_plans.create_index([("user_id", 1), ("mese", 1)])
         await db.nutrition_profiles.create_index("user_id", unique=True)

@@ -874,3 +874,10 @@ Fix:
 - Popup admin "RICHIESTE IN ATTESA": bottone WhatsApp verde per ogni nuovo iscritto (testID reg-whatsapp-{id}) con messaggio di benvenuto precompilato; endpoint /admin/registrazioni/in-attesa ora include telefono.
 - Popup admin home (NUOVO ISCRITTO / PROVE ATTIVATE / ORDINI SHOP) integrati nella popupQueue (si sovrapponevano come il vecchio bug); data-testid→testID sui dismiss.
 TESTATO e2e: login admin → popup in sequenza → popup richieste con 2 iscritti + bottoni WA → click apre api.whatsapp.com/send/?phone=39333... con prefisso corretto e testo precompilato. wa.me apre la chat SENZA bisogno della rubrica. Cleanup utente test fatto.
+
+## GIOCO "STOP AL 10" — cronometro (9 Ott 2026)
+Richiesta: gioco cronometro da fermare a 10 precisi → 3 biglietti lotteria; giocabile dopo ogni allenamento come ruota/quiz; schermata full-screen d'impatto col logo; regolamento chiaro; vittoria 9.95–10.05; coriandoli su vittoria, messaggio "ci sei quasi" su sconfitta.
+- Backend: GET /api/timer-game/status + POST /api/timer-game/play (vinto se 9950<=ms<=10050 → +3 su wheel_tickets mese; 1/die, sbloccato da booking lezione_scalata oggi; validazione 500-120000ms; collection timer_plays con index user+data).
+- Frontend: `src/components/TimerGame.tsx` (TimerGameSection card nel tab Ruota Quiz/premi.tsx dopo la ruota + TimerGameScreen Modal full-screen: display Bebas 104px rosso glow via requestAnimationFrame+performance.now, pulsante rotondo 170px col LOGO assets/images/logo.jpg START(rosso pulse)/STOP(oro), vittoria→display verde+ConfettiBurst+PERFETTO!+3 BIGLIETTI, sconfitta→msg "X.XX... Ci sei quasi! Riprova domani", REGOLAMENTO 5 punti, stati bloccato/già giocato con risultato nella card). api.ts: getTimerGameStatus/playTimerGame.
+- TESTATO e2e: curl (status→play vinto 10.02→+3 biglietti→replay bloccato→status già giocato; sconfitta 10.37 msg ok) + UI Playwright (card→schermo→START→STOP→risultato→card aggiornata "VINTO"). Cleanup completo (plays, booking fake, -6 biglietti test).
+- NOTA TEST: i click Playwright sul bottone animato (pulse) richiedono force=True.

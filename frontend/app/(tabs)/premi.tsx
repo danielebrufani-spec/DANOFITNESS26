@@ -25,6 +25,7 @@ import { ConfettiBurst } from '../../src/components/ConfettiBurst';
 
 // Colori Tactical Obsidian (Functional/CrossFit theme)
 import { BRAND_IMAGES } from '../../src/utils/constants';
+import { TimerGameSection } from '../../src/components/TimerGame';
 
 const VEGAS_COLORS = {
   background: '#0A0A0C',
@@ -968,6 +969,9 @@ export default function PremiScreen() {
             </Animated.View>
           </View>
         </Modal>
+
+        {/* ===== STOP AL 10 - Gioco del Cronometro ===== */}
+        {!isAdmin && <TimerGameSection onPlayed={loadData} />}
 
         {/* ===== QUIZ BONUS - Collegato alla Ruota! ===== */}
         {!isAdmin && quiz && (
