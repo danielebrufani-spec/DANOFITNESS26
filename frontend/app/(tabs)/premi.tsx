@@ -151,6 +151,9 @@ export default function PremiScreen() {
   const [correctPrize3, setCorrectPrize3] = useState('');
   const [savingCorrection, setSavingCorrection] = useState(false);
 
+  // Tab giochi: Ruota | Quiz | Crono
+  const [gameTab, setGameTab] = useState<'ruota' | 'quiz' | 'crono'>('ruota');
+
   // Ruota della Fortuna
   const [wheelStatus, setWheelStatus] = useState<WheelStatus | null>(null);
   const [isSpinning, setIsSpinning] = useState(false);
@@ -810,8 +813,37 @@ export default function PremiScreen() {
           </Animated.View>
         )}
 
+        {/* ===== TAB GIOCHI: RUOTA | QUIZ | CRONO ===== */}
+        <View style={styles.gameTabsRow} data-testid="game-tabs">
+          {([
+            { key: 'ruota', label: '🎰 RUOTA' },
+            { key: 'quiz', label: '🧠 QUIZ' },
+            { key: 'crono', label: '⏱️ CRONO' },
+          ] as const).map((t) => (
+            <TouchableOpacity
+              key={t.key}
+              style={[styles.gameTabBtn, gameTab === t.key && styles.gameTabBtnActive]}
+              onPress={() => setGameTab(t.key)}
+              data-testid={`game-tab-${t.key}`}
+            >
+              <Text style={[styles.gameTabText, gameTab === t.key && styles.gameTabTextActive]}>
+                {t.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Admin: ruota e quiz riservati ai clienti */}
+        {isAdmin && gameTab !== 'crono' && (
+          <View style={styles.adminGameNote} data-testid="admin-game-note">
+            <Text style={styles.adminGameNoteText}>
+              🎰 Ruota e Quiz sono riservati ai clienti.{'\n'}Come admin puoi provare il CRONO! ⏱️
+            </Text>
+          </View>
+        )}
+
         {/* ===== RUOTA DELLA FORTUNA - STILE ROULETTE ===== */}
-        {!isAdmin && (
+        {!isAdmin && gameTab === 'ruota' && (
           <View style={styles.wheelSection}>
             <View style={styles.wheelHeader}>
               <Text style={styles.wheelTitle}>🎰 RUOTA DELLA FORTUNA 🎰</Text>
@@ -971,10 +1003,10 @@ export default function PremiScreen() {
         </Modal>
 
         {/* ===== STOP AL 10 - Gioco del Cronometro ===== */}
-        {!isAdmin && <TimerGameSection onPlayed={loadData} />}
+        {gameTab === 'crono' && <TimerGameSection onPlayed={loadData} />}
 
         {/* ===== QUIZ BONUS - Collegato alla Ruota! ===== */}
-        {!isAdmin && quiz && (
+        {!isAdmin && gameTab === 'quiz' && quiz && (
           <View style={styles.quizSection}>
             <View style={styles.quizHeader}>
               <Text style={styles.quizIcon}>🧠</Text>
@@ -2520,6 +2552,48 @@ const styles = StyleSheet.create({
   },
 
   // ===== RUOTA DELLA FORTUNA - STILE ROULETTE CON SPICCHI =====
+  gameTabsRow: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 14,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255,215,0,0.3)',
+  },
+  gameTabBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  gameTabBtnActive: {
+    backgroundColor: VEGAS_COLORS.gold,
+  },
+  gameTabText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: VEGAS_COLORS.textSecondary,
+    letterSpacing: 1,
+  },
+  gameTabTextActive: {
+    color: '#000',
+  },
+  adminGameNote: {
+    backgroundColor: VEGAS_COLORS.card,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,215,0,0.3)',
+    alignItems: 'center',
+  },
+  adminGameNoteText: {
+    color: VEGAS_COLORS.textSecondary,
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
   wheelSection: {
     backgroundColor: VEGAS_COLORS.card,
     borderRadius: 24,

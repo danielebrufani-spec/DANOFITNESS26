@@ -881,3 +881,10 @@ Richiesta: gioco cronometro da fermare a 10 precisi → 3 biglietti lotteria; gi
 - Frontend: `src/components/TimerGame.tsx` (TimerGameSection card nel tab Ruota Quiz/premi.tsx dopo la ruota + TimerGameScreen Modal full-screen: display Bebas 104px rosso glow via requestAnimationFrame+performance.now, pulsante rotondo 170px col LOGO assets/images/logo.jpg START(rosso pulse)/STOP(oro), vittoria→display verde+ConfettiBurst+PERFETTO!+3 BIGLIETTI, sconfitta→msg "X.XX... Ci sei quasi! Riprova domani", REGOLAMENTO 5 punti, stati bloccato/già giocato con risultato nella card). api.ts: getTimerGameStatus/playTimerGame.
 - TESTATO e2e: curl (status→play vinto 10.02→+3 biglietti→replay bloccato→status già giocato; sconfitta 10.37 msg ok) + UI Playwright (card→schermo→START→STOP→risultato→card aggiornata "VINTO"). Cleanup completo (plays, booking fake, -6 biglietti test).
 - NOTA TEST: i click Playwright sul bottone animato (pulse) richiedono force=True.
+
+## TAB GIOCHI RUOTA | QUIZ | CRONO + sblocco crono admin (9 Ott 2026)
+Richiesta: 1 tentativo crono per allenamento (come ruota/quiz — già così), chi si è allenato oggi può giocare (già così: check booking lezione_scalata oggi), tab RUOTA|QUIZ|CRONO nella pagina premi, sblocco giocata per Daniele (admin).
+- premi.tsx: nuovo state gameTab ('ruota'|'quiz'|'crono', default ruota) + tab bar (data-testid game-tabs / game-tab-{key}) sotto la card biglietti; ruota visibile solo su tab ruota, quiz su tab quiz, TimerGameSection su tab crono (ora visibile ANCHE all'admin). Card adminGameNote su ruota/quiz per admin ("riservati ai clienti").
+- server.py: /timer-game/status e /timer-game/play — bypass requisito allenamento se role==admin (resta 1/die). Funziona anche in produzione dopo deploy.
+- TESTATO: curl admin can_play=true senza booking, client no_workout; UI Playwright client (tab switch ok) e admin (CRONO→GIOCA ORA→schermata START ok). Giocata admin NON consumata (la prova Daniele).
+- NOTA: per vederlo live serve "Save to GitHub" (Vercel/Render).

@@ -6615,6 +6615,7 @@ async def get_timer_game_status(current_user: dict = Depends(get_current_user)):
     """Verifica se l'utente può giocare a Stop al 10 oggi"""
     user_id = str(current_user["_id"])
     today = today_rome()
+    is_admin = current_user.get("role") == "admin"
     play_today, allenamento_oggi = await asyncio.gather(
         db.timer_plays.find_one({"user_id": user_id, "data": today}),
         db.bookings.find_one({"user_id": user_id, "data_lezione": today, "lezione_scalata": True}),
@@ -6627,7 +6628,7 @@ async def get_timer_game_status(current_user: dict = Depends(get_current_user)):
             "last_vinto": play_today.get("vinto", False),
             "message": "Hai già giocato oggi! Torna dopo il prossimo allenamento ⏱️",
         }
-    if not allenamento_oggi:
+    if not allenamento_oggi and not is_admin:
         return {"can_play": False, "reason": "no_workout", "message": "Completa un allenamento oggi per sbloccare il cronometro! 💪"}
     return {"can_play": True, "message": "Ferma il cronometro a 10.00! ⏱️"}
 
@@ -6642,8 +6643,9 @@ async def play_timer_game(payload: TimerPlayRequest, current_user: dict = Depend
     play_today = await db.timer_plays.find_one({"user_id": user_id, "data": today})
     if play_today:
         raise HTTPException(status_code=400, detail="Hai già giocato oggi!")
+    is_admin = current_user.get("role") == "admin"
     allenamento_oggi = await db.bookings.find_one({"user_id": user_id, "data_lezione": today, "lezione_scalata": True})
-    if not allenamento_oggi:
+    if not allenamento_oggi and not is_admin:
         raise HTTPException(status_code=400, detail="Devi completare un allenamento per giocare!")
     vinto = TIMER_GAME_WIN_MIN_MS <= payload.elapsed_ms <= TIMER_GAME_WIN_MAX_MS
     biglietti = TIMER_GAME_PREMIO_BIGLIETTI if vinto else 0
