@@ -6601,8 +6601,8 @@ async def spin_wheel(current_user: dict = Depends(get_current_user)):
 
 
 # ==================== GIOCO "STOP AL 10" (cronometro) ====================
-TIMER_GAME_WIN_MIN_MS = 9950
-TIMER_GAME_WIN_MAX_MS = 10050
+TIMER_GAME_WIN_MIN_MS = 9990
+TIMER_GAME_WIN_MAX_MS = 10010
 TIMER_GAME_PREMIO_BIGLIETTI = 3
 
 
@@ -6635,7 +6635,7 @@ async def get_timer_game_status(current_user: dict = Depends(get_current_user)):
 
 @api_router.post("/timer-game/play")
 async def play_timer_game(payload: TimerPlayRequest, current_user: dict = Depends(get_current_user)):
-    """Registra il tentativo: vince 3 biglietti chi ferma tra 9.95 e 10.05"""
+    """Registra il tentativo: vince 3 biglietti chi ferma tra 9.99 e 10.01"""
     user_id = str(current_user["_id"])
     today = today_rome()
     if payload.elapsed_ms < 500 or payload.elapsed_ms > 120000:

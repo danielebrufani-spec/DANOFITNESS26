@@ -210,7 +210,7 @@ const TimerGameScreen: React.FC<{ status: TimerStatus | null; onClose: (played: 
             <Text style={styles.ruleRow}>1️⃣  Completa un allenamento per sbloccare la giocata</Text>
             <Text style={styles.ruleRow}>2️⃣  Hai <Text style={styles.ruleBold}>1 tentativo al giorno</Text></Text>
             <Text style={styles.ruleRow}>3️⃣  Premi START, poi STOP più vicino possibile a <Text style={styles.ruleBold}>10.00</Text></Text>
-            <Text style={styles.ruleRow}>4️⃣  Se ti fermi tra <Text style={styles.ruleBold}>9.95 e 10.05</Text> vinci <Text style={styles.ruleBold}>3 BIGLIETTI LOTTERIA 🎟️</Text></Text>
+            <Text style={styles.ruleRow}>4️⃣  Se ti fermi tra <Text style={styles.ruleBold}>9.99 e 10.01</Text> vinci <Text style={styles.ruleBold}>3 BIGLIETTI LOTTERIA 🎟️</Text></Text>
             <Text style={styles.ruleRow}>5️⃣  Niente conto alla rovescia sullo schermo: conta nella tua testa! 🧠</Text>
           </View>
         </ScrollView>
