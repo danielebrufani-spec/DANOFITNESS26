@@ -888,3 +888,12 @@ Richiesta: 1 tentativo crono per allenamento (come ruota/quiz — già così), c
 - server.py: /timer-game/status e /timer-game/play — bypass requisito allenamento se role==admin (resta 1/die). Funziona anche in produzione dopo deploy.
 - TESTATO: curl admin can_play=true senza booking, client no_workout; UI Playwright client (tab switch ok) e admin (CRONO→GIOCA ORA→schermata START ok). Giocata admin NON consumata (la prova Daniele).
 - NOTA: per vederlo live serve "Save to GitHub" (Vercel/Render).
+
+## FIX Archivio Certificati — Linda Giampaoli mancante (9 Ott 2026)
+Bug: certificato di Linda Giampaoli non visibile tra gli ATTIVI dell'archivio (live).
+ROOT CAUSE (diagnosi via API live Render, sola lettura): il suo cert aveva scadenza RINNOVATA al 2027-10-02 ma il flag `scaduto_processato=True` del vecchio cert non era mai stato azzerato (il PUT admin scadenza non resettava il flag) → l'archivio lo classificava tra gli scaduti.
+Fix in server.py:
+- /admin/certificati/archivio: auto-fix — se scaduto_processato=True ma scadenza >= oggi e file non eliminato → va tra gli ATTIVI e il flag viene azzerato in DB (self-healing al primo caricamento archivio).
+- PUT /admin/certificato/{user_id}: rinnovo scadenza futura (file presente) → resetta scaduto_processato.
+TESTATO: riprodotto il caso in locale (cert flag=True scadenza 2027) → archivio lo mostra in attivi + flag azzerato in DB. Cleanup fatto.
+NOTA: su live serve Save to GitHub + redeploy Render; poi basta aprire l'archivio e Linda ricompare da sola.

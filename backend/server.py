@@ -8336,6 +8336,7 @@ async def admin_archivio_certificati(admin_user: dict = Depends(get_admin_user))
             pass
     users = {str(u["_id"]): u for u in await db.users.find({"_id": {"$in": ids}}).to_list(2000)}
     attivi, scaduti = [], []
+    fixed_ids = []
     for c in certs:
         u = users.get(c["user_id"])
         if not u:
@@ -8351,13 +8352,21 @@ async def admin_archivio_certificati(admin_user: dict = Depends(get_admin_user))
             "uploaded_at": c["uploaded_at"].strftime("%d/%m/%Y") if c.get("uploaded_at") else None,
             "file_eliminato": bool(c.get("file_eliminato")),
         }
-        if c.get("scaduto_processato") or (scad and scad < oggi_str):
+        flag_scaduto = bool(c.get("scaduto_processato"))
+        # Auto-fix: scadenza rinnovata ma flag vecchio rimasto → torna tra gli attivi
+        if flag_scaduto and scad and scad >= oggi_str and not c.get("file_eliminato"):
+            flag_scaduto = False
+            fixed_ids.append(c["_id"])
+        if flag_scaduto or (scad and scad < oggi_str):
             scaduti.append(base)
             continue
         if base["stato_convalida"] == "rifiutato":
             continue
         base["giorni_alla_scadenza"] = (datetime.strptime(scad, "%Y-%m-%d").date() - oggi).days if scad else None
         attivi.append(base)
+    if fixed_ids:
+        await db.medical_certificates.update_many({"_id": {"$in": fixed_ids}}, {"$set": {"scaduto_processato": False}})
+        logger.info(f"[CERT-ARCHIVIO] Auto-fix flag scaduto_processato su {len(fixed_ids)} certificati rinnovati")
     attivi.sort(key=lambda x: (x["cognome"].lower(), x["nome"].lower()))
     scaduti.sort(key=lambda x: x.get("scadenza") or "", reverse=True)
     return {"attivi": attivi, "scaduti_recenti": scaduti[:20], "totale_attivi": len(attivi)}
@@ -8383,9 +8392,13 @@ async def admin_get_certificate_file(user_id: str, admin_user: dict = Depends(ge
 @api_router.put("/admin/certificato/{user_id}")
 async def admin_update_certificate(user_id: str, payload: CertScadenzaUpdate, admin_user: dict = Depends(get_admin_user)):
     _validate_cert_scadenza(payload.scadenza)
-    res = await db.medical_certificates.update_one({"user_id": user_id}, {"$set": {"scadenza": payload.scadenza}})
-    if res.matched_count == 0:
+    cert = await db.medical_certificates.find_one({"user_id": user_id})
+    if not cert:
         raise HTTPException(status_code=404, detail="Nessun certificato per questo utente")
+    update = {"scadenza": payload.scadenza}
+    if payload.scadenza >= now_rome().date().isoformat() and not cert.get("file_eliminato"):
+        update["scaduto_processato"] = False
+    await db.medical_certificates.update_one({"user_id": user_id}, {"$set": update})
     cert = await db.medical_certificates.find_one({"user_id": user_id})
     return _cert_public_info(cert)
 
