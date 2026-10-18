@@ -917,3 +917,9 @@ Implementazione in server.py:
 - Script /app/memory/migrate_certs_live.py: da QUESTO pod (che può leggere l'objstore) scarica i file vecchi e li carica nel GridFS del live via API admin. DA ESEGUIRE dopo il deploy Render.
 TESTATO in locale: upload→view→replace (vecchio file eliminato, 1 solo file per utente)→admin view→health ok→migrazione carica ok. Cleanup dati test fatto.
 PENDING: utente deve fare Save to GitHub + deploy Render, poi eseguire lo script di migrazione e verificare file Linda (atteso 200).
+
+## MIGRAZIONE COMPLETATA SUL LIVE (18 Ott 2026)
+- Utente ha deployato su Render → /admin/storage/health live: ok:true (GridFS su Atlas funzionante)
+- Eseguito /app/memory/migrate_certs_live.py: 28/28 file migrati dall'objstore Emergent al GridFS live, 0 errori
+- Verifica finale: file Linda dal live → 200, 907KB, %PDF valido. Lista da migrare: 0
+- PROBLEMA CERTIFICATI SUL LIVE: RISOLTO DEFINITIVAMENTE (upload, visualizzazione, download ora indipendenti da Emergent infra)
