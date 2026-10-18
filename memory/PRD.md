@@ -905,3 +905,15 @@ Fix:
 - Nuovo endpoint GET /api/admin/storage/health (admin): prova put/get/delete e riporta il punto esatto di errore (env/put/get). Testato in locale: ok:true.
 - Istruzioni utente: aggiornare env var EMERGENT_LLM_KEY su Render (valore da Emergent → Profile → Manage plan → Universal Key, verificare credito) + redeploy.
 NOTA: se i file vecchi erano stati caricati con una chiave diversa potrebbero non riaprirsi (namespace per chiave) → eventuale ri-caricamento.
+
+## STORAGE CERTIFICATI → MongoDB GridFS (18 Ott 2026)
+Causa definitiva problema upload live: Emergent objstore risponde **403 Forbidden da Render** (IP allowlist: funziona solo dentro infra Emergent). Chiave su Render era corretta e identica a quella del preview.
+Scelta utente: opzione A — file salvati in MongoDB (GridFS).
+Implementazione in server.py:
+- _storage_put/_storage_get/_storage_delete riscritte su AsyncIOMotorGridFSBucket (bucket "certificati"), stesse firme → nessun altro cambiamento nei call sites. _storage_init e STORAGE_URL rimossi (anche dallo startup).
+- upload/finish: ora elimina il vecchio file GridFS quando un certificato viene sostituito (risparmio spazio Atlas).
+- /admin/storage/health aggiornato (niente più check EMERGENT_LLM_KEY).
+- NUOVI endpoint migrazione (admin): GET /admin/certificati/migrazione/lista (cert con file non ancora in GridFS), POST /admin/certificati/migrazione/carica {storage_path, content_type, data_b64}.
+- Script /app/memory/migrate_certs_live.py: da QUESTO pod (che può leggere l'objstore) scarica i file vecchi e li carica nel GridFS del live via API admin. DA ESEGUIRE dopo il deploy Render.
+TESTATO in locale: upload→view→replace (vecchio file eliminato, 1 solo file per utente)→admin view→health ok→migrazione carica ok. Cleanup dati test fatto.
+PENDING: utente deve fare Save to GitHub + deploy Render, poi eseguire lo script di migrazione e verificare file Linda (atteso 200).

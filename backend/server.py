@@ -3,7 +3,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
 import os
 import logging
 from pathlib import Path
@@ -7748,10 +7748,8 @@ async def admin_delete_announcement(announcement_id: str, admin_user: dict = Dep
 
 
 # Include the router in the main app
-# ======================== CERTIFICATI MEDICI (Emergent Object Storage) ========================
+# ======================== CERTIFICATI MEDICI (file salvati in MongoDB GridFS) ========================
 
-STORAGE_BASE = (os.environ.get("INTEGRATION_PROXY_URL") or "").strip() or "https://integrations.emergentagent.com"
-STORAGE_URL = STORAGE_BASE.rstrip("/") + "/objstore/api/v1/storage"
 CERT_STORAGE_PREFIX = "danofitness23/certificati"
 CERT_ALLOWED_TYPES = {"application/pdf": "pdf", "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
 CERT_MAX_BYTES = 10 * 1024 * 1024
@@ -7761,53 +7759,36 @@ CERT_OBBLIGO_INIZIO = "2026-09-07"  # dalla nuova stagione il certificato è obb
 CERT_GRACE_GIORNI = 30  # giorni di tolleranza prima del blocco prenotazioni
 CERT_PROROGA_VECCHI_FINO = "2026-10-31"  # vecchi clienti (primo abb. prima della stagione): tempo extra fino a fine ottobre
 
-_storage_key_cache = None
+_cert_fs_bucket = None
 
 
-async def _storage_init(force: bool = False) -> str:
-    global _storage_key_cache
-    if _storage_key_cache and not force:
-        return _storage_key_cache
-    import httpx
-    async with httpx.AsyncClient(timeout=30) as c:
-        resp = await c.post(f"{STORAGE_URL}/init", json={"emergent_key": os.environ.get("EMERGENT_LLM_KEY", "").strip()})
-        resp.raise_for_status()
-        _storage_key_cache = resp.json()["storage_key"]
-    return _storage_key_cache
+def _cert_bucket() -> AsyncIOMotorGridFSBucket:
+    global _cert_fs_bucket
+    if _cert_fs_bucket is None:
+        _cert_fs_bucket = AsyncIOMotorGridFSBucket(db, bucket_name="certificati")
+    return _cert_fs_bucket
 
 
 async def _storage_put(path: str, data: bytes, content_type: str) -> dict:
-    import httpx
-    key = await _storage_init()
-    async with httpx.AsyncClient(timeout=120) as c:
-        headers = {"X-Storage-Key": key, "Content-Type": content_type}
-        resp = await c.put(f"{STORAGE_URL}/objects/{path}", headers=headers, content=data)
-        if resp.status_code == 404:
-            headers["X-Storage-Key"] = await _storage_init(force=True)
-            resp = await c.put(f"{STORAGE_URL}/objects/{path}", headers=headers, content=data)
-        resp.raise_for_status()
-        return resp.json()
+    bucket = _cert_bucket()
+    async for old in bucket.find({"filename": path}):
+        await bucket.delete(old._id)
+    await bucket.upload_from_stream(path, data, metadata={"content_type": content_type})
+    return {"path": path}
 
 
 async def _storage_get(path: str):
-    import httpx
-    key = await _storage_init()
-    async with httpx.AsyncClient(timeout=60) as c:
-        resp = await c.get(f"{STORAGE_URL}/objects/{path}", headers={"X-Storage-Key": key})
-        if resp.status_code == 404:
-            resp = await c.get(f"{STORAGE_URL}/objects/{path}", headers={"X-Storage-Key": await _storage_init(force=True)})
-        resp.raise_for_status()
-        return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
+    bucket = _cert_bucket()
+    stream = await bucket.open_download_stream_by_name(path)
+    data = await stream.read()
+    ctype = (stream.metadata or {}).get("content_type", "application/octet-stream")
+    return data, ctype
 
 
 async def _storage_delete(path: str):
-    import httpx
-    key = await _storage_init()
-    async with httpx.AsyncClient(timeout=30) as c:
-        resp = await c.delete(f"{STORAGE_URL}/objects/{path}", headers={"X-Storage-Key": key})
-        if resp.status_code == 404:
-            return
-        resp.raise_for_status()
+    bucket = _cert_bucket()
+    async for f in bucket.find({"filename": path}):
+        await bucket.delete(f._id)
 
 
 def _cert_status_from_doc(cert: Optional[dict]) -> dict:
@@ -8004,6 +7985,7 @@ async def cert_upload_finish(payload: CertUploadFinish, current_user: dict = Dep
         logger.error(f"[CERT] Upload storage fallito: {e}")
         raise HTTPException(status_code=502, detail="Archiviazione file non riuscita, riprova tra poco")
     target_user_id = up["target_user_id"]
+    old_cert = await db.medical_certificates.find_one({"user_id": target_user_id})
     await db.medical_certificates.update_one(
         {"user_id": target_user_id},
         {"$set": {
@@ -8024,6 +8006,11 @@ async def cert_upload_finish(payload: CertUploadFinish, current_user: dict = Dep
     )
     await db.cert_upload_chunks.delete_many({"upload_id": payload.upload_id})
     await db.cert_uploads.delete_one({"upload_id": payload.upload_id})
+    if old_cert and old_cert.get("storage_path") and old_cert["storage_path"] != result["path"]:
+        try:
+            await _storage_delete(old_cert["storage_path"])
+        except Exception:
+            pass
     # I caricamenti del cliente vanno in verifica: push all'admin per la convalida
     if up["uploaded_by"] == "client":
         target_user = await db.users.find_one({"_id": ObjectId(target_user_id)})
@@ -8374,9 +8361,7 @@ async def admin_archivio_certificati(admin_user: dict = Depends(get_admin_user))
 
 @api_router.get("/admin/storage/health")
 async def admin_storage_health(admin_user: dict = Depends(get_admin_user)):
-    """Diagnosi storage certificati: prova put/get/delete e riporta il punto esatto di errore."""
-    if not os.environ.get("EMERGENT_LLM_KEY", "").strip():
-        return {"ok": False, "step": "env", "detail": "EMERGENT_LLM_KEY mancante nelle variabili d'ambiente del server"}
+    """Diagnosi storage certificati (GridFS): prova put/get/delete e riporta il punto esatto di errore."""
     path = f"{CERT_STORAGE_PREFIX}/_health/{uuid.uuid4()}.txt"
     try:
         await _storage_put(path, b"ok", "text/plain")
@@ -8391,6 +8376,42 @@ async def admin_storage_health(admin_user: dict = Depends(get_admin_user)):
     except Exception:
         pass
     return {"ok": True, "detail": "Storage certificati funzionante ✅"}
+
+
+class CertMigratePayload(BaseModel):
+    storage_path: str
+    content_type: str
+    data_b64: str
+
+
+@api_router.get("/admin/certificati/migrazione/lista")
+async def admin_cert_migrazione_lista(admin_user: dict = Depends(get_admin_user)):
+    """Certificati con file non ancora presente in GridFS (da migrare dal vecchio storage)."""
+    certs = await db.medical_certificates.find({"file_eliminato": {"$ne": True}}).to_list(1000)
+    da_migrare = []
+    for c in certs:
+        path = c.get("storage_path")
+        if not path:
+            continue
+        gia = await db["certificati.files"].find_one({"filename": path})
+        if gia:
+            continue
+        da_migrare.append({"user_id": c["user_id"], "storage_path": path, "content_type": c.get("content_type"), "file_name": c.get("file_name")})
+    return {"da_migrare": da_migrare, "totale": len(da_migrare)}
+
+
+@api_router.post("/admin/certificati/migrazione/carica")
+async def admin_cert_migrazione_carica(payload: CertMigratePayload, admin_user: dict = Depends(get_admin_user)):
+    """Carica in GridFS il file di un certificato migrato dal vecchio storage."""
+    import base64 as _b64
+    try:
+        data = _b64.b64decode(payload.data_b64)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Base64 non valido")
+    if len(data) == 0 or len(data) > CERT_MAX_BYTES:
+        raise HTTPException(status_code=400, detail="File vuoto o troppo grande")
+    await _storage_put(payload.storage_path, data, payload.content_type or "application/octet-stream")
+    return {"ok": True, "bytes": len(data)}
 
 
 @api_router.get("/admin/certificato/{user_id}/file")
@@ -8532,12 +8553,7 @@ async def startup_event():
     except Exception as e:
         logger.warning(f"[DB] Index creation warning: {e}")
     
-    # Init Emergent Object Storage (certificati medici) — non bloccante
-    try:
-        await _storage_init()
-        logger.info("[CERT] Object storage inizializzato")
-    except Exception as e:
-        logger.warning(f"[CERT] Init storage fallito (retry al primo upload): {e}")
+    # Storage certificati su MongoDB GridFS: nessuna init esterna necessaria
 
     # AZZERAMENTO LOTTERIA — nuova stagione 2026/27 (una tantum).
     # Rimuove i biglietti bonus residui dei mesi passati: tutti ripartono da 0.
