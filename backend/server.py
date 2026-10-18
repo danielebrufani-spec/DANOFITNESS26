@@ -8372,6 +8372,27 @@ async def admin_archivio_certificati(admin_user: dict = Depends(get_admin_user))
     return {"attivi": attivi, "scaduti_recenti": scaduti[:20], "totale_attivi": len(attivi)}
 
 
+@api_router.get("/admin/storage/health")
+async def admin_storage_health(admin_user: dict = Depends(get_admin_user)):
+    """Diagnosi storage certificati: prova put/get/delete e riporta il punto esatto di errore."""
+    if not os.environ.get("EMERGENT_LLM_KEY", "").strip():
+        return {"ok": False, "step": "env", "detail": "EMERGENT_LLM_KEY mancante nelle variabili d'ambiente del server"}
+    path = f"{CERT_STORAGE_PREFIX}/_health/{uuid.uuid4()}.txt"
+    try:
+        await _storage_put(path, b"ok", "text/plain")
+    except Exception as e:
+        return {"ok": False, "step": "put", "detail": str(e)[:300]}
+    try:
+        await _storage_get(path)
+    except Exception as e:
+        return {"ok": False, "step": "get", "detail": str(e)[:300]}
+    try:
+        await _storage_delete(path)
+    except Exception:
+        pass
+    return {"ok": True, "detail": "Storage certificati funzionante ✅"}
+
+
 @api_router.get("/admin/certificato/{user_id}/file")
 async def admin_get_certificate_file(user_id: str, admin_user: dict = Depends(get_admin_user)):
     cert = await db.medical_certificates.find_one({"user_id": user_id})

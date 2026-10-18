@@ -897,3 +897,11 @@ Fix in server.py:
 - PUT /admin/certificato/{user_id}: rinnovo scadenza futura (file presente) → resetta scaduto_processato.
 TESTATO: riprodotto il caso in locale (cert flag=True scadenza 2027) → archivio lo mostra in attivi + flag azzerato in DB. Cleanup fatto.
 NOTA: su live serve Save to GitHub + redeploy Render; poi basta aprire l'archivio e Linda ricompare da sola.
+
+## DIAGNOSI upload certificato "ancora rotto" (18 Ott 2026)
+Report utente: caricamento certificato medico ancora non funzionante (sul LIVE).
+DIAGNOSI (via API live, sola lettura): il codice è OK — upload e2e testato in preview (start→chunk→finish→in_verifica, storage init 200). Sul live Render invece GET /admin/certificato/{linda}/file → 502 "File non recuperabile" ⇒ le chiamate all'Emergent Object Storage FALLISCONO da Render ⇒ anche upload/finish fallisce lì con 502. ROOT CAUSE ambientale: EMERGENT_LLM_KEY su Render mancante/vecchia/senza credito.
+Fix:
+- Nuovo endpoint GET /api/admin/storage/health (admin): prova put/get/delete e riporta il punto esatto di errore (env/put/get). Testato in locale: ok:true.
+- Istruzioni utente: aggiornare env var EMERGENT_LLM_KEY su Render (valore da Emergent → Profile → Manage plan → Universal Key, verificare credito) + redeploy.
+NOTA: se i file vecchi erano stati caricati con una chiave diversa potrebbero non riaprirsi (namespace per chiave) → eventuale ri-caricamento.
