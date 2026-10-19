@@ -8051,7 +8051,7 @@ async def get_my_certificate_file(current_user: dict = Depends(get_current_user)
 
 
 # ======================== VISITA MEDICA (certificato non agonistico) ========================
-VISITA_MEDICA_DATA = "2026-10-17"
+VISITA_MEDICA_DATA = "2026-11-07"
 
 def _visita_slots():
     slots = []
@@ -8117,7 +8117,7 @@ async def prenota_visita(payload: VisitaPrenotaPayload, current_user: dict = Dep
         await db.users.update_one({"_id": current_user["_id"]}, {"$set": {"telefono": telefono}})
     asyncio.create_task(send_push_to_admins(
         "🩺 Nuova visita medica prenotata!",
-        f"{current_user.get('nome','')} {current_user.get('cognome','')} — sabato 17 ottobre ore {payload.orario}",
+        f"{current_user.get('nome','')} {current_user.get('cognome','')} — sabato 7 novembre ore {payload.orario}",
         url="/home",
     ))
     return {"success": True, "orario": payload.orario}

@@ -9,7 +9,7 @@ import { FONTS } from '../theme';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
 
-const VISITA_DATA_LIMITE = '2026-10-17';
+const VISITA_DATA_LIMITE = '2026-11-07';
 
 const oggiStr = () => {
   const d = new Date();
@@ -23,7 +23,7 @@ type AdminSlot = { orario: string; occupato: boolean; nome: string | null; telef
 
 const InfoHeader = () => (
   <View style={styles.infoBox}>
-    <Text style={styles.infoDate}>📅 SABATO 17 OTTOBRE</Text>
+    <Text style={styles.infoDate}>📅 SABATO 7 NOVEMBRE</Text>
     <Text style={styles.infoText}>
       Visita per <Text style={styles.infoBold}>certificato medico non agonistico</Text> con{' '}
       <Text style={styles.infoBold}>elettrocardiogramma</Text>.
@@ -69,7 +69,7 @@ export const VisitaMedicaBanner: React.FC = () => {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.bigTitle}>PRENOTAZIONE CERTIFICATO MEDICO</Text>
-            <Animated.Text style={[styles.bigDate, { opacity: blink }]}>SABATO 17 OTTOBRE</Animated.Text>
+            <Animated.Text style={[styles.bigDate, { opacity: blink }]}>SABATO 7 NOVEMBRE</Animated.Text>
             <Text style={styles.bannerSub}>
               Visita non agonistica con elettrocardiogramma · 30€ in contanti al dottore · tocca per scegliere il tuo orario
             </Text>
@@ -116,7 +116,7 @@ const VisitaMedicaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setSuccess('Prenotazione cancellata.');
       } else {
         await apiService.prenotaVisita(selected.orario, telefono.trim());
-        setSuccess(`✅ Visita prenotata! Sabato 17 ottobre ore ${selected.orario}`);
+        setSuccess(`✅ Visita prenotata! Sabato 7 novembre ore ${selected.orario}`);
       }
       setSelected(null);
       load();
@@ -193,7 +193,7 @@ const VisitaMedicaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <Text style={styles.confirmText}>Vuoi cancellare la tua visita delle <Text style={styles.confirmBold}>{selected.orario}</Text>?</Text>
               ) : (
                 <>
-                  <Text style={styles.confirmText}>Confermi la visita di sabato 17 ottobre alle <Text style={styles.confirmBold}>{selected.orario}</Text>?</Text>
+                  <Text style={styles.confirmText}>Confermi la visita di sabato 7 novembre alle <Text style={styles.confirmBold}>{selected.orario}</Text>?</Text>
                   {!telefonoSalvato && (
                     <TextInput
                       style={styles.phoneInput}
@@ -245,7 +245,7 @@ export const VisitaMedicaAdminBanner: React.FC = () => {
           <Ionicons name="medkit" size={24} color="#fff" />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.bannerTitle, { color: '#FFD700' }]}>VISITE MEDICHE — SABATO 17 OTTOBRE</Text>
+          <Text style={[styles.bannerTitle, { color: '#FFD700' }]}>VISITE MEDICHE — SABATO 7 NOVEMBRE</Text>
           <Text style={styles.bannerSub}>Gestisci le prenotazioni: vedi nomi e telefoni, aggiungi o cancella</Text>
         </View>
         <Ionicons name="chevron-forward" size={20} color="#FFD700" />
@@ -306,7 +306,7 @@ const VisitaMedicaAdminModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
       <View style={styles.overlay}>
         <View style={styles.card} testID="visita-medica-admin-modal">
           <View style={styles.headerRow}>
-            <Text style={[styles.title, { color: '#FFD700' }]}>VISITE — 17 OTTOBRE</Text>
+            <Text style={[styles.title, { color: '#FFD700' }]}>VISITE — 7 NOVEMBRE</Text>
             <TouchableOpacity onPress={onClose} testID="visita-admin-close">
               <Ionicons name="close" size={26} color={COLORS.textSecondary} />
             </TouchableOpacity>

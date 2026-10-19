@@ -923,3 +923,9 @@ PENDING: utente deve fare Save to GitHub + deploy Render, poi eseguire lo script
 - Eseguito /app/memory/migrate_certs_live.py: 28/28 file migrati dall'objstore Emergent al GridFS live, 0 errori
 - Verifica finale: file Linda dal live → 200, 907KB, %PDF valido. Lista da migrare: 0
 - PROBLEMA CERTIFICATI SUL LIVE: RISOLTO DEFINITIVAMENTE (upload, visualizzazione, download ora indipendenti da Emergent infra)
+
+## VISITA MEDICA → SABATO 7 NOVEMBRE (19 Ott 2026)
+Richiesta: ripristinare la prenotazione visita medica (certificato) per sabato 7 novembre, stesse modalità, ben evidente. L'utente ha chiesto di NON rimuovere nessun messaggio/popup (richiesta iniziale su popup admin annullata da lui).
+- server.py: VISITA_MEDICA_DATA = "2026-11-07" (slot ripartiti da zero, 30 orari), push admin aggiornata "sabato 7 novembre".
+- VisitaMedica.tsx: VISITA_DATA_LIMITE '2026-11-07' + tutti i testi (banner lampeggiante, modal, conferma, banner admin) 17 OTTOBRE → 7 NOVEMBRE.
+- TESTATO: API slots → data 2026-11-07, 30/30 liberi. UI cliente (testclient_kpi) → banner rosso lampeggiante in Home + modal con orari mattina/pomeriggio ok.
