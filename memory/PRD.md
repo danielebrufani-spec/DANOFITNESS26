@@ -933,3 +933,11 @@ Richiesta: ripristinare la prenotazione visita medica (certificato) per sabato 7
 ## Azzeramento lista visite 17/10 (19 Ott 2026)
 - Live aveva ancora 28 prenotazioni del 17/10 (codice vecchio). Cancellate TUTTE subito via API admin live (totale_prenotati: 0) — effetto immediato anche prima del deploy.
 - Aggiunta migrazione one-off allo startup "visita_reset_7nov": delete_many visite_mediche data 2026-10-17 (pulizia definitiva al deploy, idempotente).
+
+## POPUP "GIOCHI SBLOCCATI" in Home (19 Ott 2026)
+Richiesta: molti clienti non sanno/dimenticano i giochi post-allenamento. Scelta utente: opzione B (popup in Home).
+- Backend: GET /api/giochi/oggi → {allenamento_oggi, ruota, quiz, crono, disponibili} (booking lezione_scalata oggi + check wheel_spins/quiz_answers/timer_plays).
+- Frontend: nuovo componente GiochiSbloccatiPopup.tsx (dark+gold, 3 righe gioco con badge GIOCA/✓, bottone "🎮 GIOCA ORA" → router.push('/premi'), "Più tardi"). Usa popupQueue (id 'giochi-sbloccati') e localStorage 'giochi_popup_date' (1 volta/giorno). Montato in home.tsx accanto a VisitaMedicaBanner. api.ts: getGiochiOggi().
+- Mostrato SOLO se allenamento fatto oggi E almeno 1 gioco disponibile. Admin non lo vede (nessun booking).
+- TESTATO e2e Playwright: popup appare dopo chiusura altri popup in coda, GIOCA ORA porta a /premi. NOTA: serviva restart frontend (bundle stale ricorrente con metro).
+- LEARNING: /bookings/me va in 500 (KeyError created_at) se un booking manca di created_at — attenzione nei seed di test.

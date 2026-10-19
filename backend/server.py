@@ -6610,6 +6610,25 @@ class TimerPlayRequest(BaseModel):
     elapsed_ms: int
 
 
+@api_router.get("/giochi/oggi")
+async def giochi_oggi(current_user: dict = Depends(get_current_user)):
+    """Stato giochi del giorno: usato dal popup GIOCHI SBLOCCATI in Home"""
+    user_id = str(current_user["_id"])
+    today = today_rome()
+    allenamento, spin, quiz_risposto, crono_fatto = await asyncio.gather(
+        db.bookings.find_one({"user_id": user_id, "data_lezione": today, "lezione_scalata": True}),
+        db.wheel_spins.find_one({"user_id": user_id, "data": today}),
+        db.quiz_answers.find_one({"user_id": user_id, "data": today}),
+        db.timer_plays.find_one({"user_id": user_id, "data": today}),
+    )
+    if not allenamento:
+        return {"allenamento_oggi": False, "ruota": False, "quiz": False, "crono": False, "disponibili": 0}
+    ruota = spin is None
+    quiz = quiz_risposto is None
+    crono = crono_fatto is None
+    return {"allenamento_oggi": True, "ruota": ruota, "quiz": quiz, "crono": crono, "disponibili": int(ruota) + int(quiz) + int(crono)}
+
+
 @api_router.get("/timer-game/status")
 async def get_timer_game_status(current_user: dict = Depends(get_current_user)):
     """Verifica se l'utente può giocare a Stop al 10 oggi"""

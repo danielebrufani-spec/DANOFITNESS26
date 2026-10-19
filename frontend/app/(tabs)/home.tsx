@@ -27,6 +27,7 @@ import { NuoviOrariBanner } from '../../src/components/NuoviOrariBanner';
 import { PausaEstivaBanner } from '../../src/components/PausaEstiva';
 import { CertificatoBanner, CertificatoHomeCard } from '../../src/components/CertificatoMedico';
 import { VisitaMedicaBanner, VisitaMedicaAdminBanner } from '../../src/components/VisitaMedica';
+import { GiochiSbloccatiPopup } from '../../src/components/GiochiSbloccatiPopup';
 import { FONTS, glow } from '../../src/theme';
 import { requestPopup, releasePopup } from '../../src/utils/popupQueue';
 import { CountUp } from '../../src/components/CountUp';
@@ -1112,6 +1113,9 @@ export default function HomeScreen() {
 
         {/* BANNER CERTIFICATO MEDICO (solo clienti senza certificato valido) */}
         <CertificatoBanner />
+
+        {/* Popup giochi sbloccati dopo l'allenamento */}
+        <GiochiSbloccatiPopup />
 
         {/* Visita medica - certificato non agonistico */}
         <VisitaMedicaBanner />
