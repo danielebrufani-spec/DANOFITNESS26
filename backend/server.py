@@ -8585,6 +8585,12 @@ async def startup_event():
     except Exception as e:
         logger.warning(f"[LOTTERY-RESET storico] {e}")
 
+    # Migrazione one-off: azzera prenotazioni della vecchia visita del 17/10 (nuova data 7/11)
+    if not await db.migrations.find_one({"nome": "visita_reset_7nov"}):
+        res = await db.visite_mediche.delete_many({"data": "2026-10-17"})
+        await db.migrations.insert_one({"nome": "visita_reset_7nov", "eseguita_il": now_rome()})
+        logger.info(f"[VISITA-RESET] Rimosse {res.deleted_count} prenotazioni del 17/10, nuova data 7/11")
+
     # Reset prenotazioni visita medica: nuova data 17/10 (richiesta admin 26/09)
     try:
         if not await db.migrations.find_one({"nome": "visite_mediche_reset_2026_10_17"}):

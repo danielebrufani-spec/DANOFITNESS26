@@ -929,3 +929,7 @@ Richiesta: ripristinare la prenotazione visita medica (certificato) per sabato 7
 - server.py: VISITA_MEDICA_DATA = "2026-11-07" (slot ripartiti da zero, 30 orari), push admin aggiornata "sabato 7 novembre".
 - VisitaMedica.tsx: VISITA_DATA_LIMITE '2026-11-07' + tutti i testi (banner lampeggiante, modal, conferma, banner admin) 17 OTTOBRE → 7 NOVEMBRE.
 - TESTATO: API slots → data 2026-11-07, 30/30 liberi. UI cliente (testclient_kpi) → banner rosso lampeggiante in Home + modal con orari mattina/pomeriggio ok.
+
+## Azzeramento lista visite 17/10 (19 Ott 2026)
+- Live aveva ancora 28 prenotazioni del 17/10 (codice vecchio). Cancellate TUTTE subito via API admin live (totale_prenotati: 0) — effetto immediato anche prima del deploy.
+- Aggiunta migrazione one-off allo startup "visita_reset_7nov": delete_many visite_mediche data 2026-10-17 (pulizia definitiva al deploy, idempotente).
