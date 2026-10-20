@@ -28,6 +28,7 @@ import { PausaEstivaBanner } from '../../src/components/PausaEstiva';
 import { CertificatoBanner, CertificatoHomeCard } from '../../src/components/CertificatoMedico';
 import { VisitaMedicaBanner, VisitaMedicaAdminBanner } from '../../src/components/VisitaMedica';
 import { GiochiSbloccatiPopup } from '../../src/components/GiochiSbloccatiPopup';
+import { TabataPromoBanner } from '../../src/components/TabataPromoBanner';
 import { FONTS, glow } from '../../src/theme';
 import { requestPopup, releasePopup } from '../../src/utils/popupQueue';
 import { CountUp } from '../../src/components/CountUp';
@@ -1110,6 +1111,9 @@ export default function HomeScreen() {
         <PausaEstivaBanner />
         {/* BANNER NUOVI ORARI 2026/27 - in evidenza */}
         <NuoviOrariBanner />
+
+        {/* PROMO NUOVA LEZIONE TABATA */}
+        <TabataPromoBanner />
 
         {/* BANNER CERTIFICATO MEDICO (solo clienti senza certificato valido) */}
         <CertificatoBanner />

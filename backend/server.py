@@ -127,6 +127,7 @@ class ActivityType(str, Enum):
     YOGA = "yoga"
     ACQUAPOWER = "acquapower"
     ACQUAGAG = "acquagag"
+    TABATA = "tabata"
 
 class UserRole(str, Enum):
     ADMIN = "admin"
@@ -210,6 +211,7 @@ class LessonResponse(BaseModel):
     descrizione: Optional[str] = None
     coach: Optional[str] = None
     data_specifica: Optional[str] = None  # YYYY-MM-DD: lezione UNA TANTUM valida solo in questa data
+    data_inizio: Optional[str] = None  # YYYY-MM-DD: lezione ricorrente visibile/prenotabile solo da questa data
 
 class BookingCreate(BaseModel):
     lesson_id: str
@@ -798,7 +800,8 @@ async def get_lessons(current_user: dict = Depends(get_current_user)):
             tipo_attivita=lesson["tipo_attivita"],
             descrizione=lesson.get("descrizione"),
             coach=lesson.get("coach", "Daniele"),
-            data_specifica=lesson.get("data_specifica")
+            data_specifica=lesson.get("data_specifica"),
+            data_inizio=lesson.get("data_inizio")
         ) for lesson in lessons if _lesson_is_visible(lesson)
     ]
 
@@ -814,7 +817,8 @@ async def get_lessons_by_day(giorno: str, current_user: dict = Depends(get_curre
             tipo_attivita=lesson["tipo_attivita"],
             descrizione=lesson.get("descrizione"),
             coach=lesson.get("coach", "Daniele"),
-            data_specifica=lesson.get("data_specifica")
+            data_specifica=lesson.get("data_specifica"),
+            data_inizio=lesson.get("data_inizio")
         ) for lesson in lessons
     ]
 
@@ -2072,6 +2076,14 @@ async def create_booking(data: BookingCreate, current_user: dict = Depends(get_c
             detail=f"Questa è una lezione speciale valida solo il {ds[8:10]}/{ds[5:7]}/{ds[0:4]}"
         )
     
+    # LEZIONE CON DATA DI INIZIO: prenotabile solo da quella data in poi
+    if lesson.get("data_inizio") and data.data_lezione < lesson["data_inizio"]:
+        di = lesson["data_inizio"]
+        raise HTTPException(
+            status_code=400,
+            detail=f"Questa lezione parte da venerdì {di[8:10]}/{di[5:7]}/{di[0:4]}! Ci vediamo lì 💪"
+        )
+
     # PAUSA ESTIVA 2026: nessuna prenotazione dal 29/08 al 06/09 compresi
     if "2026-08-29" <= data.data_lezione <= "2026-09-06":
         raise HTTPException(
@@ -8603,6 +8615,24 @@ async def startup_event():
             logger.info(f"[LOTTERY-RESET] Storico vincitori azzerato: rimosse {res.deleted_count} estrazioni pre-ottobre")
     except Exception as e:
         logger.warning(f"[LOTTERY-RESET storico] {e}")
+
+    # Migrazione one-off: nuova lezione TABATA venerdì 08:30 (Toto) dal 7 novembre
+    if not await db.migrations.find_one({"nome": "tabata_venerdi_7nov"}):
+        if not await db.lessons.find_one({"giorno": "venerdi", "orario": "08:30"}):
+            await db.lessons.insert_one({
+                "giorno": "venerdi",
+                "orario": "08:30",
+                "tipo_attivita": "tabata",
+                "descrizione": "Tabata con piccoli attrezzi: 20\" di lavoro, 10\" di recupero. Lavori funzionali ad alta intensità.",
+                "coach": "Toto",
+                "data_specifica": None,
+                "data_inizio": "2026-11-07",
+            })
+        if not await db.activities.find_one({"key": "tabata"}):
+            await db.activities.insert_one({"key": "tabata", "nome": "Tabata", "colore": "#FFD700", "icona": "timer", "is_default": False})
+        cache.invalidate("all_lessons")
+        await db.migrations.insert_one({"nome": "tabata_venerdi_7nov", "eseguita_il": now_rome()})
+        logger.info("[TABATA] Lezione venerdì 08:30 Tabata (Toto) inserita, attiva dal 2026-11-07")
 
     # Migrazione one-off: azzera prenotazioni della vecchia visita del 17/10 (nuova data 7/11)
     if not await db.migrations.find_one({"nome": "visita_reset_7nov"}):

@@ -31,6 +31,12 @@ export const ATTIVITA_INFO: { [key: string]: { nome: string; icona: string; colo
     colore: '#00E676',
     image: 'https://images.pexels.com/photos/35553893/pexels-photo-35553893.jpeg'
   },
+  'tabata': {
+    nome: 'Tabata',
+    icona: 'timer',
+    colore: '#FFD700',
+    image: 'https://images.unsplash.com/photo-1578762560042-46ad127c95ea'
+  },
   'interval_step': {
     nome: 'Interval Step',
     icona: 'fitness-center',
@@ -195,6 +201,7 @@ export const COURSE_IMAGES: Record<string, string> = {
   funzionale: 'https://static.prod-images.emergentagent.com/jobs/120068e1-741e-430e-86ee-0f10594d3f2d/images/c66580fd4f60ea5c75958c1fabba752e03db728845de2e2f42609f9d0a8702ff.jpeg',
   pilates: 'https://static.prod-images.emergentagent.com/jobs/120068e1-741e-430e-86ee-0f10594d3f2d/images/f3f0724e88253d09ae08065c7f69e671c64a84072bc0c54c2d74b5c6f14c86d8.jpeg',
   interval_step: 'https://static.prod-images.emergentagent.com/jobs/120068e1-741e-430e-86ee-0f10594d3f2d/images/5af00642d72b4b49ab350ddf4be7f5f09f99930e2feb0bd5532f213993c2c114.jpeg',
+  tabata: 'https://static.prod-images.emergentagent.com/jobs/120068e1-741e-430e-86ee-0f10594d3f2d/images/c66580fd4f60ea5c75958c1fabba752e03db728845de2e2f42609f9d0a8702ff.jpeg',
 };
 
 // Grafiche brand (generate su misura)

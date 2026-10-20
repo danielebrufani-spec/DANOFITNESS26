@@ -262,7 +262,7 @@ export default function PrenotaScreen() {
       const dayName = GIORNI[date.getDay()];
       const dateStr = getDateString(date);
       const dayLessons = lessonsList.filter(
-        l => l.giorno === dayName && (!l.data_specifica || l.data_specifica === dateStr)
+        l => l.giorno === dayName && (!l.data_specifica || l.data_specifica === dateStr) && (!l.data_inizio || dateStr >= l.data_inizio)
       );
       if (!isDayClosed(date, dayLessons)) {
         return date;
@@ -382,7 +382,7 @@ export default function PrenotaScreen() {
     if (isDataInPausa(dateString)) return [];
     // Include lezioni ricorrenti del giorno + lezioni UNA TANTUM solo nella loro data specifica
     return lessons.filter(
-      (lesson) => lesson.giorno === dayName && (!lesson.data_specifica || lesson.data_specifica === dateString)
+      (lesson) => lesson.giorno === dayName && (!lesson.data_specifica || lesson.data_specifica === dateString) && (!lesson.data_inizio || dateString >= lesson.data_inizio)
     );
   };
 

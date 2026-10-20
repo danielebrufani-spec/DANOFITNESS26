@@ -23,7 +23,7 @@ import { requestPopup, releasePopup } from '../utils/popupQueue';
  * - NuoviOrariBanner: banner in evidenza nella home, apre lo schema consultabile.
  */
 
-const IMG_URL = '/orari-invernali-2026.png?v=2';
+const IMG_URL = '/orari-invernali-2026.png?v=3';
 const IMG_RATIO = 1375 / 768;
 const SEEN_KEY = 'nuovi_orari_2026_popup_seen';
 
@@ -62,7 +62,7 @@ export const OrariSchemaModal: React.FC<{ visible: boolean; onClose: () => void 
             resizeMode="contain"
           />
         </View>
-        <Text style={styles.viewerSub}>In vigore da lunedì 7 settembre</Text>
+        <Text style={styles.viewerSub}>🔥 Novità: TABATA il venerdì alle 8:30 — dal 7 novembre</Text>
         <TouchableOpacity onPress={downloadImage} style={styles.saveBtn} activeOpacity={0.85} testID="orari-save-btn">
           <Ionicons name="download" size={20} color="#000" />
           <Text style={styles.saveBtnText}>SALVA IMMAGINE</Text>

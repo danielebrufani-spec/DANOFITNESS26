@@ -30,6 +30,7 @@ export interface Lesson {
   descrizione?: string;
   coach?: string;
   data_specifica?: string; // YYYY-MM-DD: lezione UNA TANTUM valida solo in questa data
+  data_inizio?: string; // YYYY-MM-DD: lezione ricorrente attiva solo da questa data
 }
 
 export interface Subscription {
