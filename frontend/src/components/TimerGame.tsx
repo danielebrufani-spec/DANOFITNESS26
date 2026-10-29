@@ -33,10 +33,12 @@ const fmt = (ms: number) => {
 
 export const TimerGameSection: React.FC<{ onPlayed?: () => void }> = ({ onPlayed }) => {
   const [status, setStatus] = useState<TimerStatus | null>(null);
+  const [classifica, setClassifica] = useState<any>(null);
   const [open, setOpen] = useState(false);
 
   const load = useCallback(() => {
     apiService.getTimerGameStatus().then((r) => setStatus(r.data)).catch(() => {});
+    apiService.getTimerClassifica().then((r) => setClassifica(r.data)).catch(() => {});
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -66,6 +68,32 @@ export const TimerGameSection: React.FC<{ onPlayed?: () => void }> = ({ onPlayed
               : 'Completa un allenamento per sbloccare 💪'}
         </Text>
       </TouchableOpacity>
+
+      {/* 🏆 CLASSIFICA CRONO DEL MESE */}
+      {classifica && (
+        <View style={styles.lbCard} data-testid="crono-classifica">
+          <Text style={styles.lbTitle}>🏆 CLASSIFICA — {String(classifica.mese).toUpperCase()}</Text>
+          <Text style={styles.lbSub}>Chi si avvicina di più a 10.00 comanda!</Text>
+          {(!classifica.classifica || classifica.classifica.length === 0) ? (
+            <Text style={styles.lbEmpty}>Nessun tempo questo mese… sii il primo a entrare in classifica! ⏱️</Text>
+          ) : (
+            classifica.classifica.map((r: any, i: number) => (
+              <View key={r.user_id} style={[styles.lbRow, r.is_me && styles.lbRowMe]} data-testid={`crono-classifica-row-${i + 1}`}>
+                <Text style={styles.lbPos}>{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}°`}</Text>
+                <Text style={styles.lbNome} numberOfLines={1}>
+                  {r.nome} {r.cognome}{r.is_me ? '  ← tu' : ''}
+                </Text>
+                <Text style={[styles.lbTempo, r.vinto && styles.lbTempoVinto]}>{fmt(r.elapsed_ms)}</Text>
+              </View>
+            ))
+          )}
+          {classifica.mia_posizione && classifica.mia_posizione > 10 && (
+            <Text style={styles.lbMiaPos}>
+              La tua posizione: {classifica.mia_posizione}° con {fmt(classifica.mio_tempo)} — puoi fare di meglio! 💪
+            </Text>
+          )}
+        </View>
+      )}
 
       {open && (
         <TimerGameScreen
@@ -220,6 +248,47 @@ const TimerGameScreen: React.FC<{ status: TimerStatus | null; onClose: (played: 
 };
 
 const styles = StyleSheet.create({
+  lbCard: {
+    backgroundColor: '#0E0E13',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255,215,0,0.35)',
+    padding: 16,
+    marginBottom: 16,
+  },
+  lbTitle: {
+    color: '#FFD700',
+    fontSize: 15,
+    fontWeight: '900',
+    letterSpacing: 1,
+    marginBottom: 2,
+  },
+  lbSub: { color: '#9B9BA3', fontSize: 11.5, marginBottom: 12 },
+  lbEmpty: { color: '#D7D7DC', fontSize: 13, textAlign: 'center', paddingVertical: 10 },
+  lbRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 7,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    gap: 10,
+  },
+  lbRowMe: {
+    backgroundColor: 'rgba(255,215,0,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,215,0,0.4)',
+  },
+  lbPos: { width: 32, fontSize: 15, color: '#FFF', fontWeight: '800', textAlign: 'center' },
+  lbNome: { flex: 1, color: '#E8E8EC', fontSize: 13, fontWeight: '600' },
+  lbTempo: { color: '#FFF', fontSize: 14, fontWeight: '900', fontVariant: ['tabular-nums'] },
+  lbTempoVinto: { color: '#3DD56D' },
+  lbMiaPos: {
+    color: '#FFD700',
+    fontSize: 12,
+    marginTop: 10,
+    textAlign: 'center',
+    fontWeight: '700',
+  },
   card: {
     backgroundColor: '#0E0E13',
     borderRadius: 18,

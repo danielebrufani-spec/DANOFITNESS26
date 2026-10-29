@@ -953,3 +953,10 @@ Richiesta: nuova lezione TABATA venerdì 8:30 (coach Toto) dal 7 novembre + nuov
 - CERT_PROROGA_VECCHI_FINO: 2026-10-31 → 2026-12-01 (vecchi clienti = primo abbonamento entro il 07/09/2026; blocco prenotazioni non prima del 02/12).
 - Nuovi clienti invariati: 30gg dal primo abbonamento (CERT_GRACE_GIORNI=30).
 - TESTATO: vecchio cliente senza cert → blocco dal 2026-12-02; nuovo (abb. 15/10) → blocco dal 2026-11-14. I countdown nei popup/banner si aggiornano da soli (calcolati da blocco_dal).
+
+## CLASSIFICA CRONO MENSILE (29 Ott 2026)
+- Backend: GET /api/timer-game/classifica — top 10 del mese corrente, miglior giocata per utente (delta min da 10000ms, tie-break data), esclusi admin/istruttori, flag is_me + mia_posizione/mio_tempo per chi è fuori top10. MESI_IT per nome mese.
+- Frontend: card "🏆 CLASSIFICA — MESE" in TimerGameSection (tab CRONO) sotto la card gioco: medaglie 🥇🥈🥉, riga utente evidenziata oro (lbRowMe), tempo verde se vinto, stato vuoto motivazionale, posizione personale se >10. Ricarica dopo ogni giocata (load()).
+- api.ts: getTimerClassifica().
+- TESTATO: API ordinamento corretto (10.00→10.02→9.95→10.18→9.70) + UI verificata con screenshot. Dati test puliti.
+- NOTA DEBUG: sessioni browser vecchie nel tool screenshot danno 403 su tutto → sempre localStorage.clear() + login fresco.

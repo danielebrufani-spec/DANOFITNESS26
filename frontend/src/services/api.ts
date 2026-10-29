@@ -366,6 +366,7 @@ export const apiService = {
   getTimerGameStatus: () => api.get('/timer-game/status'),
   playTimerGame: (elapsedMs: number) => api.post('/timer-game/play', { elapsed_ms: elapsedMs }),
   getGiochiOggi: () => api.get('/giochi/oggi'),
+  getTimerClassifica: () => api.get('/timer-game/classifica'),
   spinWheel: () => api.post('/wheel/spin'),
 
   // Leaderboard settimanale

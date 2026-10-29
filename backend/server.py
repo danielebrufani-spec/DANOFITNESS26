@@ -6641,6 +6641,43 @@ async def giochi_oggi(current_user: dict = Depends(get_current_user)):
     return {"allenamento_oggi": True, "ruota": ruota, "quiz": quiz, "crono": crono, "disponibili": int(ruota) + int(quiz) + int(crono)}
 
 
+MESI_IT = ["", "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"]
+
+
+@api_router.get("/timer-game/classifica")
+async def timer_game_classifica(current_user: dict = Depends(get_current_user)):
+    """Classifica mensile Crono: miglior tempo per utente, più vicino a 10.00 vince."""
+    oggi = now_rome()
+    plays = await db.timer_plays.find({"data": {"$regex": f"^{oggi.strftime('%Y-%m')}"}}).to_list(3000)
+    best = {}
+    for p in plays:
+        el = p.get("elapsed_ms")
+        if el is None:
+            continue
+        delta = abs(el - 10000)
+        uid = p["user_id"]
+        if uid not in best or delta < best[uid]["delta"]:
+            best[uid] = {"delta": delta, "elapsed_ms": el, "data": p["data"], "vinto": p.get("vinto", False)}
+    oids = [ObjectId(uid) for uid in best if len(uid) == 24]
+    users = {str(u["_id"]): u for u in await db.users.find({"_id": {"$in": oids}}).to_list(2000)}
+    me_uid = str(current_user["_id"])
+    rows = []
+    for uid, b in best.items():
+        u = users.get(uid)
+        if not u or u.get("role") in (UserRole.ADMIN, UserRole.ISTRUTTORE):
+            continue
+        rows.append({"user_id": uid, "nome": u.get("nome", ""), "cognome": u.get("cognome", ""), "is_me": uid == me_uid, **b})
+    rows.sort(key=lambda r: (r["delta"], r["data"]))
+    mia_pos = next((i + 1 for i, r in enumerate(rows) if r["is_me"]), None)
+    mio = next((r for r in rows if r["is_me"]), None)
+    return {
+        "mese": MESI_IT[oggi.month],
+        "classifica": rows[:10],
+        "mia_posizione": mia_pos,
+        "mio_tempo": mio["elapsed_ms"] if mio else None,
+    }
+
+
 @api_router.get("/timer-game/status")
 async def get_timer_game_status(current_user: dict = Depends(get_current_user)):
     """Verifica se l'utente può giocare a Stop al 10 oggi"""
