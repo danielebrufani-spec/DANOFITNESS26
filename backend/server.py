@@ -7788,7 +7788,7 @@ CERT_BONUS_BIGLIETTI = 2
 CERT_SOGLIA_SCADENZA_GG = 30
 CERT_OBBLIGO_INIZIO = "2026-09-07"  # dalla nuova stagione il certificato è obbligatorio
 CERT_GRACE_GIORNI = 30  # giorni di tolleranza prima del blocco prenotazioni
-CERT_PROROGA_VECCHI_FINO = "2026-10-31"  # vecchi clienti (primo abb. prima della stagione): tempo extra fino a fine ottobre
+CERT_PROROGA_VECCHI_FINO = "2026-12-01"  # vecchi clienti (primo abb. prima della stagione): consegna entro l'1 dicembre
 
 _cert_fs_bucket = None
 
@@ -7847,7 +7847,7 @@ def _cert_blocco_info(user: dict, cert: Optional[dict]) -> dict:
     Per chi non l'ha mai caricato (mancante/rifiutato) i 30gg partono dal primo
     abbonamento vero (la prova non conta), non prima del 07/09/2026.
     PROROGA vecchi clienti (primo abbonamento entro il 07/09/2026): il blocco
-    non scatta mai prima del 01/11/2026 (tempo fino a fine ottobre).
+    non scatta mai prima del 02/12/2026 (consegna entro l'1 dicembre).
     Chi non ha mai avuto un abbonamento vero non ha countdown né blocco.
     L'admin può concedere una deroga (users.cert_deroga_fino, prenotazioni ok fino a quella data inclusa)."""
     out = {"bloccato": False, "giorni_rimanenti": None, "blocco_dal": None, "deroga_fino": user.get("cert_deroga_fino"), "motivo": None}

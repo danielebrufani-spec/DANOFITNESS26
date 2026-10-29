@@ -948,3 +948,8 @@ Richiesta: nuova lezione TABATA venerdì 8:30 (coach Toto) dal 7 novembre + nuov
 - Backend: ActivityType.TABATA; campo lezioni `data_inizio` (YYYY-MM-DD, ricorrente attiva solo da quella data) in LessonResponse + mapping; create_booking blocca date < data_inizio con messaggio simpatico; migrazione one-off "tabata_venerdi_7nov" (lezione venerdi 08:30 tabata Toto data_inizio 2026-11-07 + attività 'tabata' in db.activities + cache invalidate).
 - Frontend: prenota.tsx filtra lezioni per data_inizio (2 punti); constants.ts ATTIVITA_INFO['tabata'] (#FFD700, icona timer) + COURSE_IMAGES.tabata; api.ts tipo data_inizio; NUOVO TabataPromoBanner.tsx (badge rosso pulsante "NOVITÀ IN ORARIO", testo divertente "Regina del Tabata", visibile fino al 2026-11-30) montato in home dopo NuoviOrariBanner.
 - TESTATO: GET /lessons include tabata con data_inizio; POST /bookings per 23/10 → 400 "parte da venerdì 07/11"; UI: banner promo in Home ok, nuova immagine orari con TABATA visibile ok.
+
+## PROROGA CERTIFICATI VECCHI CLIENTI → 1 DICEMBRE (22 Ott 2026)
+- CERT_PROROGA_VECCHI_FINO: 2026-10-31 → 2026-12-01 (vecchi clienti = primo abbonamento entro il 07/09/2026; blocco prenotazioni non prima del 02/12).
+- Nuovi clienti invariati: 30gg dal primo abbonamento (CERT_GRACE_GIORNI=30).
+- TESTATO: vecchio cliente senza cert → blocco dal 2026-12-02; nuovo (abb. 15/10) → blocco dal 2026-11-14. I countdown nei popup/banner si aggiornano da soli (calcolati da blocco_dal).
