@@ -29,6 +29,7 @@ import { CertificatoBanner, CertificatoHomeCard } from '../../src/components/Cer
 import { VisitaMedicaBanner, VisitaMedicaAdminBanner } from '../../src/components/VisitaMedica';
 import { GiochiSbloccatiPopup } from '../../src/components/GiochiSbloccatiPopup';
 import { TabataPromoBanner } from '../../src/components/TabataPromoBanner';
+import { VincitoriMesePopup } from '../../src/components/VincitoriMesePopup';
 import { FONTS, glow } from '../../src/theme';
 import { requestPopup, releasePopup } from '../../src/utils/popupQueue';
 import { CountUp } from '../../src/components/CountUp';
@@ -1120,6 +1121,9 @@ export default function HomeScreen() {
 
         {/* Popup giochi sbloccati dopo l'allenamento */}
         <GiochiSbloccatiPopup />
+
+        {/* Popup vincitori del mese (una volta sola dopo l'estrazione) */}
+        <VincitoriMesePopup />
 
         {/* Visita medica - certificato non agonistico */}
         <VisitaMedicaBanner />

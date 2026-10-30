@@ -5669,7 +5669,9 @@ async def run_lottery_extraction():
             "premio_3": premi[2] if len(premi) > 2 else premi[0],
             "premi_ritirati": [False, False, False],
             "estrazione_automatica": True,
-            "pubblicato": False
+            "pubblicato": False,
+            "crono_classifica": (await _crono_classifica_mese(prev_month_str))[:10],
+            "crono_premio": CRONO_PREMIO_SORPRESA,
         }
         await db.lottery_winners.insert_one(winner_data)
         logger.info(f"[LOTTERY] ESTRAZIONE BOZZA COMPLETATA: {len(vincitori_data)} vincitori su {len(pool)} biglietti totali (in attesa di pubblicazione admin)")
@@ -6284,7 +6286,9 @@ async def extract_winner(admin_user: dict = Depends(get_admin_user)):
         "premi_ritirati": [False, False, False],
         "estratto_da": str(admin_user["_id"]),
         "estrazione_automatica": False,
-        "pubblicato": False
+        "pubblicato": False,
+        "crono_classifica": (await _crono_classifica_mese(prev_month_str))[:10],
+        "crono_premio": CRONO_PREMIO_SORPRESA,
     }
     await db.lottery_winners.insert_one(winner_data)
     logger.info(f"[LOTTERY] 3 Vincitori estratti MANUALMENTE da admin (in attesa di pubblicazione)")
@@ -6384,21 +6388,30 @@ class SetPrizeRequest(BaseModel):
     premio_3: str
 
 
+CRONO_PREMIO_SORPRESA = "Premio a sorpresa dal Maestro 🎁 (senza pretese, eh!)"
+
+
+async def _prossima_estrazione_mese() -> str:
+    """Mese (YYYY-MM) in cui avverrà la PROSSIMA estrazione: i premi impostati valgono per quella."""
+    now = datetime.now(ROME_TZ)
+    cm = now.strftime("%Y-%m")
+    if now.day == 1 and now.hour < 12 and not await db.lottery_winners.find_one({"mese": cm}):
+        return cm
+    return f"{now.year + 1}-01" if now.month == 12 else f"{now.year}-{now.month + 1:02d}"
+
+
 @api_router.post("/admin/lottery/set-prize")
 async def set_monthly_prize(data: SetPrizeRequest, admin_user: dict = Depends(get_admin_user)):
-    """Imposta i 3 premi del mese corrente.
+    """Imposta i 3 premi per la PROSSIMA estrazione.
 
-    Se esiste già un'estrazione (bozza o pubblicata) per il mese corrente,
-    aggiorna automaticamente anche i premi mostrati nell'estrazione
-    (winner.premio_1/2/3 + winner.vincitori[i].premio in base alla posizione).
+    NON tocca mai le estrazioni già fatte/pubblicate: i loro premi restano congelati.
+    Per correggere i premi di un'estrazione già uscita usare /admin/lottery/correct-prizes.
     """
-    now = datetime.now(ROME_TZ)
-    current_month = now.strftime("%Y-%m")
-    
+    target_mese = await _prossima_estrazione_mese()
     await db.lottery_prizes.update_one(
-        {"mese": current_month},
+        {"mese": target_mese},
         {"$set": {
-            "mese": current_month,
+            "mese": target_mese,
             "premio_1": data.premio_1,
             "premio_2": data.premio_2,
             "premio_3": data.premio_3,
@@ -6407,53 +6420,76 @@ async def set_monthly_prize(data: SetPrizeRequest, admin_user: dict = Depends(ge
         }},
         upsert=True
     )
-
-    # Sync: se esiste già un'estrazione del mese, aggiornala con i nuovi premi
-    winner_doc = await db.lottery_winners.find_one({"mese": current_month})
-    if winner_doc:
-        premi = [data.premio_1, data.premio_2, data.premio_3]
-        vincitori = winner_doc.get("vincitori", []) or []
-        for v in vincitori:
-            pos_idx = (v.get("posizione") or 1) - 1
-            if 0 <= pos_idx < len(premi):
-                v["premio"] = premi[pos_idx]
-        await db.lottery_winners.update_one(
-            {"mese": current_month},
-            {"$set": {
-                "premio_1": premi[0],
-                "premio_2": premi[1],
-                "premio_3": premi[2],
-                "vincitori": vincitori,
-                "premi_synced_at": now_rome(),
-            }}
-        )
-        logger.info(f"[LOTTERY] Premi sincronizzati anche sull'estrazione {current_month}")
-
-    logger.info(f"[LOTTERY] Premi del mese impostati: 1={data.premio_1}, 2={data.premio_2}, 3={data.premio_3}")
+    logger.info(f"[LOTTERY] Premi prossima estrazione ({target_mese}): 1={data.premio_1}, 2={data.premio_2}, 3={data.premio_3}")
     return {
-        "message": "Premi impostati",
+        "message": f"Premi impostati per la prossima estrazione ({target_mese})",
+        "mese": target_mese,
         "premio_1": data.premio_1,
         "premio_2": data.premio_2,
         "premio_3": data.premio_3,
-        "synced_extraction": winner_doc is not None,
     }
 
 
 @api_router.get("/lottery/current-prize")
 async def get_current_prize():
-    """Ottieni i 3 premi del mese corrente (pubblico)"""
-    now = datetime.now(ROME_TZ)
-    current_month = now.strftime("%Y-%m")
-    
-    prize = await db.lottery_prizes.find_one({"mese": current_month})
+    """Ottieni i 3 premi in palio per la PROSSIMA estrazione (pubblico)"""
+    mese = await _prossima_estrazione_mese()
+    prize = await db.lottery_prizes.find_one({"mese": mese})
     if prize:
         return {
             "premio_1": prize.get("premio_1"),
             "premio_2": prize.get("premio_2"),
             "premio_3": prize.get("premio_3"),
-            "mese": current_month
+            "mese": mese
         }
-    return {"premio_1": None, "premio_2": None, "premio_3": None, "mese": current_month}
+    return {"premio_1": None, "premio_2": None, "premio_3": None, "mese": mese}
+
+
+@api_router.get("/lottery/ultima-estrazione")
+async def lottery_ultima_estrazione(current_user: dict = Depends(get_current_user)):
+    """Ultima estrazione PUBBLICATA: lotteria + classifica finale Crono (per il popup Vincitori del Mese)"""
+    docs = await db.lottery_winners.find(
+        {"$or": [{"pubblicato": True}, {"pubblicato": {"$exists": False}}]}
+    ).sort("data_estrazione", -1).to_list(1)
+    if not docs:
+        return {"esiste": False}
+    w = docs[0]
+    mr = w.get("mese_riferimento") or w.get("mese") or ""
+    try:
+        mese_nome = MESI_IT[int(mr[5:7])]
+    except Exception:
+        mese_nome = ""
+    me_uid = str(current_user["_id"])
+    crono = []
+    for r in (w.get("crono_classifica") or []):
+        crono.append({
+            "user_id": r.get("user_id"),
+            "nome": r.get("nome"),
+            "cognome": r.get("cognome"),
+            "elapsed_ms": r.get("elapsed_ms"),
+            "vinto": r.get("vinto", False),
+            "is_me": r.get("user_id") == me_uid,
+        })
+    return {
+        "esiste": True,
+        "mese": w.get("mese"),
+        "mese_riferimento": mr,
+        "mese_nome": mese_nome,
+        "vincitori": [{
+            "posizione": v.get("posizione"),
+            "nome": v.get("nome"),
+            "cognome": v.get("cognome"),
+            "soprannome": v.get("soprannome"),
+            "biglietti": v.get("biglietti"),
+            "premio": v.get("premio"),
+            "is_me": v.get("user_id") == me_uid,
+        } for v in (w.get("vincitori") or [])],
+        "totale_partecipanti": w.get("totale_partecipanti"),
+        "totale_biglietti": w.get("totale_biglietti"),
+        "data_estrazione": w.get("data_estrazione").isoformat() if w.get("data_estrazione") else None,
+        "crono_classifica": crono,
+        "crono_premio": w.get("crono_premio"),
+    }
 
 
 @api_router.get("/lottery/current-winner")
@@ -6644,30 +6680,52 @@ async def giochi_oggi(current_user: dict = Depends(get_current_user)):
 MESI_IT = ["", "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"]
 
 
-@api_router.get("/timer-game/classifica")
-async def timer_game_classifica(current_user: dict = Depends(get_current_user)):
-    """Classifica mensile Crono: miglior tempo per utente, più vicino a 10.00 vince."""
-    oggi = now_rome()
-    plays = await db.timer_plays.find({"data": {"$regex": f"^{oggi.strftime('%Y-%m')}"}}).to_list(3000)
+async def _crono_classifica_mese(mese: str):
+    """Classifica Crono di un mese: miglior giocata per utente, più vicino a 10.00 vince.
+    A parità di tempo vince chi l'ha fatto PRIMA cronologicamente nel mese."""
+    plays = await db.timer_plays.find({"data": {"$regex": f"^{mese}"}}).to_list(5000)
     best = {}
     for p in plays:
         el = p.get("elapsed_ms")
         if el is None:
             continue
         delta = abs(el - 10000)
+        ts = p.get("timestamp")
+        if ts is None:
+            try:
+                ts = datetime.strptime(p.get("data", "2099-12-31") + " 23:59", "%Y-%m-%d %H:%M")
+            except Exception:
+                ts = datetime(2099, 12, 31)
+        elif getattr(ts, "tzinfo", None) is not None:
+            ts = ts.replace(tzinfo=None)
         uid = p["user_id"]
-        if uid not in best or delta < best[uid]["delta"]:
-            best[uid] = {"delta": delta, "elapsed_ms": el, "data": p["data"], "vinto": p.get("vinto", False)}
+        cur = best.get(uid)
+        if cur is None or delta < cur["delta"] or (delta == cur["delta"] and ts < cur["ts"]):
+            best[uid] = {"delta": delta, "elapsed_ms": el, "data": p.get("data"), "vinto": p.get("vinto", False), "ts": ts}
     oids = [ObjectId(uid) for uid in best if len(uid) == 24]
-    users = {str(u["_id"]): u for u in await db.users.find({"_id": {"$in": oids}}).to_list(2000)}
-    me_uid = str(current_user["_id"])
+    users = {str(u["_id"]): u for u in await db.users.find({"_id": {"$in": oids}}).to_list(3000)}
     rows = []
     for uid, b in best.items():
         u = users.get(uid)
         if not u or u.get("role") in (UserRole.ADMIN, UserRole.ISTRUTTORE):
             continue
-        rows.append({"user_id": uid, "nome": u.get("nome", ""), "cognome": u.get("cognome", ""), "is_me": uid == me_uid, **b})
-    rows.sort(key=lambda r: (r["delta"], r["data"]))
+        rows.append({"user_id": uid, "nome": u.get("nome", ""), "cognome": u.get("cognome", ""),
+                     "delta": b["delta"], "elapsed_ms": b["elapsed_ms"], "data": b["data"],
+                     "vinto": b["vinto"], "ts": b["ts"]})
+    rows.sort(key=lambda r: (r["delta"], r["ts"]))
+    for r in rows:
+        r.pop("ts", None)
+    return rows
+
+
+@api_router.get("/timer-game/classifica")
+async def timer_game_classifica(current_user: dict = Depends(get_current_user)):
+    """Classifica mensile Crono: miglior tempo per utente, più vicino a 10.00 vince."""
+    oggi = now_rome()
+    rows = await _crono_classifica_mese(oggi.strftime("%Y-%m"))
+    me_uid = str(current_user["_id"])
+    for r in rows:
+        r["is_me"] = r["user_id"] == me_uid
     mia_pos = next((i + 1 for i, r in enumerate(rows) if r["is_me"]), None)
     mio = next((r for r in rows if r["is_me"]), None)
     return {
@@ -8652,6 +8710,23 @@ async def startup_event():
             logger.info(f"[LOTTERY-RESET] Storico vincitori azzerato: rimosse {res.deleted_count} estrazioni pre-ottobre")
     except Exception as e:
         logger.warning(f"[LOTTERY-RESET storico] {e}")
+
+    # Migrazione one-off: nuovo keying premi (per la PROSSIMA estrazione) — copia i premi correnti
+    if not await db.migrations.find_one({"nome": "premi_prossima_estrazione_fix"}):
+        _now = now_rome()
+        _cm = _now.strftime("%Y-%m")
+        _nm = f"{_now.year + 1}-01" if _now.month == 12 else f"{_now.year}-{_now.month + 1:02d}"
+        _cur_p = await db.lottery_prizes.find_one({"mese": _cm})
+        if _cur_p and not await db.lottery_prizes.find_one({"mese": _nm}):
+            await db.lottery_prizes.insert_one({
+                "mese": _nm,
+                "premio_1": _cur_p.get("premio_1"),
+                "premio_2": _cur_p.get("premio_2"),
+                "premio_3": _cur_p.get("premio_3"),
+                "copiato_da": _cm,
+            })
+            logger.info(f"[LOTTERY] Premi copiati da {_cm} a {_nm} (nuovo keying prossima estrazione)")
+        await db.migrations.insert_one({"nome": "premi_prossima_estrazione_fix", "eseguita_il": now_rome()})
 
     # Migrazione one-off: nuova lezione TABATA venerdì 08:30 (Toto) dal 7 novembre
     if not await db.migrations.find_one({"nome": "tabata_venerdi_7nov"}):

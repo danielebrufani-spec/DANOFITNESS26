@@ -1366,7 +1366,11 @@ export default function PremiScreen() {
                 <View style={styles.winnerHeader}>
                   <Text style={styles.trophyBig}>🏆</Text>
                   <Text style={styles.winnerMainLabel}>
-                    {status.is_me_winner ? '🎉 SEI TRA I VINCITORI! 🎉' : 'VINCITORI DEL MESE'}
+                    {status.is_me_winner
+                      ? '🎉 SEI TRA I VINCITORI! 🎉'
+                      : status.mese_riferimento
+                        ? `VINCITORI DI ${formatMese(status.mese_riferimento).toUpperCase()}`
+                        : 'VINCITORI DEL MESE'}
                   </Text>
                   <Text style={styles.trophyBig}>🏆</Text>
                 </View>

@@ -960,3 +960,12 @@ Richiesta: nuova lezione TABATA venerdì 8:30 (coach Toto) dal 7 novembre + nuov
 - api.ts: getTimerClassifica().
 - TESTATO: API ordinamento corretto (10.00→10.02→9.95→10.18→9.70) + UI verificata con screenshot. Dati test puliti.
 - NOTA DEBUG: sessioni browser vecchie nel tool screenshot danno 403 su tutto → sempre localStorage.clear() + login fresco.
+
+## LOTTERIA: PREMI CONGELATI + POPUP VINCITORI DEL MESE + CRONO FINALE (30 Ott 2026)
+Richieste utente (tutte fatte e testate):
+1. BUG FIX: set-prize non sovrascrive più l'estrazione pubblicata (rimosso blocco sync). I premi impostati valgono SOLO per la PROSSIMA estrazione: nuovo helper _prossima_estrazione_mese() (mese del prossimo 1° alle 12), set-prize e GET current-prize usano quel mese. Per correggere premi usciti resta /admin/lottery/correct-prizes (bottone "Correggi Premi"). Migrazione one-off premi_prossima_estrazione_fix: copia i premi del mese corrente sul prossimo (compatibilità keying live).
+2. Mese visibile nella classifica pubblicata: titolo card vincitori in premi.tsx = "VINCITORI DI {MESE}".
+3. Tie-break Crono: a parità di delta vince chi ha giocato PRIMA (timer_plays.timestamp; fallback data 23:59). Refactor in helper _crono_classifica_mese(mese).
+4. Estrazione (auto + manuale) ora SNAPSHOTTA crono_classifica (top10 mese riferimento) + crono_premio = "Premio a sorpresa dal Maestro 🎁 (senza pretese, eh!)" nel doc lottery_winners.
+5. Popup Home "VINCITORI DEL MESE" (VincitoriMesePopup.tsx): GET /lottery/ultima-estrazione (ultima pubblicata, con is_me), annuncio una SOLA volta (localStorage vincitori_popup_{mese}, via popupQueue) → dettaglio con estrazione lotteria (premi/vincitori) + classifica finale crono con 👑 vincitore e premio a sorpresa.
+TESTATO: curl (tie-break ok, set-prize→2026-11 senza toccare pubblicata, current-prize=prossimi, ultima-estrazione ok) + UI Playwright (annuncio→dettaglio→non riappare dopo reload). Dati test puliti.
