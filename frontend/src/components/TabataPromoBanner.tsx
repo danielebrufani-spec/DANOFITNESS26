@@ -25,7 +25,7 @@ export const TabataPromoBanner: React.FC = () => {
         <Text style={styles.badgeText}>⚡ NOVITÀ IN ORARIO ⚡</Text>
       </Animated.View>
       <Text style={styles.title}>🔥 TABATA con TOTO 🔥</Text>
-      <Text style={styles.quando}>Da venerdì 7 novembre — ogni venerdì ore 8:30</Text>
+      <Text style={styles.quando}>Ogni venerdì ore 8:30 — da questa settimana fino a fine stagione!</Text>
       <Text style={styles.body}>
         20 secondi a tutta, 10 per respirare… e si riparte! 😮‍💨{'\n'}
         Lavori funzionali con i piccoli attrezzi: <Text style={styles.bold}>niente coreografie da ballerina</Text> 🩰 — servono solo gambe, cuore e tanta volontà.
@@ -33,7 +33,7 @@ export const TabataPromoBanner: React.FC = () => {
       <Text style={styles.body}>
         Vi aspetta la <Text style={styles.bold}>Regina del Tabata</Text>: è tremenda, ma vi farà innamorare della fatica. 💪
       </Text>
-      <Text style={styles.footer}>📅 Dal 7 novembre la trovi nel calendario prenotazioni</Text>
+      <Text style={styles.footer}>📅 Prenotazioni già aperte: la trovi nel calendario del venerdì</Text>
     </View>
   );
 };

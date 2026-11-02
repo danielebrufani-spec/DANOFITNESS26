@@ -5835,6 +5835,18 @@ async def get_lottery_status(current_user: dict = Depends(get_current_user)):
         and raw_winner_data.get("pubblicato", True) is False
     )
 
+    # Vincitore Crono del mese (dalla classifica congelata nell'estrazione pubblicata)
+    crono_cls = (winner_data.get("crono_classifica") or []) if winner_data else []
+    crono_vincitore = None
+    if crono_cls:
+        _cw = crono_cls[0]
+        crono_vincitore = {
+            "nome": _cw.get("nome"),
+            "cognome": _cw.get("cognome"),
+            "elapsed_ms": _cw.get("elapsed_ms"),
+            "is_me": _cw.get("user_id") == user_id,
+        }
+
     return {
         "biglietti_utente": biglietti,
         "mese_corrente": current_month,
@@ -5854,6 +5866,8 @@ async def get_lottery_status(current_user: dict = Depends(get_current_user)):
         "is_admin": is_admin,
         "bozza_in_attesa": pending_bozza,
         "in_attesa_pubblicazione": in_attesa_pubblicazione,
+        "crono_vincitore": crono_vincitore,
+        "crono_premio": (winner_data.get("crono_premio") if winner_data else None) or (CRONO_PREMIO_SORPRESA if crono_vincitore else None),
     }
 
 
@@ -8745,6 +8759,16 @@ async def startup_event():
         cache.invalidate("all_lessons")
         await db.migrations.insert_one({"nome": "tabata_venerdi_7nov", "eseguita_il": now_rome()})
         logger.info("[TABATA] Lezione venerdì 08:30 Tabata (Toto) inserita, attiva dal 2026-11-07")
+
+    # Migrazione one-off: TABATA venerdì 08:30 attiva subito (prenotazioni aperte da questa settimana)
+    if not await db.migrations.find_one({"nome": "tabata_attiva_subito"}):
+        await db.lessons.update_one(
+            {"giorno": "venerdi", "orario": "08:30", "tipo_attivita": "tabata"},
+            {"$set": {"data_inizio": None}}
+        )
+        cache.invalidate("all_lessons")
+        await db.migrations.insert_one({"nome": "tabata_attiva_subito", "eseguita_il": now_rome()})
+        logger.info("[TABATA] Lezione venerdì 08:30 attivata subito: prenotazioni aperte")
 
     # Migrazione one-off: azzera prenotazioni della vecchia visita del 17/10 (nuova data 7/11)
     if not await db.migrations.find_one({"nome": "visita_reset_7nov"}):

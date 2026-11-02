@@ -55,7 +55,7 @@ export const VincitoriMesePopup: React.FC = () => {
             <Text style={styles.annuncioEmoji}>🏆</Text>
             <Text style={styles.annuncioTitle}>VINCITORI DEL MESE!</Text>
             <Text style={styles.annuncioSub}>
-              L'estrazione di {dati.mese_nome} è stata fatta!{'\n'}Scopri chi ha vinto la lotteria e chi comanda al Crono ⏱️
+              L'estrazione di {dati.mese_nome} è stata fatta!{'\n'}Scopri chi ha vinto la lotteria e chi ha vinto il Crono ⏱️ — per lui un premio a sorpresa dal Maestro! 🎁
             </Text>
             <TouchableOpacity style={styles.scopriBtn} onPress={() => { segnaVisto(); setStep('dettaglio'); }} data-testid="vincitori-mese-scopri-btn">
               <Text style={styles.scopriBtnText}>🎉 SCOPRI I VINCITORI</Text>
@@ -103,6 +103,19 @@ export const VincitoriMesePopup: React.FC = () => {
                       <Text style={[styles.rowTempo, r.vinto && styles.rowTempoVinto]}>{fmtTempo(r.elapsed_ms)}</Text>
                     </View>
                   ))}
+
+                  {/* Callout vincitore Crono */}
+                  <View style={styles.cronoWinnerBox} data-testid="crono-winner-callout">
+                    <Text style={styles.cronoWinnerLabel}>👑 VINCITORE CRONO DEL MESE</Text>
+                    <Text style={styles.cronoWinnerNome}>
+                      {dati.crono_classifica[0].nome} {dati.crono_classifica[0].cognome}
+                      {dati.crono_classifica[0].is_me ? ' (TU!)' : ''}
+                    </Text>
+                    <Text style={styles.cronoWinnerPremio}>
+                      🎁 Per il vincitore un PREMIO A SORPRESA{'\n'}a discrezione del Maestro!
+                    </Text>
+                    <Text style={styles.cronoWinnerNote}>(senza troppe pretese, eh! 😄)</Text>
+                  </View>
                 </>
               )}
 
@@ -211,6 +224,19 @@ const styles = StyleSheet.create({
   rowNome: { color: '#FFF', fontSize: 14, fontWeight: '800' },
   rowSub: { color: '#9B9BA3', fontSize: 11.5, marginTop: 1 },
   rowPremio: { color: '#FFD700', fontSize: 12, marginTop: 3, fontWeight: '700' },
+  cronoWinnerBox: {
+    backgroundColor: 'rgba(255,215,0,0.1)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,215,0,0.55)',
+    borderRadius: 14,
+    padding: 14,
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  cronoWinnerLabel: { color: '#FFF', fontSize: 12, fontWeight: '900', letterSpacing: 1.2 },
+  cronoWinnerNome: { color: '#FFD700', fontSize: 17, fontWeight: '900', marginTop: 6 },
+  cronoWinnerPremio: { color: '#FFD700', fontSize: 13, fontWeight: '800', marginTop: 6, textAlign: 'center', lineHeight: 19 },
+  cronoWinnerNote: { color: '#9B9BA3', fontSize: 11, fontStyle: 'italic', marginTop: 3 },
   rowTempo: { color: '#FFF', fontSize: 14, fontWeight: '900', fontVariant: ['tabular-nums'] },
   rowTempoVinto: { color: '#3DD56D' },
   statline: { color: '#9B9BA3', fontSize: 11.5, textAlign: 'center', marginTop: 4 },

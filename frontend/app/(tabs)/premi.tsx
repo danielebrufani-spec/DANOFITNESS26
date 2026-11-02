@@ -103,6 +103,8 @@ interface LotteryStatus {
   is_admin?: boolean;
   bozza_in_attesa?: BozzaInAttesa | null;
   in_attesa_pubblicazione?: boolean;
+  crono_vincitore?: { nome: string; cognome: string; elapsed_ms: number; is_me?: boolean } | null;
+  crono_premio?: string | null;
 }
 
 interface Winner {
@@ -1417,6 +1419,21 @@ export default function PremiScreen() {
                   </View>
                 ))}
 
+                {/* Vincitore Crono del mese */}
+                {status.crono_vincitore && (
+                  <View style={styles.cronoWinnerBox} data-testid="crono-winner-box">
+                    <Text style={styles.cronoWinnerLabel}>⏱️ VINCITORE CRONO DEL MESE</Text>
+                    <Text style={styles.cronoWinnerNome}>
+                      👑 {status.crono_vincitore.nome} {status.crono_vincitore.cognome}
+                      {status.crono_vincitore.is_me ? ' (TU!)' : ''}
+                    </Text>
+                    <Text style={styles.cronoWinnerPremio}>
+                      🎁 PREMIO A SORPRESA a discrezione del Maestro!
+                    </Text>
+                    <Text style={styles.cronoWinnerNote}>(senza troppe pretese, eh! 😄)</Text>
+                  </View>
+                )}
+
                 {/* Mese di riferimento */}
                 <Text style={styles.winnerPeriod}>
                   Estrazione: {formatMese(status.mese_riferimento || '')}
@@ -1974,6 +1991,19 @@ const styles = StyleSheet.create({
     color: VEGAS_COLORS.textSecondary,
     marginBottom: 8,
   },
+  cronoWinnerBox: {
+    backgroundColor: 'rgba(255,215,0,0.1)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,215,0,0.55)',
+    borderRadius: 14,
+    padding: 14,
+    marginTop: 12,
+    alignItems: 'center',
+  },
+  cronoWinnerLabel: { color: '#FFF', fontSize: 12, fontWeight: '900', letterSpacing: 1.2 },
+  cronoWinnerNome: { color: '#FFD700', fontSize: 17, fontWeight: '900', marginTop: 6 },
+  cronoWinnerPremio: { color: '#FFD700', fontSize: 13, fontWeight: '800', marginTop: 6, textAlign: 'center' },
+  cronoWinnerNote: { color: '#9B9BA3', fontSize: 11, fontStyle: 'italic', marginTop: 3 },
   winnerPeriod: {
     fontSize: 14,
     color: VEGAS_COLORS.gold,
