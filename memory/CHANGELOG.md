@@ -982,3 +982,9 @@ TESTATO: curl (tie-break ok, set-prize→2026-11 senza toccare pubblicata, curre
 - premi.tsx: box dorato "⏱️ VINCITORE CRONO DEL MESE — 👑 {nome} — 🎁 PREMIO A SORPRESA a discrezione del Maestro! (senza troppe pretese, eh! 😄)" nella sezione vincitori pubblicata, prima di "Estrazione: {mese}".
 - VincitoriMesePopup.tsx: callout analogo sotto la classifica finale Crono nel dettaglio + annuncio aggiornato ("chi ha vinto il Crono — per lui un premio a sorpresa dal Maestro!").
 - TESTATO: curl /lottery/status (crono_vincitore+crono_premio ok) + Playwright: popup dettaglio e tab PREMI mostrano il callout. Dati test puliti. NOTA: serviva restart frontend (bundle metro stale, problema ricorrente).
+
+## POPUP QUOTA DA SALDARE (3 Nov 2026)
+- Richiesta: popup a ogni apertura app per clienti con abbonamento attivo non pagato (pagato=false), tono gentile; se ha già pagato → scuse + invito ad avvisare Daniele. Testo approvato dall'utente via ask_human.
+- Frontend: NUOVO QuotaDaSaldarePopup.tsx — usa getMySubscriptions() (/subscriptions/me già ritorna pagato), via popupQueue, NESSUN localStorage (appare a ogni apertura finché insoluto, scelta utente). Bottoni: WhatsApp precompilato a Daniele (393395020625, con nome/cognome cliente) + chiudi. Montato in home.tsx con {!isAdmin}.
+- Nessuna modifica backend.
+- TESTATO: sub test segnata pagato=false → popup appare con testo e 2 bottoni corretti (screenshot ok); dati ripristinati. NOTA: servito restart frontend (metro non risolveva il nuovo file — errore "Unable to resolve module").

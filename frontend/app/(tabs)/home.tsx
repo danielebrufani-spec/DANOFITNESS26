@@ -30,6 +30,7 @@ import { VisitaMedicaBanner, VisitaMedicaAdminBanner } from '../../src/component
 import { GiochiSbloccatiPopup } from '../../src/components/GiochiSbloccatiPopup';
 import { TabataPromoBanner } from '../../src/components/TabataPromoBanner';
 import { VincitoriMesePopup } from '../../src/components/VincitoriMesePopup';
+import { QuotaDaSaldarePopup } from '../../src/components/QuotaDaSaldarePopup';
 import { FONTS, glow } from '../../src/theme';
 import { requestPopup, releasePopup } from '../../src/utils/popupQueue';
 import { CountUp } from '../../src/components/CountUp';
@@ -1124,6 +1125,9 @@ export default function HomeScreen() {
 
         {/* Popup vincitori del mese (una volta sola dopo l'estrazione) */}
         <VincitoriMesePopup />
+
+        {/* Popup quota da saldare (solo clienti con abbonamento insoluto) */}
+        {!isAdmin && <QuotaDaSaldarePopup />}
 
         {/* Visita medica - certificato non agonistico */}
         <VisitaMedicaBanner />
