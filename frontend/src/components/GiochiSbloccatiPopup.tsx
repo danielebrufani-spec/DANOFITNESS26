@@ -9,6 +9,7 @@ const KEY = 'giochi_popup_date';
 
 type StatoGiochi = {
   allenamento_oggi: boolean;
+  lezioni_oggi?: number;
   ruota: boolean;
   quiz: boolean;
   crono: boolean;
@@ -24,13 +25,14 @@ export const GiochiSbloccatiPopup: React.FC = () => {
     const check = async () => {
       try {
         const oggi = new Date().toISOString().slice(0, 10);
-        if (Platform.OS === 'web') {
-          try {
-            if (window.localStorage.getItem(KEY) === oggi) return;
-          } catch {}
-        }
         const r = await apiService.getGiochiOggi();
         const d: StatoGiochi = r.data;
+        const marker = `${oggi}:${d.lezioni_oggi || 1}`;
+        if (Platform.OS === 'web') {
+          try {
+            if (window.localStorage.getItem(KEY) === marker) return;
+          } catch {}
+        }
         if (d.allenamento_oggi && d.disponibili > 0) {
           setStato(d);
           requestPopup('giochi-sbloccati', () => setVisible(true));
@@ -42,7 +44,10 @@ export const GiochiSbloccatiPopup: React.FC = () => {
 
   const chiudi = () => {
     if (Platform.OS === 'web') {
-      try { window.localStorage.setItem(KEY, new Date().toISOString().slice(0, 10)); } catch {}
+      try {
+        const oggi = new Date().toISOString().slice(0, 10);
+        window.localStorage.setItem(KEY, `${oggi}:${stato?.lezioni_oggi || 1}`);
+      } catch {}
     }
     setVisible(false);
     releasePopup('giochi-sbloccati');

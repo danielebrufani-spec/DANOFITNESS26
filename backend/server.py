@@ -5875,41 +5875,46 @@ async def get_lottery_status(current_user: dict = Depends(get_current_user)):
 # 4 categorie: GOSSIP, CULTURA GENERALE, CINEMA & SERIE TV, MUSICA
 # Domande importate da quiz_domande.py
 
+def _quiz_question_index(user_id: str, today: str, cat: str, attempt: int, n: int) -> int:
+    key = user_id + today + cat if attempt <= 0 else f"{user_id}{today}{cat}#{attempt}"
+    return hash(key) % n
+
 @api_router.get("/quiz/today")
 async def get_quiz_today(current_user: dict = Depends(get_current_user)):
-    """Quiz BONUS con scelta categoria - collegato alla ruota!"""
+    """Quiz BONUS con scelta categoria - collegato alla ruota! Un tentativo per ogni giro di ruota."""
     user_id = str(current_user["_id"])
     today = now_rome().strftime("%Y-%m-%d")
-    
-    existing_answer, spin_today, category_choice = await asyncio.gather(
-        db.quiz_answers.find_one({"user_id": user_id, "data": today}),
-        db.wheel_spins.find_one({"user_id": user_id, "data": today}),
-        db.quiz_category_choices.find_one({"user_id": user_id, "data": today})
+
+    answers, spins, choices = await asyncio.gather(
+        db.quiz_answers.find({"user_id": user_id, "data": today}).sort("created_at", 1).to_list(20),
+        db.wheel_spins.find({"user_id": user_id, "data": today}).sort("timestamp", 1).to_list(20),
+        db.quiz_category_choices.find({"user_id": user_id, "data": today}).sort("created_at", 1).to_list(20)
     )
-    
-    if existing_answer:
-        cat = existing_answer.get("categoria", "cultura")
-        domande = QUIZ_PER_CATEGORIA.get(cat, QUIZ_PER_CATEGORIA["cultura"])
-        quiz_index = hash(user_id + today + cat) % len(domande)
-        domanda = domande[quiz_index]
-        return {
-            "can_play": False,
-            "reason": "already_answered",
-            "domanda_id": domanda["id"],
-            "domanda": domanda["domanda"],
-            "risposte": domanda["risposte"],
-            "gia_risposto": True,
-            "risposta_corretta": existing_answer.get("corretta"),
-            "biglietti_vinti": existing_answer.get("biglietti_vinti", 0),
-            "risposta_data": existing_answer.get("risposta_index"),
-            "wheel_result": existing_answer.get("wheel_biglietti", 0),
-            "bonus_type": existing_answer.get("bonus_type", "standard"),
-            "categoria": cat,
-            "needs_category": False,
-            "message": "Hai gia risposto! Torna dopo il prossimo giro di ruota"
-        }
-    
-    if not spin_today:
+    attempt = len(answers)
+
+    if attempt >= len(spins):
+        if answers:
+            existing_answer = answers[-1]
+            cat = existing_answer.get("categoria", "cultura")
+            domande = QUIZ_PER_CATEGORIA.get(cat, QUIZ_PER_CATEGORIA["cultura"])
+            quiz_index = _quiz_question_index(user_id, today, cat, attempt - 1, len(domande))
+            domanda = domande[quiz_index]
+            return {
+                "can_play": False,
+                "reason": "already_answered",
+                "domanda_id": domanda["id"],
+                "domanda": domanda["domanda"],
+                "risposte": domanda["risposte"],
+                "gia_risposto": True,
+                "risposta_corretta": existing_answer.get("corretta"),
+                "biglietti_vinti": existing_answer.get("biglietti_vinti", 0),
+                "risposta_data": existing_answer.get("risposta_index"),
+                "wheel_result": existing_answer.get("wheel_biglietti", 0),
+                "bonus_type": existing_answer.get("bonus_type", "standard"),
+                "categoria": cat,
+                "needs_category": False,
+                "message": "Hai gia risposto! Torna dopo il prossimo giro di ruota"
+            }
         return {
             "can_play": False,
             "reason": "no_spin",
@@ -5926,8 +5931,9 @@ async def get_quiz_today(current_user: dict = Depends(get_current_user)):
             "needs_category": False,
             "message": "Gira prima la ruota per sbloccare il Quiz Bonus!"
         }
-    
-    wheel_biglietti = spin_today.get("biglietti", 0)
+
+    spin_corrente = spins[attempt]
+    wheel_biglietti = spin_corrente.get("biglietti", 0)
     if wheel_biglietti > 0:
         bonus_type = "raddoppia"
         potential_bonus = wheel_biglietti
@@ -5938,7 +5944,7 @@ async def get_quiz_today(current_user: dict = Depends(get_current_user)):
         bonus_type = "standard"
         potential_bonus = 1
     
-    if not category_choice:
+    if len(choices) <= attempt:
         return {
             "can_play": True,
             "needs_category": True,
@@ -5959,9 +5965,9 @@ async def get_quiz_today(current_user: dict = Depends(get_current_user)):
             "message": "Scegli una categoria per il Quiz Bonus!"
         }
     
-    cat = category_choice["categoria"]
+    cat = choices[attempt]["categoria"]
     domande = QUIZ_PER_CATEGORIA.get(cat, QUIZ_PER_CATEGORIA["cultura"])
-    quiz_index = hash(user_id + today + cat) % len(domande)
+    quiz_index = _quiz_question_index(user_id, today, cat, attempt, len(domande))
     domanda = domande[quiz_index]
     
     return {
@@ -5995,13 +6001,18 @@ async def select_quiz_category(data: SelectCategoryRequest, current_user: dict =
     if data.categoria not in CATEGORIE:
         raise HTTPException(status_code=400, detail="Categoria non valida")
     
-    existing = await db.quiz_category_choices.find_one({"user_id": user_id, "data": today})
-    if existing:
-        raise HTTPException(status_code=400, detail="Hai gia scelto la categoria oggi!")
-    
-    spin_today = await db.wheel_spins.find_one({"user_id": user_id, "data": today})
-    if not spin_today:
+    answers_count, spins, choices_count = await asyncio.gather(
+        db.quiz_answers.count_documents({"user_id": user_id, "data": today}),
+        db.wheel_spins.find({"user_id": user_id, "data": today}).sort("timestamp", 1).to_list(20),
+        db.quiz_category_choices.count_documents({"user_id": user_id, "data": today}),
+    )
+    if answers_count >= len(spins):
         raise HTTPException(status_code=400, detail="Devi prima girare la ruota!")
+    if choices_count > answers_count:
+        raise HTTPException(status_code=400, detail="Hai gia scelto la categoria per questo quiz!")
+    
+    attempt = answers_count
+    spin_today = spins[attempt]
     
     await db.quiz_category_choices.insert_one({
         "user_id": user_id,
@@ -6011,7 +6022,7 @@ async def select_quiz_category(data: SelectCategoryRequest, current_user: dict =
     })
     
     domande = QUIZ_PER_CATEGORIA[data.categoria]
-    quiz_index = hash(user_id + today + data.categoria) % len(domande)
+    quiz_index = _quiz_question_index(user_id, today, data.categoria, attempt, len(domande))
     domanda = domande[quiz_index]
     
     wheel_biglietti = spin_today.get("biglietti", 0)
@@ -6045,19 +6056,22 @@ async def submit_quiz_answer(risposta_index: int, current_user: dict = Depends(g
     today = now_rome().strftime("%Y-%m-%d")
     current_month = now_rome().strftime("%Y-%m")
     
-    existing = await db.quiz_answers.find_one({"user_id": user_id, "data": today})
-    if existing:
-        return {"success": False, "message": "Hai gia risposto al quiz di oggi!", "gia_risposto": True}
-    
-    spin_today = await db.wheel_spins.find_one({"user_id": user_id, "data": today})
-    if not spin_today:
+    answers, spins, choices = await asyncio.gather(
+        db.quiz_answers.find({"user_id": user_id, "data": today}).sort("created_at", 1).to_list(20),
+        db.wheel_spins.find({"user_id": user_id, "data": today}).sort("timestamp", 1).to_list(20),
+        db.quiz_category_choices.find({"user_id": user_id, "data": today}).sort("created_at", 1).to_list(20),
+    )
+    attempt = len(answers)
+    if attempt >= len(spins):
+        if answers:
+            return {"success": False, "message": "Hai gia risposto al quiz di oggi!", "gia_risposto": True}
         return {"success": False, "message": "Devi prima girare la ruota!", "gia_risposto": False}
     
-    category_choice = await db.quiz_category_choices.find_one({"user_id": user_id, "data": today})
-    if not category_choice:
+    if len(choices) <= attempt:
         return {"success": False, "message": "Devi prima scegliere una categoria!", "gia_risposto": False}
     
-    cat = category_choice["categoria"]
+    spin_today = spins[attempt]
+    cat = choices[attempt]["categoria"]
     wheel_biglietti = spin_today.get("biglietti", 0)
     
     if wheel_biglietti > 0:
@@ -6071,7 +6085,7 @@ async def submit_quiz_answer(risposta_index: int, current_user: dict = Depends(g
         potential_bonus = 1
     
     domande = QUIZ_PER_CATEGORIA.get(cat, QUIZ_PER_CATEGORIA["cultura"])
-    quiz_index = hash(user_id + today + cat) % len(domande)
+    quiz_index = _quiz_question_index(user_id, today, cat, attempt, len(domande))
     domanda = domande[quiz_index]
     
     is_correct = risposta_index == domanda["corretta"]
@@ -6575,29 +6589,31 @@ async def get_wheel_status(current_user: dict = Depends(get_current_user)):
     user_id = str(current_user["_id"])
     today = today_rome()
     
-    # PERFORMANCE FIX: Query parallele
-    spin_today, allenamento_oggi = await asyncio.gather(
-        db.wheel_spins.find_one({"user_id": user_id, "data": today}),
-        db.bookings.find_one({"user_id": user_id, "data_lezione": today, "lezione_scalata": True})
+    # PERFORMANCE FIX: Query parallele — 1 giro per OGNI lezione fatta oggi
+    spins_count, lezioni_oggi = await asyncio.gather(
+        db.wheel_spins.count_documents({"user_id": user_id, "data": today}),
+        db.bookings.count_documents({"user_id": user_id, "data_lezione": today, "lezione_scalata": True})
     )
     
-    if spin_today:
-        return {
-            "can_spin": False,
-            "reason": "already_spun",
-            "last_result": spin_today.get("premio"),
-            "message": "Hai già girato! Torna dopo il prossimo allenamento 🎰"
-        }
-    
-    if not allenamento_oggi:
+    if lezioni_oggi == 0:
         return {
             "can_spin": False,
             "reason": "no_workout",
             "message": "Completa un allenamento oggi per sbloccare la ruota! 💪"
         }
     
+    if spins_count >= lezioni_oggi:
+        last_spin = await db.wheel_spins.find_one({"user_id": user_id, "data": today}, sort=[("timestamp", -1)])
+        return {
+            "can_spin": False,
+            "reason": "already_spun",
+            "last_result": last_spin.get("premio") if last_spin else None,
+            "message": "Hai già girato! Un'altra lezione oggi = un altro giro 🎰"
+        }
+    
     return {
         "can_spin": True,
+        "giri_disponibili": lezioni_oggi - spins_count,
         "message": "Gira la ruota! 🎰"
     }
 
@@ -6608,24 +6624,17 @@ async def spin_wheel(current_user: dict = Depends(get_current_user)):
     user_id = str(current_user["_id"])
     today = today_rome()
     
-    # Verifica se può girare
-    spin_today = await db.wheel_spins.find_one({
-        "user_id": user_id,
-        "data": today
-    })
+    # Verifica: 1 giro per ogni lezione fatta oggi
+    spins_count, lezioni_oggi = await asyncio.gather(
+        db.wheel_spins.count_documents({"user_id": user_id, "data": today}),
+        db.bookings.count_documents({"user_id": user_id, "data_lezione": today, "lezione_scalata": True})
+    )
     
-    if spin_today:
-        raise HTTPException(status_code=400, detail="Hai già girato la ruota oggi!")
-    
-    # Verifica allenamento
-    allenamento_oggi = await db.bookings.find_one({
-        "user_id": user_id,
-        "data_lezione": today,
-        "lezione_scalata": True
-    })
-    
-    if not allenamento_oggi:
+    if lezioni_oggi == 0:
         raise HTTPException(status_code=400, detail="Devi completare un allenamento per girare!")
+    
+    if spins_count >= lezioni_oggi:
+        raise HTTPException(status_code=400, detail="Hai già girato per ogni lezione di oggi!")
     
     # Estrai premio con pesi
     import random
@@ -6677,18 +6686,18 @@ async def giochi_oggi(current_user: dict = Depends(get_current_user)):
     """Stato giochi del giorno: usato dal popup GIOCHI SBLOCCATI in Home"""
     user_id = str(current_user["_id"])
     today = today_rome()
-    allenamento, spin, quiz_risposto, crono_fatto = await asyncio.gather(
-        db.bookings.find_one({"user_id": user_id, "data_lezione": today, "lezione_scalata": True}),
-        db.wheel_spins.find_one({"user_id": user_id, "data": today}),
-        db.quiz_answers.find_one({"user_id": user_id, "data": today}),
-        db.timer_plays.find_one({"user_id": user_id, "data": today}),
+    lezioni, spins_c, answers_c, plays_c = await asyncio.gather(
+        db.bookings.count_documents({"user_id": user_id, "data_lezione": today, "lezione_scalata": True}),
+        db.wheel_spins.count_documents({"user_id": user_id, "data": today}),
+        db.quiz_answers.count_documents({"user_id": user_id, "data": today}),
+        db.timer_plays.count_documents({"user_id": user_id, "data": today}),
     )
-    if not allenamento:
+    if lezioni == 0:
         return {"allenamento_oggi": False, "ruota": False, "quiz": False, "crono": False, "disponibili": 0}
-    ruota = spin is None
-    quiz = quiz_risposto is None
-    crono = crono_fatto is None
-    return {"allenamento_oggi": True, "ruota": ruota, "quiz": quiz, "crono": crono, "disponibili": int(ruota) + int(quiz) + int(crono)}
+    ruota = spins_c < lezioni
+    quiz = answers_c < lezioni
+    crono = plays_c < lezioni
+    return {"allenamento_oggi": True, "lezioni_oggi": lezioni, "ruota": ruota, "quiz": quiz, "crono": crono, "disponibili": int(ruota) + int(quiz) + int(crono)}
 
 
 MESI_IT = ["", "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"]
@@ -6756,20 +6765,22 @@ async def get_timer_game_status(current_user: dict = Depends(get_current_user)):
     user_id = str(current_user["_id"])
     today = today_rome()
     is_admin = current_user.get("role") == "admin"
-    play_today, allenamento_oggi = await asyncio.gather(
-        db.timer_plays.find_one({"user_id": user_id, "data": today}),
-        db.bookings.find_one({"user_id": user_id, "data_lezione": today, "lezione_scalata": True}),
+    plays_count, lezioni_oggi = await asyncio.gather(
+        db.timer_plays.count_documents({"user_id": user_id, "data": today}),
+        db.bookings.count_documents({"user_id": user_id, "data_lezione": today, "lezione_scalata": True}),
     )
-    if play_today:
+    limite = max(lezioni_oggi, 1) if is_admin else lezioni_oggi
+    if lezioni_oggi == 0 and not is_admin:
+        return {"can_play": False, "reason": "no_workout", "message": "Completa un allenamento oggi per sbloccare il cronometro! 💪"}
+    if plays_count >= limite:
+        last_play = await db.timer_plays.find_one({"user_id": user_id, "data": today}, sort=[("timestamp", -1)])
         return {
             "can_play": False,
             "reason": "already_played",
-            "last_elapsed_ms": play_today.get("elapsed_ms"),
-            "last_vinto": play_today.get("vinto", False),
-            "message": "Hai già giocato oggi! Torna dopo il prossimo allenamento ⏱️",
+            "last_elapsed_ms": last_play.get("elapsed_ms") if last_play else None,
+            "last_vinto": last_play.get("vinto", False) if last_play else False,
+            "message": "Hai già giocato! Un'altra lezione oggi = un altro tentativo ⏱️",
         }
-    if not allenamento_oggi and not is_admin:
-        return {"can_play": False, "reason": "no_workout", "message": "Completa un allenamento oggi per sbloccare il cronometro! 💪"}
     return {"can_play": True, "message": "Ferma il cronometro a 10.00! ⏱️"}
 
 
@@ -6780,13 +6791,16 @@ async def play_timer_game(payload: TimerPlayRequest, current_user: dict = Depend
     today = today_rome()
     if payload.elapsed_ms < 500 or payload.elapsed_ms > 120000:
         raise HTTPException(status_code=400, detail="Tempo non valido")
-    play_today = await db.timer_plays.find_one({"user_id": user_id, "data": today})
-    if play_today:
-        raise HTTPException(status_code=400, detail="Hai già giocato oggi!")
     is_admin = current_user.get("role") == "admin"
-    allenamento_oggi = await db.bookings.find_one({"user_id": user_id, "data_lezione": today, "lezione_scalata": True})
-    if not allenamento_oggi and not is_admin:
+    plays_count, lezioni_oggi = await asyncio.gather(
+        db.timer_plays.count_documents({"user_id": user_id, "data": today}),
+        db.bookings.count_documents({"user_id": user_id, "data_lezione": today, "lezione_scalata": True}),
+    )
+    if lezioni_oggi == 0 and not is_admin:
         raise HTTPException(status_code=400, detail="Devi completare un allenamento per giocare!")
+    limite = max(lezioni_oggi, 1) if is_admin else lezioni_oggi
+    if plays_count >= limite:
+        raise HTTPException(status_code=400, detail="Hai già giocato per ogni lezione di oggi!")
     vinto = TIMER_GAME_WIN_MIN_MS <= payload.elapsed_ms <= TIMER_GAME_WIN_MAX_MS
     biglietti = TIMER_GAME_PREMIO_BIGLIETTI if vinto else 0
     if biglietti:

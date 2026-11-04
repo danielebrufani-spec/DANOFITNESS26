@@ -988,3 +988,10 @@ TESTATO: curl (tie-break ok, set-prize→2026-11 senza toccare pubblicata, curre
 - Frontend: NUOVO QuotaDaSaldarePopup.tsx — usa getMySubscriptions() (/subscriptions/me già ritorna pagato), via popupQueue, NESSUN localStorage (appare a ogni apertura finché insoluto, scelta utente). Bottoni: WhatsApp precompilato a Daniele (393395020625, con nome/cognome cliente) + chiudi. Montato in home.tsx con {!isAdmin}.
 - Nessuna modifica backend.
 - TESTATO: sub test segnata pagato=false → popup appare con testo e 2 bottoni corretti (screenshot ok); dati ripristinati. NOTA: servito restart frontend (metro non risolveva il nuovo file — errore "Unable to resolve module").
+
+## GIOCHI: 1 TENTATIVO PER OGNI LEZIONE DEL GIORNO (4 Nov 2026)
+- Richiesta: chi fa 2 lezioni al giorno gioca 2 volte a ruota/quiz/crono (prima: 1 volta al giorno fisso).
+- Logica: tentativi disponibili = count bookings lezione_scalata=True del giorno. Nessuna migrazione dati.
+- Backend modificati: /wheel/status (+giri_disponibili) e /wheel/spin (count vs count); /quiz/today, /quiz/select-category, /quiz/answer riscritti a tentativi: attempt=len(answers), ogni quiz usa lo spin N-esimo (sorted timestamp) per il bonus, categoria N-esima (quiz_category_choices multipli/giorno), domanda via _quiz_question_index (attempt 0 = hash legacy invariato, attempt>0 = hash con #N); /timer-game/status e /play (count, admin limite max(lezioni,1)); /giochi/oggi (+lezioni_oggi, flag per count).
+- Frontend: GiochiSbloccatiPopup marker localStorage ora "data:lezioni_oggi" → il popup riappare dopo la 2ª lezione. premi.tsx/TimerGame già status-driven: nessuna modifica (dopo spin c'è loadData che rilegge tutto).
+- TESTATO curl e2e: 2 lezioni → 2 spin (3° bloccato), 2 quiz con categorie diverse e domande diverse (3° bloccato), 2 crono (3° bloccato), giochi/oggi conta giusto. Dati test e biglietti ripuliti.
