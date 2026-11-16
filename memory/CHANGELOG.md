@@ -995,3 +995,10 @@ TESTATO: curl (tie-break ok, set-prize→2026-11 senza toccare pubblicata, curre
 - Backend modificati: /wheel/status (+giri_disponibili) e /wheel/spin (count vs count); /quiz/today, /quiz/select-category, /quiz/answer riscritti a tentativi: attempt=len(answers), ogni quiz usa lo spin N-esimo (sorted timestamp) per il bonus, categoria N-esima (quiz_category_choices multipli/giorno), domanda via _quiz_question_index (attempt 0 = hash legacy invariato, attempt>0 = hash con #N); /timer-game/status e /play (count, admin limite max(lezioni,1)); /giochi/oggi (+lezioni_oggi, flag per count).
 - Frontend: GiochiSbloccatiPopup marker localStorage ora "data:lezioni_oggi" → il popup riappare dopo la 2ª lezione. premi.tsx/TimerGame già status-driven: nessuna modifica (dopo spin c'è loadData che rilegge tutto).
 - TESTATO curl e2e: 2 lezioni → 2 spin (3° bloccato), 2 quiz con categorie diverse e domande diverse (3° bloccato), 2 crono (3° bloccato), giochi/oggi conta giusto. Dati test e biglietti ripuliti.
+
+## DEROGA CERTIFICATO SEMPRE DISPONIBILE (16 Nov 2026)
+- Richiesta: sblocco manuale/giorni extra per il certificato medico per i clienti che ne hanno bisogno.
+- La feature esisteva già (POST /admin/certificato/{user_id}/deroga, users.cert_deroga_fino, bottoni +7/+15/+30gg in CertificatoAdminModal) ma la riga deroga appariva SOLO con blocco.motivo valorizzato (serve primo_abbonamento_il).
+- Fix CertificatoAdminModal.tsx: la sezione "Concedi giorni extra" ora appare anche quando info.status è mancante/scaduto/rifiutato, a prescindere dal motivo.
+- Percorso UI: Admin → UTENTI → bottone giallo "Cert." sulla card utente → box PRENOTAZIONI → +7gg/+15gg/+30gg/Rimuovi. Il cliente riceve push automatica "Tempo extra per il certificato" e vede la data nel suo popup certificato.
+- TESTATO: curl deroga +7 → cert_deroga_fino impostata/rimossa; Playwright: bottoni visibili, +7gg applica "Deroga attiva fino al 23/11/2026", Rimuovi la toglie. NOTA: di nuovo necessario restart frontend (metro stale).

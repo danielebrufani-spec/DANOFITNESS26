@@ -275,7 +275,7 @@ export const CertificatoAdminModal: React.FC<Props> = ({ user, onClose }) => {
                 {blocco?.deroga_fino && (
                   <Text style={styles.blockText}>🕐 Deroga attiva fino al {formatDataIt(blocco.deroga_fino)}</Text>
                 )}
-                {(blocco?.motivo || blocco?.deroga_fino) && (
+                {(blocco?.motivo || blocco?.deroga_fino || ['mancante', 'scaduto', 'rifiutato'].includes(info?.status || '')) && (
                   <>
                     <Text style={styles.fieldLabel}>Concedi giorni extra (sblocca/proroga):</Text>
                     <View style={styles.derogaRow}>
