@@ -1002,3 +1002,13 @@ TESTATO: curl (tie-break ok, set-prize→2026-11 senza toccare pubblicata, curre
 - Fix CertificatoAdminModal.tsx: la sezione "Concedi giorni extra" ora appare anche quando info.status è mancante/scaduto/rifiutato, a prescindere dal motivo.
 - Percorso UI: Admin → UTENTI → bottone giallo "Cert." sulla card utente → box PRENOTAZIONI → +7gg/+15gg/+30gg/Rimuovi. Il cliente riceve push automatica "Tempo extra per il certificato" e vede la data nel suo popup certificato.
 - TESTATO: curl deroga +7 → cert_deroga_fino impostata/rimossa; Playwright: bottoni visibili, +7gg applica "Deroga attiva fino al 23/11/2026", Rimuovi la toglie. NOTA: di nuovo necessario restart frontend (metro stale).
+
+## VERIFICA CARICAMENTO CERTIFICATO PER UTENTI BLOCCATI (25 Nov 2026)
+- Richiesta: verificare che chi ha le prenotazioni bloccate possa comunque caricare il certificato.
+- ESITO: TUTTO OK, nessuna modifica necessaria. Verificato e2e:
+  - Utente bloccato (cert mancante, >30gg da primo_abb) → POST /bookings rifiutata con messaggio chiaro ✓
+  - Upload chunked start/chunk/finish funziona da utente bloccato (nessun check blocco sugli endpoint upload) ✓
+  - Dopo upload: status in_verifica → blocco rimosso SUBITO (in_verifica non blocca), prenotazione riuscita ✓
+  - Download file integro ✓
+  - UI: popup "PRENOTAZIONI BLOCCATE" → CARICA ORA → /profilo (accessibile ai bloccati, solo archiviati esclusi) con bottone CARICA ✓
+- NOTE TEST: i certificati stanno in db.medical_certificates (NON db.certificates!) + GridFS bucket 'certificati'. Il proxy del preview blocca lo user-agent python-urllib (403) → usare curl per i test API.
